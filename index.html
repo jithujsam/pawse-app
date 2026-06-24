@@ -1,16 +1,914 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232E4036'/><text x='16' y='23' font-family='system-ui' font-weight='bold' font-size='18' fill='%23CC5833' text-anchor='middle'>K</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Klaroh — Client visibility that stops silent churn</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500;1,600;1,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Klaroh — Client visibility for cold email agencies</title>
+  <meta name="description" content="Replace shared tool logins and manual screenshots with a live, no-login client dashboard. Built for cold email and outbound agencies." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* =============================================
+       LOCKED DESIGN TOKENS
+       ============================================= */
+    :root {
+      --color-primary: #003E2A;
+      --color-primary-container: #0F573E;
+      --color-on-primary: #FFFFFF;
+      --color-on-primary-container: #89CBAB;
+      --color-primary-fixed: #ADF1CF;
+      --color-primary-fixed-dim: #92D4B4;
+      --color-on-primary-fixed: #002114;
+      --color-on-primary-fixed-variant: #045139;
+      --color-surface: #F8F9FF;
+      --color-surface-container-lowest: #FFFFFF;
+      --color-surface-container-low: #EFF4FF;
+      --color-surface-container: #E5EEFF;
+      --color-surface-container-high: #DCE9FF;
+      --color-surface-container-highest: #D3E4FE;
+      --color-background: #F8F9FF;
+      --color-on-surface: #0B1C30;
+      --color-on-surface-variant: #404943;
+      --color-outline: #707973;
+      --color-outline-variant: #BFC9C1;
+      --color-secondary: #545F73;
+      --color-secondary-container: #D5E0F8;
+      --color-on-secondary-container: #586377;
+      --color-error: #BA1A1A;
+      --color-error-container: #FFDAD6;
+      --color-on-error-container: #93000A;
+      --color-success: #0F573E;
+      --color-warning: #D97706;
+      --shadow-modal: 0 8px 32px rgba(11, 28, 48, 0.10);
+    }
+
+    /* =============================================
+       BASE
+       ============================================= */
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 400;
+      color: var(--color-on-surface);
+      background: var(--color-surface);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* =============================================
+       TYPOGRAPHY — HEADINGS (always Instrument Serif italic)
+       ============================================= */
+    .heading-serif {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; }
+
+    /* =============================================
+       STAT / NUMBER DISPLAY — Instrument Serif italic, large
+       ============================================= */
+    .type-stat {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.1;
+    }
+
+    /* =============================================
+       EYEBROW
+       ============================================= */
+    .eyebrow {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* =============================================
+       BUTTONS
+       ============================================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 1;
+      border-radius: 8px;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      border: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .btn-primary:hover { background: #005238; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-primary);
+      border: 1px solid var(--color-outline-variant);
+    }
+    .btn-ghost:hover { background: rgba(173, 241, 207, 0.10); }
+
+    /* =============================================
+       CARDS
+       ============================================= */
+    .card {
+      background: var(--color-surface-container-lowest);
+      border: 1px solid rgba(191, 201, 193, 0.5);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .card-sm { padding: 16px; }
+    .card-stat { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+    /* =============================================
+       BADGES
+       ============================================= */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-radius: 9999px;
+      padding: 3px 10px;
+      white-space: nowrap;
+    }
+    .badge-success { background: rgba(173, 241, 207, 0.4); color: var(--color-primary); }
+    .badge-warning { background: var(--color-error-container); color: var(--color-on-error-container); }
+    .badge-neutral { background: var(--color-surface-container-high); color: var(--color-on-surface-variant); }
+
+    /* =============================================
+       GLOW DECORATIVE CIRCLES (AuthBranding technique)
+       ============================================= */
+    .glow-circle {
+      position: absolute;
+      border-radius: 9999px;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    /* =============================================
+       NAVBAR
+       ============================================= */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      transition: background 0.3s ease, backdrop-filter 0.3s ease;
+    }
+    .navbar-scrolled {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* =============================================
+       SCROLL REVEAL
+       ============================================= */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =============================================
+       MOBILE MENU
+       ============================================= */
+    .mobile-menu {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 280px;
+      background: var(--color-surface-container-lowest);
+      border-left: 1px solid rgba(191, 201, 193, 0.5);
+      z-index: 60;
+      padding: 32px 24px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    .mobile-menu.open { transform: translateX(0); }
+    .mobile-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 28, 48, 0.3);
+      z-index: 55;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .mobile-overlay.open { opacity: 1; pointer-events: auto; }
+
+    /* =============================================
+       FAQ ACCORDION
+       ============================================= */
+    .faq-question { cursor: pointer; }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    .faq-answer.open {
+      max-height: 300px;
+      opacity: 1;
+    }
+    .faq-toggle {
+      transition: transform 0.3s ease;
+    }
+    .faq-toggle.open { transform: rotate(45deg); }
+
+    /* =============================================
+       STATUS DOT PULSE
+       ============================================= */
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 9999px;
+      background: var(--color-primary);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* =============================================
+       UTILITY
+       ============================================= */
+    .max-w-readable { max-width: 640px; }
+    .text-balance { text-wrap: balance; }
+
+    /* =============================================
+       RESPONSIVE OVERRIDES
+       ============================================= */
+    @media (max-width: 640px) {
+      .hero-heading { font-size: 2rem !important; }
+      .section-heading { font-size: 1.5rem !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =============================================
+       MOBILE OVERLAY & MENU
+       ============================================= -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="absolute top-6 right-6 text-[var(--color-on-surface)]" id="closeMenu" aria-label="Close menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <nav class="flex flex-col gap-6 mt-12">
+      <a href="#features" class="text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] transition-colors" style="font-family:Inter;font-weight:500;font-size:15px">Features</a>
+      <a href="#how-it-works" class="text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] transition-colors" style="font-family:Inter;font-weight:500;font-size:15px">How It Works</a>
+      <a href="#pricing" class="text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] transition-colors" style="font-family:Inter;font-weight:500;font-size:15px">Pricing</a>
+      <a href="https://app.klaroh.online" class="btn btn-primary mt-4 w-full text-center">Book Your Demo Call</a>
+    </nav>
+  </div>
+
+  <!-- =============================================
+       A. NAVBAR
+       ============================================= -->
+  <header class="navbar" id="navbar">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      <!-- Wordmark: Inter 600, NOT italic serif -->
+      <a href="#" class="text-lg" style="font-family:Inter;font-weight:600;color:var(--color-on-surface);letter-spacing:-0.01em">Klaroh</a>
+
+      <!-- Desktop nav -->
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="#features" class="text-sm transition-colors" style="font-family:Inter;font-weight:500;color:var(--color-on-surface-variant)">Features</a>
+        <a href="#how-it-works" class="text-sm transition-colors" style="font-family:Inter;font-weight:500;color:var(--color-on-surface-variant)">How It Works</a>
+        <a href="#pricing" class="text-sm transition-colors" style="font-family:Inter;font-weight:500;color:var(--color-on-surface-variant)">Pricing</a>
+      </nav>
+
+      <!-- Desktop CTA -->
+      <a href="https://app.klaroh.online" class="btn btn-primary hidden md:inline-flex">Book Your Demo Call</a>
+
+      <!-- Mobile hamburger -->
+      <button class="md:hidden" id="openMenu" aria-label="Open menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =============================================
+       B. HERO — Pain #2 (credential risk)
+       ============================================= -->
+  <section class="relative min-h-screen pt-20 pb-16 md:pt-28 md:pb-24 overflow-hidden" style="background:var(--color-surface)">
+    <!-- Soft blurred glow circles — AuthBranding technique -->
+    <div class="glow-circle w-[400px] h-[400px] -top-20 -right-20" style="background:rgba(173,241,207,0.15)"></div>
+    <div class="glow-circle w-[350px] h-[350px] -bottom-20 -left-20" style="background:rgba(0,62,42,0.10)"></div>
+
+    <div class="relative max-w-6xl mx-auto px-5">
+      <!-- Eyebrow -->
+      <p class="eyebrow mb-5" style="color:var(--color-primary)">FOR COLD EMAIL &amp; OUTBOUND AGENCIES</p>
+
+      <!-- Headline — credential risk ONLY, no churn language -->
+      <h1 class="hero-heading text-4xl md:text-5xl lg:text-6xl mb-6 text-balance" style="color:var(--color-on-surface);line-height:1.15">
+        One shared login.<br />
+        One wrong click.<br />
+        One broken campaign.
+      </h1>
+
+      <!-- Subheadline -->
+      <p class="text-base md:text-lg mb-10 max-w-2xl" style="color:var(--color-on-surface-variant);line-height:1.6">
+        You hand clients your Smartlead or Instantly login so they can check progress.<br class="hidden sm:block" />
+        One accidental pause and a live campaign goes dark. Klaroh gives them a live,<br class="hidden sm:block" />
+        no-login view — so they stay informed without touching your tool.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-wrap gap-4 mb-14">
+        <a href="https://app.klaroh.online" class="btn btn-primary">Book Your Demo Call</a>
+        <a href="#how-it-works" class="btn btn-ghost">See How It Works</a>
+      </div>
+
+      <!-- Dashboard mockup — built from real components -->
+      <div class="card card-stat max-w-3xl mx-auto">
+        <!-- Campaign stat row: 4-up grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="text-center">
+            <div class="type-stat text-3xl md:text-4xl mb-1" style="color:var(--color-on-surface)">12,847</div>
+            <p class="eyebrow" style="color:var(--color-on-surface-variant)">Sent</p>
+          </div>
+          <div class="text-center">
+            <div class="type-stat text-3xl md:text-4xl mb-1" style="color:var(--color-on-surface)">3,421</div>
+            <p class="eyebrow" style="color:var(--color-on-surface-variant)">Opened</p>
+          </div>
+          <div class="text-center">
+            <div class="type-stat text-3xl md:text-4xl mb-1" style="color:var(--color-on-surface)">847</div>
+            <p class="eyebrow" style="color:var(--color-on-surface-variant)">Replied</p>
+          </div>
+          <div class="text-center">
+            <div class="type-stat text-3xl md:text-4xl mb-1" style="color:var(--color-on-surface)">203</div>
+            <p class="eyebrow" style="color:var(--color-on-surface-variant)">Booked</p>
+          </div>
+        </div>
+
+        <!-- Activity timeline snippet (2-3 entries) -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-3 py-2 border-t" style="border-color:rgba(191,201,193,0.3)">
+            <span class="badge badge-success">Live</span>
+            <span style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant)">Campaign "Q2 Outreach" running — 847 replies this week</span>
+            <span class="ml-auto text-xs" style="font-family:Inter;color:var(--color-outline)">2m ago</span>
+          </div>
+          <div class="flex items-center gap-3 py-2 border-t" style="border-color:rgba(191,201,193,0.3)">
+            <span class="badge badge-warning">Action Required</span>
+            <span style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant)">Bounce rate spiked to 12% — review sending warmup</span>
+            <span class="ml-auto text-xs" style="font-family:Inter;color:var(--color-outline)">14m ago</span>
+          </div>
+          <div class="flex items-center gap-3 py-2 border-t" style="border-color:rgba(191,201,193,0.3)">
+            <span class="badge badge-success">Live</span>
+            <span style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant)">New sequence "June Prod" added — 3,200 leads queued</span>
+            <span class="ml-auto text-xs" style="font-family:Inter;color:var(--color-outline)">1h ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       C. THE PROBLEM — Pain #3 (manual reporting waste)
+       ============================================= -->
+  <section class="py-20 md:py-28" id="features" style="background:var(--color-surface-container-low)">
+    <div class="max-w-6xl mx-auto px-5">
+      <p class="eyebrow mb-4 reveal" style="color:var(--color-primary)">THE PROBLEM</p>
+      <h2 class="section-heading text-3xl md:text-4xl mb-12 text-balance reveal" style="color:var(--color-on-surface);line-height:1.3">
+        You're not an agency. You're a screenshot factory.
+      </h2>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Card 1: Manual reporting waste -->
+        <div class="card reveal">
+          <div class="type-stat text-5xl md:text-6xl mb-3" style="color:var(--color-primary)">3-4 hrs/wk</div>
+          <p class="eyebrow mb-2" style="color:var(--color-primary)">Per Client</p>
+          <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+            That's how long your team spends each week pulling screenshots, pasting them into Slack, 
+            and formatting updates for a single client. It's not billable. It's just overhead.
+          </p>
+        </div>
+
+        <!-- Card 2: Credential risk callback -->
+        <div class="card reveal" style="transition-delay:0.1s">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(186,26,26,0.10);color:var(--color-error)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <p style="font-family:Inter;font-weight:600;font-size:15px;margin-bottom:8px;color:var(--color-on-surface)">Every login is a risk</p>
+          <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+            Each client you share credentials with is one accidental pause away from breaking a live 
+            campaign. You've seen it happen. Or you're waiting for it.
+          </p>
+        </div>
+
+        <!-- Card 3: Silent client bridge -->
+        <div class="card reveal" style="transition-delay:0.2s">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(173,241,207,0.2);color:var(--color-primary)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </div>
+          <p style="font-family:Inter;font-weight:600;font-size:15px;margin-bottom:8px;color:var(--color-on-surface)">"No news" isn't good news</p>
+          <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+            When clients go quiet, they're not satisfied — they're detaching. By the time they send 
+            a cancellation, they stopped feeling informed weeks ago.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       D. HOW IT WORKS — 3 product mockups
+       ============================================= -->
+  <section class="py-20 md:py-28" id="how-it-works" style="background:var(--color-surface)">
+    <div class="max-w-6xl mx-auto px-5">
+      <p class="eyebrow mb-4 reveal" style="color:var(--color-primary)">HOW IT WORKS</p>
+      <h2 class="section-heading text-3xl md:text-4xl mb-4 reveal" style="color:var(--color-on-surface);line-height:1.3">
+        Your existing workflow, with one difference — clients see what matters without touching your tools.
+      </h2>
+      <p class="text-base mb-14 max-w-2xl reveal" style="color:var(--color-on-surface-variant);line-height:1.6">
+        Klaroh sits on top of Smartlead, Instantly, or any other sending infrastructure you already use. 
+        No migration. No disruption. Just a client-facing layer that replaces shared logins and manual updates.
+      </p>
+
+      <div class="space-y-8">
+        <!-- Feature 1: Live Dashboard -->
+        <div class="card reveal">
+          <div class="grid md:grid-cols-5 gap-6 items-center">
+            <div class="md:col-span-2">
+              <h3 class="text-xl md:text-2xl mb-3" style="color:var(--color-on-surface);line-height:1.3">Live dashboard, no login required</h3>
+              <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+                Clients get a shareable link — no account, no password, no risk. They see live campaign 
+                stats: sent, opened, replied, booked. That's it. Your Smartlead credentials stay yours.
+              </p>
+            </div>
+            <div class="md:col-span-3">
+              <!-- Mini stat mockup -->
+              <div class="card card-stat p-4" style="background:var(--color-surface-container-lowest)">
+                <div class="grid grid-cols-4 gap-3 text-center">
+                  <div>
+                    <div class="type-stat text-xl" style="color:var(--color-primary)">12.8k</div>
+                    <p class="eyebrow text-[10px]" style="color:var(--color-on-surface-variant)">Sent</p>
+                  </div>
+                  <div>
+                    <div class="type-stat text-xl" style="color:var(--color-primary)">3.4k</div>
+                    <p class="eyebrow text-[10px]" style="color:var(--color-on-surface-variant)">Opened</p>
+                  </div>
+                  <div>
+                    <div class="type-stat text-xl" style="color:var(--color-primary)">847</div>
+                    <p class="eyebrow text-[10px]" style="color:var(--color-on-surface-variant)">Replied</p>
+                  </div>
+                  <div>
+                    <div class="type-stat text-xl" style="color:var(--color-primary)">203</div>
+                    <p class="eyebrow text-[10px]" style="color:var(--color-on-surface-variant)">Booked</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: Automated Updates -->
+        <div class="card reveal">
+          <div class="grid md:grid-cols-5 gap-6 items-center">
+            <div class="md:col-span-2">
+              <h3 class="text-xl md:text-2xl mb-3" style="color:var(--color-on-surface);line-height:1.3">Automated updates, zero screenshots</h3>
+              <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+                Post a remark once and it's visible to the client instantly — no Slack thread, no email 
+                chain, no copy-paste. Each update shows a stage, a timestamp, and context.
+              </p>
+            </div>
+            <div class="md:col-span-3">
+              <!-- Remark posting mockup -->
+              <div class="card p-4 space-y-3" style="background:var(--color-surface-container-lowest)">
+                <!-- Post form mockup -->
+                <div class="flex gap-3 items-center pb-3" style="border-bottom:1px solid rgba(191,201,193,0.3)">
+                  <span class="badge badge-success text-[10px]">Live</span>
+                  <span class="text-sm" style="font-family:Inter;color:var(--color-on-surface-variant))">Campaign running — steady reply rate</span>
+                </div>
+                <!-- Timeline entries -->
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5" style="background:var(--color-primary)"></div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-success">Live</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Today, 10:23 AM</span>
+                    </div>
+                    <p class="text-sm mt-1" style="font-family:Inter;color:var(--color-on-surface-variant)">Q2 Outreach sequence — 847 replies this week, reply rate holding at 6.8%</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5" style="background:var(--color-primary)"></div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-warning">Action Required</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Yesterday, 4:15 PM</span>
+                    </div>
+                    <p class="text-sm mt-1" style="font-family:Inter;color:var(--color-on-surface-variant)">Bounce rate hit 12% on the "June Prod" list — reviewing warming status</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5" style="background:var(--color-primary)"></div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="badge badge-success">Live</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Yesterday, 9:45 AM</span>
+                    </div>
+                    <p class="text-sm mt-1" style="font-family:Inter;color:var(--color-on-surface-variant)">Sent 3,200 new leads into "June Prod" sequence — first results expected Tuesday</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3: Activity Timeline -->
+        <div class="card reveal">
+          <div class="grid md:grid-cols-5 gap-6 items-center">
+            <div class="md:col-span-2">
+              <h3 class="text-xl md:text-2xl mb-3" style="color:var(--color-on-surface);line-height:1.3">A timeline that proves you're paying attention</h3>
+              <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+                Every campaign update, stage change, and team remark lives in a scrollable timeline. 
+                Clients see the cadence of your work — not just the results.
+              </p>
+            </div>
+            <div class="md:col-span-3">
+              <!-- Timeline stack -->
+              <div class="card p-4 space-y-3" style="background:var(--color-surface-container-lowest)">
+                <div class="flex items-center gap-3 pb-2" style="border-bottom:1px solid rgba(191,201,193,0.3)">
+                  <span class="type-stat text-lg" style="color:var(--color-primary)">Activity</span>
+                  <span class="text-xs ml-auto" style="font-family:Inter;color:var(--color-outline)">Past 7 days</span>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5 shrink-0" style="background:var(--color-primary)"></div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="badge badge-success">Live</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Today, 10:23 AM</span>
+                    </div>
+                    <p class="text-sm mt-0.5" style="font-family:Inter;color:var(--color-on-surface-variant)">Campaign running — 847 replies, 6.8% reply rate</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5 shrink-0" style="background:var(--color-error)"></div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="badge badge-warning">Campaign Paused</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Yesterday, 4:15 PM</span>
+                    </div>
+                    <p class="text-sm mt-0.5" style="font-family:Inter;color:var(--color-on-surface-variant)">Bounce spike paused "June Prod" — warming review in progress</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5 shrink-0" style="background:var(--color-primary)"></div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="badge badge-success">Live</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">Yesterday, 9:45 AM</span>
+                    </div>
+                    <p class="text-sm mt-0.5" style="font-family:Inter;color:var(--color-on-surface-variant)">3,200 leads loaded into "June Prod" sequence</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 py-2">
+                  <div class="w-2 h-2 rounded-full mt-1.5 shrink-0" style="background:var(--color-primary)"></div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="badge badge-success">Live</span>
+                      <span class="text-xs" style="font-family:Inter;color:var(--color-outline)">2 days ago, 2:30 PM</span>
+                    </div>
+                    <p class="text-sm mt-0.5" style="font-family:Inter;color:var(--color-on-surface-variant)">A/B test variant B winning by 22% — pausing variant A</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       E. PHILOSOPHY / MANIFESTO — Pain #1 (silent churn) finally revealed
+       ============================================= -->
+  <section class="relative py-24 md:py-32 overflow-hidden" style="background:var(--color-primary)">
+    <!-- AuthBranding-style glow circles in white/mint -->
+    <div class="glow-circle w-[500px] h-[500px] -top-40 -right-20" style="background:rgba(173,241,207,0.08)"></div>
+    <div class="glow-circle w-[400px] h-[400px] -bottom-40 -left-20" style="background:rgba(255,255,255,0.05)"></div>
+
+    <div class="relative max-w-4xl mx-auto px-5 text-center reveal">
+      <p class="text-sm mb-6" style="font-family:Inter;font-weight:500;color:rgba(173,241,207,0.7);letter-spacing:0.04em">
+        Most agencies think clients leave because results dropped.
+      </p>
+      <h2 class="text-3xl md:text-5xl lg:text-6xl text-balance" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;line-height:1.2;color:var(--color-on-primary)">
+        Clients leave because they stopped feeling informed&nbsp;<span style="color:var(--color-primary-fixed)">— then it's already too late.</span>
+      </h2>
+      <p class="mt-8 max-w-2xl mx-auto text-base" style="font-family:Inter;color:rgba(173,241,207,0.8);line-height:1.6">
+        Retention isn't about better results. It's about never letting a client go quiet. Klaroh is the 
+        layer between your work and your client's confidence — a timeline that proves, every day, 
+        that someone is paying attention.
+      </p>
+    </div>
+  </section>
+
+  <!-- =============================================
+       F. OLD WAY vs KLAROH
+       ============================================= -->
+  <section class="py-20 md:py-28" id="pricing" style="background:var(--color-surface-container-low)">
+    <div class="max-w-5xl mx-auto px-5">
+      <p class="eyebrow mb-4 reveal" style="color:var(--color-primary)">THE OLD WAY vs KLAROH</p>
+      <h2 class="section-heading text-3xl md:text-4xl mb-12 reveal" style="color:var(--color-on-surface);line-height:1.3">
+        Three things you're doing today. One simple replacement each.
+      </h2>
+
+      <div class="grid md:grid-cols-2 gap-0 md:gap-6">
+        <!-- Left column: Without -->
+        <div class="card mb-4 md:mb-0 reveal">
+          <p class="text-lg font-semibold mb-6" style="font-family:Inter;color:var(--color-error)">Without Klaroh</p>
+          <div class="space-y-5">
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(186,26,26,0.10);color:var(--color-error)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">Shared tool login</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">Clients get credentials to Smartlead or Instantly. One wrong click pauses a live campaign.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(186,26,26,0.10);color:var(--color-error)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">Manual screenshots into Sheets/Notion</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">3-4 hours per client each week spent copying data into Slack, email, or a shared doc.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(186,26,26,0.10);color:var(--color-error)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">Hoping clients don't quietly lose confidence</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">No signal between "all seems fine" and a cancellation email.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: With -->
+        <div class="card reveal" style="transition-delay:0.1s">
+          <p class="text-lg font-semibold mb-6" style="font-family:Inter;color:var(--color-primary)">With Klaroh</p>
+          <div class="space-y-5">
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(173,241,207,0.2);color:var(--color-primary)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">No-login client view</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">A shareable link with live stats. Clients see progress. They never touch your tool.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(173,241,207,0.2);color:var(--color-primary)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">Automated live updates</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">One remark in Klaroh replaces the Slack message, the email, and the screenshot.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style="background:rgba(173,241,207,0.2);color:var(--color-primary)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <p style="font-family:Inter;font-weight:600;font-size:14px;color:var(--color-on-surface)">A timeline that shows you're paying attention</p>
+                <p style="font-family:Inter;font-size:13px;color:var(--color-on-surface-variant);margin-top:2px">Every update, stage change, and remark builds a visible record of your work.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       G. FAQ
+       ============================================= -->
+  <section class="py-20 md:py-28" style="background:var(--color-surface)">
+    <div class="max-w-3xl mx-auto px-5">
+      <p class="eyebrow mb-4 reveal" style="color:var(--color-primary)">FAQ</p>
+      <h2 class="section-heading text-3xl md:text-4xl mb-12 reveal" style="color:var(--color-on-surface);line-height:1.3">
+        Questions you're probably asking.
+      </h2>
+
+      <div class="space-y-2 reveal">
+        <!-- Q1 -->
+        <div class="card p-5" style="border-radius:8px">
+          <div class="faq-question flex items-center justify-between" data-index="0">
+            <h3 class="text-lg" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;color:var(--color-on-surface);line-height:1.3">Does this replace Smartlead or Instantly?</h3>
+            <span class="faq-toggle shrink-0 ml-4 text-lg" style="color:var(--color-primary);font-family:Inter;font-weight:300;line-height:1">+</span>
+          </div>
+          <div class="faq-answer mt-3">
+            <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+              No. Klaroh sits on top of whatever sending infrastructure you already use. It pulls in 
+              campaign data via API and gives clients a read-only view. Your Smartlead, Instantly, 
+              or other tools stay exactly as they are.
+            </p>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="card p-5" style="border-radius:8px">
+          <div class="faq-question flex items-center justify-between" data-index="1">
+            <h3 class="text-lg" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;color:var(--color-on-surface);line-height:1.3">Will my clients actually check it?</h3>
+            <span class="faq-toggle shrink-0 ml-4 text-lg" style="color:var(--color-primary);font-family:Inter;font-weight:300;line-height:1">+</span>
+          </div>
+          <div class="faq-answer mt-3">
+            <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+              That's the theory we're betting on — and we're still validating the exact engagement 
+              numbers. What we've heard from agencies so far is that clients who used to ask for 
+              weekly updates stop asking once they have a live dashboard. Early signals are 
+              promising.
+            </p>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="card p-5" style="border-radius:8px">
+          <div class="faq-question flex items-center justify-between" data-index="2">
+            <h3 class="text-lg" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;color:var(--color-on-surface);line-height:1.3">Is this just another reporting dashboard?</h3>
+            <span class="faq-toggle shrink-0 ml-4 text-lg" style="color:var(--color-primary);font-family:Inter;font-weight:300;line-height:1">+</span>
+          </div>
+          <div class="faq-answer mt-3">
+            <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+              No. Reporting dashboards show numbers. Klaroh shows you're paying attention. The 
+              activity timeline — the remarks, stage updates, and context your team posts every 
+              day — is the actual product. The stats are just proof that the work is happening.
+            </p>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="card p-5" style="border-radius:8px">
+          <div class="faq-question flex items-center justify-between" data-index="3">
+            <h3 class="text-lg" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;color:var(--color-on-surface);line-height:1.3">How long does setup take?</h3>
+            <span class="faq-toggle shrink-0 ml-4 text-lg" style="color:var(--color-primary);font-family:Inter;font-weight:300;line-height:1">+</span>
+          </div>
+          <div class="faq-answer mt-3">
+            <p style="font-family:Inter;font-size:14px;line-height:1.6;color:var(--color-on-surface-variant)">
+              Most agencies are up and running in under 15 minutes. Connect your Smartlead or 
+              Instantly account via API, invite your first client, and you're live. No onboarding 
+              calls, no implementation project.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       H. FINAL CTA
+       ============================================= -->
+  <section class="py-20 md:py-28 text-center" style="background:var(--color-surface-container-low)">
+    <div class="max-w-3xl mx-auto px-5 reveal">
+      <h2 class="text-3xl md:text-4xl mb-6 text-balance" style="font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-weight:400;color:var(--color-on-surface);line-height:1.2">
+        Stop handing out logins.<br />
+        Start handing out confidence.
+      </h2>
+      <a href="https://app.klaroh.online" class="btn btn-primary text-base px-8 py-4">Book Your Demo Call</a>
+      <p class="mt-5 text-sm" style="font-family:Inter;color:var(--color-on-surface-variant);line-height:1.5">
+        Built for agencies who've already been burned once.
+      </p>
+    </div>
+  </section>
+
+  <!-- =============================================
+       I. FOOTER
+       ============================================= -->
+  <footer style="background:var(--color-surface-container-lowest);border-top:1px solid rgba(191,201,193,0.2)">
+    <div class="max-w-6xl mx-auto px-5 py-10">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <!-- Left -->
+        <div>
+          <p style="font-family:Inter;font-weight:600;font-size:16px;color:var(--color-on-surface);letter-spacing:-0.01em">Klaroh</p>
+          <p class="text-sm mt-1" style="font-family:Inter;color:var(--color-on-surface-variant)">Client visibility for cold email &amp; outbound agencies.</p>
+        </div>
+
+        <!-- Right: nav + legal -->
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8">
+          <a href="#features" class="text-sm" style="font-family:Inter;color:var(--color-on-surface-variant)">Features</a>
+          <a href="#how-it-works" class="text-sm" style="font-family:Inter;color:var(--color-on-surface-variant)">How It Works</a>
+          <a href="#pricing" class="text-sm" style="font-family:Inter;color:var(--color-on-surface-variant)">Pricing</a>
+          <span class="text-sm" style="font-family:Inter;color:var(--color-outline)">Privacy</span>
+          <span class="text-sm" style="font-family:Inter;color:var(--color-outline)">Terms</span>
+
+          <!-- Status indicator -->
+          <div class="flex items-center gap-2 text-xs" style="font-family:Inter;color:var(--color-on-surface-variant)">
+            <span class="status-dot"></span>
+            System Operational
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 pt-6 text-center text-xs" style="border-top:1px solid rgba(191,201,193,0.2);font-family:Inter;color:var(--color-outline)">
+        &copy; 2026 Klaroh. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- =============================================
+       JAVASCRIPT
+       ============================================= -->
+  <script>
+    (function() {
+      'use strict';
+
+      /* --- Mobile menu --- */
+      var openBtn = document.getElementById('openMenu');
+      var closeBtn = document.getElementById('closeMenu');
+      var menu = document.getElementById('mobileMenu');
+      var overlay = document.getElementById('mobileOverlay');
+
+      function openMenuFn() { menu.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+      function closeMenuFn() { menu.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+      if (openBtn) openBtn.addEventListener('click', openMenuFn);
+      if (closeBtn) closeBtn.addEventListener('click', closeMenuFn);
+      if (overlay) overlay.addEventListener('click', closeMenuFn);
+
+      /* Close menu on nav link click */
+      menu.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', closeMenuFn);
+      });
+
+      /* --- Scroll-triggered navbar --- */
+      var navbar = document.getElementById('navbar');
+      var lastScroll = 0;
+
+      window.addEventListener('scroll', function() {
+        var scrollY = window.scrollY;
+        if (scrollY > 60) {
+          navbar.classList.add('navbar-scrolled');
+        } else {
+          navbar.classList.remove('navbar-scrolled');
+        }
+        lastScroll = scrollY;
+      });
+
+      /* --- Scroll reveal (IntersectionObserver) --- */
+      var revealEls = document.querySelectorAll('.reveal');
+
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+        revealEls.forEach(function(el) { observer.observe(el); });
+      } else {
+        revealEls.forEach(function(el) { el.classList.add('visible'); });
+      }
+
+      /* --- FAQ accordion --- */
+      var questions = document.querySelectorAll('.faq-question');
+
+      questions.forEach(function(q) {
+        q.addEventListener('click', function() {
+          var answer = this.nextElementSibling;
+          var toggle = this.querySelector('.faq-toggle');
+
+          if (answer.classList.contains('open')) {
+            answer.classList.remove('open');
+            toggle.classList.remove('open');
+          } else {
+            answer.classList.add('open');
+            toggle.classList.add('open');
+          }
+        });
+      });
+
+    })();
+  </script>
+</body>
 </html>
