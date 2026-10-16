@@ -9,27 +9,28 @@ everything else is maintained by hand. "Expected" columns are plans, not observa
 <!-- access-table:start -->
 | Source | Probe URL | Latest result | Checked (UTC) |
 |---|---|---|---|
-| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | http_challenge | 2026-10-16T17:28:00Z |
-| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/comments/tree?link_id=t3_1x5rvba&limit=50` | ok | 2026-10-16T17:28:00Z |
-| BiggerPockets forums | `https://www.biggerpockets.com/forums/52` | ok | 2026-10-16T17:28:00Z |
-| Capterra | `https://www.capterra.com/p/156181/Karbon/reviews/` | ok | 2026-10-16T17:28:00Z |
-| G2 | `https://www.g2.com/` | http_403 | 2026-10-16T17:28:00Z |
+| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | http_challenge | 2026-10-16T17:45:00Z |
+| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/posts/ids?ids=1x5rvba` | ok | 2026-10-16T17:45:00Z |
+| BiggerPockets forums | `https://www.biggerpockets.com/forums/52` | ok | 2026-10-16T17:45:00Z |
+| Capterra | `https://www.capterra.com/p/127994/Jobber/reviews/` | ok | 2026-10-16T17:45:00Z |
+| G2 | `https://www.g2.com/` | http_403 | 2026-10-16T17:45:00Z |
 | GetApp | `https://www.getapp.com/project-management-planning-software/a/karbon/` | ok | 2026-10-16T17:28:00Z |
 | GitHub REST API | `https://api.github.com/search/issues?q=invoice&per_page=1` | http_403 | 2026-10-16T17:23:14Z |
 | Hacker News Algolia API | `https://hn.algolia.com/api/v1/search?query=bookkeeping&tags=comment&hitsPerPage=1` | ok | 2026-10-16T17:28:00Z |
 | Hacker News site | `https://news.ycombinator.com/` | ok | 2026-10-16T17:23:13Z |
-| Product Hunt | `https://www.producthunt.com/` | http_403 | 2026-10-16T17:28:00Z |
+| Product Hunt | `https://www.producthunt.com/` | http_403 | 2026-10-16T17:45:00Z |
 | QuickBooks Community | `https://quickbooks.intuit.com/` | ok | 2026-10-16T17:28:00Z |
-| Reddit (old) JSON | `https://old.reddit.com/r/Bookkeeping/top.json?t=year&limit=3` | http_302 | 2026-10-16T17:28:00Z |
+| Reddit (old) JSON | `https://old.reddit.com/r/Bookkeeping/.json` | http_302 | 2026-10-16T17:45:00Z |
 | Reddit JSON | `https://www.reddit.com/r/Bookkeeping/top.json?t=year&limit=3` | http_403 | 2026-10-16T17:28:00Z |
 | Shell HTTP (google.com, wikipedia.org) | `https://www.google.com/` | ok | 2026-10-16T17:28:00Z |
 | Shopify App Store | `https://apps.shopify.com/stocky/reviews?ratings%5B%5D=1` | ok | 2026-10-16T17:28:00Z |
 | Shopify Community | `https://community.shopify.com/c/shopify-discussions/bd-p/shopify-discussion` | ok | 2026-10-16T17:28:00Z |
 | Stack Exchange API | `https://api.stackexchange.com/2.3/search?intitle=quickbooks&site=money&pagesize=1` | ok | 2026-10-16T17:28:00Z |
-| Trustpilot | `https://www.trustpilot.com/` | http_403 | 2026-10-16T17:28:00Z |
+| Trustpilot | `https://www.trustpilot.com/` | http_403 | 2026-10-16T17:45:00Z |
 | Wayback Machine | `https://web.archive.org/` | ok | 2026-10-16T17:28:00Z |
 | WebFetch tool | `https://www.biggerpockets.com/forums/52` | ok | 2026-10-16T17:28:00Z |
-| WebSearch tool | `websearch:bookkeeping practice chasing clients for documents every month workaround` | ok | 2026-10-16T17:20:00Z |
+| WebFetch tool (Capterra) | `https://www.capterra.com/p/127994/Jobber/reviews/` | http_403 | 2026-10-16T17:45:00Z |
+| WebSearch tool | `websearch:Jobber reviews field service small business complaints` | ok | 2026-10-16T17:45:00Z |
 | WordPress.org plugins | `https://wordpress.org/plugins/` | ok | 2026-10-16T17:23:17Z |
 <!-- access-table:end -->
 
@@ -58,7 +59,7 @@ Content-level checks (an HTTP 200 alone is not counted: each page was inspected 
 | HN Algolia, Stack Exchange API | Real content returned. | Used. |
 | QuickBooks Community, Wayback | Connect, but slow (>20 s); probe timeout reports `error`. | Usable with a longer timeout. |
 | WebSearch | Works; titles, URLs, model-written summary. | Leads only; never quoted. |
-| WebFetch | Works now (returned BiggerPockets topic list). Output is a model summary. | Never quoted; pages are snapped instead. |
+| WebFetch | Works on BiggerPockets; Capterra answers it with 403 (the shell works for the same page). Output is a model summary. | Never quoted; pages are snapped from the shell instead. |
 | Apify connector | Not re-tested; not needed. | Not used. |
 
 ## Sources by type
