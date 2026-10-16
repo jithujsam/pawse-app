@@ -3,7 +3,7 @@ import { z } from "zod";
 // Every setting comes from the environment. See .env.example for meanings.
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  APP_URL: z.string().url().default("http://localhost:3000"),
+  APP_URL: z.string().url().default(vercelUrl() ?? "http://localhost:3000"),
 
   DATABASE_URL: z.string().optional(),
   PGLITE_DIR: z.string().default(".data/pglite"),
@@ -55,6 +55,13 @@ const schema = z.object({
 });
 
 export type Config = z.infer<typeof schema>;
+
+/** On Vercel, default APP_URL to the production domain (or the preview URL on previews). */
+function vercelUrl(): string | undefined {
+  const e = process.env;
+  const host = e.VERCEL_ENV === "production" ? (e.VERCEL_PROJECT_PRODUCTION_URL ?? e.VERCEL_URL) : e.VERCEL_URL;
+  return host ? `https://${host}` : undefined;
+}
 
 let cached: Config | undefined;
 
