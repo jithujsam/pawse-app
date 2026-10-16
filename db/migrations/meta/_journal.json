@@ -15,6 +15,13 @@
       "when": 1792150620274,
       "tag": "0001_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792156177250,
+      "tag": "0002_system_table_policies",
+      "breakpoints": true
     }
   ]
 }

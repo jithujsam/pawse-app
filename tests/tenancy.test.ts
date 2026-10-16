@@ -50,6 +50,29 @@ describe("tenant isolation", () => {
     expect(updated).toEqual([]);
   });
 
+  it("tenant code can queue work and record analytics, but cannot read system tables", async () => {
+    const a = await makeOrg(db, "A");
+    // createJob enqueues nothing but records analytics; importCsv records analytics too.
+    await createJob(a.org.id, a.user.id, SAMPLE_JOB);
+    const res = await db.execute(sql`select relname from pg_class where relrowsecurity and relnamespace = 'public'::regnamespace`);
+    const rls = new Set((res as unknown as { rows: { relname: string }[] }).rows.map((r) => r.relname));
+    for (const t of ["users", "sessions", "login_tokens", "webhook_events", "job_queue", "analytics_events"]) expect(rls.has(t), t).toBe(true);
+    expect(await withOrg(a.org.id, (tx) => tx.execute(sql`select * from users`)).then((r) => (r as unknown as { rows: unknown[] }).rows)).toEqual([]);
+    expect(await withOrg(a.org.id, (tx) => tx.execute(sql`select * from sessions`)).then((r) => (r as unknown as { rows: unknown[] }).rows)).toEqual([]);
+    expect(await withOrg(a.org.id, (tx) => tx.execute(sql`select * from job_queue where payload->>'orgId' <> ${a.org.id}`)).then((r) => (r as unknown as { rows: unknown[] }).rows)).toEqual([]);
+  });
+
+  it("tenant code can only queue work for its own org", async () => {
+    const a = await makeOrg(db, "A");
+    const b = await makeOrg(db, "B");
+    const { enqueue } = await import("@/lib/jobs/queue");
+    await withOrg(a.org.id, (tx) => enqueue(tx, "sweep", { orgId: a.org.id }));
+    await expect(withOrg(a.org.id, (tx) => enqueue(tx, "sweep", { orgId: b.org.id }))).rejects.toThrow();
+    // Org B can't see org A's queued work.
+    const seen = await withOrg(b.org.id, (tx) => tx.execute(sql`select * from job_queue`));
+    expect((seen as unknown as { rows: unknown[] }).rows).toEqual([]);
+  });
+
   it("rejects a non-uuid org id", async () => {
     await expect(withOrg("x' or 1=1 --", async () => 1)).rejects.toThrow();
   });

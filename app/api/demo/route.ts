@@ -3,7 +3,7 @@ import { config } from "@/lib/config";
 import { asSystem } from "@/lib/db/tenant";
 import { createSession } from "@/lib/auth/magic-link";
 import { setSessionCookie } from "@/lib/auth/session";
-import { ensureDemoWorkspace, findDemoOrg } from "@/lib/services/demo";
+import { DemoSeedingInProgress, ensureDemoWorkspace, findDemoOrg } from "@/lib/services/demo";
 import { track } from "@/lib/domain/audit";
 import { clientIp, hit } from "@/lib/ratelimit";
 
@@ -21,7 +21,17 @@ export async function POST(req: NextRequest) {
     if (config().SCORER_PROVIDER !== "mock") {
       return new NextResponse("Demo data not seeded. Run `npm run db:seed`.", { status: 503 });
     }
-    demo = await ensureDemoWorkspace();
+    try {
+      demo = await ensureDemoWorkspace();
+    } catch (e) {
+      if (e instanceof DemoSeedingInProgress) {
+        return new NextResponse("The demo workspace is being set up. Please try again in a minute.", {
+          status: 503,
+          headers: { "Retry-After": "60" },
+        });
+      }
+      throw e;
+    }
   }
   const { userId, orgId } = demo;
   const session = await asSystem(async (tx) => {

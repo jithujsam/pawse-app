@@ -32,7 +32,8 @@ async function connect(): Promise<DB> {
   if (url) {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
-    const pool = new Pool({ connectionString: url, max: 5 });
+    const { poolOptions } = await import("./pg-options.mjs");
+    const pool = new Pool({ ...poolOptions(url), max: 5 });
     return drizzle(pool, { schema }) as unknown as DB;
   }
   const dir = config().PGLITE_DIR;

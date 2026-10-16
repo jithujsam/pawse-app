@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, exists, lt, notExists, sql } from "drizzle-orm";
 import { asSystem, withOrg } from "../db/tenant";
-import { candidates, memberships, organizations, users } from "../db/schema";
+import { auditLog, candidates, memberships, organizations, users } from "../db/schema";
 import { paymentsFor, whatsappFor } from "../adapters";
 import { signMockPayment } from "../adapters/payments";
 import { drainQueue } from "../jobs";
@@ -10,6 +10,7 @@ import { blindIndex, encrypt } from "../crypto";
 import { consents } from "../db/schema";
 import { PRIVACY_NOTICE_VERSION } from "../domain/copy";
 import { createCheckout, handlePaymentWebhook } from "./payments";
+import { audit } from "../domain/audit";
 import { receiveWhatsAppWebhook } from "./outreach";
 
 export const DEMO_EMAIL = "demo@example.com";
@@ -121,6 +122,12 @@ const PEOPLE: { name: string; phone: string; lang: "en" | "hi"; script: (string 
   { name: "Sachin Gaikwad", phone: "+919000010009", lang: "en", script: [] },
 ];
 
+const READY = "demo.ready";
+const demoOrgOf = and(eq(organizations.isDemo, true), eq(users.email, DEMO_EMAIL));
+const isReady = (tx: Parameters<Parameters<typeof asSystem>[0]>[0]) =>
+  tx.select({ one: sql`1` }).from(auditLog).where(and(eq(auditLog.orgId, organizations.id), eq(auditLog.action, READY)));
+
+/** The fully seeded demo workspace, or null. A half-seeded one (interrupted run) doesn't count. */
 export async function findDemoOrg() {
   const [row] = await asSystem((tx) =>
     tx
@@ -128,11 +135,38 @@ export async function findDemoOrg() {
       .from(organizations)
       .innerJoin(memberships, eq(memberships.orgId, organizations.id))
       .innerJoin(users, eq(users.id, memberships.userId))
-      .where(and(eq(organizations.isDemo, true), eq(users.email, DEMO_EMAIL)))
+      .where(and(demoOrgOf, exists(isReady(tx))))
       .orderBy(desc(organizations.createdAt))
       .limit(1),
   );
   return row ?? null;
+}
+
+/** True while another request is seeding (an unfinished demo org from the last few minutes). */
+async function seedingInProgress() {
+  const [row] = await asSystem((tx) =>
+    tx
+      .select({ id: organizations.id })
+      .from(organizations)
+      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
+      .innerJoin(users, eq(users.id, memberships.userId))
+      .where(and(demoOrgOf, notExists(isReady(tx)), sql`${organizations.createdAt} > now() - interval '3 minutes'`))
+      .limit(1),
+  );
+  return Boolean(row);
+}
+
+/** Remove demo orgs whose seeding was interrupted (their rows cascade). */
+async function removeAbandonedDemoOrgs() {
+  await asSystem(async (tx) => {
+    const stale = await tx
+      .select({ id: organizations.id })
+      .from(organizations)
+      .innerJoin(memberships, eq(memberships.orgId, organizations.id))
+      .innerJoin(users, eq(users.id, memberships.userId))
+      .where(and(demoOrgOf, notExists(isReady(tx)), lt(organizations.createdAt, sql`now() - interval '3 minutes'`)));
+    for (const o of stale) await tx.delete(organizations).where(eq(organizations.id, o.id));
+  });
 }
 
 let seq = 0;
@@ -142,10 +176,14 @@ async function say(phone: string, msg: string | { voice: string }) {
   await receiveWhatsAppWebhook(body, new Headers(), whatsappFor(true));
 }
 
-/** Create the demo workspace by running the real flow on simulated providers. Idempotent. */
+export class DemoSeedingInProgress extends Error {}
+
+/** Create the demo workspace by running the real flow on simulated providers. Idempotent and retry-safe. */
 export async function ensureDemoWorkspace() {
   const existing = await findDemoOrg();
   if (existing) return existing;
+  if (await seedingInProgress()) throw new DemoSeedingInProgress();
+  await removeAbandonedDemoOrgs();
 
   const { orgId, userId } = await asSystem(async (tx) => {
     let [user] = await tx.select().from(users).where(eq(users.email, DEMO_EMAIL));
@@ -202,6 +240,8 @@ export async function ensureDemoWorkspace() {
     { name: "Rahul Mishra", phone: "+919000020002", lang: "hi" },
     { name: "Pooja Yadav", phone: "+919000020003", lang: "en" },
   ]);
+  // Only now does the workspace count as ready.
+  await withOrg(orgId, (tx) => audit(tx, orgId, READY, "organization", orgId, { kind: "system" }));
   return { orgId, userId };
 }
 

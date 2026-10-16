@@ -20,6 +20,13 @@ What works in this mode: everything in `docs/DEMO.md`. Email sign-in is switched
 
 **Preview deployments** (any branch other than `main`) are protected by Vercel Authentication by default, so only people on your Vercel team can open them. Use the production URL for prospects, or turn protection off under *Settings → Deployment Protection*.
 
+## Using Supabase instead of Neon
+- In Vercel, set `DATABASE_URL` to Supabase's **Transaction pooler** string (port 6543) and `DATABASE_URL_UNPOOLED` to the **Session pooler** string (port 5432). Vercel's Supabase integration names them `POSTGRES_URL` and `POSTGRES_URL_NON_POOLING`; both naming styles work.
+- Don't create tables by hand: the build does it. If tables already exist from a manual run, the build would fail with "already exists"; mark the existing migrations as applied in `drizzle.__drizzle_migrations` first.
+- Supabase signs its certificates with its own root CA, which Node doesn't trust by default. `db/certs/supabase-root-2021.crt` is bundled and used automatically, so connections stay verified. `DATABASE_SSL_NO_VERIFY=true` exists only as a last resort and turns verification off.
+- Supabase's `ensure_rls` trigger enables row-level security on every new table, and its Data API roles (`anon`, `authenticated`) get access to every table by default. Migration `0002` handles both: narrow policies for the app's own role, and all access removed from the Data API roles (this app doesn't use them).
+- **Keep the app and the database in the same region.** `vercel.json` pins functions to `hnd1` (Tokyo) to match the current Supabase project in `ap-northeast-1`. If you move the database (Mumbai is `ap-south-1`), change `regions` to the matching Vercel region (`bom1`). With them on different continents, every page is slow and seeding the demo can exceed the 60-second limit.
+
 ## Going live per provider
 - **Email:** `MAILER_PROVIDER=resend`, `RESEND_API_KEY`, `MAIL_FROM` on a verified domain. Turns on email sign-in.
 - **Scoring:** `SCORER_PROVIDER=claude`, `ANTHROPIC_API_KEY`. (Then seed the demo with `npm run db:seed` instead of the first click.)

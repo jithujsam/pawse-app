@@ -67,7 +67,8 @@ let cached: Config | undefined;
 
 export function config(): Config {
   if (!cached) {
-    cached = schema.parse(process.env);
+    // Vercel's Supabase/Neon integrations name the connection POSTGRES_URL.
+    cached = schema.parse({ ...process.env, DATABASE_URL: process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined });
     if (cached.NODE_ENV === "production") assertProductionSafe(cached);
   }
   return cached;
@@ -82,7 +83,7 @@ function assertProductionSafe(c: Config) {
   // Refuse to boot production with development defaults.
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   const problems: string[] = [];
-  if (!c.DATABASE_URL) problems.push("DATABASE_URL is required in production");
+  if (!c.DATABASE_URL) problems.push("DATABASE_URL (or POSTGRES_URL) is required in production");
   if (c.SESSION_SECRET === "dev-session-secret-change-me") problems.push("SESSION_SECRET must be set");
   if (/^0+$/.test(c.DATA_ENCRYPTION_KEY)) problems.push("DATA_ENCRYPTION_KEY must be set");
   if (problems.length) throw new Error(`Unsafe production config: ${problems.join("; ")}`);
