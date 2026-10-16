@@ -38,7 +38,7 @@ const schema = z.object({
 
   MAILER_PROVIDER: z.enum(["console", "resend"]).default("console"),
   RESEND_API_KEY: z.string().optional(),
-  MAIL_FROM: z.string().default("Pehla Round <hello@example.com>"),
+  MAIL_FROM: z.string().default("ReplyHire <hello@example.com>"),
 
   PRICE_PER_JOB_INR: z.coerce.number().int().positive().default(1499),
   MAX_CANDIDATES_PER_JOB: z.coerce.number().int().positive().default(200),
