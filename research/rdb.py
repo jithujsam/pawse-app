@@ -197,10 +197,14 @@ def ingest_record(con, rec):
                         (row[0], eid, rec.get("stance", "supports")))
     elif kind == "cluster":
         con.execute("""
-            INSERT INTO clusters (slug, segment, title, problem_statement) VALUES (?,?,?,?)
+            INSERT INTO clusters (slug, segment, title, problem_statement, status, rejection_reason)
+            VALUES (?,?,?,?,COALESCE(?,'open'),?)
             ON CONFLICT(slug) DO UPDATE SET title = excluded.title,
-              problem_statement = COALESCE(excluded.problem_statement, clusters.problem_statement)""",
-            (rec["slug"], rec["segment"], rec["title"], rec.get("problem_statement")))
+              problem_statement = COALESCE(excluded.problem_statement, clusters.problem_statement),
+              status = CASE WHEN ? IS NOT NULL THEN excluded.status ELSE clusters.status END,
+              rejection_reason = COALESCE(excluded.rejection_reason, clusters.rejection_reason)""",
+            (rec["slug"], rec["segment"], rec["title"], rec.get("problem_statement"), rec.get("status"),
+             rec.get("rejection_reason"), rec.get("status")))
     elif kind == "competitor":
         psid = upsert_source(con, rec["pricing_source"]) if rec.get("pricing_source") else None
         con.execute("""
@@ -210,12 +214,21 @@ def ingest_record(con, rec):
               pricing_source_id = COALESCE(excluded.pricing_source_id, competitors.pricing_source_id),
               notes = COALESCE(excluded.notes, competitors.notes)""",
             (rec["name"], rec.get("url"), rec.get("segment"), rec.get("pricing_text"), psid, rec.get("notes")))
+    elif kind == "score":
+        row = con.execute("SELECT id FROM clusters WHERE slug = ?", (rec["cluster"],)).fetchone()
+        if not row:
+            raise ValueError(f"unknown cluster '{rec['cluster']}'")
+        con.execute("""INSERT INTO scores (cluster_id, criterion, score, basis, rationale, evidence_ids) VALUES (?,?,?,?,?,?)
+                       ON CONFLICT(cluster_id, criterion) DO UPDATE SET score = excluded.score, basis = excluded.basis,
+                         rationale = excluded.rationale, evidence_ids = excluded.evidence_ids""",
+                    (row[0], rec["criterion"], rec["score"], rec["basis"], rec["rationale"], rec.get("evidence_ids")))
     else:
         raise ValueError(f"unknown record kind: {kind!r}")
 
 
 def cmd_ingest(args):
-    order = {"run": 0, "access_check": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6}
+    order = {"run": 0, "access_check": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6,
+             "score": 7}
     with connect() as con:
         for path in args.files:
             lines = [l for l in Path(path).read_text().splitlines() if l.strip()]

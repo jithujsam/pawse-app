@@ -8,8 +8,12 @@ for on a recurring basis. Nothing gets built until a validation experiment passe
 | Phase | State |
 |---|---|
 | 1. Infrastructure audit | Done. Network access re-tested 2026-10-16 ~17:28Z: page content retrieved from Reddit (via Arctic Shift archive), Capterra/GetApp, BiggerPockets, Shopify, HN, Stack Exchange. Reddit direct, G2, Trustpilot, Product Hunt, AccountingWEB are blocked by the sites themselves (see SOURCE_CATALOG.md). |
-| 2. Pilot discovery (6 segments) | **Running, 2026-10-16.** Three researchers, two segments each. |
-| 3–7 | Not started. |
+| 2. Pilot discovery (6 segments) | **Done, 2026-10-16.** 30/36 queries, 76/90 fetches, 90/90 evidence; 90/90 quotes verified. |
+| 3. Clustering | Done: 21 clusters, 13 past the gate (PROBLEM_CLUSTERS.md). |
+| 4. Competitor analysis | Done for pilot scope; pricing verified for 5 incumbents (COMPETITOR_ANALYSIS.md). |
+| 5. Scoring | Done: 13 clusters scored with sensitivity checks (OPPORTUNITY_SCORECARD.md). Shortlist: `ec-multichannel-oversell`, `ag-retainer-profitability`. |
+| 6. Validation experiments | Designed, **not run** (VALIDATION_EXPERIMENTS.md). |
+| 7. Deep research | Optional; only if an experiment result is ambiguous. Summary: EXECUTIVE_REPORT.md. |
 
 ## Segments for the pilot
 
@@ -100,12 +104,16 @@ python3 research/rdb.py ingest research/findings/*.jsonl   # researcher output; 
 python3 research/rdb.py snap URL                      # one page -> snapshot + ready `source` record
 python3 research/rdb.py text SHA                      # readable snapshot text, to copy exact quotes from
 python3 research/rdb.py fetch --segment bookkeeping --limit 15
-python3 research/rdb.py verify                        # quote check + duplicate marking
+python3 research/rdb.py verify                        # quote check + duplicate marking (also reads text embedded in page scripts)
 python3 research/rdb.py stats
 ```
 
 `research/findings/*.jsonl` is the source of truth for what researchers recorded; `research.db` can be
-rebuilt from it plus `research/snapshots/`. Both are committed so work resumes across sessions.
+rebuilt from it plus `research/snapshots/`. Evidence ids (cited as E<n> in the reports and in `scores`) depend on
+ingest order, so rebuild in this order (tested 2026-10-16: identical evidence ids, scores and cluster links):
+`pilot-access-2026-10-16`, `access-recheck-2026-10-16`, `pilot-agencies`, `pilot-developers`, `pilot-bookkeeping`,
+`pilot-landlords`, `pilot-ecommerce`, `pilot-trades`, `pilot-competitor-pricing`, `pilot-scores`, `pilot-decisions`,
+then `verify`. Both are committed so work resumes across sessions.
 
 Record format (one JSON object per line, `kind` selects the table): `run`, `query`, `lead`, `source`,
 `cluster`, `competitor`, `evidence`. Evidence example:
