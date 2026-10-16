@@ -8,7 +8,7 @@ for on a recurring basis. Nothing gets built until a validation experiment passe
 | Phase | State |
 |---|---|
 | 1. Infrastructure audit | Done. Evidence store and CLI built. **Research hosts are still blocked by the network policy** (see SOURCE_CATALOG.md). |
-| 2. Pilot discovery (6 segments) | Waiting on the allowlist. |
+| 2. Pilot discovery (6 segments) | **Paused, 2026-10-16.** Re-probe: every research host still `proxy_denied` from the shell; WebFetch fails DNS for every host; WebSearch works but gives leads only. Budget used: 1/36 searches, 0/90 fetches, 0/90 evidence. Resumes when page retrieval works. |
 | 3–7 | Not started. |
 
 ## Segments for the pilot
@@ -34,6 +34,10 @@ No segment is assumed to be the winner. Each gets the same budget and the same c
 | Researcher agents | — | 3 (two segments each, distinct source lists) |
 
 Every query is logged in `queries` before it runs; a query already in the table is not repeated.
+
+**Rule on searching before fetching works (decided 2026-10-16):** searches are not spent while no page can be
+fetched. A search with no fetch produces leads that can never become verified evidence, and spending the
+36-search cap this way would leave no search budget once fetching works.
 
 ### Pilot comparison (per segment, computed from verified, non-duplicate, non-vendor evidence)
 

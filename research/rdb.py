@@ -146,6 +146,12 @@ def ingest_record(con, rec):
     if kind == "run":
         con.execute("INSERT OR IGNORE INTO runs (id, phase, segment, agent, notes) VALUES (?,?,?,?,?)",
                     (rec["id"], rec["phase"], rec.get("segment"), rec.get("agent"), rec.get("notes")))
+    elif kind == "access_check":
+        con.execute("INSERT INTO access_checks (source_name, url, method, outcome, detail, checked_at)"
+                    " SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM access_checks WHERE source_name = ?"
+                    " AND method = ? AND checked_at = ?)",
+                    (rec["source_name"], rec["url"], rec["method"], rec["outcome"], rec.get("detail"),
+                     rec["checked_at"], rec["source_name"], rec["method"], rec["checked_at"]))
     elif kind == "query":
         con.execute("INSERT OR IGNORE INTO queries (run_id, segment, tool, query, result_count) VALUES (?,?,?,?,?)",
                     (rec.get("run_id"), rec.get("segment"), rec["tool"], rec["query"], rec.get("result_count")))
@@ -201,7 +207,7 @@ def ingest_record(con, rec):
 
 
 def cmd_ingest(args):
-    order = {"run": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6}
+    order = {"run": 0, "access_check": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6}
     with connect() as con:
         for path in args.files:
             lines = [l for l in Path(path).read_text().splitlines() if l.strip()]

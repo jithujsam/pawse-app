@@ -9,25 +9,28 @@ everything else is maintained by hand. "Expected" columns are plans, not observa
 <!-- access-table:start -->
 | Source | Probe URL | Latest result | Checked (UTC) |
 |---|---|---|---|
-| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | proxy_denied | 2026-10-16T16:55:01Z |
-| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=smallbusiness&limit=1` | proxy_denied | 2026-10-16T16:54:57Z |
-| BiggerPockets forums | `https://www.biggerpockets.com/forums` | proxy_denied | 2026-10-16T16:55:02Z |
-| Capterra | `https://www.capterra.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| G2 | `https://www.g2.com/` | proxy_denied | 2026-10-16T16:54:57Z |
-| GetApp | `https://www.getapp.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| GitHub REST API | `https://api.github.com/search/issues?q=invoice&per_page=1` | http_403 | 2026-10-16T16:54:58Z |
-| Hacker News Algolia API | `https://hn.algolia.com/api/v1/search?query=invoice&hitsPerPage=1` | proxy_denied | 2026-10-16T16:54:57Z |
-| Hacker News site | `https://news.ycombinator.com/` | proxy_denied | 2026-10-16T16:54:57Z |
-| Product Hunt | `https://www.producthunt.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| QuickBooks Community | `https://quickbooks.intuit.com/learn-support/en-us/` | proxy_denied | 2026-10-16T16:55:00Z |
-| Reddit (old) JSON | `https://old.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T16:54:56Z |
-| Reddit JSON | `https://www.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T16:54:56Z |
-| Shopify App Store | `https://apps.shopify.com/` | proxy_denied | 2026-10-16T16:54:59Z |
-| Shopify Community | `https://community.shopify.com/` | proxy_denied | 2026-10-16T16:54:59Z |
-| Stack Exchange API | `https://api.stackexchange.com/2.3/info?site=webapps` | proxy_denied | 2026-10-16T16:54:59Z |
-| Trustpilot | `https://www.trustpilot.com/` | proxy_denied | 2026-10-16T16:55:01Z |
-| Wayback Machine | `https://web.archive.org/` | proxy_denied | 2026-10-16T16:55:02Z |
-| WordPress.org plugins | `https://wordpress.org/plugins/` | proxy_denied | 2026-10-16T16:55:00Z |
+| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | proxy_denied | 2026-10-16T17:14:48Z |
+| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=smallbusiness&limit=1` | proxy_denied | 2026-10-16T17:14:44Z |
+| BiggerPockets forums | `https://www.biggerpockets.com/forums` | proxy_denied | 2026-10-16T17:14:48Z |
+| Capterra | `https://www.capterra.com/` | proxy_denied | 2026-10-16T17:14:45Z |
+| G2 | `https://www.g2.com/` | proxy_denied | 2026-10-16T17:14:45Z |
+| GetApp | `https://www.getapp.com/` | proxy_denied | 2026-10-16T17:14:46Z |
+| GitHub REST API | `https://api.github.com/search/issues?q=invoice&per_page=1` | http_403 | 2026-10-16T17:14:46Z |
+| Hacker News Algolia API | `https://hn.algolia.com/api/v1/search?query=invoice&hitsPerPage=1` | proxy_denied | 2026-10-16T17:14:44Z |
+| Hacker News site | `https://news.ycombinator.com/` | proxy_denied | 2026-10-16T17:14:45Z |
+| Product Hunt | `https://www.producthunt.com/` | proxy_denied | 2026-10-16T17:14:46Z |
+| QuickBooks Community | `https://quickbooks.intuit.com/learn-support/en-us/` | proxy_denied | 2026-10-16T17:14:48Z |
+| Reddit (old) JSON | `https://old.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T17:14:44Z |
+| Reddit JSON | `https://www.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T17:14:44Z |
+| Shell HTTP (google.com, wikipedia.org) | `https://www.google.com/` | proxy_denied | 2026-10-16T17:19:00Z |
+| Shopify App Store | `https://apps.shopify.com/` | proxy_denied | 2026-10-16T17:14:47Z |
+| Shopify Community | `https://community.shopify.com/` | proxy_denied | 2026-10-16T17:14:47Z |
+| Stack Exchange API | `https://api.stackexchange.com/2.3/info?site=webapps` | proxy_denied | 2026-10-16T17:14:47Z |
+| Trustpilot | `https://www.trustpilot.com/` | proxy_denied | 2026-10-16T17:14:48Z |
+| Wayback Machine | `https://web.archive.org/` | proxy_denied | 2026-10-16T17:14:49Z |
+| WebFetch tool | `https://en.wikipedia.org/wiki/Bookkeeping` | error | 2026-10-16T17:20:00Z |
+| WebSearch tool | `websearch:bookkeeping practice chasing clients for documents every month workaround` | ok | 2026-10-16T17:20:00Z |
+| WordPress.org plugins | `https://wordpress.org/plugins/` | proxy_denied | 2026-10-16T17:14:47Z |
 <!-- access-table:end -->
 
 Notes on the live results:
@@ -43,8 +46,8 @@ Notes on the live results:
 |---|---|---|
 | WebSearch | Works. Returns titles, URLs and a model-written summary of results. | Used **only to discover leads**. Its wording is never stored as a quotation. |
 | WebSearch on reddit.com | Refused: the search provider states reddit.com is not accessible to its user agent. | Reddit must be read via direct HTTP (below), not via search. |
-| WebFetch | Failed for every domain tried, including en.wikipedia.org (DNS not resolved). | Not used. Page retrieval goes through `rdb.py fetch` instead. |
-| Shell HTTP (curl / Python) | Every research host denied by the network proxy; only package registries reachable. | Blocked until the allowlist is applied. |
+| WebFetch | Failed for every domain tried, including en.wikipedia.org (DNS not resolved). Re-tested 2026-10-16T17:20Z: same `ENOTFOUND`. | Not used. Page retrieval goes through `rdb.py fetch` instead. |
+| Shell HTTP (curl / Python) | Every research host denied by the network proxy; only package registries reachable. Re-tested 2026-10-16T17:19Z: still denied, including google.com and wikipedia.org. | Blocked until the environment's network access is changed. |
 | Apify connector | Connection to mcp.apify.com denied by the proxy. | Not used; optional later if paid scraping becomes necessary. |
 
 ## Sources by type
