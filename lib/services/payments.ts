@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { asSystem, withOrg } from "../db/tenant";
-import { payments, users, webhookEvents } from "../db/schema";
-import { providers } from "../adapters";
+import { organizations, payments, users, webhookEvents } from "../db/schema";
+import { paymentsFor, providers } from "../adapters";
+import type { PaymentProvider } from "../adapters/payments";
 import { audit, track } from "../domain/audit";
 import { randomToken } from "../crypto";
 import { Forbidden, activateJob, getJobDetail } from "./jobs";
@@ -22,8 +23,10 @@ export async function createCheckout(orgId: string, userId: string, jobId: strin
   if (open) return open;
 
   const [user] = await asSystem((tx) => tx.select({ email: users.email }).from(users).where(eq(users.id, userId)));
+  const [org] = await asSystem((tx) => tx.select({ isDemo: organizations.isDemo }).from(organizations).where(eq(organizations.id, orgId)));
+  const provider = paymentsFor(org.isDemo);
   const receipt = receiptNumber();
-  const link = await providers().payments.createLink({
+  const link = await provider.createLink({
     amountInr: detail.job.priceInr,
     receiptNumber: receipt,
     description: `${BRAND.name}: screening for "${detail.job.title}"`,
@@ -36,7 +39,7 @@ export async function createCheckout(orgId: string, userId: string, jobId: strin
         orgId,
         jobId,
         amountInr: detail.job.priceInr,
-        provider: providers().payments.name,
+        provider: provider.name,
         providerRef: link.providerRef,
         linkUrl: link.url,
         receiptNumber: receipt,
@@ -53,8 +56,11 @@ export type WebhookOutcome = "invalid" | "duplicate" | "ignored" | "processed";
  * Payment webhook. Idempotent: each provider event id is processed once,
  * and a payment moves to paid only from created.
  */
-export async function handlePaymentWebhook(rawBody: string, headers: Headers): Promise<WebhookOutcome> {
-  const provider = providers().payments;
+export async function handlePaymentWebhook(
+  rawBody: string,
+  headers: Headers,
+  provider: PaymentProvider = providers().payments,
+): Promise<WebhookOutcome> {
   let event;
   try {
     event = provider.parseWebhook(rawBody, headers);
@@ -71,7 +77,10 @@ export async function handlePaymentWebhook(rawBody: string, headers: Headers): P
       .returning({ id: webhookEvents.id });
     if (!inserted.length) return { outcome: "duplicate" as const };
     if (event.type === "other") return { outcome: "ignored" as const };
-    const [p] = await tx.select().from(payments).where(eq(payments.providerRef, event.providerRef));
+    const [p] = await tx
+      .select()
+      .from(payments)
+      .where(and(eq(payments.providerRef, event.providerRef), eq(payments.provider, provider.name)));
     if (!p) {
       log.warn("payment.unknown_ref", { provider: provider.name });
       return { outcome: "ignored" as const };

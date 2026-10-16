@@ -13,7 +13,8 @@ import {
   organizations,
   questions,
 } from "../db/schema";
-import { providers } from "../adapters";
+import { providers, whatsappFor } from "../adapters";
+import type { WhatsAppProvider } from "../adapters/whatsapp/types";
 import { config } from "../config";
 import { decrypt, blindIndex } from "../crypto";
 import { audit } from "../domain/audit";
@@ -77,12 +78,12 @@ export async function sendInvite(payload: { orgId: string; candidateId: string }
       .onConflictDoNothing();
     const [msg] = await tx.select().from(messages).where(eq(messages.dedupeKey, `invite:${candidateId}`));
     if (msg.status === "sent") return null;
-    return { msg, conv, phone: decrypt(row.c.phoneEnc), lang: row.c.language, params, jobId: row.job.id };
+    return { msg, conv, phone: decrypt(row.c.phoneEnc), lang: row.c.language, params, jobId: row.job.id, isDemo: row.org.isDemo };
   });
   if (!prepared) return;
   if (!(await underRateLimit())) throw new Defer(20);
 
-  const res = await providers().whatsapp.sendTemplate({
+  const res = await whatsappFor(prepared.isDemo).sendTemplate({
     to: prepared.phone,
     template: "invite",
     language: prepared.lang,
@@ -106,16 +107,17 @@ export async function sendMessages(payload: { orgId: string; messageIds: string[
   for (const id of messageIds) {
     const prepared = await withOrg(orgId, async (tx) => {
       const [row] = await tx
-        .select({ m: messages, c: candidates, conv: conversations })
+        .select({ m: messages, c: candidates, conv: conversations, isDemo: organizations.isDemo })
         .from(messages)
         .innerJoin(conversations, eq(conversations.id, messages.conversationId))
         .innerJoin(candidates, eq(candidates.id, conversations.candidateId))
+        .innerJoin(organizations, eq(organizations.id, messages.orgId))
         .where(and(eq(messages.id, id), eq(messages.orgId, orgId)));
       if (!row || row.m.status !== "queued" || row.c.status === "deleted") return null;
       return row;
     });
     if (!prepared) continue;
-    const res = await providers().whatsapp.sendText({ to: decrypt(prepared.c.phoneEnc), body: prepared.m.body ?? "" });
+    const res = await whatsappFor(prepared.isDemo).sendText({ to: decrypt(prepared.c.phoneEnc), body: prepared.m.body ?? "" });
     await withOrg(orgId, async (tx) => {
       const now = new Date();
       await tx.update(messages).set({ status: "sent", providerMessageId: res.providerMessageId, sentAt: now }).where(eq(messages.id, id));
@@ -126,8 +128,12 @@ export async function sendMessages(payload: { orgId: string; messageIds: string[
 }
 
 /** Webhook entry point: verify, then queue each message for processing (deduped by provider id). */
-export async function receiveWhatsAppWebhook(rawBody: string, headers: Headers): Promise<boolean> {
-  const inbound = providers().whatsapp.parseWebhook(rawBody, headers);
+export async function receiveWhatsAppWebhook(
+  rawBody: string,
+  headers: Headers,
+  provider: WhatsAppProvider = providers().whatsapp,
+): Promise<boolean> {
+  const inbound = provider.parseWebhook(rawBody, headers);
   if (!inbound) return false;
   if (!inbound.length) return true;
   await asSystem(async (tx) => {
@@ -135,8 +141,8 @@ export async function receiveWhatsAppWebhook(rawBody: string, headers: Headers):
       await enqueue(
         tx,
         "process_inbound",
-        { ...m, timestamp: m.timestamp.toISOString() },
-        { dedupeKey: `in:${providers().whatsapp.name}:${m.providerMessageId}` },
+        { ...m, provider: provider.name, timestamp: m.timestamp.toISOString() },
+        { dedupeKey: `in:${provider.name}:${m.providerMessageId}` },
       );
     }
   });
@@ -144,6 +150,7 @@ export async function receiveWhatsAppWebhook(rawBody: string, headers: Headers):
 }
 
 type InboundPayload = {
+  provider?: "mock" | "cloud";
   providerMessageId: string;
   from: string;
   kind: "text" | "voice" | "other";
@@ -153,16 +160,27 @@ type InboundPayload = {
 };
 
 /** Find the conversation an inbound phone number belongs to. Cross-tenant by necessity. */
-async function routeInbound(phone: string) {
+async function routeInbound(phone: string, source: "mock" | "cloud") {
+  // In a live setup, simulated messages reach only demo workspaces and real
+  // WhatsApp messages never reach a demo workspace.
+  const fullyMocked = providers().whatsapp.name === "mock";
   return asSystem(async (tx) => {
     const rows = await tx
-      .select({ orgId: candidates.orgId, candidateId: candidates.id, convId: conversations.id, state: conversations.state })
+      .select({
+        orgId: candidates.orgId,
+        candidateId: candidates.id,
+        convId: conversations.id,
+        state: conversations.state,
+        isDemo: organizations.isDemo,
+      })
       .from(candidates)
       .innerJoin(conversations, eq(conversations.candidateId, candidates.id))
+      .innerJoin(organizations, eq(organizations.id, candidates.orgId))
       .where(eq(candidates.phoneHash, blindIndex(phone)))
       .orderBy(desc(conversations.lastOutboundAt));
+    const eligible = fullyMocked ? rows : rows.filter((r) => r.isDemo === (source === "mock"));
     // Prefer a conversation that is still in progress; else the most recent one.
-    return rows.find((r) => (ACTIVE_STATES as readonly string[]).includes(r.state)) ?? rows[0] ?? null;
+    return eligible.find((r) => (ACTIVE_STATES as readonly string[]).includes(r.state)) ?? eligible[0] ?? null;
   });
 }
 
@@ -170,7 +188,7 @@ async function routeInbound(phone: string) {
 export async function processInbound(payload: InboundPayload) {
   const phone = normalizeIndianMobile(payload.from);
   if (!phone) return;
-  const route = await routeInbound(phone);
+  const route = await routeInbound(phone, payload.provider ?? providers().whatsapp.name);
   if (!route) {
     log.info("inbound.unknown_sender");
     return;
@@ -181,7 +199,7 @@ export async function processInbound(payload: InboundPayload) {
   let text = payload.text ?? "";
   let sttSeconds = 0;
   if (payload.kind === "voice" && payload.mediaId) {
-    const media = await providers().whatsapp.fetchMedia(payload.mediaId);
+    const media = await whatsappFor(route.isDemo).fetchMedia(payload.mediaId);
     const [cand] = await withOrg(orgId, (tx) =>
       tx.select({ language: candidates.language }).from(candidates).where(eq(candidates.id, route.candidateId)),
     );
@@ -311,15 +329,16 @@ export async function sendDirectMessage(orgId: string, userId: string, candidate
   if (!text || text.length > 2000) throw new Forbidden("Message must be 1-2000 characters.");
   await withOrg(orgId, async (tx) => {
     const [row] = await tx
-      .select({ c: candidates, conv: conversations })
+      .select({ c: candidates, conv: conversations, isDemo: organizations.isDemo })
       .from(candidates)
       .innerJoin(conversations, eq(conversations.candidateId, candidates.id))
+      .innerJoin(organizations, eq(organizations.id, candidates.orgId))
       .where(and(eq(candidates.id, candidateId), eq(candidates.orgId, orgId)));
     if (!row) throw new NotFound();
     if (row.c.status === "opted_out" || row.c.status === "deleted") throw new Forbidden("This candidate opted out. You can't message them.");
     // WhatsApp only allows free-form messages within 24 hours of the candidate's last message.
     const lastIn = row.conv.lastInboundAt?.getTime() ?? 0;
-    if (providers().whatsapp.name === "cloud" && Date.now() - lastIn > 24 * 3600_000) {
+    if (whatsappFor(row.isDemo).name === "cloud" && Date.now() - lastIn > 24 * 3600_000) {
       throw new Forbidden("WhatsApp only allows direct messages within 24 hours of the candidate's last reply.");
     }
     const [m] = await tx
@@ -362,7 +381,7 @@ export async function sendReminder(orgId: string, conversationId: string) {
     return { msg, row };
   });
   if (!prepared) return;
-  const res = await providers().whatsapp.sendTemplate({
+  const res = await whatsappFor(prepared.row.org.isDemo).sendTemplate({
     to: decrypt(prepared.row.c.phoneEnc),
     template: "reminder",
     language: prepared.row.c.language,

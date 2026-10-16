@@ -1,7 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { withOrg } from "../db/tenant";
 import type { Tx } from "../db/client";
-import { answers, candidates, consents, conversations, messages, questions, scores } from "../db/schema";
+import { answers, candidates, consents, conversations, messages, organizations, questions, scores } from "../db/schema";
 import { parseCandidatesCsv, type CsvResult } from "../domain/csv";
 import { blindIndex, decrypt, encrypt } from "../crypto";
 import { audit, track } from "../domain/audit";
@@ -16,6 +16,9 @@ export type CsvPreview = CsvResult & { capacity: number; overCapacity: number };
 async function validate(tx: Tx, orgId: string, jobId: string, text: string): Promise<CsvPreview> {
   const job = await loadJob(tx, orgId, jobId);
   if (job.status === "closed") throw new Forbidden("This job is closed.");
+  // The demo workspace is shared by every visitor: never let real people's data into it.
+  const [org] = await tx.select({ isDemo: organizations.isDemo }).from(organizations).where(eq(organizations.id, orgId));
+  if (org?.isDemo) throw new Forbidden("Uploads are turned off in the shared demo workspace. Sign up free to try it with your own list.");
   const existing = new Set(
     (await tx.select({ h: candidates.phoneHash }).from(candidates).where(eq(candidates.jobId, jobId))).map((r) => r.h),
   );

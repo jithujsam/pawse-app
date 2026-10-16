@@ -27,6 +27,18 @@ export function providers(): Providers {
   return (g.__providers ??= build());
 }
 
+// Demo workspaces always use simulated WhatsApp and payments, whatever the env says,
+// so a sales demo can never message a real phone or take real money.
+const demo = { whatsapp: new MockWhatsApp(), payments: new MockPayments() };
+
+export function whatsappFor(isDemo: boolean): WhatsAppProvider {
+  return isDemo ? demo.whatsapp : providers().whatsapp;
+}
+
+export function paymentsFor(isDemo: boolean): PaymentProvider {
+  return isDemo ? demo.payments : providers().payments;
+}
+
 export function setProviders(p: Partial<Providers>) {
   g.__providers = { ...providers(), ...p };
 }
