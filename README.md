@@ -1,4 +1,4 @@
-# QwikHire
+# Delecta
 
 WhatsApp-first candidate screening for Indian recruiters and small staffing agencies. A recruiter creates a job, uploads candidates, and candidates answer screening questions on WhatsApp by text or voice note. Answers are scored against the recruiter's rubric and delivered as a ranked shortlist. Priced per job in INR, paid by UPI.
 
