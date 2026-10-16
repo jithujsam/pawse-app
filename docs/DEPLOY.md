@@ -5,7 +5,7 @@ Target: Vercel (app + cron) and a managed Postgres (Neon via the Vercel Marketpl
 ## Demo deploy on Vercel (about 15 minutes)
 This gives you a public URL with the full app on simulated WhatsApp and payments: safe to show anyone.
 
-1. **Connect the repo.** vercel.com → *Add New → Project* → import `jithujsam-cloud/commandcode` (skip if the project already exists). Framework: Next.js. Leave the build command alone: `vercel.json` sets it.
+1. **Connect the repo.** vercel.com → *Add New → Project* → import `jithujsam-cloud/Delecta` (skip if the project already exists). Framework: Next.js. Leave the build command alone: `vercel.json` sets it.
 2. **Add a database.** Project → *Storage* → *Create Database* → **Neon** (free plan) → connect it to the project for all environments. This adds `DATABASE_URL` (and `DATABASE_URL_UNPOOLED`) automatically.
 3. **Add two secrets.** Project → *Settings → Environment Variables*, for Production and Preview:
    - `SESSION_SECRET`: any random string of 32+ characters.
