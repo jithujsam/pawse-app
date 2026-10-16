@@ -1,0 +1,5 @@
+name,phone,consent,language
+Asha Rao,+91 98765 43210,yes,English
+Ravi Kumar,9000000001,yes,Hindi
+No Consent,9000000002,no,English
+Bad Number,12345,yes,English
