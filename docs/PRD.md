@@ -1,4 +1,4 @@
-# PRD: WhatsApp-first candidate screening for Indian recruiters (working title: Pehla Round)
+# PRD: WhatsApp-first candidate screening for Indian recruiters (Delecta)
 
 Status: DRAFT v0.2. Evidence labels: VERIFIED (public source), REPORTED (vendor or review claim), HYPOTHESIS (untested).
 Clean-room note: this document describes our own product. No competitor code, copy, assets or branding is used.

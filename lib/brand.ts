@@ -1,5 +1,5 @@
-// Working title. Change the product name here and nowhere else.
+// Product name. Change it here and nowhere else.
 export const BRAND = {
-  name: "Pehla Round",
+  name: "Delecta",
   tagline: "WhatsApp screening for Indian recruiters",
 } as const;

@@ -17,6 +17,9 @@ export const emailSchema = z.string().trim().toLowerCase().email().max(200);
 export type RequestLinkResult = { ok: true; devLink?: string } | { ok: false; error: string };
 
 export async function requestMagicLink(rawEmail: string): Promise<RequestLinkResult> {
+  if (mailer().name === "console" && config().NODE_ENV === "production") {
+    return { ok: false, error: "Email sign-in isn't switched on yet. Use the demo workspace, or contact us for access." };
+  }
   const parsed = emailSchema.safeParse(rawEmail);
   if (!parsed.success) return { ok: false, error: "Enter a valid email address." };
   const email = parsed.data;
@@ -43,8 +46,10 @@ export async function requestMagicLink(rawEmail: string): Promise<RequestLinkRes
     subject: `Your ${BRAND.name} sign-in link`,
     text: `Sign in to ${BRAND.name}: ${link}\n\nThis link works once and expires in ${TOKEN_TTL_MIN} minutes. If you didn't ask for it, ignore this email.`,
   });
-  // Without a real mail provider, show the link on screen so local runs and demos work.
-  return { ok: true, devLink: mailer().name === "console" ? link : undefined };
+  // Without a real mail provider, show the link on screen, but only outside production:
+  // in production that would let anyone sign in as any email address.
+  const showLink = mailer().name === "console" && config().NODE_ENV !== "production";
+  return { ok: true, devLink: showLink ? link : undefined };
 }
 
 /** Consume a magic-link token and create a session. Returns the raw session token for the cookie. */

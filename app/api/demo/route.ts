@@ -7,6 +7,9 @@ import { ensureDemoWorkspace, findDemoOrg } from "@/lib/services/demo";
 import { track } from "@/lib/domain/audit";
 import { clientIp, hit } from "@/lib/ratelimit";
 
+// First visit seeds the demo workspace, which takes a few seconds.
+export const maxDuration = 60;
+
 /** One-click sign-in to the shared demo workspace (simulated messages and payments only). */
 export async function POST(req: NextRequest) {
   if (!config().DEMO_MODE) return new NextResponse("Demo is disabled", { status: 404 });
