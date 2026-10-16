@@ -13,10 +13,10 @@
     "e2e": "playwright test",
     "check": "npm run lint && npm run typecheck && npm run test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts",
+    "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "tsx scripts/seed-demo.ts",
     "worker": "tsx scripts/worker.ts",
-    "vercel-build": "tsx scripts/migrate.ts && next build"
+    "vercel-build": "node scripts/migrate.mjs && next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -46,5 +46,13 @@
     "tsx": "^4.23.15",
     "typescript": "^5.7.0",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "unrs-resolver": true
   }
 }
