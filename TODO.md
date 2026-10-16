@@ -9,7 +9,7 @@
 - [ ] Native-speaker review of all **Hindi copy** (`lib/domain/copy.ts`, candidate privacy notice).
 
 ## For a lawyer
-- [ ] Trademark search and registration for the name "ReplyHire" (India, class 35/42); check domain availability.
+- [ ] Trademark search and registration for the name "QwikHire" (India, class 35/42); check domain availability. Similar names already in Indian recruiting: QuikHiring (Quik Technosys, Noida), Quik Hire Staffing Solutions, QuickHire. Ask whether QwikHire is too close.
 - [ ] DPDP Act 2023 (and Rules): are we a Data Processor for the recruiter (Data Fiduciary)? What must the processing contract contain? Do we need a grievance officer or consent manager arrangements?
 - [ ] Is a recruiter-ticked "consent" column in a CSV sufficient basis for first contact on WhatsApp? What evidence of consent should we require recruiters to keep or upload?
 - [ ] Is the privacy notice in the first WhatsApp message plus the linked page adequate notice? Required language versions?

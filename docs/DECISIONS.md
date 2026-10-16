@@ -4,7 +4,7 @@ A living log of why things are the way they are. Newest at the bottom of each se
 
 ## Product and scope
 - **Self-serve app, sequenced for an early pitch (Oct 2026).** The PRD v0.1 described a manual kit; the build brief asks for a product. We built the full flow on mock providers first so it can be demoed today, with real WhatsApp and payments behind env switches. See PRD changelog.
-- **Name: ReplyHire** (Oct 2026). Simple English, says what happens: candidates reply, you hire. Quick web search found no recruiting product using it; a proper trademark search is in TODO.md. Set in `lib/brand.ts`. The old Klaroh landing page was a different product and was removed (it remains in git history).
+- **Name: QwikHire** (Oct 2026), chosen by the founder. Short and plain English. A trademark search is in TODO.md. Set in `lib/brand.ts`. The old Klaroh landing page was a different product and was removed (it remains in git history).
 - **3-5 questions, not exactly 5.** The brief says 5. We allow 3-5 so a recruiter can run a shorter screen; the form, AI drafts and sample role all default to 5. Easy to lock to exactly 5 if you prefer.
 - **Human review gate.** Export and client sharing unlock only after "Mark as reviewed". AI scores are suggestions; no candidate is rejected automatically.
 - **Price is a placeholder** (`PRICE_PER_JOB_INR`, default ₹1,499, up to 200 candidates). To be set from customer interviews.
