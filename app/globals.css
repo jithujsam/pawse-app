@@ -157,6 +157,29 @@
 
   .text-balance { text-wrap: balance; }
 
+  .input {
+    display: block;
+    width: 100%;
+    border: 1px solid #BFC9C1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #FFFFFF;
+    color: #0B1C30;
+  }
+  .input:focus { outline: 2px solid #0F573E; outline-offset: 1px; border-color: #0F573E; }
+
+  .btn-base:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-base:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid #0F573E; outline-offset: 2px; }
+
+  .prose-legal h2 { font-size: 1.5rem; margin: 2rem 0 0.5rem; }
+  .prose-legal p, .prose-legal li { font-size: 0.95rem; line-height: 1.7; color: #404943; }
+  .prose-legal ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+  .prose-legal a { text-decoration: underline; color: #003E2A; }
+  .prose-legal p { margin: 0.5rem 0; }
+
+  code { font-size: 0.9em; background: #EFF4FF; padding: 1px 4px; border-radius: 4px; }
+
   .status-dot {
     width: 7px;
     height: 7px;
