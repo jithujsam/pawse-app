@@ -5,6 +5,8 @@
   python3 research/rdb.py probe                 test live access to each source, record results
   python3 research/rdb.py ingest FILE.jsonl...  load researcher output (idempotent)
   python3 research/rdb.py fetch [--segment S] [--limit N]   retrieve lead pages, save snapshots
+  python3 research/rdb.py snap URL              fetch one page, save snapshot, print a ready `source` record
+  python3 research/rdb.py text SHA              print a snapshot as readable text (to choose exact quotes)
   python3 research/rdb.py verify                check quotes against snapshots, mark duplicates
   python3 research/rdb.py stats                 counts per segment / cluster
   python3 research/rdb.py catalog               regenerate the access table in SOURCE_CATALOG.md
@@ -128,16 +130,22 @@ def upsert_source(con, rec):
     canon = canonical_url(url)
     con.execute("""
         INSERT INTO sources (canonical_url, url, domain, source_type, title, published_at,
-                             retrieved_at, access_method, is_vendor_content, notes)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+                             retrieved_at, access_method, is_vendor_content, notes, http_status, snapshot_sha256)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(canonical_url) DO UPDATE SET
           title = COALESCE(sources.title, excluded.title),
+          retrieved_at = COALESCE(excluded.retrieved_at, sources.retrieved_at),
+          access_method = CASE WHEN excluded.snapshot_sha256 IS NOT NULL THEN excluded.access_method
+                               ELSE sources.access_method END,
+          http_status = COALESCE(excluded.http_status, sources.http_status),
+          snapshot_sha256 = COALESCE(excluded.snapshot_sha256, sources.snapshot_sha256),
           published_at = COALESCE(sources.published_at, excluded.published_at),
           is_vendor_content = MAX(sources.is_vendor_content, excluded.is_vendor_content),
           notes = COALESCE(excluded.notes, sources.notes)""",
         (canon, url, urllib.parse.urlsplit(canon).hostname, rec.get("source_type", "other"),
          rec.get("title"), rec.get("published_at"), rec.get("retrieved_at"),
-         rec.get("access_method", "websearch_only"), int(bool(rec.get("is_vendor_content"))), rec.get("notes")))
+         rec.get("access_method", "websearch_only"), int(bool(rec.get("is_vendor_content"))), rec.get("notes"),
+         rec.get("http_status"), rec.get("snapshot_sha256")))
     return con.execute("SELECT id FROM sources WHERE canonical_url = ?", (canon,)).fetchone()[0]
 
 
@@ -146,6 +154,12 @@ def ingest_record(con, rec):
     if kind == "run":
         con.execute("INSERT OR IGNORE INTO runs (id, phase, segment, agent, notes) VALUES (?,?,?,?,?)",
                     (rec["id"], rec["phase"], rec.get("segment"), rec.get("agent"), rec.get("notes")))
+    elif kind == "access_check":
+        con.execute("INSERT INTO access_checks (source_name, url, method, outcome, detail, checked_at)"
+                    " SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM access_checks WHERE source_name = ?"
+                    " AND method = ? AND checked_at = ?)",
+                    (rec["source_name"], rec["url"], rec["method"], rec["outcome"], rec.get("detail"),
+                     rec["checked_at"], rec["source_name"], rec["method"], rec["checked_at"]))
     elif kind == "query":
         con.execute("INSERT OR IGNORE INTO queries (run_id, segment, tool, query, result_count) VALUES (?,?,?,?,?)",
                     (rec.get("run_id"), rec.get("segment"), rec["tool"], rec["query"], rec.get("result_count")))
@@ -183,10 +197,14 @@ def ingest_record(con, rec):
                         (row[0], eid, rec.get("stance", "supports")))
     elif kind == "cluster":
         con.execute("""
-            INSERT INTO clusters (slug, segment, title, problem_statement) VALUES (?,?,?,?)
+            INSERT INTO clusters (slug, segment, title, problem_statement, status, rejection_reason)
+            VALUES (?,?,?,?,COALESCE(?,'open'),?)
             ON CONFLICT(slug) DO UPDATE SET title = excluded.title,
-              problem_statement = COALESCE(excluded.problem_statement, clusters.problem_statement)""",
-            (rec["slug"], rec["segment"], rec["title"], rec.get("problem_statement")))
+              problem_statement = COALESCE(excluded.problem_statement, clusters.problem_statement),
+              status = CASE WHEN ? IS NOT NULL THEN excluded.status ELSE clusters.status END,
+              rejection_reason = COALESCE(excluded.rejection_reason, clusters.rejection_reason)""",
+            (rec["slug"], rec["segment"], rec["title"], rec.get("problem_statement"), rec.get("status"),
+             rec.get("rejection_reason"), rec.get("status")))
     elif kind == "competitor":
         psid = upsert_source(con, rec["pricing_source"]) if rec.get("pricing_source") else None
         con.execute("""
@@ -196,12 +214,21 @@ def ingest_record(con, rec):
               pricing_source_id = COALESCE(excluded.pricing_source_id, competitors.pricing_source_id),
               notes = COALESCE(excluded.notes, competitors.notes)""",
             (rec["name"], rec.get("url"), rec.get("segment"), rec.get("pricing_text"), psid, rec.get("notes")))
+    elif kind == "score":
+        row = con.execute("SELECT id FROM clusters WHERE slug = ?", (rec["cluster"],)).fetchone()
+        if not row:
+            raise ValueError(f"unknown cluster '{rec['cluster']}'")
+        con.execute("""INSERT INTO scores (cluster_id, criterion, score, basis, rationale, evidence_ids) VALUES (?,?,?,?,?,?)
+                       ON CONFLICT(cluster_id, criterion) DO UPDATE SET score = excluded.score, basis = excluded.basis,
+                         rationale = excluded.rationale, evidence_ids = excluded.evidence_ids""",
+                    (row[0], rec["criterion"], rec["score"], rec["basis"], rec["rationale"], rec.get("evidence_ids")))
     else:
         raise ValueError(f"unknown record kind: {kind!r}")
 
 
 def cmd_ingest(args):
-    order = {"run": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6}
+    order = {"run": 0, "access_check": 0, "query": 1, "cluster": 2, "source": 3, "lead": 4, "competitor": 5, "evidence": 6,
+             "score": 7}
     with connect() as con:
         for path in args.files:
             lines = [l for l in Path(path).read_text().splitlines() if l.strip()]
@@ -211,12 +238,6 @@ def cmd_ingest(args):
             print(f"ingested {len(recs)} records from {path}")
 
 
-def fetch_url_for(canon):
-    if urllib.parse.urlsplit(canon).hostname == "reddit.com":
-        return canon + ".json?raw_json=1"
-    return canon
-
-
 def cmd_fetch(args):
     SNAPSHOTS.mkdir(exist_ok=True)
     with connect() as con:
@@ -224,7 +245,7 @@ def cmd_fetch(args):
         params = ([args.segment] if args.segment else []) + [args.limit]
         for lead in con.execute(sql, params).fetchall():
             try:
-                status, body = http_get(fetch_url_for(lead["canonical_url"]))
+                status, body, _ = retrieve(lead["canonical_url"], lead["url"])
             except Exception as exc:  # noqa: BLE001
                 outcome, detail = classify_error(exc)
                 con.execute("UPDATE leads SET status = 'unreachable' WHERE id = ?", (lead["id"],))
@@ -272,8 +293,92 @@ def snapshot_text(sha):
         walk(data)
         return " ".join(parts)
     except ValueError:
-        raw = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", raw)
-        return re.sub(r"<[^>]+>", " ", raw)
+        scripts = " ".join(re.findall(r"(?is)<script[^>]*>(.*?)</script>", raw))
+        visible = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", raw)
+        visible = re.sub(r"<[^>]+>", " ", visible)
+        # Review sites (Capterra, GetApp) embed review text as escaped JSON inside <script>.
+        scripts = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), scripts)
+        return visible + " " + re.sub(r"\\+[nrt\"]?", " ", scripts)
+
+
+ARCTIC = "https://arctic-shift.photon-reddit.com/api"
+
+
+def api_json(url, tries=4):
+    """GET JSON, backing off when an API asks us to slow down (Arctic Shift returns a 'Timeout' error body)."""
+    for attempt in range(tries):
+        status, body = http_get(url, timeout=90)
+        data = json.loads(body)
+        if not (isinstance(data, dict) and data.get("error")):
+            return status, data
+        time.sleep(4 * (attempt + 1))
+    raise RuntimeError(f"API kept refusing: {data.get('error')}")
+
+
+def retrieve(canon, url=None):
+    """Return (status, bytes, route). Reddit is read through the Arctic Shift archive because reddit.com
+    now redirects unauthenticated requests to a login page; HN items through the Algolia API."""
+    p = urllib.parse.urlsplit(canon)
+    if p.hostname == "reddit.com":
+        m = re.match(r"^/comments/([a-z0-9]+)", p.path)
+        if not m:
+            raise ValueError("only Reddit thread URLs can be snapshotted")
+        _, post = api_json(f"{ARCTIC}/posts/ids?ids={m.group(1)}")
+        time.sleep(FETCH_DELAY_S)
+        status, tree = api_json(f"{ARCTIC}/comments/tree?link_id=t3_{m.group(1)}&limit=500")
+        return status, json.dumps({"post": post.get("data"), "comments": tree.get("data")}).encode(), "arctic_shift"
+    if p.hostname == "news.ycombinator.com" and p.path == "/item":
+        item = dict(urllib.parse.parse_qsl(p.query))["id"]
+        status, body = http_get(f"https://hn.algolia.com/api/v1/items/{item}")
+        return status, body, "hn_algolia"
+    status, body = http_get(url or canon)
+    return status, body, "direct"
+
+
+def cmd_snap(args):
+    SNAPSHOTS.mkdir(exist_ok=True)
+    canon = canonical_url(args.url)
+    status, body, route = retrieve(canon, args.url)
+    sha = hashlib.sha256(body).hexdigest()
+    snap = SNAPSHOTS / f"{sha}.gz"
+    if not snap.exists():
+        snap.write_bytes(gzip.compress(body))
+    rec = {"kind": "source", "url": args.url, "source_type": guess_source_type(canon), "retrieved_at": now(),
+           "access_method": "fetch", "http_status": status, "snapshot_sha256": sha, "notes": f"route={route}"}
+    print(json.dumps(rec))
+    print(f"# {len(body)} bytes; read it with: python3 research/rdb.py text {sha}", file=sys.stderr)
+
+
+def readable_text(sha):
+    raw = gzip.decompress((SNAPSHOTS / f"{sha}.gz").read_bytes()).decode("utf-8", "replace")
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return re.sub(r"\s+", " ", html.unescape(snapshot_text(sha)))
+    lines = []
+    def walk(node, depth=0):
+        if isinstance(node, list):
+            for v in node:
+                walk(v, depth)
+        elif isinstance(node, dict):
+            d = node.get("data") if node.get("kind") in ("t1", "t3") else node
+            text = d.get("selftext") or d.get("body") or d.get("text") or d.get("comment_text")
+            title = d.get("title")
+            if title or text:
+                when = d.get("created_utc") or d.get("created_at") or ""
+                if isinstance(when, (int, float)):
+                    when = datetime.fromtimestamp(when, timezone.utc).strftime("%Y-%m-%d")
+                lines.append(f"{'  ' * depth}[{d.get('author')} {when}] {title or ''} {html.unescape(text or '')}".strip())
+            for key in ("replies", "children", "comments", "post", "data"):
+                v = d.get(key) if isinstance(d, dict) else None
+                if isinstance(v, (list, dict)) and v is not node:
+                    walk(v, depth + 1)
+    walk(data)
+    return "\n".join(lines)
+
+
+def cmd_text(args):
+    print(readable_text(args.sha))
 
 
 def cmd_verify(_args):
@@ -337,10 +442,12 @@ def main():
     for name in ("init", "probe", "verify", "stats", "catalog"):
         sub.add_parser(name)
     p = sub.add_parser("ingest"); p.add_argument("files", nargs="+")
+    p = sub.add_parser("snap"); p.add_argument("url")
+    p = sub.add_parser("text"); p.add_argument("sha")
     p = sub.add_parser("fetch"); p.add_argument("--segment"); p.add_argument("--limit", type=int, default=20)
     args = ap.parse_args()
     {"init": cmd_init, "probe": cmd_probe, "ingest": cmd_ingest, "fetch": cmd_fetch,
-     "verify": cmd_verify, "stats": cmd_stats, "catalog": cmd_catalog}[args.cmd](args)
+     "verify": cmd_verify, "stats": cmd_stats, "catalog": cmd_catalog, "snap": cmd_snap, "text": cmd_text}[args.cmd](args)
 
 
 if __name__ == "__main__":

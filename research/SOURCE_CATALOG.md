@@ -9,43 +9,58 @@ everything else is maintained by hand. "Expected" columns are plans, not observa
 <!-- access-table:start -->
 | Source | Probe URL | Latest result | Checked (UTC) |
 |---|---|---|---|
-| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | proxy_denied | 2026-10-16T16:55:01Z |
-| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=smallbusiness&limit=1` | proxy_denied | 2026-10-16T16:54:57Z |
-| BiggerPockets forums | `https://www.biggerpockets.com/forums` | proxy_denied | 2026-10-16T16:55:02Z |
-| Capterra | `https://www.capterra.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| G2 | `https://www.g2.com/` | proxy_denied | 2026-10-16T16:54:57Z |
-| GetApp | `https://www.getapp.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| GitHub REST API | `https://api.github.com/search/issues?q=invoice&per_page=1` | http_403 | 2026-10-16T16:54:58Z |
-| Hacker News Algolia API | `https://hn.algolia.com/api/v1/search?query=invoice&hitsPerPage=1` | proxy_denied | 2026-10-16T16:54:57Z |
-| Hacker News site | `https://news.ycombinator.com/` | proxy_denied | 2026-10-16T16:54:57Z |
-| Product Hunt | `https://www.producthunt.com/` | proxy_denied | 2026-10-16T16:54:58Z |
-| QuickBooks Community | `https://quickbooks.intuit.com/learn-support/en-us/` | proxy_denied | 2026-10-16T16:55:00Z |
-| Reddit (old) JSON | `https://old.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T16:54:56Z |
-| Reddit JSON | `https://www.reddit.com/r/smallbusiness/top.json?limit=1` | proxy_denied | 2026-10-16T16:54:56Z |
-| Shopify App Store | `https://apps.shopify.com/` | proxy_denied | 2026-10-16T16:54:59Z |
-| Shopify Community | `https://community.shopify.com/` | proxy_denied | 2026-10-16T16:54:59Z |
-| Stack Exchange API | `https://api.stackexchange.com/2.3/info?site=webapps` | proxy_denied | 2026-10-16T16:54:59Z |
-| Trustpilot | `https://www.trustpilot.com/` | proxy_denied | 2026-10-16T16:55:01Z |
-| Wayback Machine | `https://web.archive.org/` | proxy_denied | 2026-10-16T16:55:02Z |
-| WordPress.org plugins | `https://wordpress.org/plugins/` | proxy_denied | 2026-10-16T16:55:00Z |
+| AccountingWEB forum | `https://www.accountingweb.co.uk/any-answers` | http_challenge | 2026-10-16T17:45:00Z |
+| Arctic Shift Reddit archive | `https://arctic-shift.photon-reddit.com/api/posts/ids?ids=1x5rvba` | ok | 2026-10-16T17:45:00Z |
+| BiggerPockets forums | `https://www.biggerpockets.com/forums/52` | ok | 2026-10-16T17:45:00Z |
+| Capterra | `https://www.capterra.com/p/127994/Jobber/reviews/` | ok | 2026-10-16T17:45:00Z |
+| G2 | `https://www.g2.com/` | http_403 | 2026-10-16T17:45:00Z |
+| GetApp | `https://www.getapp.com/project-management-planning-software/a/karbon/` | ok | 2026-10-16T17:28:00Z |
+| GitHub REST API | `https://api.github.com/search/issues?q=invoice&per_page=1` | http_403 | 2026-10-16T17:23:14Z |
+| Hacker News Algolia API | `https://hn.algolia.com/api/v1/search?query=bookkeeping&tags=comment&hitsPerPage=1` | ok | 2026-10-16T17:28:00Z |
+| Hacker News site | `https://news.ycombinator.com/` | ok | 2026-10-16T17:23:13Z |
+| Product Hunt | `https://www.producthunt.com/` | http_403 | 2026-10-16T17:45:00Z |
+| QuickBooks Community | `https://quickbooks.intuit.com/` | ok | 2026-10-16T17:28:00Z |
+| Reddit (old) JSON | `https://old.reddit.com/r/Bookkeeping/.json` | http_302 | 2026-10-16T17:45:00Z |
+| Reddit JSON | `https://www.reddit.com/r/Bookkeeping/top.json?t=year&limit=3` | http_403 | 2026-10-16T17:28:00Z |
+| Shell HTTP (google.com, wikipedia.org) | `https://www.google.com/` | ok | 2026-10-16T17:28:00Z |
+| Shopify App Store | `https://apps.shopify.com/stocky/reviews?ratings%5B%5D=1` | ok | 2026-10-16T17:28:00Z |
+| Shopify Community | `https://community.shopify.com/c/shopify-discussions/bd-p/shopify-discussion` | ok | 2026-10-16T17:28:00Z |
+| Stack Exchange API | `https://api.stackexchange.com/2.3/search?intitle=quickbooks&site=money&pagesize=1` | ok | 2026-10-16T17:28:00Z |
+| Trustpilot | `https://www.trustpilot.com/` | http_403 | 2026-10-16T17:45:00Z |
+| Wayback Machine | `https://web.archive.org/` | ok | 2026-10-16T17:28:00Z |
+| WebFetch tool | `https://www.biggerpockets.com/forums/52` | ok | 2026-10-16T17:28:00Z |
+| WebFetch tool (Capterra) | `https://www.capterra.com/p/127994/Jobber/reviews/` | http_403 | 2026-10-16T17:45:00Z |
+| WebSearch tool | `websearch:Jobber reviews field service small business complaints` | ok | 2026-10-16T17:45:00Z |
+| WordPress.org plugins | `https://wordpress.org/plugins/` | ok | 2026-10-16T17:23:17Z |
 <!-- access-table:end -->
 
 Notes on the live results:
 
+- The generated table shows the latest row per source; content-level re-test rows (2026-10-16T17:28Z) supersede the
+  probe's bare HTTP status (e.g. Reddit (old) JSON "ok" was actually a login page).
 - `proxy_denied` means the session's network policy blocked the host before any request reached the site.
   It says nothing about whether the site itself would allow us.
 - The GitHub REST API answers 403 for a different reason: this session's GitHub access is limited to the
   configured repository. Adding `api.github.com` to the allowlist does not change that (see GitHub row below).
 
-## Tool-level findings (observed 2026-10-16)
+## Tool-level findings (re-tested 2026-10-16 ~17:28Z, after the network policy was widened)
 
-| Tool | Observed behaviour | Consequence |
+Content-level checks (an HTTP 200 alone is not counted: each page was inspected for real content).
+
+| Tool / route | Observed behaviour | Consequence |
 |---|---|---|
-| WebSearch | Works. Returns titles, URLs and a model-written summary of results. | Used **only to discover leads**. Its wording is never stored as a quotation. |
-| WebSearch on reddit.com | Refused: the search provider states reddit.com is not accessible to its user agent. | Reddit must be read via direct HTTP (below), not via search. |
-| WebFetch | Failed for every domain tried, including en.wikipedia.org (DNS not resolved). | Not used. Page retrieval goes through `rdb.py fetch` instead. |
-| Shell HTTP (curl / Python) | Every research host denied by the network proxy; only package registries reachable. | Blocked until the allowlist is applied. |
-| Apify connector | Connection to mcp.apify.com denied by the proxy. | Not used; optional later if paid scraping becomes necessary. |
+| Shell HTTP (curl / Python) | Network policy no longer blocks research hosts. | `rdb.py snap` / `fetch` are the retrieval path. |
+| Reddit direct (`www`/`old` `.json`) | **Reddit itself** blocks: `old.reddit.com` redirects to `/login/?reason=lor2`, `www` returns 403 (both user agents). | Not used. |
+| Arctic Shift archive | Full post text + comment trees work. Search sometimes answers "Timeout. Maybe slow down a bit". | Reddit route. `rdb.py snap <reddit thread URL>` goes through it and backs off. Archive may lag or miss deleted posts. |
+| Capterra / GetApp | Review pages load; review text is embedded as JSON in the page. | Main review-site route. `verify` now reads script-embedded text. |
+| G2, Trustpilot, Product Hunt | 403 from the sites' bot protection. | Not used; Capterra/GetApp instead. |
+| AccountingWEB | Cloudflare challenge page, no content. | Not used; Reddit accounting subs instead. |
+| BiggerPockets, Shopify Community, Shopify App Store, WordPress.org | Real content returned. | Used. |
+| HN Algolia, Stack Exchange API | Real content returned. | Used. |
+| QuickBooks Community, Wayback | Connect, but slow (>20 s); probe timeout reports `error`. | Usable with a longer timeout. |
+| WebSearch | Works; titles, URLs, model-written summary. | Leads only; never quoted. |
+| WebFetch | Works on BiggerPockets; Capterra answers it with 403 (the shell works for the same page). Output is a model summary. | Never quoted; pages are snapped from the shell instead. |
+| Apify connector | Not re-tested; not needed. | Not used. |
 
 ## Sources by type
 
