@@ -7,8 +7,8 @@ for on a recurring basis. Nothing gets built until a validation experiment passe
 
 | Phase | State |
 |---|---|
-| 1. Infrastructure audit | Done. Evidence store and CLI built. **Research hosts are still blocked by the network policy** (see SOURCE_CATALOG.md). |
-| 2. Pilot discovery (6 segments) | **Paused, 2026-10-16.** Re-probe: every research host still `proxy_denied` from the shell; WebFetch fails DNS for every host; WebSearch works but gives leads only. Budget used: 1/36 searches, 0/90 fetches, 0/90 evidence. Resumes when page retrieval works. |
+| 1. Infrastructure audit | Done. Network access re-tested 2026-10-16 ~17:28Z: page content retrieved from Reddit (via Arctic Shift archive), Capterra/GetApp, BiggerPockets, Shopify, HN, Stack Exchange. Reddit direct, G2, Trustpilot, Product Hunt, AccountingWEB are blocked by the sites themselves (see SOURCE_CATALOG.md). |
+| 2. Pilot discovery (6 segments) | **Running, 2026-10-16.** Three researchers, two segments each. |
 | 3–7 | Not started. |
 
 ## Segments for the pilot
@@ -28,7 +28,7 @@ No segment is assumed to be the winner. Each gets the same budget and the same c
 
 | Item | Per segment | Total cap |
 |---|---|---|
-| WebSearch queries (lead discovery) | 6 | 36 |
+| Discovery queries (WebSearch + Arctic Shift / HN / Stack Exchange search, combined) | 6 | 36 |
 | Page/API fetches | 15 | 90 |
 | Evidence items recorded | ≤ 15 | 90 |
 | Researcher agents | — | 3 (two segments each, distinct source lists) |
@@ -97,6 +97,8 @@ is not proof of demand.**
 python3 research/rdb.py init                          # safe to rerun
 python3 research/rdb.py probe && python3 research/rdb.py catalog
 python3 research/rdb.py ingest research/findings/*.jsonl   # researcher output; safe to rerun
+python3 research/rdb.py snap URL                      # one page -> snapshot + ready `source` record
+python3 research/rdb.py text SHA                      # readable snapshot text, to copy exact quotes from
 python3 research/rdb.py fetch --segment bookkeeping --limit 15
 python3 research/rdb.py verify                        # quote check + duplicate marking
 python3 research/rdb.py stats
