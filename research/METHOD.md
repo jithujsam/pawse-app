@@ -10,6 +10,7 @@ an exhaustive study. Coverage limits are stated in `reports/00_EXECUTIVE_REPORT.
 | `findings/*.jsonl` | **Source of truth.** One JSON record per line (formats below). | Researchers / analyst |
 | `snapshots/<sha256>.gz` | Raw copy of every page a quote or excerpt was taken from. | `rdb.py snap` only |
 | `schema.sql`, `rdb.py` | Database schema and CLI (Python standard library only). | — |
+| `synthesis.py` | Generates `findings/ws5-synthesis.jsonl` (hypotheses, scores, gates, experiments). | Analyst |
 | `research.db` | Build product, not committed. Rebuild any time. | `rdb.py build` only |
 | `reports/generated/*.md` | Tables rendered straight from the database: sources, facts, matrix, pricing, evidence, clusters, scores, risks, unknowns, gates. | `rdb.py render` only |
 | `reports/*.md` | Analyst interpretation. Every claim cites `E<id>` (customer evidence), `F<id>` (documented fact) or says **inference** / **assumption** / **unknown**. | Analyst |
@@ -17,6 +18,7 @@ an exhaustive study. Coverage limits are stated in `reports/00_EXECUTIVE_REPORT.
 ## Reproduce
 
 ```bash
+python3 research/synthesis.py      # regenerate the analyst layer (only after editing synthesis.py)
 python3 research/rdb.py build    # recreate research.db from findings/*.jsonl and re-verify every quote against its snapshot
 python3 research/rdb.py render   # regenerate reports/generated/*.md
 python3 research/rdb.py stats    # coverage counts

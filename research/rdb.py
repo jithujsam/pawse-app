@@ -569,6 +569,18 @@ def cmd_render(_args):
                          f"{r['gate'] or ''} | {md_escape(r['resolve_by'])} | {r['status']} |")
         write_generated("UNKNOWNS.md", "Unresolved questions that affect the decision", lines)
 
+        lines = []
+        for r in q("SELECT * FROM experiments ORDER BY rank"):
+            lines += [f"## {r['rank']}. {r['slug']} ({r['status']})", "", f"**Hypothesis:** {r['hypothesis']}", ""]
+            for label, key in (("Participants", "participants"), ("Recruitment", "recruitment"), ("Procedure", "procedure"),
+                               ("Cost", "cost"), ("Duration", "duration"), ("Success threshold", "success"),
+                               ("Failure threshold", "failure"), ("Confounders", "confounders"), ("Decision", "decisions"),
+                               ("Result", "result")):
+                if r[key]:
+                    lines.append(f"- **{label}:** {r[key]}")
+            lines.append("")
+        write_generated("EXPERIMENTS.md", "Validation experiments (thresholds fixed before running)", lines)
+
         lines = ["| Gate | Pass criterion | Status | Rationale | Refs |", "|---|---|---|---|---|"]
         for r in q("SELECT * FROM gates ORDER BY id"):
             lines.append(f"| {r['id']}. {r['name']} | {md_escape(r['pass_criterion'])} | **{r['status']}** | "
