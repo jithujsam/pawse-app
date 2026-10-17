@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS evidence (
   author_key        TEXT,                     -- username / reviewer id; NULL if unknown
   quote             TEXT NOT NULL,
   quote_hash        TEXT NOT NULL,
+  ref               TEXT UNIQUE,              -- optional stable key usable in refs before ids exist
   problem           TEXT NOT NULL,
   workaround        TEXT,
   tools_mentioned   TEXT,
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS facts (
   claim        TEXT NOT NULL,
   excerpt      TEXT NOT NULL,
   excerpt_hash TEXT NOT NULL,
+  ref          TEXT UNIQUE,                   -- optional stable key (e.g. 'g-scope-restricted') usable in refs before ids exist
   value        TEXT,                          -- structured value: yes | no | partial | a price | a limit
   as_of        TEXT,                          -- date the page was read
   verification TEXT NOT NULL DEFAULT 'unverified' CHECK (verification IN ('unverified','verified','not_found')),
@@ -91,7 +93,7 @@ CREATE TABLE IF NOT EXISTS capabilities (
   capability  TEXT NOT NULL,                  -- the 17 dimensions of prompt section 4, as slugs
   value       TEXT NOT NULL CHECK (value IN ('yes','partial','no','unknown','n/a')),
   detail      TEXT,
-  fact_ids    TEXT,                           -- comma-separated facts.id; empty only when value = unknown
+  fact_ids    TEXT,                           -- comma-separated fact refs; empty only when value = unknown
   PRIMARY KEY (product, capability)
 );
 
@@ -130,7 +132,7 @@ CREATE TABLE IF NOT EXISTS scores (
   score        INTEGER NOT NULL CHECK (score BETWEEN 0 AND 3),
   basis        TEXT NOT NULL CHECK (basis IN ('fact','inference','unknown')),
   rationale    TEXT NOT NULL,
-  refs         TEXT,                          -- e.g. 'E12,E40,F7' (E = evidence id, F = fact id)
+  refs         TEXT,                          -- comma-separated fact/evidence refs (or E12 / F7 ids)
   PRIMARY KEY (hypothesis, criterion)
 );
 

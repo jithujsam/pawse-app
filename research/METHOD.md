@@ -23,6 +23,9 @@ python3 research/rdb.py stats    # coverage counts
 ```
 
 IDs (`E12`, `F40`, `S7`) are assigned in build order and stay stable as long as findings files are only appended to.
+Records may also carry a `ref` (a unique, readable key such as `g-gmail-scopes-restricted`). Capability,
+score, risk and gate records cite facts/evidence by these refs; `render` turns them into `F`/`E` ids and marks
+any ref that points nowhere as `(missing)`.
 
 ## Evidence standard
 
@@ -62,8 +65,8 @@ All records have `"kind"`. Optional fields may be omitted. Sources can be given 
  "access_method":"fetch","http_status":200,"snapshot_sha256":"<from rdb.py snap>","is_vendor_content":false}
 {"kind":"fact","run_id":"ws1-provider","url":"https://...","subject":"google","topic":"oauth.restricted_scope",
  "claim":"Reading message bodies needs a restricted scope, which triggers an annual third-party security assessment.",
- "excerpt":"<verbatim, <=600 chars>","value":"yes","as_of":"2026-10-17"}
-{"kind":"capability","product":"streak","capability":"sequences","value":"partial","detail":"...","fact_ids":"F12,F13"}
+ "excerpt":"<verbatim, <=600 chars>","value":"yes","as_of":"2026-10-17","ref":"g-restricted-casa"}
+{"kind":"capability","product":"streak","capability":"sequences","value":"partial","detail":"...","fact_ids":"streak-mailmerge-followups,streak-pricing-pro"}
 {"kind":"cluster","slug":"missed-followups","workflow_area":"C","title":"...","problem_statement":"..."}
 {"kind":"evidence","run_id":"ws3-customer","url":"https://reddit.com/r/sales/comments/abc123","segment":"founder","workflow_area":"C",
  "author_key":"reddit:u_xyz","quote":"<verbatim, <=300 chars>","problem":"...","workaround":"spreadsheet + calendar reminders",

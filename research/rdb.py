@@ -237,12 +237,12 @@ def ingest_record(con, rec):
         con.execute("""
             INSERT OR IGNORE INTO evidence (source_id, run_id, segment, workflow_area, author_key, quote, quote_hash,
               problem, workaround, tools_mentioned, frequency_signal, severity_signal, spend_signal, first_hand,
-              signal_type, competitor, confidence, limitations)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              signal_type, competitor, confidence, limitations, ref)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (sid, rec.get("run_id"), rec["segment"], rec["workflow_area"], rec.get("author_key"), quote, qh,
              rec["problem"], rec.get("workaround"), rec.get("tools_mentioned"), rec.get("frequency_signal"),
              rec.get("severity_signal"), rec.get("spend_signal"), int(rec.get("first_hand", True)),
-             rec["signal_type"], rec.get("competitor"), rec["confidence"], rec.get("limitations")))
+             rec["signal_type"], rec.get("competitor"), rec["confidence"], rec.get("limitations"), rec.get("ref")))
         eid = con.execute("SELECT id FROM evidence WHERE source_id = ? AND quote_hash = ?", (sid, qh)).fetchone()[0]
         for slug in rec.get("clusters", []):
             row = con.execute("SELECT id FROM clusters WHERE slug = ?", (slug,)).fetchone()
@@ -255,10 +255,10 @@ def ingest_record(con, rec):
         if len(excerpt) > MAX_EXCERPT:
             raise ValueError(f"excerpt longer than {MAX_EXCERPT} chars: {excerpt[:60]}...")
         sid = source_for(con, rec)
-        con.execute("""INSERT OR IGNORE INTO facts (source_id, run_id, subject, topic, claim, excerpt, excerpt_hash, value, as_of)
-                       VALUES (?,?,?,?,?,?,?,?,?)""",
+        con.execute("""INSERT OR IGNORE INTO facts (source_id, run_id, subject, topic, claim, excerpt, excerpt_hash, value, as_of, ref)
+                       VALUES (?,?,?,?,?,?,?,?,?,?)""",
                     (sid, rec.get("run_id"), rec["subject"].lower(), rec["topic"], rec["claim"], excerpt,
-                     text_hash(excerpt), rec.get("value"), rec.get("as_of")))
+                     text_hash(excerpt), rec.get("value"), rec.get("as_of"), rec.get("ref")))
     elif kind == "capability":
         upsert(con, "capabilities", ["product", "capability"],
                {k: rec.get(k) for k in ("product", "capability", "value", "detail", "fact_ids")})
@@ -427,9 +427,24 @@ def write_generated(name, title, lines):
     (GENERATED / name).write_text("\n".join(header + lines) + "\n")
 
 
+def ref_resolver(con):
+    """Map stable refs to display ids (F12 / E7) and flag refs that point nowhere."""
+    table = {r[0]: f"F{r[1]}" for r in con.execute("SELECT ref, id FROM facts WHERE ref IS NOT NULL")}
+    table |= {r[0]: f"E{r[1]}" for r in con.execute("SELECT ref, id FROM evidence WHERE ref IS NOT NULL")}
+    def resolve(text):
+        if not text:
+            return ""
+        out = []
+        for tok in (t.strip() for t in re.split(r"[,\s]+", text) if t.strip()):
+            out.append(table.get(tok) or (tok if re.fullmatch(r"[EFS]\d+", tok) else f"{tok}(missing)"))
+        return ",".join(out)
+    return resolve
+
+
 def cmd_render(_args):
     with connect() as con:
         q = lambda sql, *a: con.execute(sql, a).fetchall()
+        res = ref_resolver(con)
 
         # Source catalog
         lines = ["| ID | Type | Title | URL | Published | Retrieved | Snapshot |", "|---|---|---|---|---|---|---|"]
@@ -462,11 +477,11 @@ def cmd_render(_args):
             row = []
             for c in caps:
                 r = cell.get((p, c))
-                row.append(f"{sym[r['value']]}{' ' + r['fact_ids'] if r and r['fact_ids'] else ''}" if r else "")
+                row.append(f"{sym[r['value']]}{' ' + res(r['fact_ids']) if r['fact_ids'] else ''}" if r else "")
             lines.append(f"| {p} | " + " | ".join(row) + " |")
         lines += ["", "## Cell details", ""]
         for r in q("SELECT * FROM capabilities WHERE detail IS NOT NULL ORDER BY product, capability"):
-            lines.append(f"- **{r['product']} / {r['capability']}** ({r['value']}): {r['detail']} [{r['fact_ids'] or 'no fact'}]")
+            lines.append(f"- **{r['product']} / {r['capability']}** ({r['value']}): {r['detail']} [{res(r['fact_ids']) or 'no fact'}]")
         write_generated("CAPABILITY_MATRIX.md", "Competitor capability matrix", lines)
 
         # Pricing
@@ -535,7 +550,7 @@ def cmd_render(_args):
                 if h["rejection_reason"]:
                     lines.append(f"**Rejected:** {h['rejection_reason']}")
                 for r in q("SELECT * FROM scores WHERE hypothesis = ? ORDER BY criterion", h["slug"]):
-                    lines.append(f"- {r['criterion']}: {r['score']} ({r['basis']}) {r['rationale']} [{r['refs'] or ''}]")
+                    lines.append(f"- {r['criterion']}: {r['score']} ({r['basis']}) {r['rationale']} [{res(r['refs'])}]")
                 lines.append("")
         write_generated("HYPOTHESES.md", "Hypotheses and scores", lines)
 
@@ -545,7 +560,7 @@ def cmd_render(_args):
         for r in q("SELECT * FROM risks ORDER BY CASE impact WHEN 'launch_blocking' THEN 0 WHEN 'high' THEN 1 "
                    "WHEN 'medium' THEN 2 ELSE 3 END, area"):
             lines.append(f"| **{r['slug']}**: {md_escape(r['risk'])} | {r['area']} | {r['likelihood']} | {r['impact']} | "
-                         f"{'yes' if r['needs_provider_clarification'] else ''} | {r['refs'] or ''} | {md_escape(r['mitigation'])} |")
+                         f"{'yes' if r['needs_provider_clarification'] else ''} | {res(r['refs'])} | {md_escape(r['mitigation'])} |")
         write_generated("RISK_REGISTER.md", "Provider policy, compliance and technical risk register", lines)
 
         lines = ["| Unknown | Why it matters | Gate | Resolve by | Status |", "|---|---|---|---|---|"]
@@ -557,7 +572,7 @@ def cmd_render(_args):
         lines = ["| Gate | Pass criterion | Status | Rationale | Refs |", "|---|---|---|---|---|"]
         for r in q("SELECT * FROM gates ORDER BY id"):
             lines.append(f"| {r['id']}. {r['name']} | {md_escape(r['pass_criterion'])} | **{r['status']}** | "
-                         f"{md_escape(r['rationale'])} | {r['refs'] or ''} |")
+                         f"{md_escape(r['rationale'])} | {res(r['refs'])} |")
         write_generated("GATES.md", "Go/no-go scorecard", lines)
     print(f"rendered {len(list(GENERATED.glob('*.md')))} files into {GENERATED.relative_to(ROOT.parent)}")
 
