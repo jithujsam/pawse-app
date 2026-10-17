@@ -10,6 +10,25 @@
 | **Price anchor** | $50/month (about ₹4,200) self-serve plan |
 | **Map/API constraint** | Google Maps Platform and open-source components only. No Mappls/MapmyIndia APIs or data. |
 
+> ### Revision 0.2 (2026-10-17): launch market changed to the US and UK
+> The founder will **not** sell in India; the first markets are the **United States and United Kingdom**.
+> The jobs to be done, templates, flows and the $50/month plan stay the same. Where the India-specific
+> sections below conflict, this block wins:
+>
+> | Area | v0.1 (India) | v0.2 (US/UK), as built |
+> |---|---|---|
+> | Boundaries | Pincode / district / state | US: ZIP (ZCTA), county, state (Census TIGER, public domain). UK: postcode district, local authority (ONS Open Geography, OGL) |
+> | Geocoding | Google Geocoding (India pricing) | **Free government/open sources first:** US Census batch geocoder (street) then ZIP centroid (Census Gazetteer); UK postcodes.io (full postcode, then outward code). Google is now only an optional later add-on |
+> | Why the change | Google India: 70k free/month, $1.50/1k | Google global: **10k free/month, $5.00/1k geocodes and $7.00/1k map loads** [Fact] (https://developers.google.com/maps/billing-and-pricing/pricing). 5k geocodes would cost $25 of a $50 plan, so the open stack is used instead |
+> | Basemap | Google Maps JS | MapLibre + OpenFreeMap (free OSM tiles, no key, attribution required) [Fact] (https://openfreemap.org) |
+> | Demand proxy | GHSL/WorldPop | US Census ACS (population, businesses) and UK ONS population estimates (both open) |
+> | Payments | Razorpay + Stripe | Stripe (USD, GBP) |
+> | Hosting / privacy | Mumbai, DPDP Act | Supabase US East or London; CCPA/state privacy laws (US), UK GDPR (UK); DPA template |
+> | ICP | Indian dealer/distributor brands | US/UK companies selling through dealers, distributors or field reps (building products, HVAC, equipment, wholesale, franchise) |
+>
+> Founder IP note: selling outside India removes the market overlap with MapmyIndia, but the employment
+> contract's IP-assignment and moonlighting clauses can still apply to anything built while employed. Open question #1 stands.
+
 ### How to read this document
 
 Every claim is tagged with one of three labels:
