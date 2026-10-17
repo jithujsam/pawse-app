@@ -1,0 +1,3 @@
+{"kind":"run","id":"ws3-customer","phase":"discovery","workstream":"customer","agent":"ws3"}
+{"kind":"query","run_id":"ws3-customer","tool":"arctic_shift","query":"comments r/sales body='forgot to follow up' (timeout, no results)","result_count":0}
+{"kind":"query","run_id":"ws3-customer","tool":"arctic_shift","query":"posts r/sales query='follow ups falling through'","result_count":3}
