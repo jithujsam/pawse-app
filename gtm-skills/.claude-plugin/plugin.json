@@ -1,0 +1,10 @@
+{
+  "name": "gtm-skills",
+  "description": "Outbound GTM engineering inside Claude Code, built on free data sources: ICP, lead sourcing, scoring, first lines, sequences, deliverability audits and Clay-table migration.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Jithu Jobin Sam"
+  },
+  "license": "MIT",
+  "keywords": ["gtm", "outbound", "cold-email", "lead-generation", "clay"]
+}

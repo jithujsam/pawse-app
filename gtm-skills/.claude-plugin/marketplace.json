@@ -1,0 +1,13 @@
+{
+  "name": "gtm-skills",
+  "owner": {
+    "name": "Jithu Jobin Sam"
+  },
+  "plugins": [
+    {
+      "name": "gtm-skills",
+      "source": "./",
+      "description": "Outbound GTM engineering inside Claude Code, on a free data stack."
+    }
+  ]
+}
