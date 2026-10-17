@@ -3,7 +3,7 @@ import type { Country } from "@/lib/geo/postcode";
 import { censusBatchGeocode } from "@/lib/geocode/census";
 import { geocodeBatch, type GeocodeProviders } from "@/lib/geocode/cascade";
 import { lookupOutcodes, lookupPostcodes } from "@/lib/geocode/postcodesio";
-import type { LatLng } from "@/lib/geocode/types";
+import { lookupZipCentroids } from "@/lib/geocode/zcta";
 import { createClient } from "@/lib/supabase/server";
 
 // Geocodes the next batch of pending rows in a dataset. The browser calls this repeatedly until
@@ -44,12 +44,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (pending.length > 0) {
     const providers: GeocodeProviders = {
       census: (addresses) => censusBatchGeocode(addresses),
-      zipCentroids: async (zips) => {
-        if (!zips.length) return new Map();
-        const { data, error } = await supabase.from("ref_us_zcta").select("zip, lat, lng").in("zip", zips);
-        if (error) throw new Error(error.message);
-        return new Map<string, LatLng>(data.map((z) => [z.zip, { lat: z.lat, lng: z.lng }]));
-      },
+      zipCentroids: lookupZipCentroids,
       ukPostcodes: (postcodes) => lookupPostcodes(postcodes),
       ukOutcodes: (outcodes) => lookupOutcodes(outcodes),
     };

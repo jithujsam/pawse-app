@@ -10,7 +10,7 @@ find coverage gaps and share a report. Product spec: [PRD.md](PRD.md).
 - Upload CSV or Excel (.xlsx), with columns mapped automatically and editable.
 - Every row is placed on the map using the cheapest source that works:
   1. latitude/longitude already in the sheet
-  2. **US:** street address via the [US Census geocoder](https://geocoding.geo.census.gov/geocoder/) (free), then the ZIP code centre (Census Gazetteer)
+  2. **US:** street address via the [US Census geocoder](https://geocoding.geo.census.gov/geocoder/) (free), then the ZIP code centre (Census Gazetteer, bundled)
   3. **UK:** postcode via [postcodes.io](https://postcodes.io) (free, ONS/OS open data), then the outward-code centre
 - Map with clustering and confidence colours on free [OpenFreeMap](https://openfreemap.org) tiles, plus a list of rows that need attention.
 
@@ -23,14 +23,13 @@ Next.js 16 (App Router) · Supabase (Postgres, Auth, row-level security) · MapL
 ## Setup
 
 1. Create a Supabase project. Pick a region near your customers (US East or London).
-2. Apply the schema: `supabase db push`, or run `supabase/migrations/*.sql` in the SQL editor.
-3. Load US ZIP centroids (needed for the US ZIP fallback):
-   ```bash
-   DATABASE_URL="postgresql://postgres:...@db.<ref>.supabase.co:5432/postgres" scripts/load-zcta.sh
-   ```
-4. In Supabase → Authentication → URL Configuration, set the Site URL and add `http://localhost:3000/auth/confirm` (and your production URL) to the redirect allow-list.
-5. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key.
-6. Run `npm install` and then `npm run dev`.
+2. Apply the schema: `supabase db push`, or run `supabase/migrations/*.sql` in order in the SQL editor.
+3. In Supabase → Authentication → URL Configuration, set the Site URL to where the app runs and add
+   `<that URL>/auth/confirm` to the redirect URLs (e.g. `http://localhost:3000/auth/confirm`).
+4. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key.
+5. Run `npm install` and then `npm run dev`.
+
+US ZIP code centres ship with the app in `data/us-zcta.csv`; `scripts/build-zcta.sh` rebuilds the file from the Census Gazetteer.
 
 ## Checks
 
