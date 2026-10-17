@@ -181,3 +181,411 @@
 {"kind": "fact", "run_id": "ws2-competitors", "url": "https://knowledge.apollo.io/hc/en-us/articles/4409878127629-Prevent-Replies-From-Ending-a-Sequence", "subject": "apollo", "topic": "capability.reply_autostop", "claim": "UNVERIFIED (search snippet only): Apollo sequences end for a contact on reply by default; users can disable the reply trigger in sequence settings.", "excerpt": "Apollo doesn't end the sequence when a contact replies to an email", "value": "yes (UNVERIFIED)", "as_of": "2026-10-17", "ref": "apollo-cap-reply-finish"}
 {"kind": "fact", "run_id": "ws2-competitors", "url": "https://www.close.com/pricing", "subject": "close", "topic": "pricing.free", "claim": "Close has no free plan; it offers a 14-day free trial without credit card and a 30-day money-back guarantee.", "excerpt": "Try Close free for 14 Days Sign up, import leads, and start selling within an hour. No credit card. No contracts.", "value": "no free plan; 14-day trial", "as_of": "2026-10-17", "ref": "close-pricing-trial"}
 {"kind": "fact", "run_id": "ws2-competitors", "url": "https://www.mixmax.com/pricing", "subject": "mixmax", "topic": "pricing.free", "claim": "Mixmax has a USD 0 tier limited to 50 sequence recipients a month with limited features.", "excerpt": "I follow up now and then 50 recipients a month $0 /mo Limited features.", "value": "free 50 recipients, limited", "as_of": "2026-10-17", "ref": "mixmax-pricing-free"}
+{"kind": "capability", "product": "gmail", "capability": "gmail", "value": "n/a", "detail": "Gmail is the provider itself.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "outlook", "value": "n/a", "detail": "Provider product; not applicable.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "inside_inbox", "value": "yes", "detail": "Nudges and Gemini features are native to the Gmail inbox.", "fact_ids": "gmail-cap-nudges,gmail-cap-gemini-write"}
+{"kind": "capability", "product": "gmail", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "sequences", "value": "no", "detail": "Documented follow-up help is nudges/suggestions; no automated multi-step sending in the documented feature list.", "fact_ids": "gmail-cap-nudges,gmail-cap-gemini-write"}
+{"kind": "capability", "product": "gmail", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "thread_to_deal", "value": "no", "detail": "No deal object exists in the documented features, so threads are not associated with deals.", "fact_ids": "gmail-cap-ai-inbox"}
+{"kind": "capability", "product": "gmail", "capability": "pipeline", "value": "no", "detail": "Documented Gemini/AI Inbox features are email-level (to-dos, topics, summaries); no deal or pipeline object.", "fact_ids": "gmail-cap-ai-inbox,gmail-cap-gemini-write"}
+{"kind": "capability", "product": "gmail", "capability": "stalled_alerts", "value": "partial", "detail": "Follow-up nudges on sent mail with no reply approximate stalled-thread alerts but at email, not deal, level.", "fact_ids": "gmail-cap-nudges"}
+{"kind": "capability", "product": "gmail", "capability": "tasks_reminders", "value": "partial", "detail": "Nudges surface unanswered received and sent mail, chosen by Gmail, not scheduled reminders.", "fact_ids": "gmail-cap-nudges"}
+{"kind": "capability", "product": "gmail", "capability": "ai_writing", "value": "yes", "detail": "Help me write, Suggested Replies and Summarize/draft, plan- and country-dependent.", "fact_ids": "gmail-cap-gemini-write,gmail-gemini-availability"}
+{"kind": "capability", "product": "gmail", "capability": "ai_next_action", "value": "partial", "detail": "AI Inbox suggested to-dos (beta, US/English, paid plans) from Primary-tab mail.", "fact_ids": "gmail-cap-ai-inbox"}
+{"kind": "capability", "product": "gmail", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "sends_via_user_mailbox", "value": "n/a", "detail": "It is the mailbox.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "gmail", "capability": "free_plan", "value": "partial", "detail": "Nudges are a Gmail setting; most Gemini features need a paid Google AI or Workspace plan or are US-only for free accounts.", "fact_ids": "gmail-cap-nudges,gmail-gemini-availability"}
+{"kind": "capability", "product": "gmail", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "gmail", "value": "n/a", "detail": "Provider product; not applicable.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "outlook", "value": "n/a", "detail": "Outlook is the provider itself.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "inside_inbox", "value": "yes", "detail": "Flags and Copilot Prioritize run natively in Outlook.", "fact_ids": "outlook-cap-flags,outlook-cap-prioritize"}
+{"kind": "capability", "product": "outlook", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "sequences", "value": "no", "detail": "Documented follow-up tooling is manual per-message flags with reminders.", "fact_ids": "outlook-cap-flags"}
+{"kind": "capability", "product": "outlook", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "thread_to_deal", "value": "no", "detail": "No deal object in documented features.", "fact_ids": "outlook-cap-prioritize"}
+{"kind": "capability", "product": "outlook", "capability": "pipeline", "value": "no", "detail": "Documented Copilot features prioritise and summarise mail; no deal object.", "fact_ids": "outlook-cap-prioritize"}
+{"kind": "capability", "product": "outlook", "capability": "stalled_alerts", "value": "no", "detail": "Neither flags nor Prioritize detect stalled conversations; flags are user-set.", "fact_ids": "outlook-cap-flags,outlook-cap-prioritize"}
+{"kind": "capability", "product": "outlook", "capability": "tasks_reminders", "value": "partial", "detail": "Manual follow-up flags with reminder alerts on sent/received messages.", "fact_ids": "outlook-cap-flags"}
+{"kind": "capability", "product": "outlook", "capability": "ai_writing", "value": "yes", "detail": "Copilot drafts, matches user's voice and summarises threads (Copilot licence).", "fact_ids": "outlook-cap-copilot-draft"}
+{"kind": "capability", "product": "outlook", "capability": "ai_next_action", "value": "partial", "detail": "Copilot Prioritize ranks new incoming mail high/normal/low with explanations; not deal-aware.", "fact_ids": "outlook-cap-prioritize"}
+{"kind": "capability", "product": "outlook", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "sends_via_user_mailbox", "value": "n/a", "detail": "It is the mailbox.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "free_plan", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outlook", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "hubspot", "capability": "gmail", "value": "yes", "detail": "Sales Chrome extension tracks and logs Gmail on all plans.", "fact_ids": "hubspot-cap-extension"}
+{"kind": "capability", "product": "hubspot", "capability": "outlook", "value": "yes", "detail": "Office 365 and Outlook desktop add-ins exist.", "fact_ids": "hubspot-cap-extension"}
+{"kind": "capability", "product": "hubspot", "capability": "inside_inbox", "value": "yes", "detail": "Extension/add-in lets reps log, track, enrol in sequences and view records from the inbox.", "fact_ids": "hubspot-cap-extension"}
+{"kind": "capability", "product": "hubspot", "capability": "prospect_data", "value": "yes", "detail": "Breeze prospecting agent monitors intent signals to source companies/contacts (credits).", "fact_ids": "hubspot-cap-intent"}
+{"kind": "capability", "product": "hubspot", "capability": "sequences", "value": "yes", "detail": "Sequences require Sales Hub Professional or Enterprise.", "fact_ids": "hubspot-cap-sequences-pro"}
+{"kind": "capability", "product": "hubspot", "capability": "reply_autostop", "value": "yes", "detail": "Contacts unenrol by default on reply or meeting booked.", "fact_ids": "hubspot-cap-reply-unenroll"}
+{"kind": "capability", "product": "hubspot", "capability": "thread_to_deal", "value": "partial", "detail": "Emails are logged to CRM records via the extension; automatic deal association rules were not documented in collected pages.", "fact_ids": "hubspot-cap-extension,hubspot-cap-free-pipeline"}
+{"kind": "capability", "product": "hubspot", "capability": "pipeline", "value": "yes", "detail": "Deal pipeline in free CRM.", "fact_ids": "hubspot-cap-free-pipeline"}
+{"kind": "capability", "product": "hubspot", "capability": "stalled_alerts", "value": "unknown", "detail": "No collected HubSpot doc on stalled-deal alerts.", "fact_ids": ""}
+{"kind": "capability", "product": "hubspot", "capability": "tasks_reminders", "value": "yes", "detail": "Task reminders within sequences and task management in free CRM.", "fact_ids": "hubspot-cap-sequence-tasks,hubspot-pricing-free"}
+{"kind": "capability", "product": "hubspot", "capability": "ai_writing", "value": "yes", "detail": "Prospecting agent writes personalised adaptive outreach (Starter+, credits).", "fact_ids": "hubspot-cap-prospecting-agent"}
+{"kind": "capability", "product": "hubspot", "capability": "ai_next_action", "value": "partial", "detail": "Prospecting agent adapts steps to engagement; no collected doc on a daily attention view for deals.", "fact_ids": "hubspot-cap-prospecting-agent"}
+{"kind": "capability", "product": "hubspot", "capability": "team_visibility", "value": "yes", "detail": "Shared CRM with activity history and seat model for teams.", "fact_ids": "hubspot-cap-free-pipeline,hubspot-pricing-seats"}
+{"kind": "capability", "product": "hubspot", "capability": "sends_via_user_mailbox", "value": "yes", "detail": "Sequence emails go through the rep's connected inbox.", "fact_ids": "hubspot-cap-sequence-mailbox"}
+{"kind": "capability", "product": "hubspot", "capability": "own_send_infra", "value": "no", "detail": "Sequence emails explicitly not sent via HubSpot's marketing servers.", "fact_ids": "hubspot-cap-sequence-mailbox"}
+{"kind": "capability", "product": "hubspot", "capability": "free_plan", "value": "yes", "detail": "Free CRM up to 2 users and 1,000 contacts with email tracking, deals, tasks.", "fact_ids": "hubspot-pricing-free"}
+{"kind": "capability", "product": "hubspot", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "gmail", "value": "yes", "detail": "Starter lists email integration with Gmail or Outlook.", "fact_ids": "salesforce-cap-email-sync"}
+{"kind": "capability", "product": "salesforce", "capability": "outlook", "value": "yes", "detail": "Starter lists email integration with Gmail or Outlook.", "fact_ids": "salesforce-cap-email-sync"}
+{"kind": "capability", "product": "salesforce", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "sequences", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "thread_to_deal", "value": "yes", "detail": "AI automatically syncs emails, events and contacts.", "fact_ids": "salesforce-cap-email-sync"}
+{"kind": "capability", "product": "salesforce", "capability": "pipeline", "value": "yes", "detail": "Lead, account, contact and opportunity management.", "fact_ids": "salesforce-cap-email-sync"}
+{"kind": "capability", "product": "salesforce", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesforce", "capability": "free_plan", "value": "no", "detail": "Only a 30-day trial; Starter Suite USD 25/user/mo.", "fact_ids": "salesforce-pricing-starter"}
+{"kind": "capability", "product": "salesforce", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "gmail", "value": "yes", "detail": "Gmail connectable even on free plan.", "fact_ids": "apollo-cap-free-gmail"}
+{"kind": "capability", "product": "apollo", "capability": "outlook", "value": "yes", "detail": "Microsoft and other providers on paid plans.", "fact_ids": "apollo-cap-free-gmail"}
+{"kind": "capability", "product": "apollo", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "prospect_data", "value": "yes", "detail": "Contact database with email/phone credits.", "fact_ids": "apollo-cap-mailboxes,apollo-positioning"}
+{"kind": "capability", "product": "apollo", "capability": "sequences", "value": "yes", "detail": "Email sequencing from Basic; campaigns on all accounts.", "fact_ids": "apollo-cap-sequences-pipeline,apollo-cap-free-gmail"}
+{"kind": "capability", "product": "apollo", "capability": "reply_autostop", "value": "yes", "detail": "Sequence finishes on reply by default (search snippet only, unverified).", "fact_ids": "apollo-cap-reply-finish"}
+{"kind": "capability", "product": "apollo", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "pipeline", "value": "yes", "detail": "Pipeline tools to manage deals at entry pricing.", "fact_ids": "apollo-cap-sequences-pipeline"}
+{"kind": "capability", "product": "apollo", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "apollo", "capability": "sends_via_user_mailbox", "value": "yes", "detail": "Connects Gmail/Microsoft mailboxes for campaigns.", "fact_ids": "apollo-cap-free-gmail"}
+{"kind": "capability", "product": "apollo", "capability": "own_send_infra", "value": "yes", "detail": "Credits buy warmup, domains and mailboxes.", "fact_ids": "apollo-cap-mailboxes"}
+{"kind": "capability", "product": "apollo", "capability": "free_plan", "value": "yes", "detail": "Free plan with email campaigns (Gmail only).", "fact_ids": "apollo-cap-free-gmail,apollo-pricing-plans"}
+{"kind": "capability", "product": "apollo", "capability": "api", "value": "partial", "detail": "API access stated for Custom plans.", "fact_ids": "apollo-cap-api"}
+{"kind": "capability", "product": "instantly", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "prospect_data", "value": "yes", "detail": "450M+ B2B lead database via credits.", "fact_ids": "instantly-cap-ai"}
+{"kind": "capability", "product": "instantly", "capability": "sequences", "value": "yes", "detail": "Campaign outreach plans and automated salesflows.", "fact_ids": "instantly-pricing-outreach,instantly-cap-crm"}
+{"kind": "capability", "product": "instantly", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "thread_to_deal", "value": "partial", "detail": "Campaign replies land in master inbox and CRM; general mailbox threads not documented.", "fact_ids": "instantly-cap-reply-capture"}
+{"kind": "capability", "product": "instantly", "capability": "pipeline", "value": "yes", "detail": "Built-in AI CRM with pipeline.", "fact_ids": "instantly-cap-crm"}
+{"kind": "capability", "product": "instantly", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "ai_writing", "value": "yes", "detail": "AI email writer and reply agent.", "fact_ids": "instantly-cap-ai,instantly-pricing-bundles"}
+{"kind": "capability", "product": "instantly", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "team_visibility", "value": "yes", "detail": "Unlimited seats and shared master inbox.", "fact_ids": "instantly-cap-crm"}
+{"kind": "capability", "product": "instantly", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "instantly", "capability": "own_send_infra", "value": "yes", "detail": "Unlimited email accounts and warmup.", "fact_ids": "instantly-pricing-outreach"}
+{"kind": "capability", "product": "instantly", "capability": "free_plan", "value": "partial", "detail": "CRM can be started free; outreach plans are paid.", "fact_ids": "instantly-cap-crm,instantly-pricing-outreach"}
+{"kind": "capability", "product": "instantly", "capability": "api", "value": "yes", "detail": "API, webhooks and connectors push data to external CRMs.", "fact_ids": "instantly-cap-crm"}
+{"kind": "capability", "product": "smartlead", "capability": "gmail", "value": "yes", "detail": "Google mailboxes connectable/purchasable.", "fact_ids": "smartlead-cap-rotation"}
+{"kind": "capability", "product": "smartlead", "capability": "outlook", "value": "yes", "detail": "Outlook mailboxes connectable/purchasable.", "fact_ids": "smartlead-cap-rotation"}
+{"kind": "capability", "product": "smartlead", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "sequences", "value": "yes", "detail": "Cold email campaigns with rotation across mailboxes.", "fact_ids": "smartlead-cap-rotation"}
+{"kind": "capability", "product": "smartlead", "capability": "reply_autostop", "value": "partial", "detail": "AI categorises replies and triggers next steps; explicit stop-on-reply not on collected pages.", "fact_ids": "smartlead-cap-reply-ai"}
+{"kind": "capability", "product": "smartlead", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "pipeline", "value": "yes", "detail": "Drag-and-drop deal board synced to master inbox.", "fact_ids": "smartlead-cap-crm"}
+{"kind": "capability", "product": "smartlead", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "smartlead", "capability": "own_send_infra", "value": "yes", "detail": "Mailbox rotation, warmup, pre-warmed mailboxes, SmartServers.", "fact_ids": "smartlead-cap-rotation,smartlead-cap-warmup"}
+{"kind": "capability", "product": "smartlead", "capability": "free_plan", "value": "no", "detail": "Paid plans from USD 39/mo.", "fact_ids": "smartlead-pricing-base"}
+{"kind": "capability", "product": "smartlead", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "prospect_data", "value": "yes", "detail": "Lead finder credits with waterfall enrichment included in plans.", "fact_ids": "saleshandy-pricing-plans"}
+{"kind": "capability", "product": "saleshandy", "capability": "sequences", "value": "yes", "detail": "Multichannel sequences and reply-based subsequences.", "fact_ids": "saleshandy-cap-sequences"}
+{"kind": "capability", "product": "saleshandy", "capability": "reply_autostop", "value": "partial", "detail": "Subsequences trigger on prospect responses; explicit stop rule not quoted.", "fact_ids": "saleshandy-cap-sequences"}
+{"kind": "capability", "product": "saleshandy", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "pipeline", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "own_send_infra", "value": "yes", "detail": "Sells mailboxes, unlimited warmup.", "fact_ids": "saleshandy-cap-infra"}
+{"kind": "capability", "product": "saleshandy", "capability": "free_plan", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "saleshandy", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "streak", "capability": "gmail", "value": "yes", "detail": "Runs inside Gmail as an extension.", "fact_ids": "streak-positioning"}
+{"kind": "capability", "product": "streak", "capability": "outlook", "value": "no", "detail": "Gmail/Google Workspace only per install flow.", "fact_ids": "streak-positioning"}
+{"kind": "capability", "product": "streak", "capability": "inside_inbox", "value": "yes", "detail": "Full CRM inside Gmail.", "fact_ids": "streak-positioning"}
+{"kind": "capability", "product": "streak", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "streak", "capability": "sequences", "value": "partial", "detail": "Mail merge with automatic follow-ups (1,500/day), not multi-channel sequences.", "fact_ids": "streak-cap-mailmerge-followups"}
+{"kind": "capability", "product": "streak", "capability": "reply_autostop", "value": "yes", "detail": "Repliers excluded from remaining follow-ups.", "fact_ids": "streak-cap-reply-exclude"}
+{"kind": "capability", "product": "streak", "capability": "thread_to_deal", "value": "yes", "detail": "Email history attached to deals; magic fields like last reply, time in stage.", "fact_ids": "streak-cap-magic-fields"}
+{"kind": "capability", "product": "streak", "capability": "pipeline", "value": "yes", "detail": "Unlimited pipelines on Pro.", "fact_ids": "streak-pricing-pro,streak-positioning"}
+{"kind": "capability", "product": "streak", "capability": "stalled_alerts", "value": "partial", "detail": "Time-in-stage field plus Pro+ rule automations; no explicit stalled alert.", "fact_ids": "streak-cap-automations,streak-cap-magic-fields"}
+{"kind": "capability", "product": "streak", "capability": "tasks_reminders", "value": "yes", "detail": "Tasks and reminders for follow-ups.", "fact_ids": "streak-cap-tasks"}
+{"kind": "capability", "product": "streak", "capability": "ai_writing", "value": "unknown", "detail": "Pricing lists summaries/Q&A/agendas; no AI email drafting found.", "fact_ids": ""}
+{"kind": "capability", "product": "streak", "capability": "ai_next_action", "value": "partial", "detail": "Deal summaries and deal Q&A; credit-limited.", "fact_ids": "streak-cap-ai"}
+{"kind": "capability", "product": "streak", "capability": "team_visibility", "value": "yes", "detail": "Automatic email sharing and team communication history.", "fact_ids": "streak-cap-magic-fields,streak-cap-team-history"}
+{"kind": "capability", "product": "streak", "capability": "sends_via_user_mailbox", "value": "yes", "detail": "Mail merge sends from user's Gmail.", "fact_ids": "streak-cap-gmail-send"}
+{"kind": "capability", "product": "streak", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "streak", "capability": "free_plan", "value": "partial", "detail": "Free email tools only; no pipelines.", "fact_ids": "streak-pricing-free"}
+{"kind": "capability", "product": "streak", "capability": "api", "value": "yes", "detail": "REST API on paid plans.", "fact_ids": "streak-cap-api"}
+{"kind": "capability", "product": "mixmax", "capability": "gmail", "value": "yes", "detail": "Works in Gmail.", "fact_ids": "mixmax-cap-inbox"}
+{"kind": "capability", "product": "mixmax", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "inside_inbox", "value": "yes", "detail": "Templates, AI and reminders inside Gmail.", "fact_ids": "mixmax-cap-inbox"}
+{"kind": "capability", "product": "mixmax", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "sequences", "value": "yes", "detail": "Email/call/task/LinkedIn sequences.", "fact_ids": "mixmax-cap-sequences"}
+{"kind": "capability", "product": "mixmax", "capability": "reply_autostop", "value": "yes", "detail": "Sequences run until someone replies.", "fact_ids": "mixmax-cap-sequences"}
+{"kind": "capability", "product": "mixmax", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "pipeline", "value": "no", "detail": "Relies on CRM sync to external CRM rather than own pipeline.", "fact_ids": "mixmax-cap-inbox"}
+{"kind": "capability", "product": "mixmax", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "tasks_reminders", "value": "yes", "detail": "Follow-up reminders at send time.", "fact_ids": "mixmax-cap-inbox"}
+{"kind": "capability", "product": "mixmax", "capability": "ai_writing", "value": "yes", "detail": "AI Compose in the inbox.", "fact_ids": "mixmax-cap-inbox"}
+{"kind": "capability", "product": "mixmax", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "mixmax", "capability": "free_plan", "value": "partial", "detail": "USD 0 tier for 50 recipients, limited features.", "fact_ids": "mixmax-pricing-free"}
+{"kind": "capability", "product": "mixmax", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "gmail", "value": "yes", "detail": "Gmail Chrome extension.", "fact_ids": "yesware-cap-inbox"}
+{"kind": "capability", "product": "yesware", "capability": "outlook", "value": "yes", "detail": "Outlook add-on.", "fact_ids": "yesware-cap-inbox"}
+{"kind": "capability", "product": "yesware", "capability": "inside_inbox", "value": "yes", "detail": "Extension/add-in.", "fact_ids": "yesware-cap-inbox"}
+{"kind": "capability", "product": "yesware", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "sequences", "value": "partial", "detail": "Campaigns; only 10-20 recipients/month below Premium.", "fact_ids": "yesware-pricing-plans"}
+{"kind": "capability", "product": "yesware", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "pipeline", "value": "no", "detail": "Plans list tracking/campaigns and Salesforce sync, no own pipeline.", "fact_ids": "yesware-pricing-plans"}
+{"kind": "capability", "product": "yesware", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "yesware", "capability": "free_plan", "value": "yes", "detail": "Free forever with basic tracking and 10 campaign recipients.", "fact_ids": "yesware-pricing-plans"}
+{"kind": "capability", "product": "yesware", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "sequences", "value": "yes", "detail": "Cadence module.", "fact_ids": "salesloft-cap-modules"}
+{"kind": "capability", "product": "salesloft", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "pipeline", "value": "yes", "detail": "Deals module.", "fact_ids": "salesloft-cap-modules"}
+{"kind": "capability", "product": "salesloft", "capability": "stalled_alerts", "value": "yes", "detail": "Inspect shows pipeline risk early.", "fact_ids": "salesloft-cap-modules"}
+{"kind": "capability", "product": "salesloft", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "ai_next_action", "value": "yes", "detail": "Rhythm focuses sellers on what matters.", "fact_ids": "salesloft-cap-modules"}
+{"kind": "capability", "product": "salesloft", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "salesloft", "capability": "free_plan", "value": "no", "detail": "Demo-led, no public price.", "fact_ids": "salesloft-pricing-demo"}
+{"kind": "capability", "product": "salesloft", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "sequences", "value": "yes", "detail": "Multi-channel engagement and sequences.", "fact_ids": "outreach-cap-agents"}
+{"kind": "capability", "product": "outreach", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "pipeline", "value": "yes", "detail": "Deal and pipeline management.", "fact_ids": "outreach-cap-agents"}
+{"kind": "capability", "product": "outreach", "capability": "stalled_alerts", "value": "yes", "detail": "Deal health and alerts; agents flag risks.", "fact_ids": "outreach-cap-agents"}
+{"kind": "capability", "product": "outreach", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "ai_next_action", "value": "yes", "detail": "Agents automate follow-ups and pipeline updates.", "fact_ids": "outreach-cap-agents"}
+{"kind": "capability", "product": "outreach", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "outreach", "capability": "free_plan", "value": "no", "detail": "Custom quotes only.", "fact_ids": "outreach-pricing-quote"}
+{"kind": "capability", "product": "outreach", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "sequences", "value": "unknown", "detail": "Not covered by collected pricing page.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "pipeline", "value": "no", "detail": "Positioned as shared inbox/ticketing for support.", "fact_ids": "front-positioning"}
+{"kind": "capability", "product": "front", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "ai_writing", "value": "partial", "detail": "AI Copilot drafts replies as add-on.", "fact_ids": "front-cap-copilot"}
+{"kind": "capability", "product": "front", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "team_visibility", "value": "yes", "detail": "Shared inboxes for teams.", "fact_ids": "front-positioning"}
+{"kind": "capability", "product": "front", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "front", "capability": "free_plan", "value": "no", "detail": "Paid from USD 25/seat/mo annual.", "fact_ids": "front-pricing-plans"}
+{"kind": "capability", "product": "front", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "inside_inbox", "value": "yes", "detail": "It is the email client (replaces the inbox UI).", "fact_ids": "superhuman-positioning"}
+{"kind": "capability", "product": "superhuman", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "sequences", "value": "no", "detail": "Feature list contains reminders/drafts but no sequences.", "fact_ids": "superhuman-cap-mail-features"}
+{"kind": "capability", "product": "superhuman", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "thread_to_deal", "value": "no", "detail": "Shows CRM data read-only; no documented deal association.", "fact_ids": "superhuman-cap-crm-readonly"}
+{"kind": "capability", "product": "superhuman", "capability": "pipeline", "value": "no", "detail": "Read-only CRM integrations, no own pipeline.", "fact_ids": "superhuman-cap-crm-readonly"}
+{"kind": "capability", "product": "superhuman", "capability": "stalled_alerts", "value": "partial", "detail": "Reminds on emails awaiting response; thread level only.", "fact_ids": "superhuman-cap-auto-reminders"}
+{"kind": "capability", "product": "superhuman", "capability": "tasks_reminders", "value": "yes", "detail": "Auto Reminders when an email needs a response, Remind Me.", "fact_ids": "superhuman-cap-auto-reminders,superhuman-cap-mail-features"}
+{"kind": "capability", "product": "superhuman", "capability": "ai_writing", "value": "yes", "detail": "Instant Reply / Auto Drafts write replies and follow-ups.", "fact_ids": "superhuman-cap-instant-reply,superhuman-cap-auto-reminders"}
+{"kind": "capability", "product": "superhuman", "capability": "ai_next_action", "value": "partial", "detail": "Email triage (Auto Labels, Split Inbox), not deal-level.", "fact_ids": "superhuman-cap-mail-features"}
+{"kind": "capability", "product": "superhuman", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "superhuman", "capability": "free_plan", "value": "no", "detail": "Mail only in Business (USD 33/member/mo annual).", "fact_ids": "superhuman-pricing-business"}
+{"kind": "capability", "product": "superhuman", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "gmail", "value": "yes", "detail": "Syncs Gmail.", "fact_ids": "attio-cap-mailbox"}
+{"kind": "capability", "product": "attio", "capability": "outlook", "value": "yes", "detail": "Syncs Microsoft accounts.", "fact_ids": "attio-cap-mailbox"}
+{"kind": "capability", "product": "attio", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "sequences", "value": "yes", "detail": "Sequences on Pro and Enterprise only.", "fact_ids": "attio-cap-sequences-pro"}
+{"kind": "capability", "product": "attio", "capability": "reply_autostop", "value": "yes", "detail": "Mandatory reply exit, same-thread only.", "fact_ids": "attio-cap-reply-exit"}
+{"kind": "capability", "product": "attio", "capability": "thread_to_deal", "value": "yes", "detail": "Email/calendar sync onto records with interaction intelligence.", "fact_ids": "attio-cap-email-sync"}
+{"kind": "capability", "product": "attio", "capability": "pipeline", "value": "unknown", "detail": "Pricing lists objects/records; pipeline view not quoted.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "ai_writing", "value": "partial", "detail": "Sequence steps can be drafted with AI.", "fact_ids": "attio-cap-sequences-pro"}
+{"kind": "capability", "product": "attio", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "attio", "capability": "sends_via_user_mailbox", "value": "yes", "detail": "Not an ESP; sends via synced Gmail/Microsoft.", "fact_ids": "attio-cap-mailbox"}
+{"kind": "capability", "product": "attio", "capability": "own_send_infra", "value": "no", "detail": "Explicitly not an ESP.", "fact_ids": "attio-cap-mailbox"}
+{"kind": "capability", "product": "attio", "capability": "free_plan", "value": "yes", "detail": "Free up to 3 seats, 200 emails/mo.", "fact_ids": "attio-pricing-plans,attio-pricing-email-limits"}
+{"kind": "capability", "product": "attio", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "gmail", "value": "yes", "detail": "Syncs with Gmail.", "fact_ids": "pipedrive-cap-ai-email"}
+{"kind": "capability", "product": "pipedrive", "capability": "outlook", "value": "yes", "detail": "Syncs with Outlook.", "fact_ids": "pipedrive-cap-ai-email"}
+{"kind": "capability", "product": "pipedrive", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "sequences", "value": "yes", "detail": "Sequences in Pulse prospecting (tier unverified).", "fact_ids": "pipedrive-cap-sequences"}
+{"kind": "capability", "product": "pipedrive", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "thread_to_deal", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "pipeline", "value": "yes", "detail": "Pipeline-first CRM.", "fact_ids": "pipedrive-positioning,pipedrive-cap-sequences"}
+{"kind": "capability", "product": "pipedrive", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "ai_writing", "value": "yes", "detail": "AI email writer and summaries.", "fact_ids": "pipedrive-cap-ai-email"}
+{"kind": "capability", "product": "pipedrive", "capability": "ai_next_action", "value": "partial", "detail": "AI suggests when to follow up.", "fact_ids": "pipedrive-cap-ai-email"}
+{"kind": "capability", "product": "pipedrive", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "free_plan", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "pipedrive", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "close", "capability": "gmail", "value": "yes", "detail": "Connected email accounts with two-way sync.", "fact_ids": "close-cap-sync"}
+{"kind": "capability", "product": "close", "capability": "outlook", "value": "yes", "detail": "Connected email accounts with two-way sync (provider-agnostic wording).", "fact_ids": "close-cap-sync"}
+{"kind": "capability", "product": "close", "capability": "inside_inbox", "value": "no", "detail": "Separate app synced two-way with external email client.", "fact_ids": "close-cap-sync"}
+{"kind": "capability", "product": "close", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "close", "capability": "sequences", "value": "yes", "detail": "Workflows from Growth (USD 99/user/mo annual).", "fact_ids": "close-cap-workflows,close-pricing-workflows-growth"}
+{"kind": "capability", "product": "close", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "close", "capability": "thread_to_deal", "value": "yes", "detail": "Two-way sync and historical import onto leads.", "fact_ids": "close-cap-sync"}
+{"kind": "capability", "product": "close", "capability": "pipeline", "value": "yes", "detail": "Opportunity pipelines.", "fact_ids": "close-cap-inbox-tasks,close-pricing-plans"}
+{"kind": "capability", "product": "close", "capability": "stalled_alerts", "value": "yes", "detail": "Suggested Actions flag stalled/at-risk deals.", "fact_ids": "close-cap-suggested-actions"}
+{"kind": "capability", "product": "close", "capability": "tasks_reminders", "value": "yes", "detail": "Centralised inbox/task list and follow-up reminders.", "fact_ids": "close-cap-inbox-tasks"}
+{"kind": "capability", "product": "close", "capability": "ai_writing", "value": "yes", "detail": "AI email draft/rewrite, lead summaries.", "fact_ids": "close-cap-ai-writing"}
+{"kind": "capability", "product": "close", "capability": "ai_next_action", "value": "yes", "detail": "Suggested Actions propose next steps.", "fact_ids": "close-cap-suggested-actions"}
+{"kind": "capability", "product": "close", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "close", "capability": "sends_via_user_mailbox", "value": "yes", "detail": "Sends via connected accounts with provider-limit throttling.", "fact_ids": "close-cap-sending-limits"}
+{"kind": "capability", "product": "close", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "close", "capability": "free_plan", "value": "no", "detail": "14-day trial only.", "fact_ids": "close-pricing-trial"}
+{"kind": "capability", "product": "close", "capability": "api", "value": "yes", "detail": "API on all plans.", "fact_ids": "close-cap-api"}
+{"kind": "capability", "product": "folk", "capability": "gmail", "value": "yes", "detail": "Google accounts for email sync.", "fact_ids": "folk-cap-followup-assistant"}
+{"kind": "capability", "product": "folk", "capability": "outlook", "value": "yes", "detail": "Microsoft accounts for email sync.", "fact_ids": "folk-cap-followup-assistant"}
+{"kind": "capability", "product": "folk", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "sequences", "value": "yes", "detail": "Email sequences on Premium.", "fact_ids": "folk-pricing-plans"}
+{"kind": "capability", "product": "folk", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "thread_to_deal", "value": "partial", "detail": "Email/calendar/WhatsApp sync to contacts; deals object on Premium.", "fact_ids": "folk-cap-assistants,folk-pricing-plans"}
+{"kind": "capability", "product": "folk", "capability": "pipeline", "value": "yes", "detail": "Pipeline management on Standard.", "fact_ids": "folk-pricing-plans"}
+{"kind": "capability", "product": "folk", "capability": "stalled_alerts", "value": "yes", "detail": "Follow-up Assistant detects inactive conversations with pending next step.", "fact_ids": "folk-cap-followup-assistant"}
+{"kind": "capability", "product": "folk", "capability": "tasks_reminders", "value": "yes", "detail": "Reminders and follow-up notifications.", "fact_ids": "folk-cap-followup-assistant"}
+{"kind": "capability", "product": "folk", "capability": "ai_writing", "value": "yes", "detail": "Pre-written follow-ups, recaps.", "fact_ids": "folk-cap-followup-assistant,folk-cap-recap"}
+{"kind": "capability", "product": "folk", "capability": "ai_next_action", "value": "yes", "detail": "Follow-up Assistant suggests who to follow up.", "fact_ids": "folk-cap-assistants,folk-cap-followup-assistant"}
+{"kind": "capability", "product": "folk", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "folk", "capability": "free_plan", "value": "no", "detail": "2-week trial then blocked.", "fact_ids": "folk-cap-no-free"}
+{"kind": "capability", "product": "folk", "capability": "api", "value": "partial", "detail": "API access on Premium only.", "fact_ids": "folk-pricing-plans"}
+{"kind": "capability", "product": "copper", "capability": "gmail", "value": "yes", "detail": "Native in Gmail/Calendar.", "fact_ids": "copper-cap-gmail"}
+{"kind": "capability", "product": "copper", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "inside_inbox", "value": "yes", "detail": "Chrome extension in Gmail.", "fact_ids": "copper-cap-gmail"}
+{"kind": "capability", "product": "copper", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "sequences", "value": "partial", "detail": "Email series only on Business tier; bulk email on Professional.", "fact_ids": "copper-pricing-tiers"}
+{"kind": "capability", "product": "copper", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "thread_to_deal", "value": "yes", "detail": "Gmail email, contact and file sync.", "fact_ids": "copper-cap-gmail"}
+{"kind": "capability", "product": "copper", "capability": "pipeline", "value": "yes", "detail": "Pipelines on all tiers.", "fact_ids": "copper-pricing-tiers"}
+{"kind": "capability", "product": "copper", "capability": "stalled_alerts", "value": "partial", "detail": "Overdue email responses feed recommendations.", "fact_ids": "copper-cap-recommendations"}
+{"kind": "capability", "product": "copper", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "ai_next_action", "value": "yes", "detail": "Recommendations based on meetings, tasks and overdue email responses.", "fact_ids": "copper-cap-recommendations"}
+{"kind": "capability", "product": "copper", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "free_plan", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "copper", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "gmail", "value": "yes", "detail": "Gmail & Calendar ingestion on all tiers.", "fact_ids": "dayai-cap-ingestion"}
+{"kind": "capability", "product": "dayai", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "sequences", "value": "no", "detail": "Feature comparison lists drafts and prospecting but no sequences.", "fact_ids": "dayai-pricing-plans"}
+{"kind": "capability", "product": "dayai", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "thread_to_deal", "value": "yes", "detail": "Automatic ingestion into customer memory.", "fact_ids": "dayai-cap-ingestion"}
+{"kind": "capability", "product": "dayai", "capability": "pipeline", "value": "yes", "detail": "Pipeline & opportunity management on Professional.", "fact_ids": "dayai-pricing-plans"}
+{"kind": "capability", "product": "dayai", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "tasks_reminders", "value": "yes", "detail": "Turbo agent catches action items.", "fact_ids": "dayai-cap-turbo"}
+{"kind": "capability", "product": "dayai", "capability": "ai_writing", "value": "yes", "detail": "Email drafts from Turbo.", "fact_ids": "dayai-cap-turbo"}
+{"kind": "capability", "product": "dayai", "capability": "ai_next_action", "value": "yes", "detail": "Agent works on schedules/events and runs the pipeline.", "fact_ids": "dayai-pricing-plans"}
+{"kind": "capability", "product": "dayai", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "dayai", "capability": "free_plan", "value": "yes", "detail": "Free tier with ingestion and search.", "fact_ids": "dayai-cap-ingestion"}
+{"kind": "capability", "product": "dayai", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "gmail", "value": "yes", "detail": "Syncs Google email/meetings.", "fact_ids": "lightfield-cap-auto-crm"}
+{"kind": "capability", "product": "lightfield", "capability": "outlook", "value": "yes", "detail": "Syncs Outlook email/meetings.", "fact_ids": "lightfield-cap-auto-crm"}
+{"kind": "capability", "product": "lightfield", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "sequences", "value": "partial", "detail": "Multi-channel sequences only on Growth (USD 1,999/workspace).", "fact_ids": "lightfield-pricing"}
+{"kind": "capability", "product": "lightfield", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "thread_to_deal", "value": "yes", "detail": "Automatic record updates from email and meeting content.", "fact_ids": "lightfield-cap-auto-crm"}
+{"kind": "capability", "product": "lightfield", "capability": "pipeline", "value": "yes", "detail": "Custom pipeline configuration on Starter.", "fact_ids": "lightfield-pricing,lightfield-positioning"}
+{"kind": "capability", "product": "lightfield", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "lightfield", "capability": "free_plan", "value": "no", "detail": "14-day trial; Starter USD 89/user.", "fact_ids": "lightfield-pricing"}
+{"kind": "capability", "product": "lightfield", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "gmail", "value": "yes", "detail": "Gmail integration on Express.", "fact_ids": "bigin-cap-email"}
+{"kind": "capability", "product": "bigin", "capability": "outlook", "value": "yes", "detail": "Outlook integration on Express.", "fact_ids": "bigin-cap-email"}
+{"kind": "capability", "product": "bigin", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "sequences", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "thread_to_deal", "value": "partial", "detail": "Email integration; association depth undocumented.", "fact_ids": "bigin-cap-email"}
+{"kind": "capability", "product": "bigin", "capability": "pipeline", "value": "yes", "detail": "Pipelines core to product.", "fact_ids": "bigin-positioning"}
+{"kind": "capability", "product": "bigin", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "ai_writing", "value": "yes", "detail": "AI writing and reply assistant on Premier.", "fact_ids": "bigin-cap-ai"}
+{"kind": "capability", "product": "bigin", "capability": "ai_next_action", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "bigin", "capability": "free_plan", "value": "yes", "detail": "Free single user, 1 pipeline, 500 records.", "fact_ids": "bigin-pricing-plans"}
+{"kind": "capability", "product": "bigin", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "gmail", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "outlook", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "inside_inbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "prospect_data", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "sequences", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "reply_autostop", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "thread_to_deal", "value": "partial", "detail": "AI creates deals and updates fields; email source not quoted.", "fact_ids": "clarify-cap-autocrm"}
+{"kind": "capability", "product": "clarify", "capability": "pipeline", "value": "yes", "detail": "Deal creation and updates by AI.", "fact_ids": "clarify-cap-autocrm"}
+{"kind": "capability", "product": "clarify", "capability": "stalled_alerts", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "tasks_reminders", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "ai_writing", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "ai_next_action", "value": "yes", "detail": "AI creates tasks, meeting prep, follow-ups.", "fact_ids": "clarify-cap-autocrm"}
+{"kind": "capability", "product": "clarify", "capability": "team_visibility", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "sends_via_user_mailbox", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "own_send_infra", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
+{"kind": "capability", "product": "clarify", "capability": "free_plan", "value": "yes", "detail": "Free tier with 1k credits.", "fact_ids": "clarify-pricing-plans"}
+{"kind": "capability", "product": "clarify", "capability": "api", "value": "unknown", "detail": "No documented fact collected in this pilot.", "fact_ids": ""}
