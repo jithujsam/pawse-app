@@ -91,6 +91,8 @@ export const SettingsSchema = z.object({
   riskNudge: z.boolean(),
   neglectFrom: day.nullable(),
   pet3d: z.boolean(),
+  theme: z.enum(["system", "light", "dark"]),
+  accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
 }).partial();
 
 export const AppDataSchema = z.object({

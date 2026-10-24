@@ -14,3 +14,8 @@ export function webglOk(): boolean {
   try { const c = document.createElement("canvas"); webgl = !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { webgl = false; }
   return webgl;
 }
+
+/** What happened the last time a 3D pet tried to draw, for the settings screen. */
+let status: "unused" | "ok" | "failed" = "unused";
+export const pet3dStatus = () => (webglOk() ? status : "unsupported");
+export const markPet3d = (s: "ok" | "failed") => { status = s; };

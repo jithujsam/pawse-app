@@ -7,6 +7,7 @@ import { App } from "./App";
 import { Capacitor } from "@capacitor/core";
 import { boot, flush } from "./store";
 import { listenForAuthLinks } from "./deeplink";
+import { restoreLook } from "./look";
 
 // Save straight away when the app is hidden or closed, so nothing is lost if the OS kills it.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flush(); });
@@ -16,7 +17,7 @@ listenForAuthLinks();
 
 const root = createRoot(document.getElementById("root")!);
 if (import.meta.env.DEV && location.hash.startsWith("#gallery")) void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />));
-else void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));
+else void restoreLook().finally(() => boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>)));
 
 // Offline support for the installed web app. The Android app already ships its files.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && "serviceWorker" in navigator) {

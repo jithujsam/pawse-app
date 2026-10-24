@@ -63,7 +63,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
   const alive = useRef(true);
   const [polishing, setPolishing] = useState(false);
   const [shake, setShake] = useState(0);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const set = (id: string, v: string | boolean) => setValues((s) => ({ ...s, [id]: v }));
 
   const missing = habit.fields.filter((f) => f.required && (values[f.id] === undefined || values[f.id] === ""));

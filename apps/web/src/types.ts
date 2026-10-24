@@ -120,6 +120,10 @@ export interface Settings {
   savingsGoal: SavingsGoal | null;
   /** A heads-up before the hour slips usually happen. */
   riskNudge: boolean;
+  /** Light, dark, or follow the phone. */
+  theme: "system" | "light" | "dark";
+  /** The app's accent colour: the pet's own, or a fixed choice. */
+  accent: "pet" | "coral" | "ocean" | "forest" | "berry" | "plum" | "slate";
   /** Show the 3D pet where one exists (dog, fox). Off means the 2D art everywhere. */
   pet3d: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */

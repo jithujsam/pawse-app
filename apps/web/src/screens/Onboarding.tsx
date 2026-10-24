@@ -12,6 +12,7 @@ import { actions } from "../store";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
+import { has3D } from "../pet3d-support";
 import { say } from "../voice";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
 import type { Baseline, Measure, Personality, Species, Tone } from "../types";
@@ -91,7 +92,7 @@ export function Onboarding() {
                     <motion.div animate={d.species === s.id ? { y: [0, -10, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
                       <CompanionArt species={s.id} stage="baby" mood={d.species === s.id ? "happy" : "idle"} age={2} size={84} />
                     </motion.div>
-                    <b>{s.label}</b><span className="muted small">{s.blurb}</span>
+                    <b>{s.label}{has3D(s.id) && <span className="badge-3d">3D</span>}</b><span className="muted small">{s.blurb}</span>
                   </motion.button>
                 ))}
               </motion.div>

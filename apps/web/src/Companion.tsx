@@ -4,7 +4,7 @@ import type { Stage } from "@detox/engine";
 import { haptic } from "./haptics";
 import { coatFor, mix } from "./pets";
 import { Burst } from "./ui/Controls";
-import { has3D, webglOk, type Species3D } from "./pet3d-support";
+import { has3D, markPet3d, webglOk, type Species3D } from "./pet3d-support";
 const Pet3D = lazy(() => import("./Pet3D").then((m) => ({ default: m.Pet3D })));
 import { useData } from "./store";
 import type { Accessory, Personality, Species } from "./types";
@@ -397,7 +397,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       whileTap={interactive ? { scale: 0.97 } : undefined}>
       {use3d
         ? <Suspense fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />}><Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
-            size={art.size ?? 280} onFail={() => setFailed3d(true)} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
+            size={art.size ?? 280} onFail={() => { markPet3d("failed"); setFailed3d(true); }} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
         : <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />}
       <Burst burst={hearts} kind="heart" count={6} />
       <Burst burst={sparks} kind="spark" count={8} />

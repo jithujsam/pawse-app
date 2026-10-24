@@ -14,6 +14,8 @@
   --serif: "Newsreader Variable", Newsreader, "Times New Roman", Times, Georgia, serif;
   color-scheme: light dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 /* Each pet brings its own accent: a light-mode tone and a brighter one that reads on charcoal. */
 :root[data-pet="dog"] { --accent: #a8632a; --accent-dark: #e8a86a; }
 :root[data-pet="cat"] { --accent: #5a5fb0; --accent-dark: #a9adf2; }
@@ -33,6 +35,23 @@
   /* The accent swap is its own rule so it can read the pet's dark tone set above. */
   :root:not([data-theme="light"]) body { --accent: var(--accent-dark); }
 }
+
+:root[data-theme="dark"] {
+    --ground: #0f1012; --surface: #18191c; --raised: #222327; --control: #393b41;
+    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #18191c); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #141517);
+    --text: #eceae6; --muted: #a3a09a; --on-accent: #121212; --soft: color-mix(in srgb, var(--accent-dark) 16%, #18191c);
+    --negative: #f08a80; --negative-soft: rgba(240,138,128,.13); --positive: #74cf9c; --positive-soft: rgba(116,207,156,.13); --chart: var(--accent-dark);
+    --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: rgba(255,255,255,.06);
+    --shadow: 0 0 0 1px rgba(255,255,255,.045), 0 10px 28px -16px rgba(0,0,0,.7);
+}
+:root[data-theme="dark"] body { --accent: var(--accent-dark); }
+/* A fixed accent chosen in Appearance overrides the pet's. */
+:root[data-accent="coral"] { --accent: #c2572a; --accent-dark: #f09a6c; }
+:root[data-accent="ocean"] { --accent: #2f6aa3; --accent-dark: #8dbbec; }
+:root[data-accent="forest"] { --accent: #2f7a52; --accent-dark: #86d3a6; }
+:root[data-accent="berry"] { --accent: #b03f6b; --accent-dark: #f29dbf; }
+:root[data-accent="plum"] { --accent: #6b4fb0; --accent-dark: #b9a5f2; }
+:root[data-accent="slate"] { --accent: #4b5a6b; --accent-dark: #a9b8c8; }
 
 /* ---------- base ---------- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -133,6 +152,21 @@ p { text-wrap: pretty; }
 .subpage-top h2 { font-size: 24px; }
 .subpage-body.screen { padding-top: 12px; }
 .pet-stage { display: grid; place-items: center; }
+.badge-3d { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: var(--accent); color: var(--on-accent); font: 700 10px/1.5 var(--font); letter-spacing: .04em; vertical-align: middle; }
+.theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.theme-opt { border: 2px solid transparent; border-radius: var(--radius-sm); background: var(--raised); color: var(--text); padding: 10px; display: grid; gap: 8px; justify-items: center; cursor: pointer; }
+.theme-opt[data-on="true"] { border-color: var(--accent); }
+.theme-swatch { width: 100%; height: 64px; border-radius: 12px; display: grid; grid-template-columns: 1fr; padding: 8px; gap: 6px; overflow: hidden; }
+.theme-swatch i { display: block; border-radius: 6px; }
+.ts-light { background: #f2f4f7; } .ts-light i { background: #fff; }
+.ts-dark { background: #0f1012; } .ts-dark i { background: #222327; }
+.ts-system { background: linear-gradient(135deg, #f2f4f7 50%, #0f1012 50%); } .ts-system i { background: color-mix(in srgb, #fff 50%, #222327); }
+.accent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
+.accent-opt { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 6px; cursor: pointer; text-align: center; }
+.accent-dot { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; box-shadow: 0 0 0 3px var(--surface); }
+.accent-opt[data-on="true"] .accent-dot { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--text); }
+.accent-dot .ico { width: 20px; height: 20px; stroke-width: 2.8; }
+.accent-opt:focus-visible .accent-dot, .theme-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .coat-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
 .wardrobe { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 8px; }
 .ward { border: 2px solid transparent; border-radius: var(--radius-sm); background: var(--raised); color: var(--text); padding: 12px 8px; display: grid; gap: 2px; place-items: center; text-align: center; cursor: pointer; }

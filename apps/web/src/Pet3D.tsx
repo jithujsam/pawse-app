@@ -16,7 +16,7 @@ import type { Gesture, Mood } from "./Companion";
  * Limitations, honestly: these models have no facial rig (no blend shapes), so expressions come
  * from body animation and posture, not from the face. Accessories are not shown in 3D.
  */
-import { MODEL, type Species3D } from "./pet3d-support";
+import { markPet3d, MODEL, type Species3D } from "./pet3d-support";
 export type { Species3D };
 
 type Clip = "idle" | "waiting" | "happy" | "hurt" | "sick" | "dying" | "petted" | "giggle";
@@ -69,6 +69,7 @@ interface Props { species: Species3D; coat?: string; stage: Stage; mood: Mood; a
 
 function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
   const gltf = useLoader(GLTFLoader, MODEL[species], (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
+  useEffect(() => markPet3d("ok"), []);
   const { scene, mixer, actions, head, neck } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene) as THREE.Group;
     // Fit to a 1-unit tall box standing on the floor, centred. Bounds come from the posed skeleton.

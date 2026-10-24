@@ -5,8 +5,8 @@ import { Capacitor } from "@capacitor/core";
 export const APP_VERSION = { name: __APP_VERSION__, code: __APP_CODE__ };
 
 /** Public download repo. latest.json there describes the newest Android build. */
-export const RELEASES_PAGE = "https://github.com/jithujsam/companion-app";
-const LATEST_URL = "https://raw.githubusercontent.com/jithujsam/companion-app/main/latest.json";
+export const RELEASES_PAGE = "https://github.com/jithujsam/pawse-app";
+const LATEST_URL = "https://raw.githubusercontent.com/jithujsam/pawse-app/main/latest.json";
 
 export interface Latest { name: string; code: number; url: string; notes?: string }
 

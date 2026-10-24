@@ -27,6 +27,7 @@ import { QuickSheet } from "./screens/QuickSheet";
 import { Icon } from "./ui/Controls";
 import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
+import { applyLook } from "./look";
 
 export type Tab = "home" | "insights" | "journey" | "me";
 const TABS: Tab[] = ["home", "insights", "journey", "me"];
@@ -87,6 +88,8 @@ function Shell() {
   const sync = useSyncStatus();
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
+  const { theme, accent } = data.settings;
+  useEffect(() => { applyLook(theme, accent); }, [theme, accent]);
   const uid = session?.user.id;
   useEffect(() => {
     if (!uid) return;

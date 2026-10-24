@@ -2,7 +2,8 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { CompanionArt, LiveCompanion } from "../Companion";
-import { ACCESSORIES, COATS, PERSONALITIES } from "../pets";
+import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
+import { has3D, pet3dStatus } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { daysBetween, fmtDay, fmtTime, today } from "../dates";
@@ -21,7 +22,7 @@ import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
 import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE } from "../update";
-import type { Field, FieldType } from "../types";
+import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
   { value: "choice", label: "Pick one" }, { value: "multi", label: "Pick any" }, { value: "scale", label: "1 to 5" }, { value: "text", label: "Text" },
@@ -29,7 +30,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
 
-type Page = "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
+type Page = "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
 
 export function Me() {
   const data = useData();
@@ -82,6 +83,7 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title="App">
+          <Row icon={Icon.sun} label="Appearance" value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
           <Row icon={Icon.phone} label="Feel and region"  value={placeName()} onClick={() => setPage("feel")} />
           <Row icon={Icon.info} label="About and help" value={APP_VERSION.name} onClick={() => setPage("about")} />
         </Group>
@@ -99,6 +101,7 @@ export function Me() {
       <SubPage open={page === "security"} title="App lock" onClose={close}><SecurityCard /></SubPage>
       {configured && <SubPage open={page === "account"} title="Account and backup" onClose={close}><section className="card stack"><Account /></section></SubPage>}
       <SubPage open={page === "data"} title="Your data" onClose={close}><DataPage /></SubPage>
+      <SubPage open={page === "appearance"} title="Appearance" onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title="Feel and region" onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title="About and help" onClose={close}><AboutPage /></SubPage>
       <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />
@@ -134,6 +137,13 @@ function PetPage() {
       <label className="field"><span className="field-label">Name</span>
         <input className="input" autoComplete="off" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={save} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
+      <div className="field"><span className="field-label">Species</span>
+        <div className="chips" role="radiogroup" aria-label="Species">
+          {SPECIES.map((sp) => <Chip key={sp.id} pressed={companion.species === sp.id} onClick={() => { if (sp.id !== companion.species) { actions.setSpecies(companion.id, sp.id); haptic.success(); toast(`${companion.name} is a ${sp.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }}>
+            {sp.label}{has3D(sp.id) && <span className="badge-3d">3D</span>}</Chip>)}
+        </div>
+        {!has3D(companion.species) && <span className="muted small">Dogs and foxes are animated in 3D. Others use the drawn style.</span>}
+      </div>
       <div className="field"><span className="field-label">Coat</span>
         <div className="chips" role="radiogroup" aria-label="Coat">
           {COATS[companion.species].map((c) => <Chip key={c.id} pressed={(companion.coat ?? COATS[companion.species][0].id) === c.id} onClick={() => actions.setCompanionLook(companion.id, { coat: c.id, personality: companion.personality })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
@@ -311,12 +321,51 @@ function DataPage() {
   </>);
 }
 
+const THEME_LABEL = { system: "System", light: "Light", dark: "Dark" } as const;
+const ACCENT_OPTS: { id: Settings["accent"]; label: string; color: string }[] = [
+  { id: "pet", label: "Match my pet", color: "conic-gradient(#c2572a, #2f7a52, #2f6aa3, #b03f6b, #c2572a)" },
+  { id: "coral", label: "Coral", color: "#c2572a" }, { id: "ocean", label: "Ocean", color: "#2f6aa3" }, { id: "forest", label: "Forest", color: "#2f7a52" },
+  { id: "berry", label: "Berry", color: "#b03f6b" }, { id: "plum", label: "Plum", color: "#6b4fb0" }, { id: "slate", label: "Slate", color: "#4b5a6b" },
+];
+
+function AppearancePage() {
+  const { settings } = useData();
+  return (<>
+    <section className="card stack">
+      <h2>Theme</h2>
+      <div className="theme-grid" role="radiogroup" aria-label="Theme">
+        {(["system", "light", "dark"] as const).map((t) => (
+          <motion.button key={t} role="radio" aria-checked={settings.theme === t} className="theme-opt" data-on={settings.theme === t} whileTap={{ scale: 0.96 }}
+            onClick={() => { haptic.select(); actions.setSettings({ theme: t }); }}>
+            <span className={`theme-swatch ts-${t}`} aria-hidden><i /><i /></span>
+            <b>{THEME_LABEL[t]}</b>
+          </motion.button>
+        ))}
+      </div>
+      <p className="muted small">System follows your phone's light or dark setting.</p>
+    </section>
+    <section className="card stack">
+      <h2>Colour</h2>
+      <div className="accent-grid" role="radiogroup" aria-label="Accent colour">
+        {ACCENT_OPTS.map((a) => (
+          <motion.button key={a.id} role="radio" aria-checked={settings.accent === a.id} aria-label={a.label} className="accent-opt" data-on={settings.accent === a.id} whileTap={{ scale: 0.92 }}
+            onClick={() => { haptic.select(); actions.setSettings({ accent: a.id }); }}>
+            <span className="accent-dot" style={{ background: a.color }}>{settings.accent === a.id && Icon.check}</span>
+            <span className="small">{a.label}</span>
+          </motion.button>
+        ))}
+      </div>
+      <p className="muted small">"Match my pet" picks a colour that suits your companion.</p>
+    </section>
+  </>);
+}
+
 function FeelPage() {
   const { settings } = useData();
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
-      <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint="Dogs and foxes in animated 3D. Off uses the flat drawing everywhere, which saves battery." />
+      <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
       <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>

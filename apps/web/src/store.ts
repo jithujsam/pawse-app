@@ -390,6 +390,9 @@ export const actions = {
     commit({ ...data, journal: mood ? [...rest, entry].sort((a, b) => a.day.localeCompare(b.day)) : rest });
   },
 
+  /** Switches the companion to another species, keeping its name, age and history. */
+  setSpecies: (id: string, species: Species) =>
+    commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, species, coat: undefined } : c)) }),
   setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "personality">) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
 
@@ -433,6 +436,7 @@ export function slipRequest(entryId: string): SlipRequest | null {
       ...habit.fields.filter((f) => f.id === "mood" || f.id === "plan" || f.id === "who").flatMap((f) => pickedLabels(f, e.values[f.id])),
     ].map((t) => t.slice(0, 60)).slice(0, 8),
     texts: [
+      ...(habit.unit === "money" && e.amount !== null ? [`Spent ${data.settings.currency}${e.amount}`] : []),
       ...habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean),
       ...habit.fields.filter((f) => f.id === "what" || f.id === "where").flatMap((f) => pickedLabels(f, e.values[f.id]).map((l) => `${f.id === "where" ? "Where" : "What"}: ${l}`)),
       ...(typeof e.values.urge === "string" && e.values.urge ? [`Urge strength: ${e.values.urge} of 5`] : []),
