@@ -74,3 +74,17 @@ describe("missing days", () => {
     expect(recentPace(d, H, born)).toBeCloseTo(7 / 4);
   });
 });
+
+describe("correcting an old day", () => {
+  it("a slip logged for a past clean day replaces the clean mark and ages the pet from that day", () => {
+    load([]);
+    const old = addDays(t0, -10);
+    actions.markClean(H, old);
+    const d = actions.logSlip(H, {}, old);
+    expect(d.entry.day).toBe(old);
+    expect(getData().cleanDays.some((c) => c.day === old)).toBe(false);
+    const v = viewCompanion(getData(), C);
+    expect(v.states.find((s) => s.day === old)!.damageMonths).toBeCloseTo(d.entry.months);
+    expect(v.age).toBeGreaterThan(0);
+  });
+});

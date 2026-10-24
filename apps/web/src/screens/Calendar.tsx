@@ -7,6 +7,7 @@ import { actions, useActiveView, useData } from "../store";
 import { pickedLabels } from "../questions";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
+import { LogSheet } from "./LogSheet";
 
 /** The month grid, the age curve and the selected day. Lives inside Journey. */
 export function CalendarSections() {
@@ -35,6 +36,9 @@ export function CalendarSections() {
     dir.current = n; haptic.select();
     const d = parse(cursor); d.setMonth(d.getMonth() + n); setCursor(iso(new Date(d.getFullYear(), d.getMonth(), 1)));
   };
+  // Any past day can be corrected both ways: marked clean, or given the slip that really happened.
+  const canLog = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0 && !companion.diedOn;
+  const [logging, setLogging] = useState(false);
   const canClean = sel <= t0 && dayEntries.length === 0 && daysBetween(companion.bornOn, sel) >= 0 && status(sel) !== "clean";
   const counts = { slip: monthDays.filter((d) => status(d) === "slip").length, clean: monthDays.filter((d) => status(d) === "clean").length };
 
@@ -118,9 +122,11 @@ export function CalendarSections() {
               </AnimatePresence>
             </div>
             {canClean && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked clean", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day clean</Button>}
+            {canLog && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
           </motion.div>
         </AnimatePresence>
       </motion.section>
+      <LogSheet open={logging} day={sel} habit={habit} name={companion.name} age={view.age} onClose={() => setLogging(false)} onSaved={() => haptic.heavy()} />
     </>
   );
 }
