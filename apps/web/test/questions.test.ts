@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFields, inferClass, inferMeasure, isRestrictionRelated } from "../src/questions";
+import { buildFields, countTriggers, inferClass, inferMeasure, isRestrictionRelated, pickedLabels } from "../src/questions";
 
 describe("questions", () => {
   it("infers the habit class from free text", () => {
@@ -16,16 +16,38 @@ describe("questions", () => {
     expect(inferMeasure("doomscrolling")).toBe("minutes");
     expect(inferMeasure("custom")).toBe("none");
   });
-  it("builds the questions from the answers, in a fixed order", () => {
-    const f = buildFields({ what: "x", measure: "money", cls: "food_spending", triggers: ["late", "stress"] });
-    expect(f.map((x) => x.id)).toEqual(["amount", "what", "where", "trg_late", "trg_stress", "extra", "photo"]);
-    expect(f.find((x) => x.amount)?.type).toBe("money");
-    expect(f.filter((x) => x.trigger)).toHaveLength(3);
+  it("builds one-tap questions in functional-analysis order", () => {
+    const f = buildFields({ what: "x", measure: "money", cls: "food_spending", triggers: ["stress", "lonely"] });
+    expect(f.map((x) => x.id)).toEqual(["amount", "what", "mood", "urge", "plan", "where", "who", "after", "photo"]);
+    expect(f.filter((x) => x.required).map((x) => x.id)).toEqual(["amount"]);
+    expect(f.find((x) => x.id === "what")?.type).toBe("choice");
+    expect(f.find((x) => x.id === "mood")?.options?.map((o) => o.id)).toEqual(["stress", "lonely"]);
+    expect(f.find((x) => x.id === "urge")?.type).toBe("scale");
   });
-  it("asks what happened when there is no number to track", () => {
-    const f = buildFields({ what: "x", measure: "none", cls: "custom", triggers: [] });
+  it("offers sensible defaults when no triggers were picked, and habit-specific answers", () => {
+    expect(buildFields({ what: "x", measure: "count", cls: "smoking", triggers: [] }).find((x) => x.id === "mood")?.options?.length).toBe(4);
+    expect(buildFields({ what: "x", measure: "minutes", cls: "doomscrolling", triggers: [] }).find((x) => x.id === "what")?.options?.map((o) => o.label)).toContain("Instagram");
+    expect(buildFields({ what: "Betting or gambling", measure: "money", cls: "custom", triggers: [] }).find((x) => x.id === "what")?.options?.map((o) => o.label)).toContain("Sports bet");
+  });
+  it("asks what happened in words when there is no number and no known habit", () => {
+    const f = buildFields({ what: "biting nails", measure: "none", cls: "custom", triggers: [] });
     expect(f.some((x) => x.amount)).toBe(false);
-    expect(f.find((x) => x.id === "what")?.required).toBe(true);
+    expect(f.find((x) => x.id === "what")).toMatchObject({ type: "text", required: true });
+  });
+  it("counts triggers from picked answers and late night", () => {
+    const f = buildFields({ what: "x", measure: "money", cls: "food_spending", triggers: ["stress", "bored", "celebrating"] });
+    expect(countTriggers(f, { mood: "stress,celebrating", plan: "spur", who: "alone" }, 14)).toBe(3);
+    expect(countTriggers(f, { mood: "celebrating", plan: "planned", who: "friends" }, 14)).toBe(0);
+    expect(countTriggers(f, {}, 23)).toBe(1);
+    expect(countTriggers(f, {}, null)).toBe(0);
+  });
+  it("still counts yes answers on questions from earlier versions", () => {
+    const old = [{ id: "trg_late", label: "Was it late at night?", type: "yesno" as const, required: false, trigger: true }];
+    expect(countTriggers(old, { trg_late: true }, 23)).toBe(1);
+  });
+  it("reads picked labels", () => {
+    const f = buildFields({ what: "x", measure: "money", cls: "food_spending", triggers: ["stress", "bored"] });
+    expect(pickedLabels(f.find((x) => x.id === "mood")!, "bored,stress")).toEqual(["Stressed", "Bored"]);
   });
   it("refuses to track restriction, calories or weight", () => {
     for (const t of ["counting calories", "dieting", "skipping meals", "my weight", "eating less"]) expect(isRestrictionRelated(t)).toBe(true);

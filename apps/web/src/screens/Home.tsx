@@ -34,6 +34,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
   const mood = moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
   const week = weekStats(data, habit.id, weekStart(t0));
   const streak = cleanStreak(data, habit.id);
+  const weekClean = data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= weekStart(t0) && c.day <= t0).length;
   const age = view.age;
   const danger = age >= 80;
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak) : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
@@ -74,7 +75,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
-        <LiveCompanion species={companion.species} stage={view.stage} mood={mood} age={age} size={300} />
+        <LiveCompanion species={companion.species} stage={view.stage} mood={mood} age={age} size={270} />
         <AnimatePresence mode="wait">
           <motion.p key={line} className="speech" aria-live="polite"
             initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
@@ -115,9 +116,12 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
       <motion.section className="stats" aria-label="This week" variants={rise}>
         <div className="card stat"><div className="muted small">Slips this week</div><div className="v"><AnimatedNumber value={week.slips} /></div></div>
         <div className="card stat"><div className="muted small">Life lost this week</div><div className="v"><AnimatedNumber value={week.months} decimals={1} /> <small>mo</small></div></div>
-        {habit.unit === "money" && <div className="card stat wide"><div className="muted small">Spent this week</div><div className="v">{currency} <AnimatedNumber value={Math.round(week.spend)} /></div></div>}
-        <button className="card stat wide link-card" onClick={() => onNavigate("report")}>
-          <span><span className="muted small">Your week, in words</span><br /><b>See the report</b></span>{Icon.chevR}
+        {habit.unit === "money"
+          ? <div className="card stat"><div className="muted small">Spent this week</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(week.spend)} /></div></div>
+          : <div className="card stat"><div className="muted small">Clean days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
+        <button className="card stat link-card" onClick={() => onNavigate("report")}>
+          <span className="muted small">Your week, in words</span>
+          <span className="link-row"><b>Report</b>{Icon.chevR}</span>
         </button>
       </motion.section>
 

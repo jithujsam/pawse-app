@@ -5,6 +5,7 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { actions, useActiveView, useData } from "../store";
 import { ACCENT } from "../Companion";
+import { pickedLabels } from "../questions";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
@@ -61,7 +62,7 @@ export function CalendarScreen() {
               <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="url(#sparkfill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
               <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
             </svg>
-          : <p className="muted small">No age history for this month yet.</p>}
+          : <p className="muted small">{spark.length === 1 ? `The curve starts drawing from ${companion.name}'s second day.` : "No age history for this month yet."}</p>}
       </motion.section>
 
       <motion.section className="card stack cal" variants={rise}>
@@ -88,7 +89,7 @@ export function CalendarScreen() {
         </AnimatePresence>
         <div className="legend">
           <span><i style={{ background: "var(--negative)" }} />Slip · {counts.slip}</span>
-          <span><i style={{ background: "var(--pet)" }} />Clean · {counts.clean}</span>
+          <span><i style={{ background: "var(--positive)" }} />Clean · {counts.clean}</span>
           <span><i style={{ background: "var(--raised)" }} />Not logged</span>
         </div>
       </motion.section>
@@ -106,6 +107,10 @@ export function CalendarScreen() {
                       <button className="icon-btn danger" aria-label="Delete this slip" onClick={() => remove(e.id)}>{Icon.trash}</button></div>
                     {e.amount !== null && <span>{habit.unit === "money" ? `${data.settings.currency} ${e.amount}` : habit.unit === "minutes" ? `${e.amount} min` : e.amount}</span>}
                     {Object.entries(e.values).filter(([k, v]) => typeof v === "string" && v && habit.fields.find((f) => f.id === k)?.type === "text").map(([k, v]) => <span key={k} className="muted small">{String(v)}</span>)}
+                    {(() => {
+                      const tags = habit.fields.flatMap((f) => f.type === "choice" || f.type === "multi" ? pickedLabels(f, e.values[f.id]) : f.type === "scale" && e.values[f.id] ? [`Urge ${e.values[f.id]}/5`] : []);
+                      return tags.length ? <div className="tags">{tags.map((t) => <span key={t} className="tag">{t}</span>)}</div> : null;
+                    })()}
                     {e.explanation && <span className="small">{e.explanation}</span>}
                     {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Attached" src={String(e.values[f.id])} className="entry-photo" />)}
                     {e.time && <span className="muted small">{e.time}</span>}

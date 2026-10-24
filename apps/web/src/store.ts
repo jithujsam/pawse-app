@@ -6,7 +6,7 @@ import {
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
-import { buildFields, type Intake } from "./questions";
+import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
@@ -237,6 +237,14 @@ export const actions = {
     } catch { return false; }
   },
 
+  /** Swaps a habit's questions for the current recommended set, keeping its class and unit. */
+  refreshQuestions(habitId: string) {
+    const h = data.habits.find((x) => x.id === habitId);
+    if (!h) return;
+    const triggers = h.fields.find((f) => f.id === "mood")?.options?.map((o) => o.id) ?? [];
+    commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: buildFields({ what: data.settings.goal || x.name, measure: x.unit, cls: x.cls, triggers }) } : x)) });
+  },
+
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
     commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
 
@@ -248,7 +256,8 @@ export const actions = {
     const amount = Number.isFinite(raw) && amountField ? raw : null;
     const since = addDays(day, -30);
     const med = median(data.entries.filter((e) => e.habitId === habitId && e.amount !== null && e.day >= since && e.day < day).map((e) => e.amount as number));
-    const triggers = habit.fields.filter((f) => f.trigger && values[f.id] === true).length;
+    const hour = time ? Number(time.slice(0, 2)) : day === today() ? new Date().getHours() : null;
+    const triggers = countTriggers(habit.fields, values, hour);
     const severity = computeSeverity({ amount: amount ?? undefined, median: med, classWeight: habit.classWeight, triggers });
     const nth = data.entries.filter((e) => e.habitId === habitId && e.day === day).length + 1;
     const months = baselineMonths(severity, nth);
@@ -304,25 +313,6 @@ export const actions = {
     });
   },
 
-  /** Demo tool: backfill the last n days with slips so the ageing is visible. */
-  demoWeek(habitId: string, perDay: number, days = 7) {
-    for (let i = days; i >= 1; i--) {
-      const day = addDays(today(), -i);
-      const habit = data.habits.find((h) => h.id === habitId)!;
-      const amountField = habit.fields.find((f) => f.amount);
-      for (let k = 0; k < perDay; k++) {
-        const values: Entry["values"] = {};
-        if (amountField) values[amountField.id] = String(amountField.type === "money" ? 300 + k * 60 : 5 + k * 3);
-        for (const f of habit.fields) if (f.trigger && k > 0) values[f.id] = true;
-        actions.logSlip(habitId, values, day);
-      }
-    }
-  },
-  /** Demo tool: move the companion's birth earlier so a past week is part of its life. */
-  backdateBirth(companionId: string, days: number) {
-    commit({ ...data, companions: data.companions.map((c) => (c.id === companionId ? { ...c, bornOn: addDays(c.bornOn, -days) } : c)) });
-  },
-
   exportJson: () => JSON.stringify(data, null, 2),
   async resetAll() {
     vaultKey = null;
@@ -345,8 +335,15 @@ export function slipRequest(entryId: string): SlipRequest | null {
   return {
     kind: "slip", tone: data.settings.tone, habitClass: habit.cls, companionName: companion.name,
     amount: e.amount, unit: habit.unit, median: med ?? null,
-    triggers: habit.fields.filter((f) => f.trigger && e.values[f.id] === true).map((f) => f.label),
-    texts: habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean).slice(0, 4),
+    triggers: [
+      ...habit.fields.filter((f) => f.type === "yesno" && f.trigger && e.values[f.id] === true).map((f) => f.label),
+      ...habit.fields.filter((f) => f.id === "mood" || f.id === "plan" || f.id === "who").flatMap((f) => pickedLabels(f, e.values[f.id])),
+    ].map((t) => t.slice(0, 60)).slice(0, 8),
+    texts: [
+      ...habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean),
+      ...habit.fields.filter((f) => f.id === "what" || f.id === "where").flatMap((f) => pickedLabels(f, e.values[f.id]).map((l) => `${f.id === "where" ? "Where" : "What"}: ${l}`)),
+      ...(typeof e.values.urge === "string" && e.values.urge ? [`Urge strength: ${e.values.urge} of 5`] : []),
+    ].map((t) => t.slice(0, 80)).slice(0, 4),
     nthToday: data.entries.filter((x) => x.habitId === habit.id && x.day === e.day && x.createdAt <= e.createdAt).length || 1,
     baselineMonths: e.months, last7Slips: last7,
   };

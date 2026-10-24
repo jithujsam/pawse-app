@@ -4,7 +4,7 @@ import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions } from "../store";
 import { configured, supabase, useSession } from "../supabase";
-import { forgetSync, startSync, stopSync, syncNow, useSyncStatus } from "../sync";
+import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
 import { Button, Segmented } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
@@ -55,7 +55,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
 
   if (!configured || !supabase) {
-    return <p className="muted small">Accounts aren't switched on in this build, so everything stays on this phone.</p>;
+    return <p className="muted small">Accounts aren't available in this build.</p>;
   }
 
   if (session) {
@@ -73,21 +73,24 @@ export function Account({ compact = false }: { compact?: boolean }) {
             )}
             {confirm === "signout" && (
               <motion.div key="so" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small">Your account keeps everything. Do you also want to remove it from this phone?</p>
-                <Button variant="secondary" onClick={async () => { stopSync(); await supabase!.auth.signOut(); setConfirm(null); toast("Signed out. Your data stays on this phone."); }}>Sign out, keep it here</Button>
-                <Button variant="danger" onClick={async () => { const uid = session.user.id; stopSync(); await supabase!.auth.signOut(); await forgetSync(uid); await actions.resetAll(); }}>Sign out and remove from this phone</Button>
+                <p className="small">Everything is kept in your account. This phone's copy is removed when you sign out, and comes back when you sign in again.</p>
+                <Button variant="secondary" onClick={async () => {
+                  await syncNow();
+                  if (getSyncStatus().pending > 0 && !window.confirm(`${getSyncStatus().pending} changes haven't backed up yet and will be lost. Sign out anyway?`)) return;
+                  const uid = session.user.id; stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
+                }}>Sign out</Button>
                 <Button variant="text" onClick={() => setConfirm(null)}>Cancel</Button>
               </motion.div>
             )}
             {confirm === "delete" && (
               <motion.div key="del" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small">This permanently deletes your account and everything backed up to it. Your data on this phone stays until you delete it too.</p>
+                <p className="small">This permanently deletes your account, your companion and every log, here and in the cloud. It can't be undone.</p>
                 <Button variant="danger" onClick={async () => {
                   haptic.heavy();
                   const uid = session.user.id;
                   const { error } = await supabase!.rpc("delete_my_account");
                   if (error) { toast(friendly(error.message), { kind: "bad" }); return; }
-                  stopSync(); await forgetSync(uid); await supabase!.auth.signOut();
+                  stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
                   toast("Your account was deleted");
                 }}>Delete my account for good</Button>
                 <Button variant="text" onClick={() => setConfirm(null)}>Cancel</Button>
@@ -109,7 +112,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
       : await supabase!.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) { setMsg(friendly(error.message)); haptic.warn(); return; }
-    if (data.session) { haptic.success(); toast(mode === "up" ? "Account created. Backing up now." : "Signed in. Syncing your history.", { kind: "good" }); await startSync(data.session.user.id); }
+    if (data.session) { haptic.success(); toast(mode === "up" ? "Account created" : "Signed in", { kind: "good" }); }
     else setMsg("Check your email to confirm your address, then sign in.");
   }
   async function reset() {

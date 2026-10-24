@@ -11,10 +11,12 @@ import { Button, Icon, Segmented, Switch } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
 import { SecurityCard } from "./Security";
+import { Simulator } from "./Simulator";
 import type { Field, FieldType, Tint } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
-  { value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "money", label: "Money" }, { value: "yesno", label: "Yes / no" }, { value: "photo", label: "Photo" },
+  { value: "choice", label: "Pick one" }, { value: "multi", label: "Pick any" }, { value: "scale", label: "1 to 5" }, { value: "text", label: "Text" },
+  { value: "number", label: "Number" }, { value: "money", label: "Money" }, { value: "yesno", label: "Yes / no" }, { value: "photo", label: "Photo" },
 ];
 const TINTS: [Tint, string][] = [["ocean", "#7fb1e6"], ["meadow", "#86d1a4"], ["blossom", "#f0a0c0"], ["sunrise", "#f1cb6c"]];
 
@@ -26,13 +28,14 @@ export function You() {
   const { settings } = data;
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [sim, setSim] = useState(false);
   const [showProf] = useState(() => {
     try { const show = ["alcohol", "smoking"].includes(habit.cls) && !localStorage.getItem("detox-prof-note"); if (show) localStorage.setItem("detox-prof-note", "1"); return show; } catch { return false; }
   });
   const hall = data.companions.filter((c) => c.diedOn);
 
   const setField = (id: string, patch: Partial<Field>) => actions.updateHabitFields(habit.id, habit.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)));
-  const addField = () => { haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "New question", type: "text", required: false }]); };
+  const addField = () => { haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "New question", type: "choice", required: false, options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] }]); };
   const rmField = (id: string) => {
     const before = habit.fields;
     actions.updateHabitFields(habit.id, habit.fields.filter((f) => f.id !== id));
@@ -57,11 +60,6 @@ export function You() {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast("Your data was saved as a file", { kind: "good" });
-  }
-
-  function demo(perDay: number, days: number) {
-    actions.backdateBirth(companion.id, days);
-    actions.demoWeek(habit.id, perDay, days);
   }
 
   return (
@@ -123,6 +121,11 @@ export function You() {
                     <select className="input select" value={f.type} aria-label="Type" onChange={(e) => setField(f.id, { type: e.target.value as FieldType })}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
                     <button className="icon-btn danger" aria-label="Remove question" onClick={() => rmField(f.id)}>{Icon.trash}</button>
                   </div>
+                  {(f.type === "choice" || f.type === "multi") && (
+                    <input className="input" aria-label="Answers, separated by commas" placeholder="Answers, separated by commas" maxLength={300}
+                      defaultValue={(f.options ?? []).map((o) => o.label).join(", ")}
+                      onBlur={(e) => setField(f.id, { options: e.target.value.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 12).map((label) => ({ id: f.options?.find((o) => o.label === label)?.id ?? label.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40), label: label.slice(0, 40), trigger: f.options?.find((o) => o.label === label)?.trigger })) })} />
+                  )}
                 </>) : (
                   <div className="row"><span>{f.label}</span><span className="muted small">{TYPES.find((t) => t.value === f.type)?.label}</span></div>
                 )}
@@ -130,7 +133,10 @@ export function You() {
             ))}
           </AnimatePresence>
         </motion.div>
-        {editing && <Button variant="secondary" onClick={addField}>Add a question</Button>}
+        {editing && <div className="actions">
+          <Button variant="secondary" onClick={addField}>Add a question</Button>
+          <Button variant="secondary" onClick={() => { const before = habit.fields; actions.refreshQuestions(habit.id); toast("Switched to the recommended questions", { action: { label: "Undo", run: () => actions.updateHabitFields(habit.id, before) } }); }}>Use recommended</Button>
+        </div>}
       </motion.section>
 
       <motion.section className="card stack" variants={rise}>
@@ -171,15 +177,12 @@ export function You() {
         </AnimatePresence>
       </motion.section>
 
-      <motion.details className="card preview-tools" variants={rise}>
-        <summary>Preview tools</summary>
-        <p className="muted small">Fills the past with slips so you can watch {companion.name} age, and see the memorial. The only way back is Delete all data.</p>
-        <div className="actions">
-          <Button variant="secondary" onClick={() => demo(1, 7)}>A rough week</Button>
-          <Button variant="secondary" onClick={() => demo(3, 30)}>A bad month</Button>
-          <Button variant="secondary" className="wide" onClick={() => demo(3, 120)}>Reach the end</Button>
-        </div>
-      </motion.details>
+      <motion.section className="card stack" variants={rise}>
+        <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>Test the simulation</h2></div>
+        <p className="muted small">Watch a life play out in fast forward: every 2 seconds is a day, and you can see how fast {companion.name} would age toward the end with different patterns. Your real logs are never touched.</p>
+        <Button variant="secondary" onClick={() => setSim(true)}>Run the simulation</Button>
+      </motion.section>
+      <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} name={companion.name} habit={habit} />
     </motion.main>
   );
 }

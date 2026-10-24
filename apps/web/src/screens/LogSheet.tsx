@@ -24,6 +24,23 @@ async function shrink(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
+function Scale({ value, labels, label, onChange }: { value: number; labels: [string, string]; label: string; onChange: (n: number) => void }) {
+  return (
+    <div className="scale">
+      <div className="scale-dots" role="radiogroup" aria-label={label}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <motion.button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${n} of 5`} className="scale-dot" data-on={n <= value}
+            whileTap={{ scale: 0.85 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange(value === n ? 0 : n); }}>
+            {value === n && <motion.span layoutId={`scale-${label}`} className="scale-pill" transition={spring.snappy} />}
+            <span>{n}</span>
+          </motion.button>
+        ))}
+      </div>
+      <div className="scale-ends muted small"><span>{labels[0]}</span><span>{labels[1]}</span></div>
+    </div>
+  );
+}
+
 interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void }
 
 export function LogSheet(props: Props) {
@@ -135,6 +152,21 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
               <div className="chips quick">{recent.map((a) => <Chip key={a} pressed={String(values[f.id]) === String(a)} onClick={() => set(f.id, String(a))}>{unitLabel && habit.unit === "money" ? `${unitLabel} ${a}` : `${a}${unitLabel ? ` ${unitLabel}` : ""}`}</Chip>)}</div>
             )}
           </>)}
+          {f.type === "choice" && (
+            <div className="chips" role="radiogroup" aria-label={f.label}>
+              {(f.options ?? []).map((o) => <Chip key={o.id} pressed={values[f.id] === o.id} onClick={() => set(f.id, values[f.id] === o.id ? "" : o.id)}>{o.label}</Chip>)}
+            </div>
+          )}
+          {f.type === "multi" && (
+            <div className="chips" role="group" aria-label={f.label}>
+              {(f.options ?? []).map((o) => {
+                const picked = String(values[f.id] ?? "").split(",").filter(Boolean);
+                const on = picked.includes(o.id);
+                return <Chip key={o.id} pressed={on} onClick={() => set(f.id, (on ? picked.filter((x) => x !== o.id) : [...picked, o.id]).join(","))}>{o.label}</Chip>;
+              })}
+            </div>
+          )}
+          {f.type === "scale" && <Scale value={Number(values[f.id] ?? 0)} labels={f.scaleLabels ?? ["Low", "High"]} label={f.label} onChange={(n) => set(f.id, n ? String(n) : "")} />}
           {f.type === "yesno" && <Segmented label={f.label} value={values[f.id] as boolean | undefined} onChange={(v) => set(f.id, v)} options={[{ value: true, label: "Yes" }, { value: false, label: "No" }]} />}
           {f.type === "photo" && (
             <label className="photo-tile">

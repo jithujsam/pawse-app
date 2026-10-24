@@ -4,10 +4,11 @@ import { projectDaysToAge } from "@detox/engine";
 import { aiWeekly } from "../ai";
 import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
+import { pickedLabels } from "../questions";
 import { verdict } from "../copy";
 import { addDays, daysBetween, fmtDay, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
-import { actions, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { actions, cleanStreak, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon } from "../ui/Controls";
 import type { Baseline } from "../types";
@@ -16,10 +17,11 @@ const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
 
-function Delta({ cur, prev, unit = "" }: { cur: number; prev: number; unit?: string }) {
+function Delta({ cur, prev, unit = "", good = "down" }: { cur: number; prev: number; unit?: string; good?: "up" | "down" }) {
   if (cur === prev) return <span className="delta flat">same as last week</span>;
   const down = cur < prev;
-  return <span className={`delta ${down ? "good" : "bad"}`}>{down ? "↓" : "↑"} {Math.abs(Math.round((cur - prev) * 10) / 10)}{unit} vs last week</span>;
+  const better = good === "down" ? down : !down;
+  return <span className={`delta ${better ? "good" : "bad"}`}>{down ? "↓" : "↑"} {Math.abs(Math.round((cur - prev) * 10) / 10)}{unit} vs last week</span>;
 }
 
 export function Report() {
@@ -30,6 +32,8 @@ export function Report() {
   const { tone, currency, baseline } = data.settings;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
+  const cleanIn = (from: string) => data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= from && c.day <= addDays(from, 6)).length;
+  const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
   const prev = weekStats(data, habit.id, addDays(ws, -7));
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
   const maxW = Math.max(1, ...weeks);
@@ -37,11 +41,26 @@ export function Report() {
   const byDow = DOW.map((_, i) => all.filter((e) => parse(e.day).getDay() === i).length);
   const worst = byDow.indexOf(Math.max(...byDow));
   const biggest = all.reduce<typeof all[number] | null>((b, e) => (!b || e.months > b.months ? e : b), null);
+  // Most common answer to a one-tap question, with how many times it came up.
+  const top = (id: string): [string, number] | null => {
+    const f = habit.fields.find((x) => x.id === id);
+    if (!f) return null;
+    const counts = new Map<string, number>();
+    for (const e of all) for (const l of pickedLabels(f, e.values[f.id])) counts.set(l, (counts.get(l) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+  };
+  const topMood = top("mood"), topWhere = top("where"), topWho = top("who");
+  const urges = all.map((e) => Number(e.values.urge)).filter((n) => n >= 1 && n <= 5);
+  const avgUrge = urges.length ? urges.reduce((a, b) => a + b, 0) / urges.length : null;
+  const afterField = habit.fields.find((x) => x.id === "after");
+  const afters = afterField ? all.flatMap((e) => pickedLabels(afterField, e.values.after)) : [];
+  const regretShare = afters.length ? afters.filter((l) => l === "Worse" || l === "I regret it").length / afters.length : null;
+  // Older habits with free-text "where" answers.
   const places = new Map<string, number>();
   for (const e of all) for (const f of habit.fields) if (f.type === "text" && /where|app/i.test(f.label)) {
     const v = String(e.values[f.id] ?? "").trim().toLowerCase(); if (v) places.set(v, (places.get(v) ?? 0) + 1);
   }
-  const topPlace = [...places.entries()].sort((a, b) => b[1] - a[1])[0];
+  const topPlace = topWhere ?? [...places.entries()].sort((a, b) => b[1] - a[1])[0];
   const frailIn = view.age >= 80 ? 0 : projectDaysToAge(view.states, 80);
   const money = habit.unit === "money";
   const fmt = (n: number) => Math.round(n * 10) / 10;
@@ -82,7 +101,10 @@ export function Report() {
         <div className="stats">
           <div className="stat"><div className="muted small">Slips</div><div className="v"><AnimatedNumber value={cur.slips} from={0} /></div><Delta cur={cur.slips} prev={prev.slips} /></div>
           <div className="stat"><div className="muted small">Life lost</div><div className="v"><AnimatedNumber value={fmt(cur.months)} from={0} decimals={1} /> <small>mo</small></div><Delta cur={fmt(cur.months)} prev={fmt(prev.months)} unit=" mo" /></div>
-          {money && <div className="stat wide"><div className="muted small">Spent</div><div className="v">{currency} <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>}
+          <div className="stat"><div className="muted small">Clean days</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
+          {money
+            ? <div className="stat"><div className="muted small">Spent</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
+            : <div className="stat"><div className="muted small">Clean streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">right now</span></div>}
         </div>
       </motion.section>
 
@@ -137,7 +159,10 @@ export function Report() {
         {all.length < 3 ? <p className="muted">Patterns show up after a few logged slips.</p> : (
           <motion.div className="list" variants={stagger} initial="hidden" animate="show">
             <motion.div className="item" variants={rise}><span className="muted small">Worst weekday</span><b>{DOW[worst]}</b><span className="small">{byDow[worst]} of {all.length} slips</span></motion.div>
-            {topPlace && <motion.div className="item" variants={rise}><span className="muted small">Most repeated</span><b style={{ textTransform: "capitalize" }}>{topPlace[0]}</b><span className="small">{topPlace[1]} times</span></motion.div>}
+            {topMood && <motion.div className="item" variants={rise}><span className="muted small">What sets it off most</span><b>{topMood[0]}</b><span className="small">{topMood[1]} of {all.length} slips</span></motion.div>}
+            {topPlace && <motion.div className="item" variants={rise}><span className="muted small">Where it happens most</span><b style={{ textTransform: "capitalize" }}>{topPlace[0]}</b><span className="small">{topPlace[1]} times{topWho ? `, usually ${topWho[0].toLowerCase()}` : ""}</span></motion.div>}
+            {avgUrge !== null && <motion.div className="item" variants={rise}><span className="muted small">Average urge</span><b>{fmt(avgUrge)} of 5</b><span className="small">{avgUrge >= 4 ? "Strong urges. Those are the moments to plan for." : avgUrge <= 2 ? "Mostly mild urges. Habit more than craving." : "Middling urges."}</span></motion.div>}
+            {regretShare !== null && <motion.div className="item" variants={rise}><span className="muted small">How it felt after</span><b>{Math.round(regretShare * 100)}% worse or regretted</b><span className="small">from {afters.length} answers</span></motion.div>}
             {biggest && <motion.div className="item" variants={rise}><span className="muted small">Biggest single slip</span><b>{fmt(biggest.months)} months</b><span className="small">{fmtDay(biggest.day)}{biggest.amount !== null && money ? `, ${currency} ${biggest.amount}` : ""}</span></motion.div>}
           </motion.div>
         )}

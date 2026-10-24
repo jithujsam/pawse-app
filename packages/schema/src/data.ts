@@ -10,10 +10,12 @@ const unit = z.enum(["money", "count", "minutes", "none"]);
 export const FieldSchema = z.object({
   id: z.string().min(1).max(40),
   label: z.string().max(120),
-  type: z.enum(["text", "number", "money", "yesno", "photo"]),
+  type: z.enum(["text", "number", "money", "yesno", "photo", "choice", "multi", "scale"]),
   required: z.boolean(),
   trigger: z.boolean().optional(),
   amount: z.boolean().optional(),
+  options: z.array(z.object({ id: z.string().min(1).max(40), label: z.string().max(40), trigger: z.boolean().optional() })).max(12).optional(),
+  scaleLabels: z.tuple([z.string().max(20), z.string().max(20)]).optional(),
 });
 
 export const CompanionSchema = z.object({

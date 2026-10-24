@@ -22,6 +22,7 @@ export type SyncState = "off" | "idle" | "syncing" | "offline" | "error";
 let status: { state: SyncState; last: number | null; pending: number } = { state: "off", last: null, pending: 0 };
 const watchers = new Set<() => void>();
 const setStatus = (p: Partial<typeof status>) => { status = { ...status, ...p }; watchers.forEach((w) => w()); };
+export const getSyncStatus = () => status;
 export const useSyncStatus = () => useSyncExternalStore((cb) => { watchers.add(cb); return () => watchers.delete(cb); }, () => status);
 
 let userId: string | null = null;

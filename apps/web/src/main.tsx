@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/geist";
-import "@fontsource-variable/nunito";
+import "@fontsource-variable/newsreader/opsz.css";
 import "./styles.css";
 import { App } from "./App";
 import { Capacitor } from "@capacitor/core";

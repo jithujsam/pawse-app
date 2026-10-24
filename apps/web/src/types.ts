@@ -2,7 +2,10 @@ import type { HabitClass } from "@detox/engine";
 
 export type Tone = "gentle" | "honest" | "brutal";
 export type Species = "dog" | "cat" | "rabbit";
-export type FieldType = "text" | "number" | "money" | "yesno" | "photo";
+export type FieldType = "text" | "number" | "money" | "yesno" | "photo" | "choice" | "multi" | "scale";
+
+/** One tappable answer. A trigger option counts toward severity, like a yes to a trigger question. */
+export interface FieldOption { id: string; label: string; trigger?: boolean }
 
 export interface Field {
   id: string;
@@ -13,6 +16,10 @@ export interface Field {
   trigger?: boolean;
   /** The money, count or minutes figure used for severity. */
   amount?: boolean;
+  /** Answers for choice (pick one) and multi (pick any). Multi answers are stored comma-separated. */
+  options?: FieldOption[];
+  /** For scale fields: the words under 1 and 5. */
+  scaleLabels?: [string, string];
 }
 
 export interface Companion {

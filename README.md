@@ -7,7 +7,7 @@ A behaviour tracker where every slip ages a companion and every clean day heals 
 - `apps/web`: the Vite + React app, wrapped for Android with Capacitor (`apps/web/android`).
 - `supabase`: migrations (RLS on every table) and the `ai` edge function that calls OpenRouter. See `supabase/README.md`.
 
-Local-first: the app works fully offline. An optional account adds backup, multi-device sync and AI-written insights. An optional PIN encrypts everything on the phone.
+An account is required. After sign-in the app works offline and syncs when it can. An optional PIN encrypts everything on the phone. You -> Test the simulation plays a life forward, one day every 2 seconds, without touching real data.
 
 ## Run
     pnpm install

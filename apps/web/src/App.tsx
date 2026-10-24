@@ -1,9 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { startSync } from "./sync";
+import { startSync, useSyncStatus } from "./sync";
+import { kv } from "./db";
+import { Restoring, Welcome } from "./screens/Welcome";
 import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
-import { useActiveView, useData, vault, type Boot } from "./store";
+import { actions, useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -72,10 +74,20 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("home");
   const dir = useRef(1);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
-  const { session } = useSession();
+  const { session, ready } = useSession();
+  const sync = useSyncStatus();
   useEffect(() => { document.documentElement.dataset.tint = data.settings.tint ?? "ocean"; }, [data.settings.tint]);
   const uid = session?.user.id;
-  useEffect(() => { if (uid) void startSync(uid); }, [uid]);
+  useEffect(() => {
+    if (!uid) return;
+    void (async () => {
+      // Data on this phone belongs to whoever signed in last. A different person starts clean.
+      const owner = await kv.get<string>("owner").catch(() => undefined);
+      if (owner && owner !== uid) await actions.resetAll();
+      await kv.set("owner", uid).catch(() => undefined);
+      await startSync(uid);
+    })();
+  }, [uid]);
 
   useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
 
@@ -88,6 +100,9 @@ function Shell() {
 
   useEffect(() => { if (data.settings.onboarded) { const t = setTimeout(prefetch, 1500); return () => clearTimeout(t); } }, [data.settings.onboarded]);
 
+  if (!ready) return <div className="app"><Loading /></div>;
+  if (!session) return <div className="app"><Welcome /></div>;
+  if (!data.settings.onboarded && sync.last === null && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
   if (!data.settings.onboarded) return <div className="app"><Suspense fallback={<Loading />}><Onboarding /></Suspense></div>;
 
   if (view?.dead && memorialSeen !== view.companion.id) {

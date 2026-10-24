@@ -7,11 +7,9 @@ import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
-import { inferClass, inferMeasure, isRestrictionRelated, SUGGESTIONS, TRIGGERS } from "../questions";
+import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
 import { actions } from "../store";
-import { configured } from "../supabase";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
-import { Account } from "./Account";
 import type { Baseline, Measure, Species, Tint, Tone } from "../types";
 
 const SPECIES: { id: Species; label: string; blurb: string }[] = [
@@ -49,10 +47,10 @@ interface Draft {
   baseline: Baseline | null; triggers: string[]; tone: Tone; tint: Tint; reminder: string;
 }
 const initial: Draft = {
-  step: 0, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
+  step: 1, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
   baseline: null, triggers: [], tone: "honest", tint: "ocean", reminder: "20:00",
 };
-const loadDraft = (): Draft => { try { return { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; } catch { return initial; } };
+const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, step: Math.max(1, d.step) }; } catch { return initial; } };
 const LAST = 9;
 
 export function Onboarding() {
@@ -78,10 +76,11 @@ export function Onboarding() {
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
+  const canGoBack = d.step > 1 && d.step < LAST;
   return (
     <div className="screen onboard">
       <div className="ob-top" data-hidden={!showChrome}>
-        <button className="icon-btn" aria-label="Back" onClick={() => go(d.step - 1)} disabled={!showChrome}>{Icon.back}</button>
+        <button className="icon-btn" aria-label="Back" onClick={() => go(d.step - 1)} disabled={!canGoBack}>{Icon.back}</button>
         <div className="progress" aria-hidden><motion.i animate={{ width: `${(d.step / (LAST - 1)) * 100}%` }} transition={spring.calm} /></div>
         <span className="small muted">{Math.min(d.step, LAST - 1)}/{LAST - 1}</span>
       </div>
@@ -89,7 +88,6 @@ export function Onboarding() {
       <AnimatePresence mode="wait" custom={dir.current} initial={false}>
         <motion.div key={d.step} className="step" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
           <motion.div className="step-inner" variants={stagger} initial="hidden" animate="show">
-            {d.step === 0 && <Story species={d.species} onStart={() => go(1)} />}
 
             {d.step === 1 && (<>
               <motion.h1 variants={rise}>Choose your companion</motion.h1>
@@ -147,9 +145,9 @@ export function Onboarding() {
 
             {d.step === 5 && (<>
               <motion.h1 variants={rise}>What tends to set it off?</motion.h1>
-              <motion.p className="muted" variants={rise}>Pick any that fit. We'll ask about them briefly, so patterns show up in your report.</motion.p>
+              <motion.p className="muted" variants={rise}>Pick any that fit. After a slip you'll tap the one that was true, so your report can show what really sets it off.</motion.p>
               <motion.div className="chips" role="group" aria-label="Triggers" variants={rise}>
-                {TRIGGERS.map((t) => <Chip key={t.id} pressed={d.triggers.includes(t.id)} onClick={() => up({ triggers: d.triggers.includes(t.id) ? d.triggers.filter((x) => x !== t.id) : [...d.triggers, t.id] })}>{t.chip}</Chip>)}
+                {MOODS.map((t) => <Chip key={t.id} pressed={d.triggers.includes(t.id)} onClick={() => up({ triggers: d.triggers.includes(t.id) ? d.triggers.filter((x) => x !== t.id) : [...d.triggers, t.id] })}>{t.chip}</Chip>)}
               </motion.div>
               <motion.div variants={rise}><Button onClick={() => go(6)}>{d.triggers.length ? "Continue" : "Skip for now"}</Button></motion.div>
             </>)}
@@ -208,11 +206,6 @@ export function Onboarding() {
                 <p>{DISCLAIMER}</p>
                 <p className="muted small">Age and body effects are illustrative estimates. They are not a health prediction.</p>
               </motion.div>
-              {configured && (<motion.div className="card stack" variants={rise}>
-                <div className="row" style={{ justifyContent: "flex-start" }}>{Icon.cloud}<h2>Back up your progress</h2></div>
-                <p className="muted small">Optional. An account keeps {name} safe if you change phones, and switches on written insights. You can add it later.</p>
-                <Account compact />
-              </motion.div>)}
               <motion.div variants={rise}><Switch checked={adult} onChange={setAdult} label="I'm 18 or older" hint="And I understand this is not medical advice." /></motion.div>
               <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(9)}>Meet {name}</Button></motion.div>
             </>)}
@@ -225,7 +218,7 @@ export function Onboarding() {
   );
 }
 
-function Story({ species, onStart }: { species: Species; onStart: () => void }) {
+export function Story({ species, onStart }: { species: Species; onStart: () => void }) {
   const [i, setI] = useState(0);
   const card = STORY[i];
   const next = () => (i < STORY.length - 1 ? (haptic.select(), setI(i + 1)) : onStart());
