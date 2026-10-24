@@ -8,6 +8,8 @@ import { z } from "npm:zod@3.23.8";
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "80");
+/** A ceiling on calls across everyone per UTC day, so a bug or abuse can't run up the bill. 0 turns AI off. */
+const GLOBAL_DAILY_LIMIT = Number(Deno.env.get("AI_GLOBAL_DAILY_LIMIT") ?? "3000");
 const ORIGINS = new Set(["https://localhost", "capacitor://localhost", "http://localhost", "http://localhost:5173", "http://localhost:4173",
   ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean)]);
 
@@ -64,6 +66,7 @@ Rules, all of them are mandatory:
 4. Never give advice unless asked. Never tell anyone to stop suddenly. Never mention calories, weight, dieting or eating less.
 5. Use only facts present in the data. Do not invent numbers, places, causes or history.
 6. Refer to the pet by its given name. Keep to the tone requested. Plain words, no emoji, no hashtags.
+   Call a day without the habit a "good day" or "goal met", never "clean"; never call the person or their behaviour "dirty". A slip is information, not a moral failure.
 7. Output exactly one JSON object in the requested shape and nothing else.`;
 
 type SlipR = z.infer<typeof SlipReq>;
@@ -133,6 +136,11 @@ Deno.serve(async (req) => {
   const ck = await cacheKey(u.user.id, body);
   const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).maybeSingle();
   if (hit?.result) return json(req, { ok: true, result: hit.result, cached: true });
+
+  // Everyone's calls today, checked before this person's own quota. Fails closed: no count, no call.
+  const { data: usage, error: usageErr } = await admin.from("ai_usage").select("calls").eq("day", new Date().toISOString().slice(0, 10));
+  const total = (usage ?? []).reduce((a: number, r: { calls: number }) => a + Number(r.calls ?? 0), 0);
+  if (usageErr || !(total < GLOBAL_DAILY_LIMIT)) return json(req, { ok: false, error: "limit" });
 
   const { data: allowed, error: limitErr } = await admin.rpc("bump_ai_usage", { p_user: u.user.id, p_limit: DAILY_LIMIT });
   if (limitErr || allowed === false) return json(req, { ok: false, error: "limit" });

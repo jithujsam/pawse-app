@@ -2,7 +2,7 @@
  * Quick actions from the centre button. Home owns the slip sheet and the clean-day celebration,
  * so the request waits here until Home is on screen to take it.
  */
-export type QuickAction = "slip" | "clean" | "urge";
+export type QuickAction = "slip" | "clean" | "urge" | "rest";
 
 let pending: QuickAction | null = null;
 const listeners = new Set<() => void>();

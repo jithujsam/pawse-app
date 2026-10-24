@@ -14,6 +14,7 @@ export const defaultSettings = (): Settings => ({
   tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, goal: "",
   baseline: null, haptics: true, remindersOn: false, coachSeen: false, celebrated: [], autoLock: "1m",
   wear: null, treatsGiven: 0, fedOn: null, careNotes: true, savingsGoal: null, riskNudge: true, neglectFrom: null, pet3d: true, theme: "system", accent: "pet",
+  plan: null, restDays: [], weekFocus: [], petLife: "continuity",
 });
 
 export const blank = (): AppData => ({

@@ -3,7 +3,7 @@
 <h1 align="center">Pawse</h1>
 <p align="center"><b>Pause the habit. Keep your pet happy.</b></p>
 
-Pawse is a habit-change app with a pet at its heart. Pick something you want to cut down on, such as late-night food orders, impulse buys, smoking or doomscrolling, and adopt a companion. Every clean day keeps them healthy. Every slip costs them a little life, and the app always shows you the way back.
+Pawse is a habit-change app with a pet at its heart. Pick something you want to change, such as late-night food orders, impulse buys, smoking or doomscrolling, set your own goal (stop, cut down, or understand it first), and adopt a companion. Days with your goal met help them heal, slips cost a little, and the app helps you get through urges and learn from slips. A slip is information, not a verdict.
 
 It's built to feel warm rather than preachy. It's honest about slips, generous about progress, and private by default.
 
@@ -34,8 +34,15 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 - **Quiet days:** the pet only heals on days you check in. A quiet day is missing data, not a slip, so it costs nothing; gentle reminders follow. (The engine still has the older "loneliness" rule, switched off by `QUIET_DAYS_AGE` in `src/store.ts`.)
 - **The way back:** after every slip you see exactly how many clean days undo it.
 
+**Recovery tools (3.0)**
+- **Your plan:** goal, reasons, hard situations, a first step, strategies you prefer and if-then plans. All optional, all editable.
+- **Five day states:** goal met, slip, urge managed, not tracking (your choice) and not recorded. A day you don't record is unknown, never a failure or a success.
+- **Urge support:** pause and notice, name it, change where you are, add friction, breathe, do something else, reach out. Switch any time; no promise that it ends by a set time.
+- **After a slip:** calm words, what you've built still stands, and an optional reflection with one thing to try next time.
+- **Weekly review:** progress toward your goal, urges managed, what helped, what was hard, and one adjustment for next week.
+- **Humane pet rules:** by default your companion can get very frail but never dies, and everything can heal back. Classic rules (death, permanent scars) are opt-in.
+
 **Tools that help in the moment**
-- **Urge SOS:** two minutes of paced breathing with your pet when a craving hits. Riding one out counts as a win.
 - **Insights:** this week against last, urges ridden out, a map of your risky hours, money kept and a savings goal.
 - **Journey:** milestones, streaks, a calendar and a one-line daily reflection.
 - **Notes from your pet:** a thank-you after clean days, a heads-up before your usual risky hour, and a check-in reminder.
@@ -124,7 +131,7 @@ Requires Java 21 and Android SDK 35.
 
 ### Database
 
-Run the migrations in `supabase/migrations` in order (0001, 0002, 0003). Each one is additive and safe to re-run. See `supabase/README.md` for the AI function and its secret.
+Run the migrations in `supabase/migrations` in order (0001 to 0005). Each one is additive and safe to re-run. See `supabase/README.md` for the AI function and its secret.
 
 ### Where things live
 

@@ -99,7 +99,7 @@ export function Simulator({ open, onClose, species, coat, name, habit }: { open:
                     : dead ? `${name} died on day ${days.length}.`
                       : today.damage.length && cur.absorbedMonths > 0 && cur.damageMonths < 0.05 ? `Day ${days.length}: a slip, but ${name} shrugged it off. Good days built a cushion.`
                       : today.damage.length ? `Day ${days.length}: ${today.damage.length} ${today.damage.length === 1 ? "slip" : "slips"}, −${(cur.damageMonths).toFixed(1)} months${cur.binge ? ". Binge: part of it scars for good" : ""}${cur.absorbedMonths > 0 ? ` (${cur.absorbedMonths.toFixed(1)} absorbed)` : ""}`
-                        : cur.healedMonths > 0 ? `Day ${days.length}: clean, healed ${cur.healedMonths.toFixed(1)} months` : `Day ${days.length}: clean, but scars don't heal`}
+                        : cur.healedMonths > 0 ? `Day ${days.length}: goal met, healed ${cur.healedMonths.toFixed(1)} months` : `Day ${days.length}: goal met, but scars don't heal`}
                 </motion.p>
               </AnimatePresence>
               <div className="agetext"><span>Day <b><AnimatedNumber value={days.length} /></b></span><span>Age <b><AnimatedNumber value={Math.round(age)} /></b> of 100</span></div>

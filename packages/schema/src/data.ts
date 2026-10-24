@@ -57,6 +57,19 @@ export const EntrySchema = z.object({
   createdAt: z.number(),
 });
 
+const strategy = z.enum(["observe", "name", "move", "friction", "breathe", "replace", "reach"]);
+const short = (n: number) => z.string().max(n);
+
+export const PlanSchema = z.object({
+  goal: z.enum(["stop", "reduce", "understand"]).nullable(),
+  reasons: z.array(short(80)).max(8),
+  situations: z.array(short(60)).max(8),
+  firstStep: short(140),
+  strategies: z.array(strategy).max(7),
+  supportName: short(40),
+  ifThen: z.array(short(160)).max(8),
+});
+
 export const CleanDaySchema = z.object({ habitId: id, day });
 
 export const UrgeSchema = z.object({
@@ -65,6 +78,8 @@ export const UrgeSchema = z.object({
   strength: z.number().int().min(1).max(5),
   outcome: z.enum(["rode_it_out", "slipped"]),
   createdAt: z.number(),
+  strategy: strategy.nullable().optional(),
+  trigger: z.string().max(40).nullable().optional(),
 });
 
 export const JournalSchema = z.object({ day, mood: z.number().int().min(1).max(5), body: z.string().max(600) });
@@ -93,6 +108,10 @@ export const SettingsSchema = z.object({
   pet3d: z.boolean(),
   theme: z.enum(["system", "light", "dark"]),
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
+  plan: PlanSchema.nullable(),
+  restDays: z.array(day).max(4000),
+  weekFocus: z.array(z.object({ week: day, text: short(160) })).max(60),
+  petLife: z.enum(["continuity", "classic"]),
 }).partial();
 
 export const AppDataSchema = z.object({

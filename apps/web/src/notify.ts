@@ -58,7 +58,7 @@ const at = (dayOffset: number, hour: number, minute = 0) => { const d = new Date
 
 /**
  * Care notes in the companion's voice, at most two a day on top of the check-in reminder.
- * After a clean day: a thank-you tonight and a good-morning tomorrow. After a slip: one
+ * After a good day: a thank-you tonight and a good-morning tomorrow. After a slip: one
  * "hasn't eaten" note a couple of hours later. Each new event replaces the last plan.
  */
 export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; personality?: Personality; name: string; enabled: boolean }) {
@@ -99,8 +99,8 @@ export async function scheduleRisk(hour: number | null, o: { tone: Tone; persona
 
 const LAPSE_IDS = [2010, 2011, 2012, 2013];
 /**
- * If check-ins stop, gentle reminders after 2, 4, 7 and 10 quiet days, rescheduled from the last
- * check-in every time the app opens or a day is logged. Honest about the cost, never morbid.
+ * If check-ins stop, two neutral reminders after 2 and 7 quiet days, rescheduled from the last check-in
+ * every time the app opens or a day is logged. No guilt, and no claim that silence harms the pet.
  */
 export async function scheduleLapse(lastCheckIn: string, o: { tone: Tone; name: string; enabled: boolean }) {
   if (!native) return;
@@ -109,12 +109,12 @@ export async function scheduleLapse(lastCheckIn: string, o: { tone: Tone; name: 
   const perm = await LocalNotifications.checkPermissions().catch(() => ({ display: "denied" }));
   if (perm.display !== "granted") return;
   const n = o.name;
+  // Two notes at most, neutral, and never implying the pet suffers from silence: a quiet day is missing data.
   const notes: [number, string, string][] = [
-    [2, `${n} misses you`, o.tone === "brutal" ? "Two days without a check-in. How have they gone?" : "How have the last couple of days been? Ten seconds to check in."],
-    [4, `${n} is getting lonely`, `Pets only heal on days you check in. ${o.tone === "gentle" ? "Whenever you're ready." : "A quick one today keeps it that way."}`],
-    [7, `A week without news`, o.tone === "gentle" ? `${n} is still here. Whenever you're ready, one check-in picks things up again.` : `${n} is still here. One check-in and healing starts again; the quiet days don't count against you.`],
-    [10, `${n} is still waiting`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days, no harm done. ${n} is ready when you are.`],
+    [2, "A quick check-in?", o.tone === "gentle" ? "Whenever you're ready. How have the last couple of days gone?" : o.tone === "brutal" ? "Two days unrecorded. How did they go?" : "How have the last couple of days gone? It takes ten seconds."],
+    [7, `${n} is here when you're ready`, o.tone === "brutal" ? "Unrecorded days don't count against you. Pick it up today." : "Days you don't record don't count against you. Pick up whenever it suits you."],
   ];
+
   const [y, m, d] = lastCheckIn.split("-").map(Number);
   const now = Date.now();
   const list = notes.map(([days, title, body], i) => ({ id: LAPSE_IDS[i], title, body, at: new Date(y, m - 1, d + days, 19, 30) }))

@@ -4,7 +4,7 @@ import type { Personality, Tone } from "./types";
  * What the companion says, in its own voice. Personality decides how it talks; tone decides how blunt
  * it is about slips. Every line exists for all four personalities in all three tones.
  *
- * The psychology, briefly: clean days get an immediate, warm, slightly unpredictable reward (variable
+ * The psychology, briefly: good days get an immediate, warm, slightly unpredictable reward (variable
  * reinforcement); a slip costs something the person cares about (the pet won't eat), but always comes
  * with a way back (recovery plan), because shame after a slip makes people give up entirely
  * (the abstinence violation effect). The pet is hurt by the behaviour, never disgusted by the person.
@@ -55,42 +55,42 @@ const L: Record<Event, Lines> = {
   },
   fed: {
     playful: { gentle: ["Nom nom nom! Thank you!", "Yum! Best meal ever!"], honest: ["Food! You kept your word today.", "Crunch crunch. Good day."], brutal: ["Eating. Because you earned it today."] },
-    calm: { gentle: ["Thank you. That was lovely.", "A warm meal. A good day."], honest: ["Thanks. I'm eating well today.", "Good food, quiet day."], brutal: ["I'll eat. Today was clean."] },
-    sassy: { gentle: ["Finally, room service.", "Delicious. You may stay."], honest: ["Not bad. Same time tomorrow.", "Five stars. Clean day too."], brutal: ["Eating well today. Thanks for keeping your word."] },
+    calm: { gentle: ["Thank you. That was lovely.", "A warm meal. A good day."], honest: ["Thanks. I'm eating well today.", "Good food, quiet day."], brutal: ["I'll eat. Today went well."] },
+    sassy: { gentle: ["Finally, room service.", "Delicious. You may stay."], honest: ["Not bad. Same time tomorrow.", "Five stars. Good day too."], brutal: ["Eating well today. Thanks for keeping your word."] },
     wise: { gentle: ["Nourished. Thank you.", "Small meals, good habits."], honest: ["We both eat better on good days.", "Well fed, well kept."], brutal: ["You fed me well by keeping your word."] },
   },
   full: {
-    playful: { gentle: ["I'm stuffed! Maybe later!", "So full! Belly rubs instead?"], honest: ["Already ate! Treat, though?", "Full! Thanks!"], brutal: ["Already fed. A clean day is my favourite treat."] },
+    playful: { gentle: ["I'm stuffed! Maybe later!", "So full! Belly rubs instead?"], honest: ["Already ate! Treat, though?", "Full! Thanks!"], brutal: ["Already fed. A good day is my favourite treat."] },
     calm: { gentle: ["I'm full, thank you.", "No more for now."], honest: ["I've eaten today.", "Full. Thanks."], brutal: ["Full, thank you."] },
-    sassy: { gentle: ["Are you trying to roll me home?", "I have a figure to maintain."], honest: ["I already ate. Pay attention.", "Twice? Who am I?"], brutal: ["I'm full. Clean days are the best treat anyway."] },
+    sassy: { gentle: ["Are you trying to roll me home?", "I have a figure to maintain."], honest: ["I already ate. Pay attention.", "Twice? Who am I?"], brutal: ["I'm full. Good days are the best treat anyway."] },
     wise: { gentle: ["Enough is a feast.", "Full and grateful."], honest: ["Enough is enough. For both of us.", "I've had my share."], brutal: ["Enough is enough. For both of us."] },
   },
   strike: {
-    playful: { gentle: ["I'm not hungry today. Tomorrow?", "Not today. I just feel a bit off."], honest: ["I'm not eating today. Not after that.", "No food. I'm too upset."], brutal: ["I'm too upset to eat today. A clean day will help."] },
-    calm: { gentle: ["I'll skip today. I'll be okay.", "No appetite today. Let's try tomorrow."], honest: ["I can't eat today. It hurt.", "Not today. Give me a clean day."], brutal: ["Not hungry today. Tomorrow, if today stays clean."] },
-    sassy: { gentle: ["I'm on strike. A small one.", "Not hungry. Guess why."], honest: ["Hunger strike. You know the demands.", "I'll eat after a clean day."], brutal: ["I'll skip today. Bring me a clean day and I'll eat."] },
+    playful: { gentle: ["I'm not hungry today. Tomorrow?", "Not today. I just feel a bit off."], honest: ["I'm not eating today. Not after that.", "No food. I'm too upset."], brutal: ["I'm too upset to eat today. A good day will help."] },
+    calm: { gentle: ["I'll skip today. I'll be okay.", "No appetite today. Let's try tomorrow."], honest: ["I can't eat today. It hurt.", "Not today. Give me a good day."], brutal: ["Not hungry today. Tomorrow, if today stays clean."] },
+    sassy: { gentle: ["I'm on strike. A small one.", "Not hungry. Guess why."], honest: ["Hunger strike. You know the demands.", "I'll eat after a good day."], brutal: ["I'll skip today. Bring me a good day and I'll eat."] },
     wise: { gentle: ["I'll fast today. Tomorrow is new.", "Some days we both go without."], honest: ["I won't eat on a day you didn't keep your word.", "A promise broken spoils the meal."], brutal: ["I'll fast today. A kept promise brings my appetite back."] },
   },
   treat: {
-    playful: { gentle: ["A treat!! You're the best!", "Yay! Treat dance!"], honest: ["Treat earned, treat eaten!", "Yes! From the clean-day jar!"], brutal: ["One treat per clean day. Fair trade."] },
-    calm: { gentle: ["Oh, thank you. Lovely.", "A little treat. How kind."], honest: ["That one was earned.", "Thank you. Clean days taste good."], brutal: ["Earned. Thank you."] },
-    sassy: { gentle: ["Bribery works. Thank you!", "You know the way to my heart."], honest: ["Paid in treats. Excellent.", "A clean-day treat. Classy."], brutal: ["Earned and enjoyed."] },
+    playful: { gentle: ["A treat!! You're the best!", "Yay! Treat dance!"], honest: ["Treat earned, treat eaten!", "Yes! From the good-day jar!"], brutal: ["One treat per good day. Fair trade."] },
+    calm: { gentle: ["Oh, thank you. Lovely.", "A little treat. How kind."], honest: ["That one was earned.", "Thank you. Good days taste good."], brutal: ["Earned. Thank you."] },
+    sassy: { gentle: ["Bribery works. Thank you!", "You know the way to my heart."], honest: ["Paid in treats. Excellent.", "A good-day treat. Classy."], brutal: ["Earned and enjoyed."] },
     wise: { gentle: ["The sweetest things are earned.", "Thank you, friend."], honest: ["Each treat is a day you kept.", "Earned joy is the best kind."], brutal: ["You earned this one. Thank you."] },
   },
   noTreats: {
-    playful: { gentle: ["Jar's empty! A clean day fills it!", "No treats yet. Tomorrow?"], honest: ["Empty jar. Clean days add treats.", "None left! Earn one tomorrow?"], brutal: ["Treats come from clean days."] },
-    calm: { gentle: ["No treats left. That's okay.", "The jar is empty for now."], honest: ["Out of treats. A clean day adds one.", "None left."], brutal: ["Empty. Earn the next one."] },
-    sassy: { gentle: ["The jar is tragically empty.", "No treats? Scandalous."], honest: ["Treats come from clean days. Do the math.", "Empty. Hint, hint."], brutal: ["Every clean day adds a treat. Easy."] },
-    wise: { gentle: ["Patience. The jar will fill.", "Nothing yet. That's all right."], honest: ["Clean days fill the jar.", "The jar waits for good days."], brutal: ["A clean day fills the jar."] },
+    playful: { gentle: ["Jar's empty! A good day fills it!", "No treats yet. Tomorrow?"], honest: ["Empty jar. Good days add treats.", "None left! Earn one tomorrow?"], brutal: ["Treats come from good days."] },
+    calm: { gentle: ["No treats left. That's okay.", "The jar is empty for now."], honest: ["Out of treats. A good day adds one.", "None left."], brutal: ["Empty. Earn the next one."] },
+    sassy: { gentle: ["The jar is tragically empty.", "No treats? Scandalous."], honest: ["Treats come from good days. Do the math.", "Empty. Hint, hint."], brutal: ["Every good day adds a treat. Easy."] },
+    wise: { gentle: ["Patience. The jar will fill.", "Nothing yet. That's all right."], honest: ["Good days fill the jar.", "The jar waits for good days."], brutal: ["A good day fills the jar."] },
   },
   cleanThanks: {
-    playful: { gentle: ["Thank you for today! I feel bouncy!", "You did it! I'm so happy!"], honest: ["Clean day! I can feel it working!", "Thanks for not doing it today. I feel better!"], brutal: ["One clean day. Let's do it again tomorrow."] },
+    playful: { gentle: ["Thank you for today! I feel bouncy!", "You did it! I'm so happy!"], honest: ["Good day! I can feel it working!", "Thanks for not doing it today. I feel better!"], brutal: ["One good day. Let's do it again tomorrow."] },
     calm: { gentle: ["Thank you. I feel a little better.", "A quiet, good day. Thank you."], honest: ["Thanks for not doing it today. I'm healing.", "That helped. I can feel it."], brutal: ["Good day. Here's to the next one."] },
-    sassy: { gentle: ["Look at you, keeping promises.", "Okay, I'm impressed. Slightly."], honest: ["Thanks for not doing it. I feel better, not that I'll admit it.", "Clean day. Who are you?"], brutal: ["Clean. Okay, I'm proud. A little."] },
+    sassy: { gentle: ["Look at you, keeping promises.", "Okay, I'm impressed. Slightly."], honest: ["Thanks for not doing it. I feel better, not that I'll admit it.", "Good day. Who are you?"], brutal: ["Clean. Okay, I'm proud. A little."] },
     wise: { gentle: ["Thank you. Every good day counts.", "You kept your word. I feel it."], honest: ["Thanks for not doing it today. I'm getting better.", "One more day kept. It adds up."], brutal: ["You kept your word today. Keep it tomorrow."] },
   },
   shrug: {
-    playful: { gentle: ["We've had {d} good days. I'm okay, really!", "One wobble after {d} days? I'm still bouncy!"], honest: ["{d} days clean. One slip doesn't undo that. I'm fine.", "I'm strong from {d} good days. I'll shake it off."], brutal: ["{d} good days kept me strong. Let's rebuild that cushion."] },
+    playful: { gentle: ["We've had {d} good days. I'm okay, really!", "One wobble after {d} days? I'm still bouncy!"], honest: ["{d} good days. One slip doesn't undo that. I'm fine.", "I'm strong from {d} good days. I'll shake it off."], brutal: ["{d} good days kept me strong. Let's rebuild that cushion."] },
     calm: { gentle: ["After {d} good days, I'm all right. Rest.", "I'm okay. {d} days made me strong."], honest: ["{d} days of good care. I can absorb one slip.", "I'm fine. Those {d} days count."], brutal: ["{d} days of care covered this one. Let's get back on track."] },
     sassy: { gentle: ["{d} days in? I barely noticed. Barely.", "I'm fine. I have {d} days of savings."], honest: ["I've got {d} days of credit. You just spent some.", "Shrugged it off. {d} days of practice."], brutal: ["I had {d} days of strength. I'm fine. Let's top it up."] },
     wise: { gentle: ["One stumble on a long road. {d} good days hold me up.", "I'm well. {d} days of care."], honest: ["{d} days built a cushion. It held. Rebuild it.", "{d} days of streak forgave one slip. Not two."], brutal: ["{d} days of care held me up. Back to good days now."] },
@@ -117,7 +117,7 @@ export function say(event: Event, personality: Personality | undefined, tone: To
 
 /** The next step back to health, in tone. Numbers come from the engine. */
 export function recoveryLine(tone: Tone, name: string, undo: number, stage: { days: number; label: string } | null): string {
-  const d = (n: number) => `${n} clean ${n === 1 ? "day" : "days"}`;
+  const d = (n: number) => `${n} good ${n === 1 ? "day" : "days"}`;
   const back = stage ? ` ${d(stage.days)} in a row and ${name} is ${stage.label.toLowerCase()} again.` : "";
   if (tone === "gentle") return `${d(undo)} undoes today.${back}`;
   if (tone === "brutal") return `That costs ${d(undo)} to undo.${back} No shortcuts.`;
@@ -139,10 +139,10 @@ export function careNote(kind: "thanks" | "strike" | "morning" | "risk", persona
     return { title: name, body: risk[p][tone] };
   }
   const morning: Record<Personality, Record<Tone, string>> = {
-    playful: { gentle: "Slept so well! Thank you for yesterday!", honest: "Woke up feeling great. Yesterday was clean!", brutal: "Good sleep. Yesterday was clean. Repeat it." },
-    calm: { gentle: "A good night's sleep. Thank you.", honest: "I slept well after a clean day.", brutal: "Rested. Keep today clean too." },
+    playful: { gentle: "Slept so well! Thank you for yesterday!", honest: "Woke up feeling great. Yesterday went well!", brutal: "Good sleep. Yesterday went well. Repeat it." },
+    calm: { gentle: "A good night's sleep. Thank you.", honest: "I slept well after a good day.", brutal: "Rested. Keep today on track too." },
     sassy: { gentle: "Slept like royalty. You may continue.", honest: "Best sleep in ages. Coincidence? No.", brutal: "Slept well. Let's keep today just as good." },
-    wise: { gentle: "Rest comes easy after a kept promise.", honest: "A clean day makes for a clean sleep.", brutal: "Yesterday was kept. Today is new. Keep it." },
+    wise: { gentle: "Rest comes easy after a kept promise.", honest: "A good day makes for a good sleep.", brutal: "Yesterday was kept. Today is new. Keep it." },
   };
   return { title: name, body: morning[p][tone] };
 }
