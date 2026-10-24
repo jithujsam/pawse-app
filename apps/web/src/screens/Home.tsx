@@ -51,7 +51,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const cleanToday = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
   const checked = slippedToday || cleanToday;
   const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
-  const mood = lonely && !just ? "sad" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
+  const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
   const week = weekStats(data, habit.id, weekStart(t0));
   const streak = cleanStreak(data, habit.id);
   const weekClean = data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= weekStart(t0) && c.day <= t0).length;
@@ -63,7 +63,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
-    : lonely ? `There you are! ${companion.name} missed you. A check-in today starts the healing again.`
+    : lonely ? `There you are! ${companion.name} is glad you're back. No catching up needed: just today.`
     : slippedToday && !just ? say("strike", personality, tone)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;

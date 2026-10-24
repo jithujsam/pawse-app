@@ -10,7 +10,7 @@ import { daysBetween, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
-import { cancelDaily, requestReminders, scheduleDaily } from "../notify";
+import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
 import { actions, bestStreak, cleanStreak, useActiveView, useData, vault } from "../store";
 import { configured, useSession } from "../supabase";
@@ -214,7 +214,7 @@ function RemindersPage() {
   async function toggle(on: boolean) {
     if (!on) { await cancelDaily(); actions.setSettings({ remindersOn: false }); return; }
     const ok = await requestReminders(settings.reminder, settings.tone, companion.name);
-    if (!ok) toast("Notifications are blocked. You can allow them in your phone's settings.", { kind: "bad" });
+    if (!ok) toast(remindersSupported ? "Notifications are blocked. You can allow them in your phone's settings." : "Reminders work in the Android app. The web version can't send them on time.", { kind: "bad" });
   }
   async function setTime(time: string) {
     actions.setSettings({ reminder: time });
@@ -282,6 +282,7 @@ function QuestionsPage() {
 
 function DataPage() {
   const { companion } = useActiveView()!;
+  const { session } = useSession();
   const [confirm, setConfirm] = useState(false);
   function exportData() {
     const text = actions.exportJson();
@@ -313,7 +314,9 @@ function DataPage() {
         {!confirm
           ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>Delete all data on this phone</Button></motion.div>
           : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="small">This removes {companion.name}, every log and your settings from this phone. It can't be undone.</p>
+              <p className="small">{session
+                ? `This removes ${companion.name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.`
+                : `This removes ${companion.name}, every log and your settings from this phone. It can't be undone.`}</p>
               <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
             </motion.div>}
       </AnimatePresence>

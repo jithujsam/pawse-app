@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
 import { CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
-import { addDays, fmtTime, today } from "../dates";
+import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
@@ -42,7 +42,8 @@ function Scale({ value, labels, label, onChange }: { value: number; labels: [str
   );
 }
 
-interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void }
+/** `day` presets the slip's date, e.g. from the calendar, so a slip can be logged honestly for any past day. */
+interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void; day?: string }
 
 export function LogSheet(props: Props) {
   return (
@@ -52,10 +53,11 @@ export function LogSheet(props: Props) {
   );
 }
 
-function LogBody({ habit, name, age, onClose, onSaved }: Props) {
+function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) {
   const data = useData();
   const [values, setValues] = useState<Entry["values"]>({});
-  const [day, setDay] = useState(today());
+  const [day, setDay] = useState(presetDay ?? today());
+  const older = presetDay && presetDay < addDays(today(), -1) ? presetDay : null;
   const [time, setTime] = useState("");
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
@@ -85,9 +87,10 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
       setPolishing(true);
       void aiForSlip(req).then((r) => {
         if (!r) return;
-        actions.applyAi(d.entry.id, r);
+        const months = actions.applyAi(d.entry.id, r);
+        if (months === null) return;
         if (alive.current) setResult((cur) => cur && ({
-          ...cur, line: r.explanation, entry: { ...cur.entry, months: r.months, source: "ai" },
+          ...cur, line: r.explanation, entry: { ...cur.entry, months, source: "ai" },
           effectLine: r.effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" ") || cur.effectLine,
         }));
       }).finally(() => { if (alive.current) setPolishing(false); });
@@ -108,7 +111,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
     const shrugged = result.absorbed > 0 && felt < 0.05;
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
-        <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : "yesterday"}{time ? ` at ${fmtTime(time)}` : ""}</motion.p>
+        <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : day === addDays(today(), -1) ? "yesterday" : fmtDay(day)}{time ? ` at ${fmtTime(time)}` : ""}</motion.p>
         <motion.div className="deduction" variants={rise}>
           <span>{shrugged ? `${name} shrugged it off` : "That cost " + name}</span>
           <b className={shrugged ? "" : "neg"}>−<AnimatedNumber value={felt} from={0} decimals={1} /> months</b>
@@ -141,6 +144,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
       <motion.div className="chips" role="group" aria-label="Day" variants={rise}>
         <Chip pressed={day === today()} onClick={() => setDay(today())}>Today</Chip>
         <Chip pressed={day === addDays(today(), -1)} onClick={() => setDay(addDays(today(), -1))}>Yesterday</Chip>
+        {older && <Chip pressed={day === older} onClick={() => setDay(older)}>{fmtDay(older)}</Chip>}
         <Chip pressed={!!time} onClick={() => { const n = new Date(); setTime(time ? "" : `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes() - (n.getMinutes() % 5)).padStart(2, "0")}`); }}>{time ? fmtTime(time) : "Add time"}</Chip>
       </motion.div>
       {time && <motion.div variants={rise}><TimePicker label="Time of the slip" value={time} onChange={setTime} /></motion.div>}

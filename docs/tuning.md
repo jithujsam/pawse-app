@@ -20,3 +20,14 @@ Pacing table unchanged (the reserve only fills on clean days at the floor; the h
 
 - After 65 clean days a single 4-month slip is fully absorbed; after 200 clean days the reserve is capped at 12 and a 3-slip binge loses 6 of its 15 months to it.
 - Ten heavy days then a year clean leaves net at 45% of lifetime damage (20% floor + 25% binge scar) instead of 20%.
+
+## 2026-10-24, AI clamp fix (pnpm simulate)
+
+Pacing table unchanged (the simulation uses the deterministic baseline only):
+
+    light   2 slips/week, severity 1.0   d1:0.0  d7:0.3  d14:0.4  d28:0.7  d42:0.9  d56:1.2  d90:2.0
+    medium  1 slip/day, severity 1.0     d1:0.3  d7:2.3  d14:4.7  d28:9.3  d42:14.0 d56:18.7 d90:30.0
+    heavy   3 slips/day, severity 1.5    d1:1.9  d7:13.1 d14:26.3 d28:52.5 d42:78.8 d56:100.0 d90:100.0
+
+- `applyAiAdjustment` no longer caps a baseline above 12 months to 12 whenever the AI answers. Before, an 18-month slip became 12 at a 0% adjustment (a 33% cut); a 24-month slip lost half. Now the AI moves any slip by at most ±30% and never above its own baseline once that is over 12.
+- AI polish no longer decides life or death: if the nudge alone would kill the companion (or spare it), the baseline months stand.

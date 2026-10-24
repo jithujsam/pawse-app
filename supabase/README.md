@@ -6,7 +6,7 @@ The app works fully offline without any of this. An account adds backup, sync ac
 2. Apply the migrations in order: `migrations/0001_init.sql`, then `migrations/0002_normalized.sql`.
 3. Authentication: leave email sign-in on and turn on leaked-password protection. Under Authentication → URL Configuration, add `app.detoxcompanion://auth-callback` to Redirect URLs, so confirmation and password-reset emails open the Android app (PKCE code exchange in `src/deeplink.ts`). Add your web address too if you host the web build.
 4. Deploy `functions/ai` (`supabase functions deploy ai`) with JWT verification ON.
-5. Secrets (Dashboard, Edge Functions, Secrets): `OPENROUTER_API_KEY` (required). Optional: `AI_MODELS` (comma-separated OpenRouter model ids, tried in order), `AI_DAILY_LIMIT` (default 80 calls a day per person), `ALLOWED_ORIGINS` (comma-separated, added to the built-in app and localhost origins).
+5. Secrets (Dashboard, Edge Functions, Secrets): `OPENROUTER_API_KEY` (required, and the only place the key may live: the function has no in-source fallback). Optional: `AI_MODELS` (comma-separated OpenRouter model ids, tried in order), `AI_DAILY_LIMIT` (default 80 calls a day per person), `ALLOWED_ORIGINS` (comma-separated, added to the built-in app and localhost origins).
 
 The OpenRouter key lives only in that secret. It must never be put in the app, in `.env`, or in git.
 
@@ -21,7 +21,7 @@ The OpenRouter key lives only in that secret. It must never be put in the app, i
 | `deductions` | The cost of each slip: months lost, severity, AI adjustment, body effects, explanation, source |
 | `clean_days` | Days marked clean, keyed by habit and day |
 | `weekly_reports` | Written weekly summaries |
-| `ai_usage`, `ai_cache` | Per-person daily AI cap and a shared result cache; service role only |
+| `ai_usage`, `ai_cache` | Per-person daily AI cap and a per-person result cache (keyed by user and the exact request); service role only |
 
 - Row level security on every table: a person reads and writes only rows with their own `user_id`, and child rows must point at parents they own.
 - Ids are generated on the phone (UUIDs), so offline writes retry safely.

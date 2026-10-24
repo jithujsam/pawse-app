@@ -8,8 +8,6 @@ import { z } from "npm:zod@3.23.8";
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "80");
-// Filled in only in the deployed copy of this function, never in git or the app. Prefer the secret.
-const DEPLOY_KEY = "";
 const ORIGINS = new Set(["https://localhost", "capacitor://localhost", "http://localhost", "http://localhost:5173", "http://localhost:4173",
   ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean)]);
 
@@ -91,13 +89,13 @@ function prompt(r: SlipR | WeeklyR) {
   };
 }
 
-/** Cache key over the normalised features, so identical slips cost nothing twice (PRD 10.1). Free text is excluded. */
-async function cacheKey(r: SlipR | WeeklyR): Promise<string> {
-  const features = r.kind === "slip"
-    ? [r.kind, r.tone, r.habitClass, r.unit, r.companionName, Math.round(((r.amount ?? 0) / Math.max(1, r.median ?? 1)) * 4), r.triggers.length, Math.min(r.nthToday, 4), Math.round(r.baselineMonths), Math.min(r.last7Slips, 21), r.texts.length ? "t" : ""]
-    : [r.kind, JSON.stringify(r)];
-  if (r.kind === "slip" && r.texts.length) return ""; // notes make each slip unique: don't cache
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(features)));
+/**
+ * Cache key: this person plus the whole validated request, so a result is only reused for exactly the same
+ * request from the same person. A cached sentence can quote the request (pet name, amounts, notes), so it must
+ * never be served to anyone else.
+ */
+async function cacheKey(userId: string, r: SlipR | WeeklyR): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([userId, r])));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -121,8 +119,8 @@ Deno.serve(async (req) => {
   // Tolerate paste slips: a "Bearer " prefix, quotes, spaces, and invisible characters (zero-width spaces,
   // byte-order marks) that chat and notes apps add. A real key only has letters, digits, dashes and underscores.
   const fromSecret = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
-  // A well-formed key is sk-or-v1- plus 64 characters. If the secret isn't, use the key set at deploy time.
-  const key = /^sk-or-v1-[A-Za-z0-9]{64}$/.test(fromSecret) ? fromSecret : DEPLOY_KEY || fromSecret;
+  // The key lives only in the OPENROUTER_API_KEY secret, never in this source.
+  const key = fromSecret;
   if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;
@@ -132,11 +130,9 @@ Deno.serve(async (req) => {
   if (!parsed.success) return json(req, { ok: false, error: "bad_request" }, 400);
   const body = parsed.data;
 
-  const ck = await cacheKey(body);
-  if (ck) {
-    const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).maybeSingle();
-    if (hit?.result) return json(req, { ok: true, result: hit.result, cached: true });
-  }
+  const ck = await cacheKey(u.user.id, body);
+  const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).maybeSingle();
+  if (hit?.result) return json(req, { ok: true, result: hit.result, cached: true });
 
   const { data: allowed, error: limitErr } = await admin.rpc("bump_ai_usage", { p_user: u.user.id, p_limit: DAILY_LIMIT });
   if (limitErr || allowed === false) return json(req, { ok: false, error: "limit" });
@@ -163,7 +159,8 @@ Deno.serve(async (req) => {
     const content = String(out?.choices?.[0]?.message?.content ?? "");
     const check = (body.kind === "slip" ? SlipOut : WeeklyOut).safeParse(extractJson(content));
     if (!check.success) { console.warn("invalid output", body.kind); return json(req, { ok: false, error: "invalid" }); }
-    if (ck) await admin.from("ai_cache").upsert({ key: ck, kind: body.kind, result: check.data });
+    // user_id (migration 0004) lets the cache go with the account. Before 0004 the write fails quietly and nothing is cached.
+    await admin.from("ai_cache").upsert({ key: ck, user_id: u.user.id, kind: body.kind, result: check.data });
     return json(req, { ok: true, result: check.data });
   } catch (e) {
     console.warn("failed", e instanceof Error ? e.name : "unknown");

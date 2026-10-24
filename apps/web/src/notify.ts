@@ -7,6 +7,8 @@ import type { Personality, Tone } from "./types";
 
 const DAILY_ID = 1001;
 const native = Capacitor.isNativePlatform();
+/** Reminders are scheduled only by the phone app; the web build can't fire them on time. */
+export const remindersSupported = native;
 
 /** Schedules (or replaces) the one daily check-in reminder. On the web, reminders are not scheduled. */
 export async function scheduleDaily(time: string, tone: Tone, name: string): Promise<boolean> {
@@ -25,7 +27,10 @@ export async function cancelDaily() {
   if (native) await LocalNotifications.cancel({ notifications: [{ id: DAILY_ID }] }).catch(() => undefined);
 }
 
-/** Asks permission once, then schedules. Returns whether reminders are on. */
+/**
+ * Asks permission once, then schedules. Returns whether reminders are on. Only the phone app can schedule
+ * them, so on the web this stays off rather than claiming a reminder that would never arrive.
+ */
 export async function requestReminders(time: string, tone: Tone, name: string): Promise<boolean> {
   try {
     let granted = false;
@@ -33,8 +38,6 @@ export async function requestReminders(time: string, tone: Tone, name: string): 
       const p = await LocalNotifications.requestPermissions();
       granted = p.display === "granted";
       if (granted) await scheduleDaily(time, tone, name);
-    } else if ("Notification" in window) {
-      granted = (await Notification.requestPermission()) === "granted";
     }
     actions.setSettings({ remindersOn: granted, reminder: time });
     return granted;
@@ -109,8 +112,8 @@ export async function scheduleLapse(lastCheckIn: string, o: { tone: Tone; name: 
   const notes: [number, string, string][] = [
     [2, `${n} misses you`, o.tone === "brutal" ? "Two days without a check-in. How have they gone?" : "How have the last couple of days been? Ten seconds to check in."],
     [4, `${n} is getting lonely`, `Pets only heal on days you check in. ${o.tone === "gentle" ? "Whenever you're ready." : "A quick one today keeps it that way."}`],
-    [7, `A week without news`, `${n} has started aging from loneliness. One check-in and healing starts again.`],
-    [10, `${n} really needs you`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days. ${n} is fading a little each day. Check in and turn it around.`],
+    [7, `A week without news`, o.tone === "gentle" ? `${n} is still here. Whenever you're ready, one check-in picks things up again.` : `${n} is still here. One check-in and healing starts again; the quiet days don't count against you.`],
+    [10, `${n} is still waiting`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days, no harm done. ${n} is ready when you are.`],
   ];
   const [y, m, d] = lastCheckIn.split("-").map(Number);
   const now = Date.now();
