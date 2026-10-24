@@ -1,11 +1,11 @@
 import { AiSlipResult, AiWeeklyResult, type SlipRequest, type WeeklyRequest } from "@detox/schema";
 import { applyAiAdjustment } from "@detox/engine";
 import { supabase } from "./supabase";
+import { AI_CACHE_KEY } from "./store";
 
-const CACHE_KEY = "companion/ai-cache/v1";
 type Cache = Record<string, unknown>;
-const readCache = (): Cache => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}"); } catch { return {}; } };
-const writeCache = (c: Cache) => { try { const keys = Object.keys(c); if (keys.length > 200) delete c[keys[0]]; localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ } };
+const readCache = (): Cache => { try { return JSON.parse(localStorage.getItem(AI_CACHE_KEY) ?? "{}"); } catch { return {}; } };
+const writeCache = (c: Cache) => { try { const keys = Object.keys(c); if (keys.length > 200) delete c[keys[0]]; localStorage.setItem(AI_CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ } };
 
 async function call(body: SlipRequest | WeeklyRequest): Promise<unknown | null> {
   if (!supabase) return null;

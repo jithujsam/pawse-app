@@ -14,11 +14,14 @@ import { localCurrency } from "./region";
 import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
+/** Where ai.ts keeps AI results on this phone; cleared with everything else on a reset. */
+export const AI_CACHE_KEY = "companion/ai-cache/v1";
 const uid = uuid;
 
 let data: AppData = blank();
 const listeners = new Set<() => void>();
-export type CommitSource = "local" | "remote";
+/** local: a change made on this phone, synced up. remote: rows from the account. reset: this phone's copy was wiped; never synced as deletions. */
+export type CommitSource = "local" | "remote" | "reset";
 const hooks = new Set<(prev: AppData, next: AppData, source: CommitSource) => void>();
 /** Lets sync see exactly which rows changed in each commit. */
 export const onCommit = (fn: (prev: AppData, next: AppData, source: CommitSource) => void) => { hooks.add(fn); return () => { hooks.delete(fn); }; };
@@ -410,10 +413,14 @@ export const actions = {
   },
 
   exportJson: () => JSON.stringify(data, null, 2),
+  /**
+   * Wipes this phone's copy only. The account's copy is never touched: the commit is marked "reset",
+   * so sync starts over and, while signed in, brings the account's history back.
+   */
   async resetAll() {
     vaultKey = null;
-    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
-    commit(blank());
+    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY); } catch { /* ignore */ }
+    commit(blank(), "reset");
   },
 };
 

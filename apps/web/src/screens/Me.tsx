@@ -282,6 +282,7 @@ function QuestionsPage() {
 
 function DataPage() {
   const { companion } = useActiveView()!;
+  const { session } = useSession();
   const [confirm, setConfirm] = useState(false);
   function exportData() {
     const text = actions.exportJson();
@@ -313,7 +314,9 @@ function DataPage() {
         {!confirm
           ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>Delete all data on this phone</Button></motion.div>
           : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="small">This removes {companion.name}, every log and your settings from this phone. It can't be undone.</p>
+              <p className="small">{session
+                ? `This removes ${companion.name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.`
+                : `This removes ${companion.name}, every log and your settings from this phone. It can't be undone.`}</p>
               <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
             </motion.div>}
       </AnimatePresence>

@@ -41,7 +41,16 @@ const metaKey = (uid: string) => `sync:${uid}`;
 const saveMeta = () => { if (userId) void kv.set(metaKey(userId), meta).catch(() => undefined); setStatus({ pending: Object.keys(meta.pending).length + Object.keys(meta.removed).length }); };
 
 onCommit((prev, next, source) => {
-  if (source !== "local" || !userId) return;
+  if (!userId) return;
+  if (source === "reset") {
+    // The phone's copy was wiped, not the account's. Forget what was pending and where the pulls were,
+    // so the next sync is a first sync that restores the account instead of deleting it.
+    meta = emptyMeta(); echo.clear();
+    saveMeta();
+    schedule(500);
+    return;
+  }
+  if (source !== "local") return;
   const t = Date.now();
   const { changed, removed } = diff(prev, next);
   if (!changed.length && !removed.length) return;
