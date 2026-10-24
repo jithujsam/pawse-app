@@ -93,3 +93,25 @@ describe("correcting an old day", () => {
     expect(v.age).toBeGreaterThan(0);
   });
 });
+
+describe("slip, clean and nothing logged are three different days", () => {
+  it("a slip ages, a clean day heals, a quiet day does neither", () => {
+    load([entry("s", addDays(t0, -3), 4)]);
+    actions.markClean(H, addDays(t0, -2));
+    // addDays(t0, -1) is left quiet
+    const v = viewCompanion(getData(), C);
+    const at = (n: number) => v.states.find((s) => s.day === addDays(t0, -n))!;
+    expect(at(3).damageMonths).toBe(4);
+    expect(at(2).healedMonths).toBe(1.5);
+    expect(at(1)).toMatchObject({ damageMonths: 0, healedMonths: 0, neglectMonths: 0 });
+    expect(at(1).netMonths).toBe(at(2).netMonths);
+  });
+
+  it("a day with a slip can't also be clean, and a clean mark is idempotent", () => {
+    load([entry("s", t0, 4)]);
+    expect(actions.markClean(H, t0)).toBe(false);
+    expect(actions.markClean(H, addDays(t0, -1))).toBe(true);
+    expect(actions.markClean(H, addDays(t0, -1))).toBe(true);
+    expect(getData().cleanDays.filter((c) => c.day === addDays(t0, -1))).toHaveLength(1);
+  });
+});

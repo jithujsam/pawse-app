@@ -131,3 +131,44 @@ describe("erasing or signing out while a sync is in flight", () => {
     expect(getSyncStatus().state).toBe("off");
   });
 });
+
+describe("offline and conflicting edits", () => {
+  beforeAll(async () => {
+    seed();
+    await startSync("u1");
+    await syncNow();
+  });
+
+  it("offline: changes wait on the phone, then go up when the connection is back", async () => {
+    vi.stubGlobal("navigator", { onLine: false });
+    actions.renameCompanion(C, "Offline");
+    await syncNow();
+    expect(getSyncStatus().state).toBe("offline");
+    expect(getSyncStatus().pending).toBeGreaterThan(0);
+    expect(table("companions").get(C)!.name).not.toBe("Offline");
+    vi.stubGlobal("navigator", { onLine: true });
+    await syncNow();
+    expect(table("companions").get(C)!.name).toBe("Offline");
+    expect(getSyncStatus().pending).toBe(0);
+  });
+
+  it("a newer edit from another phone wins over an older unsent edit here", async () => {
+    vi.stubGlobal("navigator", { onLine: false });
+    actions.renameCompanion(C, "Older");
+    Object.assign(table("companions").get(C)!, { name: "Newer", client_updated_at: Date.now() + 60_000, updated_at: stamp() });
+    vi.stubGlobal("navigator", { onLine: true });
+    await syncNow();
+    expect(getData().companions.find((c) => c.id === C)!.name).toBe("Newer");
+  });
+
+  it("an unsent edit here that is newer than the account's row wins and is pushed", async () => {
+    Object.assign(table("companions").get(C)!, { name: "Stale", client_updated_at: 1, updated_at: stamp() });
+    vi.stubGlobal("navigator", { onLine: false });
+    actions.renameCompanion(C, "Fresh");
+    vi.stubGlobal("navigator", { onLine: true });
+    await syncNow();
+    expect(getData().companions.find((c) => c.id === C)!.name).toBe("Fresh");
+    expect(table("companions").get(C)!.name).toBe("Fresh");
+    stopSync();
+  });
+});
