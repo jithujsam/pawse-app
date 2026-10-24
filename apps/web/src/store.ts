@@ -1,39 +1,109 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
   baselineMonths, computeSeverity, simulate, stageForAge,
   type DayInput, type DayState,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
-import { templateFor, weightFor } from "./templates";
-import type { AppData, Companion, Entry, Habit, Species, Tone } from "./types";
+import { weightFor } from "./templates";
+import { buildFields, type Intake } from "./questions";
+import { kv, idbAvailable } from "./db";
+import { blank, migrateIds, normalize, uuid } from "./persist";
+import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
+import type { AppData, Baseline, Companion, Entry, Habit, Species, Tint, Tone } from "./types";
 
-const KEY = "detox-companion/v1";
-const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const LEGACY_KEY = "detox-companion/v1";
+const uid = uuid;
 
-const blank = (): AppData => ({
-  v: 1,
-  settings: { tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false },
-  companions: [], habits: [], entries: [], cleanDays: [],
-});
-
-function load(): AppData {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) { const d = JSON.parse(raw) as AppData; if (d?.v === 1) return d; }
-  } catch { /* storage unavailable */ }
-  return blank();
-}
-
-let data: AppData = load();
+let data: AppData = blank();
 const listeners = new Set<() => void>();
-function commit(next: AppData) {
-  data = next;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* ignore */ }
+export type CommitSource = "local" | "remote";
+const hooks = new Set<(prev: AppData, next: AppData, source: CommitSource) => void>();
+/** Lets sync see exactly which rows changed in each commit. */
+export const onCommit = (fn: (prev: AppData, next: AppData, source: CommitSource) => void) => { hooks.add(fn); return () => { hooks.delete(fn); }; };
+
+function commit(next: AppData, source: CommitSource = "local") {
+  const prev = data;
+  data = { ...next, updatedAt: Date.now() };
   listeners.forEach((l) => l());
+  hooks.forEach((h) => h(prev, data, source));
+  schedulePersist();
 }
+
+// ---------- persistence: IndexedDB, encrypted when a PIN is set ----------
+
+let vaultKey: VaultKey | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | undefined;
+let writing: Promise<void> = Promise.resolve();
+
+function schedulePersist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => { void flush(); }, 250);
+}
+/** Writes now. Called on a timer after each change and when the app goes to the background. */
+export function flush(): Promise<void> {
+  clearTimeout(persistTimer);
+  const snapshot = data;
+  writing = writing.then(async () => {
+    try {
+      if (!idbAvailable()) { localStorage.setItem(LEGACY_KEY, JSON.stringify(snapshot)); return; }
+      // The colour theme alone stays readable, so the lock screen looks like the person's app.
+      await kv.set("tint", snapshot.settings.tint);
+      if (vaultKey) { await kv.set("data.enc", await seal(vaultKey, snapshot)); await kv.del("data"); }
+      else { await kv.set("data", snapshot); await kv.del("data.enc"); }
+    } catch { /* storage full or unavailable: the in-memory copy still works */ }
+  });
+  return writing;
+}
+
+export type Boot = { kind: "ready" } | { kind: "locked"; sealed: Sealed };
+
+/** Loads saved data before the first render. Returns "locked" when a PIN protects it. */
+export async function boot(): Promise<Boot> {
+  if (!idbAvailable()) {
+    try { data = migrateIds(normalize(JSON.parse(localStorage.getItem(LEGACY_KEY) ?? "null")) ?? blank()); } catch { data = blank(); }
+    return { kind: "ready" };
+  }
+  try {
+    const sealed = await kv.get<Sealed>("data.enc");
+    if (sealed) {
+      const tint = await kv.get<string>("tint");
+      if (tint) document.documentElement.dataset.tint = tint;
+      return { kind: "locked", sealed };
+    }
+    let raw = await kv.get<unknown>("data");
+    let legacy = false;
+    if (raw === undefined) { const s = localStorage.getItem(LEGACY_KEY); if (s) { raw = JSON.parse(s); legacy = true; } }
+    const loaded = raw === undefined ? null : normalize(raw);
+    if (raw !== undefined && !loaded) await kv.set(`data.unreadable.${Date.now()}`, raw);
+    data = migrateIds(loaded ?? blank());
+    if (legacy || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
+  } catch { data = blank(); }
+  return { kind: "ready" };
+}
+
+/** Decrypts with the PIN. False when it's wrong. */
+export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> {
+  const r = await vaultOpen(pin, sealed);
+  if (!r) return false;
+  vaultKey = r.k;
+  data = migrateIds(normalize(r.value) ?? blank());
+  listeners.forEach((l) => l());
+  return true;
+}
+
+export const vault = {
+  hasPin: () => vaultKey !== null,
+  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length); },
+  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength"); },
+  pinLength: async () => (await kv.get<number>("pinLength").catch(() => undefined)) ?? 4,
+  /** Re-checks the current PIN without changing anything. */
+  async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },
+};
+
 export const useData = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => data);
 export const getData = () => data;
+export const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
 
 // ---------- derived ----------
 
@@ -51,10 +121,12 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
+  // Bucket once so the fold is linear in days + entries, not days x entries.
+  const damage = new Map<string, number[]>();
+  for (const e of d.entries) if (e.companionId === companionId) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
+  const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    day,
-    damage: d.entries.filter((e) => e.companionId === companionId && e.day === day).map((e) => e.months),
-    clean: !!habit && d.cleanDays.some((c) => c.habitId === habit.id && c.day === day),
+    day, damage: damage.get(day) ?? [], clean: clean.has(day),
   }));
   const states = simulate(inputs);
   const current = states[states.length - 1];
@@ -67,6 +139,13 @@ export const activeCompanion = (d: AppData): Companion | undefined => {
   return habit ? d.companions.find((c) => c.id === habit.companionId) : undefined;
 };
 
+/** The active companion's view, recomputed only when the data changes. */
+export function useActiveView(): CompanionView | undefined {
+  const d = useData();
+  const day = today();
+  return useMemo(() => { const c = activeCompanion(d); return c ? viewCompanion(d, c.id, day) : undefined; }, [d, day]);
+}
+
 export function median(xs: number[]): number | undefined {
   if (!xs.length) return undefined;
   const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1;
@@ -75,9 +154,11 @@ export function median(xs: number[]): number | undefined {
 
 export function cleanStreak(d: AppData, habitId: string): number {
   let n = 0;
+  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
+  const cleans = new Set(d.cleanDays.filter((c) => c.habitId === habitId).map((c) => c.day));
   for (let day = today(); ; day = addDays(day, -1)) {
-    const slipped = d.entries.some((e) => e.habitId === habitId && e.day === day);
-    const clean = d.cleanDays.some((c) => c.habitId === habitId && c.day === day);
+    const slipped = slips.has(day);
+    const clean = cleans.has(day);
     if (slipped) break;
     if (clean) n++; else if (day !== today()) break;
     if (n > 3650) break;
@@ -111,15 +192,49 @@ export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; companionName: string; habitName: string; cls: Habit["cls"]; tone: Tone; reminder: string }) {
-    const t = templateFor(o.cls);
+  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; tint: Tint; baseline: Baseline | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
-      id: uid(), name: o.habitName.trim() || t.label, cls: o.cls, classWeight: weightFor(o.cls),
-      companionId, unit: t.unit, fields: t.fields.map((f) => ({ ...f })),
+      id: uid(), name: o.intake.what.trim() || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
+      companionId, unit: o.intake.measure, fields: buildFields(o.intake),
     };
-    commit({ ...data, settings: { ...data.settings, tone: o.tone, reminder: o.reminder, onboarded: true }, companions: [companion], habits: [habit] });
+    commit({
+      ...data,
+      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, tint: o.tint, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
+      companions: [companion], habits: [habit],
+    });
+  },
+
+  /** Applies a validated AI result to an entry that was first saved with the baseline. */
+  applyAi(entryId: string, r: { months: number; adjustPct: number; effects: string[]; explanation: string }) {
+    const e = data.entries.find((x) => x.id === entryId);
+    if (!e) return;
+    let next: AppData = {
+      ...data,
+      entries: data.entries.map((x) => (x.id === entryId ? { ...x, months: r.months, aiAdjustPct: r.adjustPct, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
+    };
+    const v = viewCompanion(next, e.companionId);
+    const dead = v.states.find((s) => s.stage === "dead");
+    const c = next.companions.find((x) => x.id === e.companionId)!;
+    if (dead && !c.diedOn) next = { ...next, companions: next.companions.map((x) => (x.id === c.id ? { ...x, diedOn: dead.day, finalAge: 100 } : x)) };
+    commit(next);
+  },
+
+  setSummary: (week: string, text: string) => commit({ ...data, summaries: { ...data.summaries, [week]: text } }),
+
+  /** Replace everything, used when an account's saved copy is newer than this phone's. */
+  /** Applies rows that arrived from the account. Never marked as local changes, so they don't bounce back. */
+  applyRemote(next: AppData) { commit(next, "remote"); },
+
+  /** Restores a backup file. Everything in it is validated first; returns false if it isn't a backup. */
+  importJson(text: string): boolean {
+    try {
+      const d = normalize(JSON.parse(text));
+      if (!d || !d.settings.onboarded) return false;
+      commit(migrateIds(d));
+      return true;
+    } catch { return false; }
   },
 
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
@@ -142,12 +257,13 @@ export const actions = {
     const tone = data.settings.tone;
     const entry: Entry = {
       id: uid(), habitId, companionId: companion.id, day, time, values, amount, months, severity, effects,
-      explanation: slipLine(tone, companion.name, months, nth), createdAt: Date.now(),
+      explanation: slipLine(tone, companion.name, months, nth), source: "baseline", aiAdjustPct: null, createdAt: Date.now(),
     };
     let next: AppData = {
       ...data,
       entries: [...data.entries, entry],
       cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
+      settings: { ...data.settings, celebrated: [] },
     };
     let died = false;
     const v = viewCompanion(next, companion.id);
@@ -172,6 +288,11 @@ export const actions = {
   },
 
   deleteEntry: (id: string) => commit({ ...data, entries: data.entries.filter((e) => e.id !== id) }),
+  /** Puts back an entry removed by mistake (undo). */
+  restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
+  unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
+  celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
+  resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
 
   adopt(habitId: string, name: string, species: Species) {
     const habit = data.habits.find((h) => h.id === habitId)!;
@@ -203,5 +324,42 @@ export const actions = {
   },
 
   exportJson: () => JSON.stringify(data, null, 2),
-  resetAll() { commit(blank()); },
+  async resetAll() {
+    vaultKey = null;
+    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
+    commit(blank());
+  },
 };
+
+import type { SlipRequest, WeeklyRequest } from "@detox/schema";
+
+/** What the AI is allowed to see about one slip: no photos, short notes only. */
+export function slipRequest(entryId: string): SlipRequest | null {
+  const e = data.entries.find((x) => x.id === entryId);
+  const habit = e && data.habits.find((h) => h.id === e.habitId);
+  const companion = e && data.companions.find((c) => c.id === e.companionId);
+  if (!e || !habit || !companion) return null;
+  const since = addDays(e.day, -30);
+  const med = median(data.entries.filter((x) => x.habitId === habit.id && x.amount !== null && x.day >= since && x.day < e.day).map((x) => x.amount as number));
+  const last7 = data.entries.filter((x) => x.habitId === habit.id && x.day > addDays(e.day, -7) && x.day <= e.day).length;
+  return {
+    kind: "slip", tone: data.settings.tone, habitClass: habit.cls, companionName: companion.name,
+    amount: e.amount, unit: habit.unit, median: med ?? null,
+    triggers: habit.fields.filter((f) => f.trigger && e.values[f.id] === true).map((f) => f.label),
+    texts: habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean).slice(0, 4),
+    nthToday: data.entries.filter((x) => x.habitId === habit.id && x.day === e.day && x.createdAt <= e.createdAt).length || 1,
+    baselineMonths: e.months, last7Slips: last7,
+  };
+}
+
+export function weekRequestFor(habitId: string, weekStartDay: string, worstWeekday: string | null): WeeklyRequest | null {
+  const habit = data.habits.find((h) => h.id === habitId);
+  const companion = habit && data.companions.find((c) => c.id === habit.companionId);
+  if (!habit || !companion) return null;
+  const pick = (w: ReturnType<typeof weekStats>) => ({ slips: w.slips, spend: Math.round(w.spend), months: Math.round(w.months * 10) / 10 });
+  return {
+    kind: "weekly", tone: data.settings.tone, habitClass: habit.cls, companionName: companion.name, unit: habit.unit,
+    thisWeek: pick(weekStats(data, habitId, weekStartDay)), lastWeek: pick(weekStats(data, habitId, addDays(weekStartDay, -7))),
+    worstWeekday, age: Math.round(viewCompanion(data, companion.id).age), currency: data.settings.currency,
+  };
+}

@@ -64,7 +64,7 @@ export function verdict(tone: Tone, slips: number, prev: number): string {
 }
 
 export const DISCLAIMER =
-  "Detox Companion is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counselor.";
+  "This app is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counselor.";
 
 export const CRISIS_MESSAGE =
   "That sounds heavy, and it matters more than any log. If you might hurt yourself, please contact local emergency services or a crisis line now, or reach someone you trust. In India you can call Tele-MANAS on 14416; in the US call or text 988. Nothing was saved.";
@@ -87,3 +87,54 @@ const EFFECTS: Record<string, [string[], string[]]> = {
   custom: [["worn_down"], ["worn_down", "thin"]],
 };
 export const effectsFor = (cls: string, age: number) => (EFFECTS[cls] ?? EFFECTS.custom)[age >= 50 ? 1 : 0];
+
+// ---------- greetings, milestones, onboarding ----------
+
+const part = (h: number) => (h < 5 ? "night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 22 ? "evening" : "night");
+
+export function greeting(tone: Tone, hour: number): string {
+  const p = part(hour);
+  if (tone === "gentle") return p === "night" ? "Still up? Go easy tonight" : `Good ${p}`;
+  if (tone === "brutal") return p === "night" ? "Late night. Be straight with yourself" : `${p[0].toUpperCase()}${p.slice(1)}. Be honest today`;
+  return p === "night" ? "It's late" : `Good ${p}`;
+}
+
+export const MILESTONES = [3, 7, 14, 30, 60, 100] as const;
+
+export function milestoneLine(tone: Tone, name: string, days: number): { title: string; body: string } {
+  if (tone === "gentle") return { title: `${days} gentle days`, body: `${name} is resting easier. You did that, one day at a time.` };
+  if (tone === "brutal") return { title: `${days} days clean`, body: `${name} noticed. Don't make this the high point.` };
+  return { title: `${days} clean days in a row`, body: `${name} is healing. Every clean day takes a little damage back.` };
+}
+
+/** What the companion would say in each tone, shown live while choosing. */
+export function tonePreview(tone: Tone, name: string): string {
+  const n = name.trim() || "Biscuit";
+  if (tone === "gentle") return `${n} is a little tired today. Tomorrow is a fresh start.`;
+  if (tone === "brutal") return `Look at ${n}. You did that. Again.`;
+  return `That was the third slip today. ${n} lost 4 months.`;
+}
+
+export function hatchLine(tone: Tone, name: string): string {
+  if (tone === "gentle") return `${name} is here, and glad to meet you.`;
+  if (tone === "brutal") return `${name} is here. What happens next is on you.`;
+  return `${name} is here. Brand new, age 0.`;
+}
+
+export function slipKicker(tone: Tone, name: string): string {
+  if (tone === "gentle") return `Thank you for being honest. ${name} still loves you.`;
+  if (tone === "brutal") return `Logged. ${name} felt that one.`;
+  return `Logged honestly. That is how this works.`;
+}
+
+export function cleanToast(tone: Tone, name: string): string {
+  if (tone === "gentle") return `A good day. ${name} is resting.`;
+  if (tone === "brutal") return `Clean. One day. Keep going.`;
+  return `Clean day logged. ${name} heals a little.`;
+}
+
+export function reminderLine(tone: Tone, name: string): { title: string; body: string } {
+  if (tone === "gentle") return { title: `${name} is thinking of you`, body: "Whenever you're ready, a quick check-in." };
+  if (tone === "brutal") return { title: `${name} is waiting`, body: "Say what happened today. Ten seconds." };
+  return { title: `Check in with ${name}`, body: "Slipped or clean? It takes ten seconds." };
+}

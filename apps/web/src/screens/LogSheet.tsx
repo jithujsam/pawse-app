@@ -1,8 +1,15 @@
-import { useState } from "react";
-import { CRISIS_MESSAGE } from "../copy";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { aiForSlip } from "../ai";
+import { CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, today } from "../dates";
-import { actions, type Deduction } from "../store";
+import { haptic } from "../haptics";
+import { rise, spring, stagger } from "../motion";
+import { actions, slipRequest, useData, type Deduction } from "../store";
+import { AnimatedNumber } from "../ui/AnimatedNumber";
+import { Button, Chip, Icon, Segmented } from "../ui/Controls";
+import { Sheet } from "../ui/Sheet";
 import type { Entry, Habit } from "../types";
 
 async function shrink(file: File): Promise<string> {
@@ -17,65 +24,129 @@ async function shrink(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function LogSheet({ habit, name, onClose, onSaved }: { habit: Habit; name: string; onClose: () => void; onSaved: (d: Deduction) => void }) {
+interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void }
+
+export function LogSheet(props: Props) {
+  return (
+    <Sheet open={props.open} onClose={props.onClose} label="Log a slip">
+      {props.open && <LogBody {...props} />}
+    </Sheet>
+  );
+}
+
+function LogBody({ habit, name, age, onClose, onSaved }: Props) {
+  const data = useData();
   const [values, setValues] = useState<Entry["values"]>({});
   const [day, setDay] = useState(today());
   const [time, setTime] = useState("");
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
+  const [ageBefore] = useState(age);
+  const alive = useRef(true);
+  const [polishing, setPolishing] = useState(false);
+  const [shake, setShake] = useState(0);
+  useEffect(() => () => { alive.current = false; }, []);
   const set = (id: string, v: string | boolean) => setValues((s) => ({ ...s, [id]: v }));
 
-  const missing = habit.fields.some((f) => f.required && (values[f.id] === undefined || values[f.id] === ""));
+  const missing = habit.fields.filter((f) => f.required && (values[f.id] === undefined || values[f.id] === ""));
+  const amountField = habit.fields.find((f) => f.amount);
+  const recent = amountField
+    ? [...new Set(data.entries.filter((e) => e.habitId === habit.id && e.amount !== null).slice(-12).reverse().map((e) => e.amount as number))].slice(0, 4)
+    : [];
+  const unitLabel = habit.unit === "money" ? data.settings.currency : habit.unit === "minutes" ? "min" : "";
 
   function save() {
+    if (missing.length) { haptic.warn(); setShake((s) => s + 1); return; }
     const texts = habit.fields.filter((f) => f.type === "text").map((f) => String(values[f.id] ?? ""));
     if (texts.some(hasCrisisLanguage)) { setCrisis(true); return; }
     const d = actions.logSlip(habit.id, values, day, time || null);
     setResult(d);
     onSaved(d);
+    const req = slipRequest(d.entry.id);
+    if (req) {
+      setPolishing(true);
+      void aiForSlip(req).then((r) => {
+        if (!r) return;
+        actions.applyAi(d.entry.id, r);
+        if (alive.current) setResult((cur) => cur && ({
+          ...cur, line: r.explanation, entry: { ...cur.entry, months: r.months, source: "ai" },
+          effectLine: r.effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" ") || cur.effectLine,
+        }));
+      }).finally(() => { if (alive.current) setPolishing(false); });
+    }
+  }
+
+  if (crisis) return (
+    <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
+      <motion.h2 variants={rise}>Pause for a moment</motion.h2>
+      <motion.p variants={rise}>{CRISIS_MESSAGE}</motion.p>
+      <motion.div variants={rise}><Button variant="secondary" onClick={onClose}>Close</Button></motion.div>
+    </motion.div>
+  );
+
+  if (result) {
+    const ageAfter = Math.min(100, ageBefore + (result.entry.months / 1200) * 100);
+    return (
+      <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
+        <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : "yesterday"}{time ? ` at ${time}` : ""}</motion.p>
+        <motion.div className="deduction" variants={rise}>
+          <span>That cost {name}</span>
+          <b className="neg">−<AnimatedNumber value={result.entry.months} from={0} decimals={1} /> months</b>
+          <div className="delta-bar" aria-hidden>
+            <i className="before" style={{ width: `${ageBefore}%` }} />
+            <motion.i className="added" initial={{ width: 0 }} animate={{ width: `${Math.max(0.6, ageAfter - ageBefore)}%` }} transition={{ ...spring.calm, delay: 0.35 }} style={{ left: `${ageBefore}%` }} />
+          </div>
+          {result.effectLine && <span>{result.effectLine}</span>}
+          <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
+        </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.p key={result.line} className="bubble" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
+            {result.line}{result.entry.source === "ai" && <span className="ai-tag" title="Written by AI, checked against the rules">{Icon.spark}</span>}
+          </motion.p>
+        </AnimatePresence>
+        {polishing && <div className="shimmer-line" aria-live="polite"><span className="sr-only">Finding the right words</span></div>}
+        <motion.p className="muted small" variants={rise}>{slipKicker(data.settings.tone, name)}</motion.p>
+        <motion.div variants={rise}><Button onClick={onClose}>Done</Button></motion.div>
+      </motion.div>
+    );
   }
 
   return (
-    <div className="scrim" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Log a slip" onClick={(e) => e.stopPropagation()}>
-        {crisis ? (<>
-          <h2>Pause for a moment</h2>
-          <p>{CRISIS_MESSAGE}</p>
-          <button className="btn secondary" onClick={onClose}>Close</button>
-        </>) : result ? (<>
-          <h2>Logged</h2>
-          <div className="deduction fade-in">
-            <span>That cost {name}</span>
-            <b>{Math.round(result.entry.months * 10) / 10} months</b>
-            <span>{result.effectLine}</span>
-            <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
-          </div>
-          <p>{result.line}</p>
-          <button className="btn" onClick={onClose}>Done</button>
-        </>) : (<>
-          <div className="row"><h2>Log a slip</h2><button className="btn text" onClick={onClose}>Cancel</button></div>
-          <div className="chips" role="group" aria-label="Day">
-            <button className="chip" aria-pressed={day === today()} onClick={() => setDay(today())}>Today</button>
-            <button className="chip" aria-pressed={day === addDays(today(), -1)} onClick={() => setDay(addDays(today(), -1))}>Yesterday</button>
-            <input className="input" style={{ width: 120 }} type="time" aria-label="Time (optional)" value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
-          {habit.fields.map((f) => (
-            <label className="field" key={f.id}>
-              {f.label}{f.required ? "" : ""}
-              {f.type === "text" && <input className="input" maxLength={120} value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} />}
-              {(f.type === "number" || f.type === "money") && <input className="input" inputMode="decimal" type="number" min="0" value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} />}
-              {f.type === "yesno" && (
-                <span className="toggle">
-                  <button type="button" className="chip" aria-pressed={values[f.id] === true} onClick={() => set(f.id, true)}>Yes</button>
-                  <button type="button" className="chip" aria-pressed={values[f.id] === false} onClick={() => set(f.id, false)}>No</button>
-                </span>
-              )}
-              {f.type === "photo" && <input type="file" accept="image/*" onChange={async (e) => { const file = e.target.files?.[0]; if (file) set(f.id, await shrink(file)); }} />}
+    <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
+      <motion.div className="row" variants={rise}><h2>Log a slip</h2><Button variant="text" onClick={onClose}>Cancel</Button></motion.div>
+      <motion.div className="chips" role="group" aria-label="Day" variants={rise}>
+        <Chip pressed={day === today()} onClick={() => setDay(today())}>Today</Chip>
+        <Chip pressed={day === addDays(today(), -1)} onClick={() => setDay(addDays(today(), -1))}>Yesterday</Chip>
+        <input className="input time" type="time" aria-label="Time (optional)" value={time} onChange={(e) => setTime(e.target.value)} />
+      </motion.div>
+      {habit.fields.map((f) => (
+        <motion.div className="field" key={f.id} variants={rise}
+          animate={missing.some((m) => m.id === f.id) && shake ? { x: [0, -8, 8, -5, 5, 0] } : undefined} transition={{ duration: 0.4 }}>
+          <span className="field-label">{f.label}{f.required && <span className="req" aria-label="required"> ·</span>}</span>
+          {f.type === "text" && <input className="input" maxLength={120} value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} aria-label={f.label} />}
+          {(f.type === "number" || f.type === "money") && (<>
+            <div className="amount-wrap">
+              {f.type === "money" && <span className="prefix">{data.settings.currency}</span>}
+              <input className="input amount" inputMode="decimal" type="number" min="0" placeholder="0" aria-label={f.label}
+                value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} />
+              {f.type === "number" && habit.unit === "minutes" && <span className="suffix">min</span>}
+            </div>
+            {f.amount && recent.length > 0 && (
+              <div className="chips quick">{recent.map((a) => <Chip key={a} pressed={String(values[f.id]) === String(a)} onClick={() => set(f.id, String(a))}>{unitLabel && habit.unit === "money" ? `${unitLabel} ${a}` : `${a}${unitLabel ? ` ${unitLabel}` : ""}`}</Chip>)}</div>
+            )}
+          </>)}
+          {f.type === "yesno" && <Segmented label={f.label} value={values[f.id] as boolean | undefined} onChange={(v) => set(f.id, v)} options={[{ value: true, label: "Yes" }, { value: false, label: "No" }]} />}
+          {f.type === "photo" && (
+            <label className="photo-tile">
+              {typeof values[f.id] === "string" && values[f.id]
+                ? <motion.img src={String(values[f.id])} alt="Attached" initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} />
+                : <span className="muted">{Icon.camera} Add a photo · stays on this phone</span>}
+              <input type="file" accept="image/*" className="sr-only" onChange={async (e) => { const file = e.target.files?.[0]; if (file) set(f.id, await shrink(file)); }} />
             </label>
-          ))}
-          <button className="btn" disabled={missing} onClick={save}>Save slip</button>
-        </>)}
-      </div>
-    </div>
+          )}
+        </motion.div>
+      ))}
+      <motion.div variants={rise}><Button onClick={save} className={missing.length ? "soft-disabled" : ""}>Save slip</Button></motion.div>
+    </motion.div>
   );
 }
