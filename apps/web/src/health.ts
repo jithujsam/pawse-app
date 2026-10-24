@@ -27,7 +27,8 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const streak = cleanStreak(d, habit.id);
   const silent = silentDays(d, habit.id, v.companion.bornOn);
   const reserve = v.current?.reserveMonths ?? 0;
-  let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) - Math.min(30, Math.max(0, silent - 1) * 6) + Math.min(10, reserve);
+  // Quiet days are missing data, not a slip, so they don't lower the heart.
+  let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) + Math.min(10, reserve);
   heart = Math.round(Math.max(3, Math.min(slipped ? 80 : 100, heart)));
   const level: Level = heart >= 85 ? "thriving" : heart >= 68 ? "healthy" : heart >= 48 ? "okay" : heart >= 28 ? "unwell" : "critical";
   const g = tone === "gentle", b = tone === "brutal";
@@ -40,7 +41,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
       : `In good shape. ${streak ? `${streak} clean ${streak === 1 ? "day" : "days"} so far` : "A clean day today would make it even better"}.`],
     okay: [`${name} is okay`, slipped
       ? `Not great today: ${name} felt that slip and is off their food. A few clean days will turn it around.`
-      : silent > 1 ? `${name} hasn't heard from you in ${silent} days and is getting lonely. A quick check-in helps.`
+      : silent > 1 ? `${name} hasn't heard from you in ${silent} days. No harm done: a check-in picks things up again.`
         : `Doing all right, with some wear showing. ${g ? "Every clean day helps a little." : "A clean streak is the fastest way back."}`],
     unwell: [`${name} isn't doing well`, `${b ? "Straight talk: " : ""}${name} is unwell${slipped ? " and not eating" : ""}. Keeping the habit in check for a while is what helps most. You can do this, one day at a time.`],
     critical: [`${name} needs you`, `${name} is very weak right now. ${g ? "It's not too late." : "This is the moment to change course."} A clean day today starts the healing, and every day after adds to it.`],
@@ -141,8 +142,8 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
   }
   if (silent >= 2) {
     const [n, w] = pick("lonely", s);
-    out.push({ id: "lonely", name: n, what: w, why: `No check-in for ${silent} days. Pets heal only on days you check in.`,
-      fix: silent >= 3 ? "Check in today. Every extra quiet day ages them a little." : "Check in today, it only takes ten seconds.", days: 0, tone: silent >= 7 ? "serious" : silent >= 3 ? "moderate" : "mild" });
+    out.push({ id: "lonely", name: n, what: w, why: `No check-in for ${silent} days. Quiet days don't cost any life, but healing only happens on days you check in.`,
+      fix: "Check in whenever you're ready. It only takes ten seconds, and nothing is held against the quiet days.", days: 0, tone: "mild" });
   }
   const scar = v.current ? Math.round(floorAge(v.current) * 10) / 10 : 0;
   if (v.states.some((x) => x.binge)) {

@@ -31,7 +31,7 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 - A clean day heals 1.5 months. Some damage always stays, so history matters.
 - **Hidden reserve:** about two clean months build a cushion, so a one-off slip after a long run doesn't hurt.
 - **Binge scar:** three or more slips in one day lower the pet's life expectancy for good.
-- **Quiet days:** the pet only heals on days you check in. After two days of silence, each extra day costs a little, and gentle reminders follow.
+- **Quiet days:** the pet only heals on days you check in. A quiet day is missing data, not a slip, so it costs nothing; gentle reminders follow. (The engine still has the older "loneliness" rule, switched off by `QUIET_DAYS_AGE` in `src/store.ts`.)
 - **The way back:** after every slip you see exactly how many clean days undo it.
 
 **Tools that help in the moment**

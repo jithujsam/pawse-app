@@ -124,6 +124,13 @@ export interface CompanionView {
   dead: boolean;
 }
 
+/**
+ * Whether a day with nothing logged costs the companion life (the PRD 5.3 v3 "loneliness" rule). Off: a missing
+ * check-in is missing data, not proof of a slip, so quiet days neither hurt nor heal. The engine still supports the
+ * rule; flipping this back on restores it without touching any stored data. See docs/PAWSE_OVERNIGHT_LOG.md.
+ */
+export const QUIET_DAYS_AGE = false;
+
 export function viewCompanion(d: AppData, companionId: string, upTo = today()): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
@@ -132,7 +139,7 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
   const damage = new Map<string, number[]>();
   for (const e of d.entries) if (e.companionId === companionId) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
   const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
-  const from = d.settings.neglectFrom;
+  const from = QUIET_DAYS_AGE ? d.settings.neglectFrom : null;
   // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
     day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
@@ -214,6 +221,40 @@ export function silentDays(d: AppData, habitId: string, bornOn: string): number 
   for (const e of d.entries) if (e.habitId === habitId && e.day > last) last = e.day;
   for (const c of d.cleanDays) if (c.habitId === habitId && c.day > last) last = c.day;
   return Math.max(0, daysBetween(last, t) - 1);
+}
+
+/** Days from `from` to today with a check-in (a slip or a clean mark). Days with nothing logged are unknown, not clean. */
+export function checkedInDays(d: AppData, habitId: string, from: string): string[] {
+  const t = today();
+  const days = new Set<string>();
+  for (const e of d.entries) if (e.habitId === habitId && e.day >= from && e.day <= t) days.add(e.day);
+  for (const c of d.cleanDays) if (c.habitId === habitId && c.day >= from && c.day <= t) days.add(c.day);
+  return [...days];
+}
+
+export const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
+
+/**
+ * Money kept against the starting pace, counted only over days the person checked in: a day with nothing
+ * logged could have been a slip, so it never counts as money saved. Null without a baseline or any amounts.
+ */
+export function moneyKept(d: AppData, habitId: string, bornOn: string): { saved: number; days: number } | null {
+  const baseline = d.settings.baseline;
+  const amounts = d.entries.filter((e) => e.habitId === habitId && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
+  const typical = median(amounts);
+  if (!baseline || !typical) return null;
+  const days = checkedInDays(d, habitId, bornOn).length;
+  const expected = (BASELINE_PER_WEEK[baseline] * days / 7) * typical;
+  return { saved: Math.max(0, Math.round(expected - amounts.reduce((a, b) => a + b, 0))), days };
+}
+
+/** Slips per checked-in week over the last `window` days; null until a day in that window is logged. */
+export function recentPace(d: AppData, habitId: string, bornOn: string, window = 14): number | null {
+  const from = [addDays(today(), -(window - 1)), bornOn].sort().pop()!;
+  const days = checkedInDays(d, habitId, from).length;
+  if (!days) return null;
+  const slips = d.entries.filter((e) => e.habitId === habitId && e.day >= from && e.day <= today()).length;
+  return (slips / days) * 7;
 }
 
 export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => {

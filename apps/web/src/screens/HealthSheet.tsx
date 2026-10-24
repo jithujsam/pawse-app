@@ -64,7 +64,7 @@ function Body({ initial }: { initial: HealthTab }) {
             {conds.length > 0
               ? <button className="link-card item" onClick={() => setTab("conditions")}><span className="row"><b>{conds.length} {conds.length === 1 ? "thing" : "things"} affecting {name}</b><span className="muted small">See why →</span></span></button>
               : <p className="muted small">Nothing is troubling {name} right now. That's your doing.</p>}
-            {r.silent >= 2 && <p className="banner">{name} heals only on days you check in. After two quiet days, each extra one costs a little life.</p>}
+            {r.silent >= 2 && <p className="banner">{name} heals only on days you check in. Quiet days don't cost anything, so you can pick up again any time.</p>}
           </>)}
 
           {tab === "history" && <History />}

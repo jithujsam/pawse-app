@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actions, getData, viewCompanion } from "../src/store";
+import { actions, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
 import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import type { Entry } from "../src/types";
@@ -35,5 +35,42 @@ describe("AI polish on a slip", () => {
     expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
     expect(getData().companions[0].diedOn).toBeNull();
     expect(getData().entries.find((e) => e.id === "e1")).toMatchObject({ months: 8, aiAdjustPct: null, explanation: "Biscuit felt that." });
+  });
+});
+
+describe("missing days", () => {
+  const born = addDays(t0, -27);
+  function world(cleanDays: string[], slips: { day: string; amount: number }[], baseline: "daily" | null = "daily") {
+    const d = blank();
+    actions.applyRemote({
+      ...d,
+      settings: { ...d.settings, onboarded: true, baseline, neglectFrom: born },
+      companions: [{ id: C, species: "dog", name: "Biscuit", bornOn: born, diedOn: null, finalAge: null }],
+      habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields: [] }],
+      entries: slips.map((s, i) => ({ ...entry(`e${i}`, s.day, 2.8), amount: s.amount })),
+      cleanDays: cleanDays.map((day) => ({ habitId: H, day })),
+    });
+    return getData();
+  }
+
+  it("a quiet stretch costs no life, even with the loneliness rule's start date set", () => {
+    const d = world([], []);
+    const v = viewCompanion(d, C);
+    expect(v.states).toHaveLength(28);
+    expect(v.age).toBe(0);
+    expect(v.states.every((s) => s.neglectMonths === 0)).toBe(true);
+  });
+
+  it("money kept counts only days that were checked in, never quiet ones", () => {
+    // 28 days, but only 1 slip day and 6 clean days logged; old pace was daily at ~200 a time.
+    const d = world([1, 2, 3, 4, 5, 6].map((i) => addDays(born, i)), [{ day: born, amount: 200 }]);
+    expect(moneyKept(d, H, born)).toEqual({ saved: 7 * 200 - 200, days: 7 });
+    expect(moneyKept(world([], [{ day: born, amount: 200 }], null), H, born)).toBeNull();
+  });
+
+  it("recent pace is slips per checked-in week, and unknown with nothing logged", () => {
+    expect(recentPace(world([], []), H, born)).toBeNull();
+    const d = world([addDays(t0, -1), addDays(t0, -2), addDays(t0, -3)], [{ day: t0, amount: 100 }]);
+    expect(recentPace(d, H, born)).toBeCloseTo(7 / 4);
   });
 });

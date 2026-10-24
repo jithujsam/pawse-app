@@ -38,13 +38,15 @@ describe("health", () => {
       expect(c.find((x) => x.id === "smoking")!.days).toBeGreaterThan(0);
     }
   });
-  it("going quiet shows up as loneliness and costs life only after the grace days", () => {
-    const d = world("cat", 0, { born: 6, neglect: true });
+  it("going quiet is missing data: noticed, but it costs no life and doesn't lower the heart", () => {
+    const d = world("cat", 0, { born: 20, neglect: true });
     const v = viewCompanion(d, "c1");
-    expect(conditions(d, v).some((c) => c.id === "lonely")).toBe(true);
-    expect(v.states.reduce((a, s) => a + s.neglectMonths, 0)).toBeGreaterThan(0);
-    const before = world("cat", 0, { born: 6, neglect: false });
-    expect(viewCompanion(before, "c1").states.every((s) => s.neglectMonths === 0)).toBe(true);
+    const lonely = conditions(d, v).find((c) => c.id === "lonely");
+    expect(lonely?.tone).toBe("mild");
+    expect(lonely?.fix).not.toMatch(/age|life|cost/i);
+    expect(v.states.every((s) => s.neglectMonths === 0 && s.damageMonths === 0)).toBe(true);
+    expect(v.age).toBe(0);
+    expect(healthReport(d, v, "honest").heart).toBe(100);
   });
   it("history lists slips with what they cost, newest first, birth last", () => {
     const d = world("dog", 1, { clean: 3 });

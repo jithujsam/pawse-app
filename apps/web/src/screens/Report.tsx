@@ -6,15 +6,14 @@ import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { pickedLabels } from "../questions";
 import { verdict } from "../copy";
-import { addDays, daysBetween, fmtDay, fmtHour, parse, today, weekStart } from "../dates";
+import { addDays, fmtDay, fmtHour, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
-import { actions, cleanStreak, median, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { actions, BASELINE_PER_WEEK, cleanStreak, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon } from "../ui/Controls";
 import type { Baseline } from "../types";
 
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
 
 
@@ -91,8 +90,9 @@ export function Report() {
   const money = habit.unit === "money";
   const fmt = (n: number) => Math.round(n * 10) / 10;
 
-  const tracked = Math.max(1, Math.min(14, daysBetween(companion.bornOn, today()) + 1));
-  const recentPerWeek = (all.filter((e) => e.day > addDays(today(), -tracked)).length / tracked) * 7;
+  // Pace over checked-in days only, so quiet days aren't read as clean ones.
+  const pace = recentPace(data, habit.id, companion.bornOn);
+  const recentPerWeek = pace ?? 0;
 
   const { session } = useSession();
   const [busy, setBusy] = useState(false);
@@ -129,12 +129,9 @@ export function Report() {
   const timed = grid.flat().reduce((a, b) => a + b, 0);
   const risk = riskyHour(data, habit.id);
   // Money kept: the old pace (from onboarding) against what was actually spent.
-  const amounts = all.map((e) => e.amount).filter((a): a is number => a !== null && a > 0);
-  const typical = median(amounts);
-  const daysTracked = Math.max(1, daysBetween(companion.bornOn, today()) + 1);
-  const expected = baseline && typical ? (BASELINE_PER_WEEK[baseline] * daysTracked / 7) * typical : null;
-  const spent = amounts.reduce((a, b) => a + b, 0);
-  const saved = expected !== null ? Math.max(0, Math.round(expected - spent)) : null;
+  // Only checked-in days count: a day with nothing logged is unknown, never money kept.
+  const kept = moneyKept(data, habit.id, companion.bornOn);
+  const saved = kept ? kept.saved : null;
   const goal = data.settings.savingsGoal;
 
   return (
@@ -168,7 +165,7 @@ export function Report() {
 
       {money && (
         <motion.section className="card stack" aria-label="Money" variants={rise}>
-          <div className="row"><h2>Money kept</h2>{saved !== null && <span className="muted small">vs your old pace</span>}</div>
+          <div className="row"><h2>Money kept</h2>{kept && <span className="muted small">vs your old pace, over {kept.days} checked-in {kept.days === 1 ? "day" : "days"}</span>}</div>
           {saved === null
             ? <p className="muted">{baseline ? "Log a slip with an amount and this shows what you're keeping compared with before." : "This needs your starting pace, set during setup."}</p>
             : <p className="big-money"><small>{currency}</small> <AnimatedNumber value={saved} from={0} /></p>}
@@ -191,10 +188,10 @@ export function Report() {
         {risk !== null && <p className="small">{companion.name} will send a heads-up half an hour before {fmtHour(risk)}, if reminders are on.</p>}
       </motion.section>
 
-      {baseline && all.length + data.cleanDays.length >= 3 && (
+      {baseline && pace !== null && all.length + data.cleanDays.length >= 3 && (
         <motion.section className="card stack" variants={rise}>
           <h2>Since you started</h2>
-          <p>You said it was <b>{BASELINE_LABEL[baseline]}</b>. Lately it's about <b>{fmt(recentPerWeek)}</b> a week.</p>
+          <p>You said it was <b>{BASELINE_LABEL[baseline]}</b>. On the days you checked in lately, it's about <b>{fmt(recentPerWeek)}</b> a week.</p>
           <div className="compare" aria-hidden>
             <div><span className="muted small">Then</span><motion.i initial={{ width: 0 }} animate={{ width: "100%" }} transition={spring.calm} /></div>
             <div><span className="muted small">Now</span><motion.i className={`now${recentPerWeek > BASELINE_PER_WEEK[baseline] ? " worse" : ""}`} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (recentPerWeek / BASELINE_PER_WEEK[baseline]) * 100)}%` }} transition={{ ...spring.calm, delay: 0.2 }} /></div>

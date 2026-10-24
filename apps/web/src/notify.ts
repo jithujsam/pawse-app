@@ -109,8 +109,8 @@ export async function scheduleLapse(lastCheckIn: string, o: { tone: Tone; name: 
   const notes: [number, string, string][] = [
     [2, `${n} misses you`, o.tone === "brutal" ? "Two days without a check-in. How have they gone?" : "How have the last couple of days been? Ten seconds to check in."],
     [4, `${n} is getting lonely`, `Pets only heal on days you check in. ${o.tone === "gentle" ? "Whenever you're ready." : "A quick one today keeps it that way."}`],
-    [7, `A week without news`, `${n} has started aging from loneliness. One check-in and healing starts again.`],
-    [10, `${n} really needs you`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days. ${n} is fading a little each day. Check in and turn it around.`],
+    [7, `A week without news`, o.tone === "gentle" ? `${n} is still here. Whenever you're ready, one check-in picks things up again.` : `${n} is still here. One check-in and healing starts again; the quiet days don't count against you.`],
+    [10, `${n} is still waiting`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days, no harm done. ${n} is ready when you are.`],
   ];
   const [y, m, d] = lastCheckIn.split("-").map(Number);
   const now = Date.now();
