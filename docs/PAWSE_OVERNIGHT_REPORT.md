@@ -52,8 +52,8 @@ Date: 2026-10-24 · App branch: `ccr-9d7d359f-c2d6k6` (from `main` at `12a1d83`)
 
 | Repo | Branch | Commits | PR |
 |---|---|---|---|
-| `pawse-app` | `ccr-9d7d359f-c2d6k6` | `4c157d3` data layer · `9076fe5` UX · `c762439` notifications · docs commit | see PR list (draft) |
-| `pawse-releases` | `ccr-9d7d359f-c2d6k6` | release status + checklist only | see PR list (draft) |
+| `pawse-app` | `ccr-9d7d359f-c2d6k6` | `4c157d3` data layer · `9076fe5` UX · `c762439` notifications · `a1c3de2` docs | [#14](https://github.com/jithujsam/pawse-app/pull/14) (draft) |
+| `pawse-releases` | `ccr-9d7d359f-c2d6k6` | `af27e09` release status + checklist only | [#1](https://github.com/jithujsam/pawse-releases/pull/1) (draft) |
 
 **Overlap with open PR #13** (`claude/pawse-audit-6h0t1a`, unmerged): a trial merge conflicts in 10 files (`copy.ts`, `notify.ts`, `persist.ts`, `Home.tsx`, `LogSheet.tsx`, `Me.tsx`, `store.ts`, `sync.ts`, `engine/life.ts`, engine tests). There's one product conflict: #13 keeps death as the default with a no-death opt-in, and 3.0 makes no-death the default. I did not merge #13 into this branch, because that would decide an unreviewed PR's fate. Suggested order: decide the death default, merge #13, then merge `main` into this branch and resolve the conflicts. Each side has tests, so a wrong resolution shows up.
 
