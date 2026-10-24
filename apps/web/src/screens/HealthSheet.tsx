@@ -102,12 +102,13 @@ function History() {
   const view = useActiveView()!;
   const items = history(data, view).slice(0, 80);
   const W = 320, H = 64, s = view.states;
-  const pts = s.map((x, i) => `${(i / Math.max(1, s.length - 1)) * W},${H - (x.visibleAge / 100) * (H - 6) - 3}`).join(" ");
+  const top = Math.max(5, ...s.map((x) => x.visibleAge)) * 1.25;
+  const pts = s.map((x, i) => `${(i / Math.max(1, s.length - 1)) * W},${H - (x.visibleAge / top) * (H - 6) - 3}`).join(" ");
   return (
     <div className="stack">
       {s.length > 1 && (
         <div className="stack tight">
-          <span className="muted small">Age over {view.companion.name}'s life (lower is healthier)</span>
+          <span className="muted small">Age over {view.companion.name}'s life, now {Math.round(view.age)} (lower is healthier)</span>
           <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Age over time"><polyline points={pts} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" /></svg>
         </div>
       )}
