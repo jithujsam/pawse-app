@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// One version for the app and the update check: apps/web/version.json.
+def appVersion = new groovy.json.JsonSlurper().parse(file('../../version.json'))
+// Release signing key. It must stay the same forever, or installed apps can't update.
+def signing = new Properties()
+def signingFile = file('../keystore/release.properties')
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+
 android {
     namespace "app.detoxcompanion"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +14,8 @@ android {
         applicationId "app.detoxcompanion"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersion.code
+        versionName appVersion.name
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +23,19 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (signingFile.exists()) {
+                storeFile file(signing['storeFile'])
+                storePassword signing['storePassword']
+                keyAlias signing['keyAlias']
+                keyPassword signing['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (signingFile.exists()) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

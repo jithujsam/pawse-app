@@ -9,3 +9,7 @@ android/.gradle
 .env
 .env.*
 !.env.example
+
+# Release signing key: never commit. Keep a backup somewhere safe (see apps/web/android/keystore/README.md).
+apps/web/android/keystore/*.jks
+apps/web/android/keystore/release.properties

@@ -12,6 +12,7 @@ import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
 import { LogSheet } from "./LogSheet";
+import { openDownload, useUpdate } from "../update";
 
 export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
   const data = useData();
@@ -24,6 +25,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
   const [note, setNote] = useState<string | null>(null);
   const [sparks, setSparks] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
+  const update = useUpdate();
 
   useEffect(() => { if (!just) return; const t = setTimeout(() => setJust(null), 3500); return () => clearTimeout(t); }, [just]);
 
@@ -60,6 +62,15 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
+      <AnimatePresence>
+        {update && (
+          <motion.button className="update-banner" onClick={() => { haptic.tap(); openDownload(update.url); }}
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
+            <span><b>Update available</b><span className="small">Version {update.name}{update.notes ? ` · ${update.notes}` : ""}</span></span>
+            <span className="update-cta">Get it</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
       <motion.header className="greet" variants={rise}>
         <div>
           <p className="muted small">{fmtDay(t0)}</p>

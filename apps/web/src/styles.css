@@ -179,6 +179,11 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .shimmer-line.short { width: 60%; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+/* ---------- update banner ---------- */
+.update-banner { border: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; background: var(--accent); color: var(--on-accent); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; box-shadow: 0 8px 22px -12px var(--accent); }
+.update-banner > span:first-child { display: grid; gap: 2px; }
+.update-cta { background: color-mix(in srgb, var(--on-accent) 18%, transparent); border-radius: 999px; padding: 8px 14px; font-weight: 700; white-space: nowrap; }
+
 /* ---------- home ---------- */
 .greet { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .streak-chip { background: var(--surface); box-shadow: var(--shadow); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: 14px; white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }

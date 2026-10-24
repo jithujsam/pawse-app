@@ -16,11 +16,15 @@ An account is required. After sign-in the app works offline and syncs when it ca
     pnpm typecheck
     pnpm simulate     # 90-day age curves
 
-## Android debug APK
+## Android release APK
+    # 1. Bump apps/web/version.json (name, and code: code must go up every release)
+    # 2. Put the signing key in apps/web/android/keystore/ (not in git; see the README there)
     pnpm --filter web build
     cd apps/web && npx cap sync android
-    cd android && ANDROID_HOME=/path/to/sdk ./gradlew assembleDebug
-    # apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+    cd android && ANDROID_HOME=/path/to/sdk ./gradlew assembleRelease
+    # -> apps/web/android/app/build/outputs/apk/release/app-release.apk
+    # 3. Publish to github.com/jithujsam/companion-app: add the APK under apk/ and update latest.json.
+    #    Installed apps check latest.json on launch and offer the update.
 
 ## Where things live in the app
 - `src/motion.ts`: the shared springs and transitions. `src/ui/`: Sheet, Toast, Controls, Coach, PinPad, AnimatedNumber.

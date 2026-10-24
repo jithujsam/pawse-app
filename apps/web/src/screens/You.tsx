@@ -12,6 +12,7 @@ import { toast } from "../ui/Toast";
 import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
+import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE } from "../update";
 import type { Field, FieldType, Tint } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -29,6 +30,14 @@ export function You() {
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
   const [sim, setSim] = useState(false);
+  const [checking, setChecking] = useState(false);
+  async function checkUpdates() {
+    setChecking(true);
+    const latest = await checkForUpdate();
+    setChecking(false);
+    if (latest) toast(`Version ${latest.name} is ready`, { action: { label: "Get it", run: () => openDownload(latest.url) }, ms: 8000 });
+    else toast("You have the latest version", { kind: "good" });
+  }
   const [showProf] = useState(() => {
     try { const show = ["alcohol", "smoking"].includes(habit.cls) && !localStorage.getItem("detox-prof-note"); if (show) localStorage.setItem("detox-prof-note", "1"); return show; } catch { return false; }
   });
@@ -181,6 +190,13 @@ export function You() {
         <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>Test the simulation</h2></div>
         <p className="muted small">Watch a life play out in fast forward: every 2 seconds is a day, and you can see how fast {companion.name} would age toward the end with different patterns. Your real logs are never touched.</p>
         <Button variant="secondary" onClick={() => setSim(true)}>Run the simulation</Button>
+      </motion.section>
+      <motion.section className="card stack" variants={rise}>
+        <div className="row"><h2>App version</h2><span className="muted">{APP_VERSION.name}</span></div>
+        <div className="actions">
+          <Button variant="secondary" disabled={checking} onClick={checkUpdates}>{checking ? "Checking…" : "Check for updates"}</Button>
+          <Button variant="secondary" onClick={() => openDownload(RELEASES_PAGE)}>All versions</Button>
+        </div>
       </motion.section>
       <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} name={companion.name} habit={habit} />
     </motion.main>
