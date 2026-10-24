@@ -569,3 +569,16 @@ Read docs/PRD.md before any work. It is the source of truth.
 - Reviewed on a 390 px wide viewport in light and dark.
 - Pacing simulation re-run and numbers recorded in docs/tuning.md.
 - Acceptance criteria from section 14 demonstrated.
+
+## 19. PAWSE 3.0 amendments (2026-10-24)
+
+These override the sections they name. Reasons and sources: `docs/PAWSE_RECOVERY_RESEARCH.md`, `docs/PAWSE_PRODUCT_DIAGNOSIS.md`.
+
+1. **Death and scars (§5.3, §7.5, §17 Q1 and Q3).** Default rules are *continuity*: net damage stops at 99% of the life budget (no death) and there is no scar floor or binge scar, so full recovery is always possible. The PRD rules stay available as *classic*, opt-in per person. The engine default is unchanged and still pinned by the §5.3 pacing tests; continuity is an option on `simulate`.
+2. **Day states (§5.3 missed check-ins, §7.3).** A day is a slip, goal met, urge managed, not tracking (chosen by the person) or not recorded. Only slips age the companion and only goal-met days heal it. Not tracking and not recorded change nothing.
+3. **Goals (§4, §7.7).** The person chooses stop, cut down, or understand it first. Onboarding adds two optional steps for goal, reasons, hard situations, a first step, preferred urge strategies and a support first name.
+4. **Language (§6.2).** "Goal met" or "good day" replace "clean" in user-facing copy (NIDA, Words Matter). No tone may shame; the §6.2 "Brutal" example is not used.
+5. **Urge SOS (§7.9).** Several switchable strategies; no promise that an urge ends within a set time.
+6. **Rewards (§7.9, milestones).** Milestones and unlocks count cumulative days of care (goal met or urge managed) and never reset on a slip.
+7. **Weekly report (§7.4).** Adds a deterministic weekly review with one adjustment for the week ahead. Observations need at least five records, show counts, and never claim causes.
+8. **Notifications (§12).** At most two neutral reminders when check-ins stop; no post-slip guilt notification.

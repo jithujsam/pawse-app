@@ -88,3 +88,46 @@ Started 2026-10-24. Source of the backlog: `docs/PAWSE_PRODUCT_AND_SYSTEM_AUDIT.
 5. A preview path. The existing Simulator, a sandbox using the real engine that touches no logs, is a ready-made interactive demo.
 
 I didn't add an entitlement stub, because there's no product spec for what would be gated, and a half-built gate would be dead or misleading code.
+
+---
+
+# PAWSE 3.0 run (2026-10-24, second overnight)
+
+Brief: `.claude/commands/pawse-full-run-v3.md` → `pawse-3.0-evidence-informed-recovery-product-redesign.md` + `pawse-overnight-both-repos.md`. Branch: `ccr-9d7d359f-c2d6k6` in both repos (the only branch this session may push to). Baseline before any change: `pnpm test` 81/81, typecheck clean.
+
+## Prioritised checklist
+
+| # | Item | Status | Commit | Verification |
+|---|---|---|---|---|
+| 1 | Re-check earlier data-loss/privacy fixes (B1, B2, B3, B4, B21, B22) still hold | **Done** | — | Tests pass; see `PAWSE_PRODUCT_DIAGNOSIS.md` §2 |
+| 2 | Research and five product documents | **Done** | docs commit | `docs/PAWSE_RECOVERY_RESEARCH.md` and four others |
+| 3 | Day-state model: slip, goal met, urge managed, not tracking, not recorded | **Done** | `4c157d3` | `test/recovery.test.ts` |
+| 4 | Plan (goal, reasons, situations, first step, strategies, support name, if-then) synced in settings | **Done** | `4c157d3`, `9076fe5` | tests + browser run of onboarding (plan saved) |
+| 5 | Urge strategy and trigger: migration 0005 + sync fallback | **Done in repo, not applied** | `4c157d3` | 0001–0005 + `rls.sql`, `privacy.sql` (11/11 PASS), `recovery.sql` (5/5 PASS) on local Postgres 16; 0005 re-runs cleanly |
+| 6 | Continuity pet rules (no death, no permanent scars), classic opt-in | **Done** | `4c157d3`, `9076fe5` | engine tests (26/26, PRD pacing still pinned), store tests |
+| 7 | Onboarding plan steps, urge support, lapse recovery, weekly review, honest observations | **Done** | `9076fe5` | tests + Playwright run at 390 px, light and dark |
+| 8 | Days of care for milestones/unlocks; no reset on a slip | **Done** | `9076fe5` | `test/recovery.test.ts` |
+| 9 | "Clean" → "goal met"/"good day" in user copy; crisis check on all new text; more phrasings | **Done** | `9076fe5` | `test/crisis.test.ts`, `test/care.test.ts` |
+| 10 | Notifications: two neutral lapse notes, no post-slip guilt push | **Done** | `c762439` | typecheck; device check not possible here |
+| 11 | AI: global daily ceiling (fails closed), wording rule | **Done in repo, not deployed** | `9076fe5` | code review (no Deno here) |
+| 12 | Android debug build | **Blocked** | — | SDK installed in `/tmp`, `cap sync` OK; Gradle dependency resolution fails with HTTP 429 from Maven Central through this environment's egress after 7 attempts |
+| 13 | Release repo status | **Done (unreleased)** | release branch | see `pawse-releases` `RELEASE_STATUS.md` |
+
+## Decisions taken on the owner's behalf (please confirm)
+
+- **Continuity is the default for everyone, including existing accounts.** Existing pets that carried scar-floor damage now show a lower age; nothing stored changes, and turning on classic rules restores the PRD maths. Companions already dead stay in the Hall. Classic can't be switched on if the history would already mean death under it.
+- **Milestones count cumulative days of care**, so people with history see one celebration for the highest milestone reached, once.
+- **"Clean" is gone from user copy.** Table and field names (`clean_days`, `cleanDays`) are unchanged for compatibility.
+- **The AI request schema is unchanged** (the deployed function is strict). Plan and urges are not sent to AI.
+
+## Final checks (actually run)
+
+| Check | Result |
+|---|---|
+| `pnpm test` | **109/109 pass** (schema 10, engine 26, web 73), up from 81 |
+| `pnpm typecheck`, `pnpm lint` (both `tsc --noEmit`) | Clean |
+| `pnpm build` | Succeeds; the >500 kB chunk warning predates this work |
+| `pnpm simulate` | PRD pacing unchanged; logged in `docs/tuning.md` |
+| Local Postgres 16: migrations 0001–0005, `rls.sql`, `privacy.sql`, `recovery.sql` | All expected results; 0005 idempotent |
+| Playwright, local dev server with a fake session and an unreachable backend (CSP blocked it; nothing reached the live project) | Onboarding with plan, Home, urge flow, slip + reflection, Insights, Journey, Plan, dark mode: no page errors |
+| Not run | Android build (blocked), device tests, `e2e-live.cjs` (touches the live project), Deno check of the edge function |
