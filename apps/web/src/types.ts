@@ -35,6 +35,9 @@ export interface Habit {
   unit: "money" | "count" | "minutes" | "none";
 }
 
+export type Tint = "ocean" | "meadow" | "blossom" | "sunrise";
+export type Measure = "money" | "count" | "minutes" | "none";
+
 export interface Entry {
   id: string;
   habitId: string;
@@ -47,6 +50,9 @@ export interface Entry {
   severity: number;
   effects: string[];
   explanation: string;
+  /** baseline = the deterministic engine only; ai = nudged by the AI layer. */
+  source: "baseline" | "ai";
+  aiAdjustPct: number | null;
   createdAt: number;
 }
 
@@ -58,6 +64,9 @@ export interface Settings {
   currency: string;
   deathScene: boolean;
   onboarded: boolean;
+  tint: Tint;
+  /** What the user said they want to let go of, in their own words. */
+  goal: string;
 }
 
 export interface AppData {
@@ -67,4 +76,7 @@ export interface AppData {
   habits: Habit[];
   entries: Entry[];
   cleanDays: CleanDay[];
+  /** AI weekly summaries keyed by week start (YYYY-MM-DD). */
+  summaries: Record<string, string>;
+  updatedAt: number;
 }

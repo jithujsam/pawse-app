@@ -2,6 +2,9 @@ import { useState } from "react";
 import { CompanionArt } from "../Companion";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES } from "../copy";
 import { actions, activeCompanion, useData, viewCompanion } from "../store";
+import { Account } from "./Account";
+import { configured } from "../supabase";
+import type { Tint } from "../types";
 import type { Field, FieldType } from "../types";
 
 const TYPES: FieldType[] = ["text", "number", "money", "yesno", "photo"];
@@ -29,6 +32,22 @@ export function You() {
     <main className="screen">
       <h1>You</h1>
       {showProf && <div className="banner" role="note">{PROFESSIONAL_NOTE}</div>}
+
+      <section className="card stack">
+        <h2>Colours</h2>
+        <div className="tintrow" role="group" aria-label="Colour">
+          {(([["ocean", "#7fb1e6"], ["meadow", "#86d1a4"], ["blossom", "#f0a0c0"], ["sunrise", "#f1cb6c"]]) as [Tint, string][]).map(([id, c]) => (
+            <button key={id} className="swatch" aria-label={id} aria-pressed={settings.tint === id} style={{ background: c }} onClick={() => actions.setSettings({ tint: id })} />
+          ))}
+        </div>
+      </section>
+
+      {configured && (
+        <section className="card stack">
+          <h2>Account</h2>
+          <Account />
+        </section>
+      )}
 
       <section className="card stack">
         <h2>Tone</h2>
@@ -91,7 +110,7 @@ export function You() {
         <button className="btn secondary" onClick={async () => {
           const text = actions.exportJson();
           try { await navigator.clipboard.writeText(text); alert("Copied your data to the clipboard."); }
-          catch { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = "detox-companion.json"; a.click(); }
+          catch { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = "companion-data.json"; a.click(); }
         }}>Export my data</button>
         {!confirm ? <button className="btn danger" onClick={() => setConfirm(true)}>Delete all data</button> : (
           <div className="actions"><button className="btn danger" onClick={() => actions.resetAll()}>Yes, delete everything</button><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button></div>

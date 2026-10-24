@@ -64,7 +64,7 @@ export function verdict(tone: Tone, slips: number, prev: number): string {
 }
 
 export const DISCLAIMER =
-  "Detox Companion is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counselor.";
+  "This app is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counselor.";
 
 export const CRISIS_MESSAGE =
   "That sounds heavy, and it matters more than any log. If you might hurt yourself, please contact local emergency services or a crisis line now, or reach someone you trust. In India you can call Tele-MANAS on 14416; in the US call or text 988. Nothing was saved.";

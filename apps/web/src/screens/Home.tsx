@@ -38,6 +38,9 @@ export function Home() {
   return (
     <main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }}>
       <section className="hero" aria-label={`${companion.name}, age ${age}`}>
+        <div className="motes" aria-hidden><i /><i /><i /><i /></div>
+        {just === "clean" && <div className="sparkles" aria-hidden><i /><i /><i /><i /><i /></div>}
+        {just === "slip" && <div className="ripple" aria-hidden />}
         <div className="title"><h1>{companion.name}</h1><span className="muted small">{fmtDay(today())}</span></div>
         <CompanionArt species={companion.species} stage={view.stage} mood={mood} age={view.age} size={330} />
         <div className="agetext"><span><b>Age {age}</b> · {STAGE_LABEL[view.stage]}</span><span className="muted">Life left {100 - age}</span></div>

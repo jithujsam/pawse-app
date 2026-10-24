@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { aiForSlip } from "../ai";
 import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, today } from "../dates";
-import { actions, type Deduction } from "../store";
+import { EFFECT_LABEL } from "../copy";
+import { actions, slipRequest, type Deduction } from "../store";
 import type { Entry, Habit } from "../types";
 
 async function shrink(file: File): Promise<string> {
@@ -23,6 +25,9 @@ export function LogSheet({ habit, name, onClose, onSaved }: { habit: Habit; name
   const [time, setTime] = useState("");
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
+  const alive = useRef(true);
+  const [polishing, setPolishing] = useState(false);
+  useEffect(() => () => { alive.current = false; }, []);
   const set = (id: string, v: string | boolean) => setValues((s) => ({ ...s, [id]: v }));
 
   const missing = habit.fields.some((f) => f.required && (values[f.id] === undefined || values[f.id] === ""));
@@ -33,6 +38,18 @@ export function LogSheet({ habit, name, onClose, onSaved }: { habit: Habit; name
     const d = actions.logSlip(habit.id, values, day, time || null);
     setResult(d);
     onSaved(d);
+    const req = slipRequest(d.entry.id);
+    if (req) {
+      setPolishing(true);
+      void aiForSlip(req).then((r) => {
+        if (!r) return;
+        actions.applyAi(d.entry.id, r);
+        if (alive.current) setResult((cur) => cur && ({
+          ...cur, line: r.explanation, entry: { ...cur.entry, months: r.months, source: "ai" },
+          effectLine: r.effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" ") || cur.effectLine,
+        }));
+      }).finally(() => { if (alive.current) setPolishing(false); });
+    }
   }
 
   return (
@@ -50,7 +67,8 @@ export function LogSheet({ habit, name, onClose, onSaved }: { habit: Habit; name
             <span>{result.effectLine}</span>
             <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
           </div>
-          <p>{result.line}</p>
+          <p key={result.line} className="bubble">{result.line}</p>
+          {polishing && <p className="muted small" aria-live="polite">Finding the right words…</p>}
           <button className="btn" onClick={onClose}>Done</button>
         </>) : (<>
           <div className="row"><h2>Log a slip</h2><button className="btn text" onClick={onClose}>Cancel</button></div>
