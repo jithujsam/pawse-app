@@ -88,3 +88,26 @@ describe("a new phone joining an account that already has a companion", () => {
     stopSync();
   });
 });
+
+describe("a phone that lost its sync position but still holds the account's rows", () => {
+  it("doesn't overwrite a newer edit from another phone with its older copy", async () => {
+    const uid = "user-3";
+    const C3 = u(31), H3 = u(32), E3 = u(33);
+    remoteWrite("profiles", { id: uid, settings: { onboarded: true }, client_updated_at: 10 });
+    remoteWrite("companions", { id: C3, user_id: uid, species: "dog", name: "Bean", born_on: "2026-10-01", died_on: null, final_age: null, client_updated_at: 10 });
+    remoteWrite("habits", { id: H3, user_id: uid, companion_id: C3, name: "Orders", class: "food_spending", class_weight: 0.7, unit: "money", fields: [], position: 0, client_updated_at: 10 });
+    // Another phone corrected the amount to 250 after this phone last saw it (100).
+    remoteWrite("entries", { id: E3, user_id: uid, habit_id: H3, companion_id: C3, occurred_on: D1, occurred_at: null, values: {}, amount: 250, client_created_at: 1, client_updated_at: 20 });
+    const d = blank();
+    actions.applyRemote({
+      ...d, settings: { ...d.settings, onboarded: true },
+      companions: [{ id: C3, species: "dog", name: "Bean", bornOn: "2026-10-01", diedOn: null, finalAge: null }],
+      habits: [{ id: H3, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C3, unit: "money", fields: [] }],
+      entries: [entry(E3, H3, C3, D1)], // amount 100: the old copy
+    });
+    await startSync(uid);
+    expect(getData().entries.find((e) => e.id === E3)!.amount).toBe(250);
+    expect(table("entries").get(E3)!.amount).toBe(250);
+    stopSync();
+  });
+});

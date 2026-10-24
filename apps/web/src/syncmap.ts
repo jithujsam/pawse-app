@@ -182,7 +182,7 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
  * - The phone's own habit and living companion, made during onboarding and never synced, are dropped: they hold
  *   no data of their own once their rows have moved. A companion that already died on this phone stays in the Hall.
  * - The account's settings win (the phone's settings key is not pushed); clean days that land on the same day
- *   twice collapse into one.
+ *   twice collapse into one. Only rows the account doesn't already have are pushed; for rows it has, its copy wins.
  * Returns null when the account has no companion yet (this phone's data simply goes up).
  */
 export function adoptAccount(d: AppData, p: Pulled): { data: AppData; push: string[] } | null {
@@ -209,10 +209,19 @@ export function adoptAccount(d: AppData, p: Pulled): { data: AppData; push: stri
     entries, cleanDays, urges,
     summaries: {}, // weekly summaries belong to the account's habit; the account's own come down with the merge
   };
+  // Only rows the account doesn't have yet go up. A row it already has (a phone that lost its sync position) is
+  // left to the merge, so an older copy here can't overwrite a newer edit made on another phone.
+  const has = (rows: R[] | undefined, key: (r: R) => string) => new Set((rows ?? []).map(key));
+  const remoteEntries = has(p.entries, (r) => String(r.id));
+  const remoteClean = has(p.clean_days, (r) => `${r.habit_id}:${r.day}`);
+  const remoteUrges = has(p.urges, (r) => String(r.id));
+  const remoteJournal = has(p.journal, (r) => String(r.day));
   const push = [
     ...data.companions.filter((c) => !remoteCompanions.has(c.id)).map((c) => `c:${c.id}`),
-    ...entries.map((e) => `e:${e.id}`), ...cleanDays.map((c) => `k:${c.habitId}:${c.day}`),
-    ...urges.map((u) => `u:${u.id}`), ...d.journal.map((j) => `j:${j.day}`),
+    ...entries.filter((e) => !remoteEntries.has(e.id)).map((e) => `e:${e.id}`),
+    ...cleanDays.filter((c) => !remoteClean.has(`${c.habitId}:${c.day}`)).map((c) => `k:${c.habitId}:${c.day}`),
+    ...urges.filter((u) => !remoteUrges.has(u.id)).map((u) => `u:${u.id}`),
+    ...d.journal.filter((j) => !remoteJournal.has(j.day)).map((j) => `j:${j.day}`),
   ];
   return { data, push };
 }
