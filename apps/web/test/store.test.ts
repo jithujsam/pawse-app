@@ -115,3 +115,50 @@ describe("slip, clean and nothing logged are three different days", () => {
     expect(getData().cleanDays.filter((c) => c.day === addDays(t0, -1))).toHaveLength(1);
   });
 });
+
+describe("when pets can't pass away (opt-in)", () => {
+  const heavy = () => Array.from({ length: 60 }, (_, i) => entry(`h${i}`, addDays(t0, -59 + i), 24));
+  it("is off by default: the standard rules apply and a companion can die", () => {
+    expect(blank().settings.petsCanDie).toBe(true);
+    load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
+    actions.logSlip(H, {}, t0);
+    expect(getData().companions[0].diedOn).not.toBeNull();
+  });
+
+  it("switched off: the heaviest history leaves the companion frail at 99, alive, and healing on clean days", () => {
+    load(heavy());
+    actions.setSettings({ petsCanDie: false });
+    const d = actions.logSlip(H, {}, t0);
+    expect(d.died).toBe(false);
+    const v = viewCompanion(getData(), C);
+    expect(v.stage).toBe("frail");
+    expect(Math.round(v.age)).toBe(99);
+    expect(getData().companions[0].diedOn).toBeNull();
+  });
+
+  it("can't be switched back on while the standard rules would mean the companion had already died", async () => {
+    const { canAllowPassingAway } = await import("../src/store");
+    load(heavy());
+    actions.setSettings({ petsCanDie: false });
+    expect(canAllowPassingAway(getData())).toBe(false);
+    load([entry("one", t0, 4)]);
+    actions.setSettings({ petsCanDie: false });
+    expect(canAllowPassingAway(getData())).toBe(true);
+  });
+
+  it("never rewrites history: a companion that already died stays in the Hall", () => {
+    load(heavy());
+    actions.applyRemote({ ...getData(), settings: { ...getData().settings, petsCanDie: false }, companions: [{ ...getData().companions[0], diedOn: addDays(t0, -10), finalAge: 100 }] });
+    const v = viewCompanion(getData(), C);
+    expect(v.dead).toBe(true);
+    expect(v.age).toBe(100);
+  });
+
+  it("the setting survives storage and travels with the account", async () => {
+    const { normalize } = await import("../src/persist");
+    const { portableSettings } = await import("../src/syncmap");
+    const s = { ...blank(), settings: { ...blank().settings, petsCanDie: false, onboarded: true } };
+    expect(normalize(JSON.parse(JSON.stringify(s)))!.settings.petsCanDie).toBe(false);
+    expect(portableSettings(s.settings)).toMatchObject({ petsCanDie: false });
+  });
+});

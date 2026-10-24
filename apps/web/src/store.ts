@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
-  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, simulate, STAGE_LABEL, stageForAge,
+  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, NO_DEATH_CEILING_MONTHS, simulate, STAGE_LABEL, stageForAge,
   type DayInput, type DayState, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
@@ -135,7 +135,7 @@ export interface CompanionView {
  */
 export const QUIET_DAYS_AGE = false;
 
-export function viewCompanion(d: AppData, companionId: string, upTo = today()): CompanionView {
+export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
@@ -148,10 +148,23 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
     day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
-  const states = simulate(inputs);
+  // A companion that already died stays as it was; otherwise, with passing away switched off, it can't reach 100.
+  const noDeath = d.settings.petsCanDie === false && !companion.diedOn && !opts.ignoreNoDeath;
+  const states = simulate(inputs, noDeath ? { ceilingMonths: NO_DEATH_CEILING_MONTHS } : {});
   const current = states[states.length - 1];
   const age = companion.finalAge ?? current?.visibleAge ?? 0;
   return { companion, habit, states, current, age, stage: stageForAge(age), dead: companion.diedOn !== null };
+}
+
+/**
+ * Passing away can be switched back on only while that wouldn't mean the companion had already died: with it off,
+ * damage past the ceiling was never counted, but the standard rules would count it. False when switching it on now
+ * would end the companion's life on the spot.
+ */
+export function canAllowPassingAway(d: AppData): boolean {
+  const c = activeCompanion(d);
+  if (!c || c.diedOn) return true;
+  return !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead");
 }
 
 export const activeCompanion = (d: AppData): Companion | undefined => {

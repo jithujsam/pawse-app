@@ -1,4 +1,6 @@
 export const LIFE_BUDGET_MONTHS = 1200;
+/** When pets can't pass away, net damage stops here: visible age 99, the frail stage, never death. */
+export const NO_DEATH_CEILING_MONTHS = 1188;
 export const BASE_MONTHS = 4;
 export const CLEAN_DAY_HEAL_MONTHS = 1.5;
 export const SCAR_FLOOR_RATIO = 0.2;

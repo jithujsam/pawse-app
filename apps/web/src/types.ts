@@ -126,6 +126,11 @@ export interface Settings {
   accent: "pet" | "coral" | "ocean" | "forest" | "berry" | "plum" | "slate";
   /** Show the 3D pet where one exists (dog, fox). Off means the 2D art everywhere. */
   pet3d: boolean;
+  /**
+   * Whether a companion passes away at age 100 (the PRD rule, and the default). Off: it can become very frail
+   * (age 99) but never dies, and clean days always bring it back. Companions that already died stay in the Hall.
+   */
+  petsCanDie: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
 }

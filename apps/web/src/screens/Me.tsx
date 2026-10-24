@@ -12,7 +12,7 @@ import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, bestStreak, cleanStreak, useActiveView, useData, vault } from "../store";
+import { actions, bestStreak, canAllowPassingAway, cleanStreak, useActiveView, useData, vault } from "../store";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
 import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
@@ -364,12 +364,23 @@ function AppearancePage() {
 }
 
 function FeelPage() {
-  const { settings } = useData();
+  const data = useData();
+  const { settings } = data;
+  const name = useActiveView()?.companion.name ?? "Your companion";
+  const setPassing = (on: boolean) => {
+    if (on && !canAllowPassingAway(data)) {
+      toast(`Not yet: under the standard rules ${name} would already be gone. Some clean days first, then try again.`, { kind: "bad", ms: 5000 });
+      return;
+    }
+    actions.setSettings({ petsCanDie: on });
+  };
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
       <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
-      <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
+      <Switch checked={settings.petsCanDie} onChange={setPassing} label={`${name} can pass away`}
+        hint={settings.petsCanDie ? "At age 100 a companion dies and you can adopt a new one. Turn off to keep them: very frail at worst, never gone." : `${name} can get very frail but never dies, and clean days always bring them back.`} />
+      {settings.petsCanDie && <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />}
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>
