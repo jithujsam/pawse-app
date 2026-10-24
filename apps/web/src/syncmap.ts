@@ -175,5 +175,64 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
   return { data: { ...d, companions, habits, entries, cleanDays, settings, summaries, urges, journal }, applied };
 }
 
-/** On a fresh phone that only just finished onboarding, the account's history should replace it rather than sit beside it. */
-export const isFreshLocal = (d: AppData) => d.entries.length === 0 && d.cleanDays.length === 0;
+/**
+ * First sync on a phone whose account already has a companion (audit B17). Deterministic rule:
+ * - The account's first habit (lowest position, then id) and its companion stay the active ones.
+ * - Everything logged on this phone before its first sync (slips, clean days, urges, reflections) is kept and
+ *   moved onto that habit and companion. Nothing logged is ever dropped.
+ * - The phone's own habit and living companion, made during onboarding and never synced, are dropped: they hold
+ *   no data of their own once their rows have moved. A companion that already died on this phone stays in the Hall.
+ * - The account's settings win (the phone's settings key is not pushed); clean days that land on the same day
+ *   twice collapse into one. Only rows the account doesn't already have are pushed; for rows it has, its copy wins.
+ * Returns null when the account has no companion yet (this phone's data simply goes up).
+ */
+export function adoptAccount(d: AppData, p: Pulled): { data: AppData; push: string[] } | null {
+  const live = p.habits.filter((h) => !h.deleted_at)
+    .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0) || String(a.id).localeCompare(String(b.id)));
+  const target = live[0];
+  if (!target) return null;
+  const habitId = String(target.id), companionId = String(target.companion_id);
+  const remoteHabits = new Set(p.habits.map((h) => String(h.id)));
+  const remoteCompanions = new Set(p.companions.map((c) => String(c.id)));
+  const movedHabits = new Set(d.habits.filter((h) => !remoteHabits.has(h.id)).map((h) => h.id));
+  const droppedCompanions = new Set(d.companions.filter((c) => !remoteCompanions.has(c.id) && c.diedOn === null).map((c) => c.id));
+  const habit = (id: string) => (movedHabits.has(id) ? habitId : id);
+  const companion = (id: string) => (droppedCompanions.has(id) ? companionId : id);
+
+  const entries = d.entries.map((e) => (movedHabits.has(e.habitId) || droppedCompanions.has(e.companionId) ? { ...e, habitId: habit(e.habitId), companionId: companion(e.companionId) } : e));
+  const seen = new Set<string>();
+  const cleanDays = d.cleanDays.map((c) => ({ ...c, habitId: habit(c.habitId) })).filter((c) => { const k = `${c.habitId}:${c.day}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  const urges = d.urges.map((u) => (movedHabits.has(u.habitId) ? { ...u, habitId: habit(u.habitId) } : u));
+  const data: AppData = {
+    ...d,
+    companions: d.companions.filter((c) => !droppedCompanions.has(c.id)),
+    habits: d.habits.filter((h) => !movedHabits.has(h.id)),
+    entries, cleanDays, urges,
+    summaries: {}, // weekly summaries belong to the account's habit; the account's own come down with the merge
+  };
+  // Only rows the account doesn't have yet go up. A row it already has (a phone that lost its sync position) is
+  // left to the merge, so an older copy here can't overwrite a newer edit made on another phone.
+  const has = (rows: R[] | undefined, key: (r: R) => string) => new Set((rows ?? []).map(key));
+  const remoteEntries = has(p.entries, (r) => String(r.id));
+  const remoteClean = has(p.clean_days, (r) => `${r.habit_id}:${r.day}`);
+  const remoteUrges = has(p.urges, (r) => String(r.id));
+  const remoteJournal = has(p.journal, (r) => String(r.day));
+  const push = [
+    ...data.companions.filter((c) => !remoteCompanions.has(c.id)).map((c) => `c:${c.id}`),
+    ...entries.filter((e) => !remoteEntries.has(e.id)).map((e) => `e:${e.id}`),
+    ...cleanDays.filter((c) => !remoteClean.has(`${c.habitId}:${c.day}`)).map((c) => `k:${c.habitId}:${c.day}`),
+    ...urges.filter((u) => !remoteUrges.has(u.id)).map((u) => `u:${u.id}`),
+    ...d.journal.filter((j) => !remoteJournal.has(j.day)).map((j) => `j:${j.day}`),
+  ];
+  return { data, push };
+}
+
+/**
+ * A day can't be both a slip day and a clean day. When two phones disagree (one logged a slip, the other marked the
+ * day clean), the explicit slip wins and the clean mark is removed, here and, through the returned keys, on the server.
+ */
+export function slipBeatsClean(d: AppData): { data: AppData; removed: string[] } {
+  const slipDays = new Set(d.entries.map((e) => `${e.habitId}:${e.day}`));
+  const removed = d.cleanDays.filter((c) => slipDays.has(`${c.habitId}:${c.day}`)).map((c) => `k:${c.habitId}:${c.day}`);
+  return removed.length ? { data: { ...d, cleanDays: d.cleanDays.filter((c) => !slipDays.has(`${c.habitId}:${c.day}`)) }, removed } : { data: d, removed };
+}

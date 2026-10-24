@@ -4,6 +4,7 @@
 // Free text from the person is treated as data, validated, capped, and never logged.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
+import { cacheKey } from "./cache.ts";
 
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
@@ -90,16 +91,6 @@ function prompt(r: SlipR | WeeklyR) {
     }),
     max: 380,
   };
-}
-
-/**
- * Cache key: this person plus the whole validated request, so a result is only reused for exactly the same
- * request from the same person. A cached sentence can quote the request (pet name, amounts, notes), so it must
- * never be served to anyone else.
- */
-async function cacheKey(userId: string, r: SlipR | WeeklyR): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([userId, r])));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function extractJson(s: string): unknown {

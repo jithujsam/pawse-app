@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { conditions, healthReport, history, stats, type Level } from "../health";
 import { fmtDay } from "../dates";
+import { quietBanner } from "../copy";
 import { rise, spring, stagger } from "../motion";
 import { useActiveView, useData } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
@@ -64,7 +65,7 @@ function Body({ initial }: { initial: HealthTab }) {
             {conds.length > 0
               ? <button className="link-card item" onClick={() => setTab("conditions")}><span className="row"><b>{conds.length} {conds.length === 1 ? "thing" : "things"} affecting {name}</b><span className="muted small">See why →</span></span></button>
               : <p className="muted small">Nothing is troubling {name} right now. That's your doing.</p>}
-            {r.silent >= 2 && <p className="banner">{name} heals only on days you check in. Quiet days don't cost anything, so you can pick up again any time.</p>}
+            {r.silent >= 2 && <p className="banner">{quietBanner(data.settings.tone, name)}</p>}
           </>)}
 
           {tab === "history" && <History />}
@@ -85,7 +86,7 @@ function Body({ initial }: { initial: HealthTab }) {
 
           {tab === "stats" && (
             <div className="stats stats-3">
-              {([["Days together", st.together], ["Clean days", st.cleanDays], ["Best streak", st.best], ["Slips logged", st.slips], ["Life lost", `${st.lost} mo`], ["Life healed", `${st.healed} mo`],
+              {([["Days together", st.together], ["Good days", st.cleanDays], ["Best streak", st.best], ["Slips logged", st.slips], ["Life lost", `${st.lost} mo`], ["Life healed", `${st.healed} mo`],
                 ["Urges ridden out", st.urges], ["Reflections", st.reflections], ["Check-in rate", `${st.checkInRate}%`]] as [string, string | number][]).map(([k, v]) => (
                 <div className="stat item" key={k}><span className="muted small">{k}</span><b className="v sm">{v}</b></div>
               ))}

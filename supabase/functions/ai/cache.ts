@@ -1,0 +1,9 @@
+/**
+ * Cache key for AI results: this person plus the whole validated request, so a result is only reused for exactly
+ * the same request from the same person. A cached sentence can quote the request (pet name, amounts, notes), so it
+ * must never be served to anyone else. Plain Web Crypto: runs in Deno (the function) and Node (the tests).
+ */
+export async function cacheKey(userId: string, request: unknown): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([userId, request])));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}

@@ -69,6 +69,11 @@ describe("missing days", () => {
     expect(moneyKept(world([], [{ day: born, amount: 200 }], null), H, born)).toBeNull();
   });
 
+  it("money kept after a rebirth ignores spending from the earlier life", () => {
+    const d = world([addDays(born, 1)], [{ day: addDays(born, -5), amount: 900 }, { day: born, amount: 200 }]);
+    expect(moneyKept(d, H, born)).toEqual({ saved: 2 * 200 - 200, days: 2 });
+  });
+
   it("recent pace is slips per checked-in week, and unknown with nothing logged", () => {
     expect(recentPace(world([], []), H, born)).toBeNull();
     const d = world([addDays(t0, -1), addDays(t0, -2), addDays(t0, -3)], [{ day: t0, amount: 100 }]);
@@ -89,3 +94,71 @@ describe("correcting an old day", () => {
     expect(v.age).toBeGreaterThan(0);
   });
 });
+
+describe("slip, clean and nothing logged are three different days", () => {
+  it("a slip ages, a clean day heals, a quiet day does neither", () => {
+    load([entry("s", addDays(t0, -3), 4)]);
+    actions.markClean(H, addDays(t0, -2));
+    // addDays(t0, -1) is left quiet
+    const v = viewCompanion(getData(), C);
+    const at = (n: number) => v.states.find((s) => s.day === addDays(t0, -n))!;
+    expect(at(3).damageMonths).toBe(4);
+    expect(at(2).healedMonths).toBe(1.5);
+    expect(at(1)).toMatchObject({ damageMonths: 0, healedMonths: 0, neglectMonths: 0 });
+    expect(at(1).netMonths).toBe(at(2).netMonths);
+  });
+
+  it("a day with a slip can't also be clean, and a clean mark is idempotent", () => {
+    load([entry("s", t0, 4)]);
+    expect(actions.markClean(H, t0)).toBe(false);
+    expect(actions.markClean(H, addDays(t0, -1))).toBe(true);
+    expect(actions.markClean(H, addDays(t0, -1))).toBe(true);
+    expect(getData().cleanDays.filter((c) => c.day === addDays(t0, -1))).toHaveLength(1);
+  });
+});
+
+describe("pet rules: continuity by default, classic opt-in", () => {
+  const heavy = () => Array.from({ length: 60 }, (_, i) => entry(`h${i}`, addDays(t0, -59 + i), 24));
+  it("continuity is the default: the heaviest history leaves the companion frail at 99, alive, and healing", () => {
+    expect(blank().settings.petLife).toBe("continuity");
+    load(heavy());
+    const d = actions.logSlip(H, {}, t0);
+    expect(d.died).toBe(false);
+    const v = viewCompanion(getData(), C);
+    expect(v.stage).toBe("frail");
+    expect(Math.round(v.age)).toBe(99);
+    expect(getData().companions[0].diedOn).toBeNull();
+  });
+
+  it("classic rules (opt-in) keep the PRD behaviour: a companion can die", () => {
+    load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
+    actions.setSettings({ petLife: "classic" });
+    actions.logSlip(H, {}, t0);
+    expect(getData().companions[0].diedOn).not.toBeNull();
+  });
+
+  it("classic can't be switched on while it would mean the companion had already died", async () => {
+    const { canAllowPassingAway } = await import("../src/store");
+    load(heavy());
+    expect(canAllowPassingAway(getData())).toBe(false);
+    load([entry("one", t0, 4)]);
+    expect(canAllowPassingAway(getData())).toBe(true);
+  });
+
+  it("never rewrites history: a companion that already died stays in the Hall", () => {
+    load(heavy());
+    actions.applyRemote({ ...getData(), companions: [{ ...getData().companions[0], diedOn: addDays(t0, -10), finalAge: 100 }] });
+    const v = viewCompanion(getData(), C);
+    expect(v.dead).toBe(true);
+    expect(v.age).toBe(100);
+  });
+
+  it("the setting survives storage and travels with the account", async () => {
+    const { normalize } = await import("../src/persist");
+    const { portableSettings } = await import("../src/syncmap");
+    const s = { ...blank(), settings: { ...blank().settings, petLife: "classic" as const, onboarded: true } };
+    expect(normalize(JSON.parse(JSON.stringify(s)))!.settings.petLife).toBe("classic");
+    expect(portableSettings(s.settings)).toMatchObject({ petLife: "classic" });
+  });
+});
+
