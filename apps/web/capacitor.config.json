@@ -1,0 +1,6 @@
+{
+  "appId": "app.detoxcompanion",
+  "appName": "Detox Companion",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false }
+}
