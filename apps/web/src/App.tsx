@@ -76,7 +76,25 @@ export function App({ boot }: { boot: Boot }) {
   );
 }
 
+/** Re-renders at local midnight, so an app left open rolls over to the new day (today's check-in, week strip, streak). */
+function useMidnight() {
+  const [, setDay] = useState(today());
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const arm = () => {
+      const next = new Date(); next.setHours(24, 0, 1, 0);
+      t = setTimeout(() => { setDay(today()); arm(); }, Math.min(next.getTime() - Date.now(), 2 ** 31 - 1));
+    };
+    arm();
+    // Phones suspend timers in the background; check again whenever the app comes back.
+    const onVis = () => { if (document.visibilityState === "visible") setDay(today()); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearTimeout(t); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+}
+
 function Shell() {
+  useMidnight();
   const data = useData();
   const view = useActiveView();
   const [tab, setTab] = useState<Tab>("home");
