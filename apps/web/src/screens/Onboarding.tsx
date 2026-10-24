@@ -10,7 +10,7 @@ import { rise, slide, spring, stagger } from "../motion";
 import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
 import { actions } from "../store";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
-import type { Baseline, Measure, Species, Tint, Tone } from "../types";
+import type { Baseline, Measure, Species, Tone } from "../types";
 
 const SPECIES: { id: Species; label: string; blurb: string }[] = [
   { id: "dog", label: "Dog", blurb: "Loyal, waits by the door" },
@@ -20,10 +20,6 @@ const SPECIES: { id: Species; label: string; blurb: string }[] = [
 const NAMES: Record<Species, string[]> = {
   dog: ["Biscuit", "Mochi", "Pepper", "Bean"], cat: ["Miso", "Luna", "Pixel", "Olive"], rabbit: ["Clover", "Pip", "Hazel", "Nimbus"],
 };
-const TINTS: { id: Tint; label: string; color: string }[] = [
-  { id: "ocean", label: "Ocean", color: "#7fb1e6" }, { id: "meadow", label: "Meadow", color: "#86d1a4" },
-  { id: "blossom", label: "Blossom", color: "#f0a0c0" }, { id: "sunrise", label: "Sunrise", color: "#f1cb6c" },
-];
 const MEASURES: { id: Measure; label: string; hint: string }[] = [
   { id: "money", label: "Money spent", hint: "How much each time" },
   { id: "count", label: "How many", hint: "A count each time" },
@@ -44,11 +40,11 @@ const STORY = [
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
   step: number; species: Species; companionName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
-  baseline: Baseline | null; triggers: string[]; tone: Tone; tint: Tint; reminder: string;
+  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string;
 }
 const initial: Draft = {
   step: 1, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
-  baseline: null, triggers: [], tone: "honest", tint: "ocean", reminder: "20:00",
+  baseline: null, triggers: [], tone: "honest", reminder: "20:00",
 };
 const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, step: Math.max(1, d.step) }; } catch { return initial; } };
 const LAST = 9;
@@ -59,7 +55,7 @@ export function Onboarding() {
   const [adult, setAdult] = useState(false);
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
-  useEffect(() => { document.documentElement.dataset.tint = d.tint; }, [d.tint]);
+  useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
 
   const go = (n: number) => { dir.current = n > d.step ? 1 : -1; haptic.select(); up({ step: n }); };
   const name = d.companionName.trim() || NAMES[d.species][0];
@@ -72,7 +68,7 @@ export function Onboarding() {
   };
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, tint: d.tint, baseline: d.baseline });
+    actions.finishOnboarding({ species: d.species, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -171,16 +167,6 @@ export function Onboarding() {
                 ))}
               </motion.div>
               <motion.p className="muted small" variants={rise}>Every tone is respectful. It describes what happened, never who you are. Change it any time.</motion.p>
-              <motion.h2 variants={rise}>Colours</motion.h2>
-              <motion.div className="tintrow" role="radiogroup" aria-label="Colour" variants={rise}>
-                {TINTS.map((t) => (
-                  <motion.button key={t.id} role="radio" className="swatch" aria-label={t.label} aria-checked={d.tint === t.id} style={{ background: t.color }}
-                    whileTap={{ scale: 0.88 }} animate={{ scale: d.tint === t.id ? 1.12 : 1 }} transition={spring.bouncy}
-                    onClick={() => { haptic.select(); up({ tint: t.id }); }}>
-                    {d.tint === t.id && <motion.span className="swatch-check" initial={{ scale: 0 }} animate={{ scale: 1 }}>{Icon.check}</motion.span>}
-                  </motion.button>
-                ))}
-              </motion.div>
               <motion.div variants={rise}><Button onClick={() => go(7)}>Continue</Button></motion.div>
             </>)}
 

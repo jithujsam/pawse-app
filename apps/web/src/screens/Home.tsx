@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor } from "../Companion";
@@ -13,8 +13,9 @@ import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
 import { LogSheet } from "./LogSheet";
 import { openDownload, useUpdate } from "../update";
+import { onQuick, takeQuick } from "../quick";
 
-export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
+export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
@@ -26,6 +27,11 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
   const [sparks, setSparks] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
   const update = useUpdate();
+
+  // The centre button hands its choice to Home, which owns the sheet and the celebration.
+  const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
+  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); };
+  useEffect(() => { const run = () => quickRef.current(takeQuick()); run(); return onQuick(run); }, []);
 
   useEffect(() => { if (!just) return; const t = setTimeout(() => setJust(null), 3500); return () => clearTimeout(t); }, [just]);
 
@@ -130,9 +136,9 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
         {habit.unit === "money"
           ? <div className="card stat"><div className="muted small">Spent this week</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(week.spend)} /></div></div>
           : <div className="card stat"><div className="muted small">Clean days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
-        <button className="card stat link-card" onClick={() => onNavigate("report")}>
+        <button className="card stat link-card" onClick={() => onNavigate("insights")}>
           <span className="muted small">Your week, in words</span>
-          <span className="link-row"><b>Report</b>{Icon.chevR}</span>
+          <span className="link-row"><b>Insights</b>{Icon.chevR}</span>
         </button>
       </motion.section>
 

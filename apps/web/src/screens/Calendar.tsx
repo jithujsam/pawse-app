@@ -2,14 +2,14 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { daysBetween, fmtDay, fmtMonth, iso, parse, pad, today } from "../dates";
 import { haptic } from "../haptics";
-import { rise, spring, stagger } from "../motion";
+import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
-import { ACCENT } from "../Companion";
 import { pickedLabels } from "../questions";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
-export function CalendarScreen() {
+/** The month grid, the age curve and the selected day. Lives inside Journey. */
+export function CalendarSections() {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
@@ -52,8 +52,7 @@ export function CalendarScreen() {
   }
 
   return (
-    <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>Calendar</motion.h1>
+    <>
       <motion.section className="card stack" aria-label="Age this month" variants={rise}>
         <div className="row"><span className="muted small">{companion.name}'s age this month</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
         {spark.length > 1
@@ -122,6 +121,6 @@ export function CalendarScreen() {
           </motion.div>
         </AnimatePresence>
       </motion.section>
-    </motion.main>
+    </>
   );
 }

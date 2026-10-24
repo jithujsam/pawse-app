@@ -15,24 +15,28 @@ import { Home } from "./screens/Home";
 
 // Only Home ships in the first bundle; the rest load on first visit.
 const Onboarding = lazy(() => import("./screens/Onboarding").then((m) => ({ default: m.Onboarding })));
-const CalendarScreen = lazy(() => import("./screens/Calendar").then((m) => ({ default: m.CalendarScreen })));
+const Journey = lazy(() => import("./screens/Journey").then((m) => ({ default: m.Journey })));
 const Report = lazy(() => import("./screens/Report").then((m) => ({ default: m.Report })));
-const You = lazy(() => import("./screens/You").then((m) => ({ default: m.You })));
+const Me = lazy(() => import("./screens/Me").then((m) => ({ default: m.Me })));
 const Memorial = lazy(() => import("./screens/Memorial").then((m) => ({ default: m.Memorial })));
-const prefetch = () => { void import("./screens/Calendar"); void import("./screens/Report"); void import("./screens/You"); };
+const prefetch = () => { void import("./screens/Journey"); void import("./screens/Report"); void import("./screens/Me"); };
 import { ToastHost } from "./ui/Toast";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
+import { listenForBack, useRootBack } from "./back";
+import { QuickSheet } from "./screens/QuickSheet";
+import { Icon } from "./ui/Controls";
 
-type Tab = "home" | "calendar" | "report" | "you";
-const TABS: Tab[] = ["home", "calendar", "report", "you"];
+export type Tab = "home" | "insights" | "journey" | "me";
+const TABS: Tab[] = ["home", "insights", "journey", "me"];
 
 const ICONS: Record<Tab, JSX.Element> = {
   home: <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>,
-  calendar: <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>,
-  report: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
-  you: <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>,
+  insights: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
+  journey: <svg viewBox="0 0 24 24"><path d="M4 19c3 0 3-5 6-5s3 4 6 4 2-9 4-11" /><circle cx="20" cy="6" r="1.6" /></svg>,
+  me: <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>,
 };
-const LABELS: Record<Tab, string> = { home: "Home", calendar: "Calendar", report: "Report", you: "You" };
+const LABELS: Record<Tab, string> = { home: "Home", insights: "Insights", journey: "Journey", me: "Me" };
+listenForBack();
 
 const LOCK_AFTER: Record<string, number> = { immediately: 0, "1m": 60_000, "5m": 300_000, never: Infinity };
 
@@ -73,12 +77,14 @@ function Shell() {
   const data = useData();
   const view = useActiveView();
   const [tab, setTab] = useState<Tab>("home");
+  const [quick, setQuick] = useState(false);
   const dir = useRef(1);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
   const { session, ready, recovering } = useSession();
   const [pwDone, setPwDone] = useState(false);
   const sync = useSyncStatus();
-  useEffect(() => { document.documentElement.dataset.tint = data.settings.tint ?? "ocean"; }, [data.settings.tint]);
+  const species = view?.companion.species;
+  useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const uid = session?.user.id;
   useEffect(() => {
     if (!uid) return;
@@ -92,6 +98,7 @@ function Shell() {
   }, [uid]);
 
   useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
+  useRootBack(() => { if (tab === "home") return false; dir.current = -1; setTab("home"); return true; });
 
   const go = (t: Tab) => {
     if (t === tab) return;
@@ -119,22 +126,30 @@ function Shell() {
           <motion.div key={tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<Loading />}>
               {tab === "home" && <Home onNavigate={go} />}
-              {tab === "calendar" && <CalendarScreen />}
-              {tab === "report" && <Report />}
-              {tab === "you" && <You />}
+              {tab === "insights" && <Report />}
+              {tab === "journey" && <Journey />}
+              {tab === "me" && <Me />}
             </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
       <nav className="tabbar" aria-label="Main">
-        {TABS.map((t) => (
-          <button key={t} className="tab" data-tab={t} aria-current={tab === t ? "page" : undefined} onClick={() => go(t)}>
-            {tab === t && <motion.span layoutId="tab-pill" className="tab-pill" transition={spring.snappy} />}
-            <motion.span className="tab-ico" animate={tab === t ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }} transition={spring.bouncy}>{ICONS[t]}</motion.span>
-            <span className="tab-label">{LABELS[t]}</span>
-          </button>
-        ))}
+        {TABS.flatMap((t, i) => {
+          const button = (
+            <button key={t} className="tab" data-tab={t} aria-current={tab === t ? "page" : undefined} onClick={() => go(t)}>
+              {tab === t && <motion.span layoutId="tab-pill" className="tab-pill" transition={spring.snappy} />}
+              <motion.span className="tab-ico" animate={tab === t ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }} transition={spring.bouncy}>{ICONS[t]}</motion.span>
+              <span className="tab-label">{LABELS[t]}</span>
+            </button>
+          );
+          return i === 2 ? [
+            <div key="fab" className="fab-slot">
+              <motion.button className="fab" aria-label="Log or check in" aria-haspopup="dialog" onClick={() => { haptic.tap(); setQuick(true); }}
+                whileTap={{ scale: 0.9 }} animate={{ rotate: quick ? 45 : 0 }} transition={spring.bouncy}>{Icon.plus}</motion.button>
+            </div>, button] : [button];
+        })}
       </nav>
+      <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "home") { dir.current = -1; setTab("home"); } }} />
     </div>
   );
 }

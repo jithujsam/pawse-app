@@ -1,11 +1,13 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { spring } from "../motion";
+import { useBack } from "../back";
 
 /** Bottom sheet: drag the handle down to dismiss, Escape closes, focus stays inside. */
 export function Sheet({ open, onClose, label, children }: { open: boolean; onClose: () => void; label: string; children: ReactNode }) {
   const controls = useDragControls();
   const ref = useRef<HTMLDivElement>(null);
+  useBack(open, onClose);
 
   useEffect(() => {
     if (!open) return;

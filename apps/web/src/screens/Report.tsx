@@ -94,7 +94,7 @@ export function Report() {
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>Weekly report</motion.h1>
+      <motion.h1 variants={rise}>Insights</motion.h1>
       <motion.section className="card stack" variants={rise}>
         <h2>This week and last</h2>
         <p>{verdict(tone, cur.slips, prev.slips)}</p>

@@ -10,7 +10,7 @@ import { buildFields, countTriggers, pickedLabels, type Intake } from "./questio
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
-import type { AppData, Baseline, Companion, Entry, Habit, Species, Tint, Tone } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Species, Tone } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
 const uid = uuid;
@@ -47,8 +47,9 @@ export function flush(): Promise<void> {
   writing = writing.then(async () => {
     try {
       if (!idbAvailable()) { localStorage.setItem(LEGACY_KEY, JSON.stringify(snapshot)); return; }
-      // The colour theme alone stays readable, so the lock screen looks like the person's app.
-      await kv.set("tint", snapshot.settings.tint);
+      // The pet's species alone stays readable, so the lock screen wears the person's accent colour.
+      const pet = activeCompanion(snapshot)?.species;
+      if (pet) await kv.set("pet", pet);
       if (vaultKey) { await kv.set("data.enc", await seal(vaultKey, snapshot)); await kv.del("data"); }
       else { await kv.set("data", snapshot); await kv.del("data.enc"); }
     } catch { /* storage full or unavailable: the in-memory copy still works */ }
@@ -67,8 +68,8 @@ export async function boot(): Promise<Boot> {
   try {
     const sealed = await kv.get<Sealed>("data.enc");
     if (sealed) {
-      const tint = await kv.get<string>("tint");
-      if (tint) document.documentElement.dataset.tint = tint;
+      const pet = await kv.get<string>("pet");
+      if (pet) document.documentElement.dataset.pet = pet;
       return { kind: "locked", sealed };
     }
     let raw = await kv.get<unknown>("data");
@@ -166,6 +167,15 @@ export function cleanStreak(d: AppData, habitId: string): number {
   return n;
 }
 
+/** The longest run of clean days with no slip in between, ever. */
+export function bestStreak(d: AppData, habitId: string): number {
+  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
+  const days = [...new Set(d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).map((c) => c.day))].sort();
+  let best = 0, run = 0, prev = "";
+  for (const day of days) { run = prev && addDays(prev, 1) === day ? run + 1 : 1; best = Math.max(best, run); prev = day; }
+  return best;
+}
+
 export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => {
   const end = addDays(weekStartDay, 6);
   const es = d.entries.filter((e) => e.habitId === habitId && e.day >= weekStartDay && e.day <= end);
@@ -192,7 +202,7 @@ export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; tint: Tint; baseline: Baseline | null }) {
+  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
@@ -201,7 +211,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, tint: o.tint, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
+      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
       companions: [companion], habits: [habit],
     });
   },
@@ -302,6 +312,9 @@ export const actions = {
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
   celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
   resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
+
+  renameCompanion: (id: string, name: string) =>
+    commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) }),
 
   adopt(habitId: string, name: string, species: Species) {
     const habit = data.habits.find((h) => h.id === habitId)!;
