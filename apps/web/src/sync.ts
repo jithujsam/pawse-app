@@ -21,7 +21,7 @@ const emptyMeta = (): Meta => ({ cursor: {}, pending: {}, removed: {} });
 export type SyncState = "off" | "idle" | "syncing" | "offline" | "error";
 let status: { state: SyncState; last: number | null; pending: number } = { state: "off", last: null, pending: 0 };
 const watchers = new Set<() => void>();
-const setStatus = (p: Partial<typeof status>) => { status = { ...status, ...p }; watchers.forEach((w) => w()); };
+const setStatus = (p: Partial<typeof status>) => { status = { ...status, ...p }; watchers.forEach((w) => w()); if (typeof window !== "undefined") (window as unknown as { __companionSync: unknown }).__companionSync = status; };
 export const getSyncStatus = () => status;
 export const useSyncStatus = () => useSyncExternalStore((cb) => { watchers.add(cb); return () => watchers.delete(cb); }, () => status);
 
@@ -72,6 +72,8 @@ export async function forgetSync(uid: string) { await kv.del(metaKey(uid)).catch
 
 export function syncNow(): Promise<void> {
   if (!supabase || !userId) return Promise.resolve();
+  // No network: say so straight away instead of waiting on requests that can't succeed.
+  if (typeof navigator !== "undefined" && navigator.onLine === false) { setStatus({ state: "offline" }); return Promise.resolve(); }
   if (running) { again = true; return running; }
   running = (async () => {
     try {
@@ -110,7 +112,9 @@ async function cycle(uid: string) {
 
   // 1. pull
   const pulled = {} as Pulled;
-  for (const t of PUSH_ORDER) pulled[t] = await pullTable(t, uid);
+  // All tables at once: one round trip instead of seven.
+  const rows = await Promise.all(PUSH_ORDER.map((t) => pullTable(t, uid)));
+  PUSH_ORDER.forEach((t, i) => { pulled[t] = rows[i]; });
   const seen: Partial<Record<Table, string>> = {};
   for (const t of PUSH_ORDER) for (const r of pulled[t]) if (!seen[t] || String(r.updated_at) > seen[t]!) seen[t] = String(r.updated_at);
   const drop = (rows: Record<string, unknown>[], key: (r: Record<string, unknown>) => string) =>
@@ -179,6 +183,7 @@ async function cycle(uid: string) {
 
 if (typeof window !== "undefined") {
   window.addEventListener("online", () => { if (userId) void syncNow(); });
+  window.addEventListener("offline", () => { if (userId) setStatus({ state: "offline" }); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && userId) void syncNow(); });
   setInterval(() => { if (userId && document.visibilityState === "visible") void syncNow(); }, 5 * 60_000);
 }

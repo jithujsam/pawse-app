@@ -116,7 +116,8 @@ Deno.serve(async (req) => {
   const { data: u } = token ? await admin.auth.getUser(token) : { data: null };
   if (!u?.user) return json(req, { ok: false, error: "unauthorized" }, 401);
 
-  const key = Deno.env.get("OPENROUTER_API_KEY");
+  // Tolerate the usual paste slips: surrounding spaces, quotes, or a "Bearer " prefix.
+  const key = (Deno.env.get("OPENROUTER_API_KEY") ?? "").trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
   if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;

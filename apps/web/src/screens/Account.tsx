@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
@@ -33,13 +33,16 @@ function friendly(msg: string): string {
 
 function SyncLine() {
   const s = useSyncStatus();
-  const text = s.state === "syncing" ? "Syncing…"
+  // Quick syncs stay invisible; only a slow one says so.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => { if (s.state !== "syncing") { setSlow(false); return; } const t = setTimeout(() => setSlow(true), 800); return () => clearTimeout(t); }, [s.state]);
+  const text = s.state === "syncing" && (slow || !s.last) ? "Syncing…"
     : s.state === "offline" ? `Offline. ${s.pending ? `${s.pending} changes will sync when you're back.` : "Everything is saved on this phone."}`
       : s.state === "error" ? "Sync paused. It will retry on its own."
         : s.last ? `Backed up ${new Date(s.last).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}` : "Backed up";
   return (
-    <div className="sync-line" data-state={s.state}>
-      <motion.i animate={s.state === "syncing" ? { rotate: 360 } : { rotate: 0 }} transition={s.state === "syncing" ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0 }} />
+    <div className="sync-line" data-state={s.state === "syncing" && !slow && s.last ? "idle" : s.state}>
+      <motion.i animate={s.state === "syncing" && slow ? { rotate: 360 } : { rotate: 0 }} transition={s.state === "syncing" ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0 }} />
       <span className="small">{text}</span>
       {s.state !== "syncing" && <button className="link small" onClick={() => void syncNow()}>Sync now</button>}
     </div>
@@ -147,13 +150,13 @@ export function Account({ compact = false }: { compact?: boolean }) {
   return (
     <form className="stack" onSubmit={submit} noValidate>
       <Segmented label="Account mode" value={mode} onChange={(m) => { setMode(m); setMsg(null); }} options={[{ value: "up", label: "Create account" }, { value: "in", label: "Sign in" }]} />
-      <label className="field"><span className="field-label">Email</span><input className="input" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-      <label className="field"><span className="field-label">Password</span>
+      <label className="field"><span className="field-label">Email</span><input className="input" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+      <div className="field"><label className="field-label" htmlFor="account-password">Password</label>
         <span className="pw-wrap">
-          <input className="input" type={show ? "text" : "password"} autoComplete={mode === "up" ? "new-password" : "current-password"} minLength={8} maxLength={128} required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input id="account-password" name="password" className="input" type={show ? "text" : "password"} autoComplete={mode === "up" ? "new-password" : "current-password"} minLength={8} maxLength={128} required value={password} onChange={(e) => setPassword(e.target.value)} />
           <button type="button" className="pw-toggle" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>{show ? "Hide" : "Show"}</button>
         </span>
-      </label>
+      </div>
       <AnimatePresence>
         {mode === "up" && password && (
           <motion.div className="meter" data-score={score} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
