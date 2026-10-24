@@ -405,7 +405,8 @@ export const actions = {
       ...data,
       entries: [...data.entries, entry],
       cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
-      settings: { ...withoutRest(data.settings, day), celebrated: [] },
+      // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
+      settings: withoutRest(data.settings, day),
     };
     let died = false;
     const v = viewCompanion(next, companion.id);

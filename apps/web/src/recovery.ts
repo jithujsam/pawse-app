@@ -30,6 +30,29 @@ export function dayStatus(d: AppData, habitId: string, day: string, t0 = today()
 export const urgesManaged = (d: AppData, habitId: string, day: string) =>
   d.urges.filter((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out").length;
 
+/**
+ * Days of care: days with the goal met (no slip) or with an urge managed, ever. Unlike a streak it only
+ * grows, so a slip never takes away what was earned.
+ */
+export function careDays(d: AppData, habitId: string): number {
+  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
+  const days = new Set<string>();
+  for (const c of d.cleanDays) if (c.habitId === habitId && !slips.has(c.day)) days.add(c.day);
+  for (const u of d.urges) if (u.habitId === habitId && u.outcome === "rode_it_out") days.add(u.day);
+  return days.size;
+}
+
+/**
+ * The milestone to celebrate at this many days of care: the highest one reached and not yet celebrated, so a
+ * person who already has many days sees one celebration, not a backlog. Lower ones are marked as seen with it.
+ */
+export function milestoneToCelebrate(care: number, celebrated: number[], milestones: readonly number[]): { hit: number; seen: number[] } | null {
+  const reached = milestones.filter((m) => m <= care);
+  const hit = reached[reached.length - 1];
+  if (hit === undefined || celebrated.includes(hit)) return null;
+  return { hit, seen: [...new Set([...celebrated, ...reached])].sort((a, b) => a - b) };
+}
+
 // ---------- strategies ----------
 
 export interface Strategy { id: StrategyId; title: string; hint: string; steps: string[] }

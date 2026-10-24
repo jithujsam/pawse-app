@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { actions, getData, viewCompanion } from "../src/store";
 import { blank } from "../src/persist";
 import { addDays, today, weekStart } from "../src/dates";
-import { dayStatus, observations, strategyOrder, strategyResults, weekReview, MIN_EVENTS } from "../src/recovery";
+import { careDays, dayStatus, milestoneToCelebrate, observations, strategyOrder, strategyResults, weekReview, MIN_EVENTS } from "../src/recovery";
 import { buildFields } from "../src/questions";
 import type { AppData, Entry, Urge } from "../src/types";
 
@@ -163,5 +163,24 @@ describe("weekly review", () => {
     expect(getData().settings.weekFocus).toEqual([{ week: ws, text: "Log out of one app" }]);
     actions.setWeekFocus(ws, "  ");
     expect(getData().settings.weekFocus).toEqual([]);
+  });
+});
+
+describe("days of care and milestones", () => {
+  it("count goal-met days and days with a managed urge, and a slip never takes them away", () => {
+    load({ cleanDays: [{ habitId: H, day: addDays(t0, -3) }, { habitId: H, day: addDays(t0, -2) }], urges: [urge("u1", addDays(t0, -1), "rode_it_out"), urge("u2", addDays(t0, -1), "rode_it_out"), urge("u3", t0, "slipped")] });
+    expect(careDays(getData(), H)).toBe(3);
+    const celebrated = [...getData().settings.celebrated];
+    actions.logSlip(H, {}, t0);
+    expect(careDays(getData(), H)).toBe(3);
+    expect(getData().settings.celebrated).toEqual(celebrated);
+  });
+  it("celebrates only the highest new milestone, once", () => {
+    const M = [3, 7, 14, 30] as const;
+    expect(milestoneToCelebrate(2, [], M)).toBeNull();
+    expect(milestoneToCelebrate(3, [], M)).toEqual({ hit: 3, seen: [3] });
+    expect(milestoneToCelebrate(20, [], M)).toEqual({ hit: 14, seen: [3, 7, 14] });
+    expect(milestoneToCelebrate(20, [3, 7, 14], M)).toBeNull();
+    expect(milestoneToCelebrate(30, [3, 7, 14], M)).toEqual({ hit: 30, seen: [3, 7, 14, 30] });
   });
 });

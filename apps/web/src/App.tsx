@@ -131,7 +131,7 @@ function Shell() {
     const streak = cleanStreak(data, view.habit.id);
     // With app lock on, the home screen widget shows nothing about today: it sits outside the PIN.
     if (vault.hasPin()) { updateWidget({ species: view.companion.species, name: view.companion.name, line: "Tap to check in", sad: false }); return; }
-    const line = slipped ? "Hasn't eaten today. A clean day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} clean · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
+    const line = slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
     updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
   }, [data, view]);
   useRootBack(() => { if (tab === "home") return false; dir.current = -1; setTab("home"); return true; });

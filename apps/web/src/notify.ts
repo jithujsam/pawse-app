@@ -58,7 +58,7 @@ const at = (dayOffset: number, hour: number, minute = 0) => { const d = new Date
 
 /**
  * Care notes in the companion's voice, at most two a day on top of the check-in reminder.
- * After a clean day: a thank-you tonight and a good-morning tomorrow. After a slip: one
+ * After a good day: a thank-you tonight and a good-morning tomorrow. After a slip: one
  * "hasn't eaten" note a couple of hours later. Each new event replaces the last plan.
  */
 export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; personality?: Personality; name: string; enabled: boolean }) {

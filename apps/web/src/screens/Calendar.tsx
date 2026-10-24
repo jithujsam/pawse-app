@@ -5,6 +5,7 @@ import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
 import { pickedLabels } from "../questions";
+import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
@@ -24,10 +25,7 @@ export function CalendarSections() {
   const cells = Array.from({ length: lead + dim }, (_, i) => (i < lead ? null : `${first.getFullYear()}-${pad(first.getMonth() + 1)}-${pad(i - lead + 1)}`));
   const t0 = today();
 
-  const status = (d: string) =>
-    d > t0 ? "future"
-      : data.entries.some((e) => e.habitId === habit.id && e.day === d) ? "slip"
-        : data.cleanDays.some((c) => c.habitId === habit.id && c.day === d) ? "clean" : "none";
+  const status = (d: string) => dayStatus(data, habit.id, d, t0);
 
   const monthDays = cells.filter(Boolean) as string[];
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
@@ -39,8 +37,12 @@ export function CalendarSections() {
   // Any past day can be corrected both ways: marked clean, or given the slip that really happened.
   const canLog = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0 && !companion.diedOn;
   const [logging, setLogging] = useState(false);
-  const canClean = sel <= t0 && dayEntries.length === 0 && daysBetween(companion.bornOn, sel) >= 0 && status(sel) !== "clean";
-  const counts = { slip: monthDays.filter((d) => status(d) === "slip").length, clean: monthDays.filter((d) => status(d) === "clean").length };
+  const inLife = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0;
+  const canClean = inLife && dayEntries.length === 0 && status(sel) !== "met";
+  const canRest = inLife && (status(sel) === "unrecorded" || status(sel) === "urge" || status(sel) === "rest") && dayEntries.length === 0 && !data.cleanDays.some((c) => c.habitId === habit.id && c.day === sel);
+  const resting = data.settings.restDays.includes(sel);
+  const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
+  const count = (k: string) => monthDays.filter((d) => status(d) === k).length;
 
   const W = 320, H = 56;
   const max = Math.max(10, ...spark);
@@ -82,7 +84,7 @@ export function CalendarSections() {
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < t0.slice(0, 7) + "-01") monthShift(1); }}>
             {cells.map((d, i) => d ? (
               <motion.button key={d} className="day" data-s={status(d)} data-today={d === t0} disabled={d > t0}
-                onClick={() => { haptic.select(); setSel(d); }} aria-label={`${fmtDay(d)}: ${status(d)}`} aria-pressed={sel === d}
+                onClick={() => { haptic.select(); setSel(d); }} aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`} aria-pressed={sel === d}
                 initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }} whileTap={{ scale: 0.88 }}>
                 {sel === d && <motion.span layoutId="day-ring" className="day-ring" transition={spring.snappy} />}
                 <span>{Number(d.slice(8))}</span>
@@ -91,17 +93,21 @@ export function CalendarSections() {
           </motion.div>
         </AnimatePresence>
         <div className="legend">
-          <span><i style={{ background: "var(--negative)" }} />Slip · {counts.slip}</span>
-          <span><i style={{ background: "var(--positive)" }} />Clean · {counts.clean}</span>
-          <span><i style={{ background: "var(--raised)" }} />Not logged</span>
+          <span><i style={{ background: "var(--positive)" }} />{STATUS_LABEL.met} · {count("met")}</span>
+          <span><i data-s="urge" />{STATUS_LABEL.urge} · {count("urge")}</span>
+          <span><i style={{ background: "var(--negative)" }} />{STATUS_LABEL.lapse} · {count("lapse")}</span>
+          <span><i data-s="rest" />{STATUS_LABEL.rest} · {count("rest")}</span>
+          <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
+        <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
       </motion.section>
 
       <motion.section className="stack" aria-label={`Details for ${fmtDay(sel)}`} variants={rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{status(sel) === "clean" ? "Marked clean. A good day." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : "Nothing logged."}</p>}
+            {dayEntries.length === 0 && <p className="muted">{status(sel) === "met" ? "Goal met. A good day." : status(sel) === "rest" ? "You chose not to track this day. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : status(sel) === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
+            {dayUrges.length > 0 && <p className="small">{dayUrges.filter((u) => u.outcome === "rode_it_out").length} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
@@ -115,13 +121,17 @@ export function CalendarSections() {
                       return tags.length ? <div className="tags">{tags.map((t) => <span key={t} className="tag">{t}</span>)}</div> : null;
                     })()}
                     {e.explanation && <span className="small">{e.explanation}</span>}
+                    {typeof e.values.lapse_before === "string" && e.values.lapse_before && <span className="small">Before: {e.values.lapse_before}</span>}
+                    {typeof e.values.lapse_adjust === "string" && e.values.lapse_adjust && <span className="small">Next time: {e.values.lapse_adjust}</span>}
                     {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Photo attached to this slip" src={String(e.values[f.id])} className="entry-photo" width={640} height={480} loading="lazy" decoding="async" />)}
                     {e.time && <span className="muted small">{fmtTime(e.time)}</span>}
                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
-            {canClean && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked clean", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day clean</Button>}
+            {canClean && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
+            {status(sel) === "met" && inLife && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove "goal met"</Button>}
+            {canRest && <Button variant="text" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !resting); }}>{resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
             {canLog && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
           </motion.div>
         </AnimatePresence>
