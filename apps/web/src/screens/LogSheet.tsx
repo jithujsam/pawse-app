@@ -85,9 +85,10 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
       setPolishing(true);
       void aiForSlip(req).then((r) => {
         if (!r) return;
-        actions.applyAi(d.entry.id, r);
+        const months = actions.applyAi(d.entry.id, r);
+        if (months === null) return;
         if (alive.current) setResult((cur) => cur && ({
-          ...cur, line: r.explanation, entry: { ...cur.entry, months: r.months, source: "ai" },
+          ...cur, line: r.explanation, entry: { ...cur.entry, months, source: "ai" },
           effectLine: r.effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" ") || cur.effectLine,
         }));
       }).finally(() => { if (alive.current) setPolishing(false); });

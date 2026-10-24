@@ -24,6 +24,17 @@ describe("deduction", () => {
     expect(applyAiAdjustment(4, -90)).toBeCloseTo(2.8);
     expect(applyAiAdjustment(0.6, -30)).toBe(0.6 * 0.7 < 0.5 ? 0.5 : 0.6 * 0.7);
   });
+  it("AI never moves a slip more than 30% from its baseline, even above 12 months", () => {
+    for (const base of [2, 4, 9, 12, 18, 24]) for (const pct of [-90, -30, -10, 0, 10, 30, 90]) {
+      const out = applyAiAdjustment(base, pct);
+      expect(out).toBeGreaterThanOrEqual(base * 0.7 - 1e-9);
+      expect(out).toBeLessThanOrEqual(base * 1.3 + 1e-9);
+    }
+    expect(applyAiAdjustment(18, 0)).toBe(18);
+    expect(applyAiAdjustment(24, 30)).toBe(24);
+    expect(applyAiAdjustment(24, -30)).toBeCloseTo(16.8);
+    expect(applyAiAdjustment(baselineMonths(3, 5), 0)).toBe(baselineMonths(3, 5));
+  });
 });
 
 describe("stages", () => {

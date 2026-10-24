@@ -279,19 +279,24 @@ export const actions = {
     });
   },
 
-  /** Applies a validated AI result to an entry that was first saved with the baseline. */
-  applyAi(entryId: string, r: { months: number; adjustPct: number; effects: string[]; explanation: string }) {
+  /**
+   * Applies a validated AI result to an entry that was first saved with the baseline. Returns the months
+   * actually kept. The AI's nudge is dropped (the baseline stands) when it alone would decide whether the
+   * companion lives or dies: a life-or-death outcome always comes from the deterministic engine.
+   */
+  applyAi(entryId: string, r: { months: number; adjustPct: number; effects: string[]; explanation: string }): number | null {
     const e = data.entries.find((x) => x.id === entryId);
-    if (!e) return;
-    let next: AppData = {
+    if (!e) return null;
+    const c = data.companions.find((x) => x.id === e.companionId)!;
+    const withMonths = (months: number, adjustPct: number | null): AppData => ({
       ...data,
-      entries: data.entries.map((x) => (x.id === entryId ? { ...x, months: r.months, aiAdjustPct: r.adjustPct, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
-    };
-    const v = viewCompanion(next, e.companionId);
-    const dead = v.states.find((s) => s.stage === "dead");
-    const c = next.companions.find((x) => x.id === e.companionId)!;
-    if (dead && !c.diedOn) next = { ...next, companions: next.companions.map((x) => (x.id === c.id ? { ...x, diedOn: dead.day, finalAge: 100 } : x)) };
+      entries: data.entries.map((x) => (x.id === entryId ? { ...x, months, aiAdjustPct: adjustPct, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
+    });
+    let next = withMonths(r.months, r.adjustPct);
+    const diesWithAi = viewCompanion(next, e.companionId).states.some((s) => s.stage === "dead");
+    if (diesWithAi !== (c.diedOn !== null)) next = withMonths(e.months, null);
     commit(next);
+    return next.entries.find((x) => x.id === entryId)!.months;
   },
 
   setSummary: (week: string, text: string) => commit({ ...data, summaries: { ...data.summaries, [week]: text } }),
