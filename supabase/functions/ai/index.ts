@@ -1,5 +1,5 @@
-// Edge function: the only place the OpenRouter key exists. Deploy with verify_jwt on.
-//   supabase secrets set OPENROUTER_API_KEY=...    (never commit it, never ship it in the app)
+// Edge function: the only place the AI provider key exists. Deploy with verify_jwt on.
+//   supabase secrets set OPENAI_API_KEY=...        (or OPENROUTER_API_KEY; never commit it, never ship it in the app)
 // The app always keeps the deterministic baseline; anything this returns is optional polish.
 // Free text from the person is treated as data, validated, capped, and never logged.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -7,6 +7,7 @@ import { z } from "npm:zod@3.23.8";
 
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
+const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4.1-mini";
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "80");
 const ORIGINS = new Set(["https://localhost", "capacitor://localhost", "http://localhost", "http://localhost:5173", "http://localhost:4173",
   ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean)]);
@@ -116,9 +117,12 @@ Deno.serve(async (req) => {
   const { data: u } = token ? await admin.auth.getUser(token) : { data: null };
   if (!u?.user) return json(req, { ok: false, error: "unauthorized" }, 401);
 
+  // OpenAI directly when OPENAI_API_KEY is set, otherwise OpenRouter.
   // Tolerate paste slips: a "Bearer " prefix, quotes, spaces, and invisible characters (zero-width spaces,
   // byte-order marks) that chat and notes apps add. A real key only has letters, digits, dashes and underscores.
-  const key = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
+  const clean = (v: string | undefined) => (v ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
+  const openaiKey = clean(Deno.env.get("OPENAI_API_KEY"));
+  const key = openaiKey || clean(Deno.env.get("OPENROUTER_API_KEY"));
   if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;
@@ -139,21 +143,26 @@ Deno.serve(async (req) => {
 
   const p = prompt(body);
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Title": "Companion" },
-      body: JSON.stringify({
-        models: MODELS, temperature: 0.4, max_tokens: p.max,
-        response_format: { type: "json_object" },
-        provider: { data_collection: "deny" },
-        messages: [{ role: "system", content: p.system }, { role: "user", content: p.user }],
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
+    const messages = [{ role: "system", content: p.system }, { role: "user", content: p.user }];
+    const res = openaiKey
+      ? await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          // store: false keeps prompts out of OpenAI's stored completions.
+          body: JSON.stringify({ model: OPENAI_MODEL, temperature: 0.4, max_tokens: p.max, store: false, response_format: { type: "json_object" }, messages }),
+          signal: AbortSignal.timeout(15000),
+        })
+      : await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Title": "Companion" },
+          body: JSON.stringify({ models: MODELS, temperature: 0.4, max_tokens: p.max, response_format: { type: "json_object" }, provider: { data_collection: "deny" }, messages }),
+          signal: AbortSignal.timeout(15000),
+        });
     if (!res.ok) {
-      // Never log the key itself; its shape is enough to tell a paste slip from a revoked key.
-      console.warn("upstream", res.status, res.status === 401 ? `key length ${key.length}, sk-or-v1 prefix ${key.startsWith("sk-or-v1-")}` : "");
-      return json(req, { ok: false, error: "upstream" });
+      // Never log the key itself; its shape and the provider's error code are enough to diagnose.
+      const code = await res.json().then((e) => e?.error?.code ?? e?.error?.type ?? "").catch(() => "");
+      console.warn("upstream", openaiKey ? "openai" : "openrouter", res.status, code, res.status === 401 ? `key length ${key.length}` : "");
+      return json(req, { ok: false, error: res.status === 429 ? "limit" : "upstream" });
     }
     const out = await res.json();
     const content = String(out?.choices?.[0]?.message?.content ?? "");
