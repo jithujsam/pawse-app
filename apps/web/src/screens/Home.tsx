@@ -19,7 +19,7 @@ import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
 import { openDownload, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
-import { careDays, dayStatus, milestoneToCelebrate, restLine, STATUS_LABEL } from "../recovery";
+import { afterSlipLine, careDays, dayStatus, milestoneToCelebrate, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
 
 export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
@@ -69,7 +69,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : lonely ? `There you are! ${companion.name} is glad you're back. No catching up needed: just today.`
-    : slippedToday && !just ? say("strike", personality, tone)
+    : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
 
@@ -104,8 +104,8 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
-    setNote(d.binge ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
-    void scheduleCare("slip", careOpts());
+    setNote(d.binge && data.settings.petLife === "classic" ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
+    // No "won't eat" notification after a slip: a guilt nudge from the pet hours later doesn't help anyone.
   }
   const react = (r: Reaction) => setNote(say(r, personality, tone));
 

@@ -285,3 +285,10 @@ export function restLine(tone: Tone): string {
   if (tone === "brutal") return "Not tracking today. It won't count either way. Pick it back up tomorrow.";
   return "Not tracking today. It won't count as progress or as a slip.";
 }
+
+/** Home, later on a day with a slip: steady, not sulking. */
+export function afterSlipLine(tone: Tone, name: string): string {
+  if (tone === "gentle") return `${name} is okay. Today had a slip, and tomorrow is a fresh page.`;
+  if (tone === "brutal") return `Slip logged. ${name}'s fine. What's the plan for the rest of today?`;
+  return `Today had a slip. ${name} is okay, and the rest of today can still go well.`;
+}
