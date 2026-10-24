@@ -112,46 +112,140 @@ PR #12 (round 1) was merged into `main` at `d8837ea`. This branch was restarted 
 | Local Postgres 16: stub + migrations 0001–0004, 0004 re-run, `rls.sql`, `privacy.sql` | Migrations OK and idempotent; RLS output as expected; privacy 11/11 PASS |
 | Not run | `test/e2e-live.cjs` (hits the live project), Android build (no SDK here), Deno type-check of the function (no Deno; edits reviewed by hand), any device test |
 
+## Round 3: remaining code issues (2026-10-24, same branch, PR #13)
+
+### PR #13 CI
+The only CI on the repo is the Vercel integration. Its "Vercel Preview Comments" check passes. The two Vercel *deployments* it reports, projects **commandcode** and **delecta**, fail. They failed identically on PR #12 when it contained only the audit document. They're Vercel projects attached to this repository from its earlier life (it previously held a different app) and don't build the Pawse app. The deployment logs need Vercel account access, which this session doesn't have. Not caused by this PR; nothing to fix in the code. Consider detaching those projects from the repo in Vercel.
+
+### Changes
+
+| Commit | Change | Verification |
+|---|---|---|
+| `041eeb2` | **New-phone duplicate pet (B17).** A deterministic merge rule, `syncmap.adoptAccount`, runs on a phone's first sync when the account already has a companion. The account's first habit (lowest position, then id) and its companion stay active. Everything logged on the phone first (slips, clean days, urges, reflections) moves onto them. The phone's never-synced habit and living companion are dropped; companions that already died stay in the Hall. The account's settings win. Plus, in every cycle, **a slip beats a clean mark on the same day** (`slipBeatsClean`): the clean mark is removed and tombstoned. | `firstsync.test.ts` fails on the old code (two companions); `data.test.ts` unit tests |
+| `041eeb2` | **The erase-during-sync test now genuinely reproduces the race.** There's a shared realistic fake (`test/fake-supabase.ts`: conflict keys, the `touch_row` stale-write rule, changed-since filtering, pausable pulls). The account has two slips and another phone edits one, so the in-flight pull is incremental and returns only that one. | The test fails with the stale-cycle guard removed (the untouched slip never comes back) and passes with it. The sign-out race test also fails without the guard. |
+| `c467c67` | The first sync pushes only rows the account doesn't have yet, so a phone that lost its sync position can't overwrite newer edits from another phone with its older copies | Test fails without the change |
+| `73e6d7c` | **Notifications: at most two a day.** One pure planner, `planNotifications`, plans one-shot notifications for 14 days with ≤2 per local day, by priority: the check-in reminder (or the quiet-day note that replaces it), then today's care note, then the risky-hour heads-up, then good-morning. No reminder on a day already checked in. Each re-plan cancels the previous plan and the old repeating ids from earlier versions (1001, 2001–2004, 2010–2013); re-plans run strictly in sequence. | An exhaustive mix test (≤2/day, unique ids, future only); a mocked-native test with concurrent re-plans and a failed schedule |
+| `73e6d7c`, `d638552` | **Tones (B11):** the quiet-day notes, dying banner, welcome-back line, slip-card absorbed and binge notes, and quiet-day banner now exist in gentle, honest and direct | Copy test: all tones, all different, no shaming words |
+| `f067c8e` | **Permanent death, opt-in alternative.** A new setting, "can pass away" (`petsCanDie`, **default on = current behaviour**). Off: `simulate(…, { ceilingMonths: 1188 })` keeps the pet at age 99 (frail, never dead), and damage past the ceiling isn't counted toward scars, so clean days always bring it back. Existing dead companions stay dead, and no stored row is rewritten. Turning death back on is refused while the standard rules would mean the pet had already died, so it can't kill retroactively. | Engine tests (the option omitted gives an identical fold; pacing unchanged) and store tests |
+
+**Product decision still open:** whether "can pass away" should default to off for new users. It's left on, matching the PRD. The setting syncs; older app versions ignore it and keep the standard rules, so on a mixed-version account an old phone could still record a death.
+
+### Commands run in round 3 and results
+
+| Command | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | OK |
+| `pnpm lint`, `pnpm typecheck` | 0 errors |
+| `pnpm test` | **138/138 pass**: engine 24, schema 10, web 104 (12 files) |
+| `pnpm build` | Succeeds (only the existing large-chunk warnings) |
+| `pnpm simulate` | Pacing table unchanged |
+| Local Postgres 16: stub + 0001–0004 (0004 applied twice), `rls.sql`, `privacy.sql`, and the post-0004 checks in step 4 below | All as expected; privacy 11/11 PASS |
+| Not run | Live e2e (production), Android build, device tests, Deno type-check of the function (no Deno; `cache.ts` is plain Web Crypto and exercised by the tests) |
+
 ## Security and privacy status
 
-- **Fixed in the repo:** local erase propagating to the cloud (B1); the shared AI cache (B2); an AI cache that outlived the account (B20); no in-source key fallback (B19, repo only); widget status while locked (B21); the crisis check on reflections (B22); stale sync cycles after sign-out; and (in 0004) privileges that anon and authenticated still held on the 0001 tables.
-- **Still true in production until you act:** the deployed `ai` function still contains a hard-coded OpenRouter key and the old shared cache; leaked-password protection is off; the anon grants are unchanged; the migration history lists only 0001.
-- **Still open by design:** 4–6 digit PINs can be brute-forced offline if someone copies the app's storage; the Supabase session, on-phone AI cache and widget name aren't encrypted; cloud rows are plaintext under RLS (no end-to-end encryption); notification text can show on the lock screen.
+- **Fixed in the repo:**
+  - local erase propagating to the cloud (B1);
+  - the shared AI cache (B2) and an AI cache that outlived the account (B20);
+  - no in-source key fallback (B19, repo only);
+  - widget status while locked (B21), and the crisis check on reflections (B22);
+  - stale sync cycles after sign-out or erase;
+  - first-sync duplicates and stale overwrites (B17);
+  - notification volume (B5b);
+  - privileges anon and authenticated still held on the 0001 tables (in 0004).
+- **Still true in production until you act (unverified since the read-only check):** the deployed `ai` function contains a hard-coded OpenRouter key and uses the shared cache; leaked-password protection is off; the anon grants are unchanged; the migration history lists only 0001.
+- **Open by design:** 4–6 digit PINs can be brute-forced offline from a copied app storage; the Supabase session, on-phone AI cache and widget pet name aren't encrypted; cloud rows are plaintext under RLS (no end-to-end encryption); notification text can show on the lock screen.
 
-## Steps required before release (in order)
+## Release instructions (exact; none of these steps have been performed)
 
-None of these can be done from this session.
+Nothing below has been done by this session. No merge, deploy, migration, setting change or APK. Do them in this order.
 
-1. **Make sure the function will still have a key once its source no longer contains one.** You asked to keep the current OpenRouter key for now, so put that same key into the `OPENROUTER_API_KEY` secret (Dashboard → Edge Functions → Secrets) and check that it's well formed. An earlier commit added the in-source fallback because the secret was malformed. If the secret is missing or malformed, the redeployed function answers `upstream`/`not_configured` errors: the app keeps working on the deterministic baseline, but every AI line and weekly summary stops.
-2. **Deploy the `ai` function from `main` after this PR merges:** `supabase functions deploy ai`, with `verify_jwt` on. Check the dashboard copy no longer contains a key.
-3. **Then apply `0004_privacy_hardening.sql`** to production. That order matters: if 0004 goes first, the old function keeps writing shared, ownerless cache rows until it's redeployed. Afterwards, consider recording 0002–0004 in the migration history (the live project lists only 0001).
-4. Turn on leaked-password protection (Auth settings).
-5. Bump `apps/web/version.json` (the code must go up), build a signed release APK (`pnpm --filter web build`, `npx cap sync android`, `./gradlew assembleRelease` with the keystore), then publish it and update `latest.json` in `pawse-releases`. The data-loss fix only reaches users through a new APK.
-6. **Device testing on a real Android phone** (none of this could be done here):
-   - sign up, confirm by email link, sign in, sign out, reset the password;
-   - a second phone signing in to an existing account (first sync restores, no duplicate pet);
-   - airplane-mode check-ins that sync later;
-   - "Delete all data on this phone" while signed in (the history comes back), and account deletion (it doesn't);
-   - set a PIN, background the app, wait for the auto-lock, then use "Forgot PIN" (the history comes back);
-   - widget: it shows status without a PIN and "Tap to check in" with one, updating right after a PIN change;
-   - daily reminder, care notes, risky-hour and lapse notifications, including the Android 13+ permission prompt and the daily count;
-   - midnight rollover with the app open;
-   - the 3D pet on a low-end phone;
-   - AI unavailable (airplane mode during a slip): the baseline line stands.
-7. Confirm or reverse the quiet-day decision (`QUIET_DAYS_AGE`).
+### 1. Merge the reviewed changes
+1. Review PR #13 on GitHub (`claude/pawse-audit-6h0t1a` → `main`). The failing Vercel statuses (commandcode, delecta) aren't the Pawse app; see "PR #13 CI" above.
+2. Merge with a merge commit (the branch's history builds on PR #12's merge). Locally: `git checkout main && git pull`.
+3. Optional sanity check on `main`: `pnpm install --frozen-lockfile && pnpm test && pnpm typecheck && pnpm build`.
 
-**Release-ready verdict:** not yet. The code and automated checks are in good shape, but steps 1–6 above (production function and migration, auth setting, signed APK, device testing) are essential and still outstanding.
+### 2. Configure the existing `OPENROUTER_API_KEY` secret (without exposing it)
+The merged function has no key in its source; it reads only this secret. Keep the current key (rotation is a follow-up).
+- **Dashboard (recommended):** Supabase → your project → Edge Functions → Secrets (Manage secrets) → add or edit `OPENROUTER_API_KEY` → paste the key → Save. Don't put it in chat, git, `.env` files that get committed, or tickets.
+- **Or the CLI, without the key in shell history:** put `OPENROUTER_API_KEY=<key>` in a local file outside the repo (e.g. `~/pawse-secrets.env`, mode 600), then run `supabase secrets set --env-file ~/pawse-secrets.env --project-ref <project-ref>` and delete the file.
+- **Check it's there without revealing it:** `supabase secrets list --project-ref <project-ref>` shows names and digests only. `OPENROUTER_API_KEY` must be listed.
+- The function strips a "Bearer " prefix, quotes and invisible characters, but the value must otherwise be the key exactly. If it's missing or wrong, AI lines and weekly summaries stop (the function answers `not_configured`/`upstream`), and the app keeps working on the deterministic baseline.
+
+### 3. Deploy the updated AI function
+1. From the merged `main`, at the repo root: `supabase functions deploy ai --project-ref <project-ref>`. JWT verification stays on by default; **don't** pass `--no-verify-jwt`. This deploys `index.ts` together with `cache.ts`.
+2. Check: Dashboard → Edge Functions → `ai` → its source must contain no `sk-or-` string, and "Verify JWT" must be on.
+3. Smoke test: on a signed-in phone, log a slip. Within a few seconds the slip card's line should gain the ✦ AI mark. If it doesn't, check Edge Functions → `ai` → Logs for `upstream 401` (key problem) or `not_configured` (secret missing).
+
+### 4. Apply migration 0004 (after step 3, never before)
+Order: if 0004 runs while the old function is still deployed, that function keeps writing shared, ownerless cache rows until it's replaced.
+
+**Do not run `supabase db push`.** The live migration history records only 0001 (under a different version name), and 0002 creates its tables without `if not exists`. So `db push` would try to re-run 0001–0004 and fail partway.
+1. Dashboard → SQL Editor → New query → paste the entire contents of `supabase/migrations/0004_privacy_hardening.sql` → Run. It's additive and safe to run twice. Its only data change deletes ownerless (formerly shared) AI cache rows, which are just cached AI text. No user data is touched.
+2. Verify in the SQL Editor:
+   ```sql
+   select column_name from information_schema.columns
+   where table_schema = 'public' and table_name = 'ai_cache' and column_name = 'user_id';
+   -- expect: one row, user_id
+
+   select grantee, table_name, count(*) as privileges from information_schema.role_table_grants
+   where table_schema = 'public' and grantee in ('anon', 'authenticated') and table_name in ('ai_cache', 'ai_usage', 'app_state')
+   group by 1, 2 order by 1, 2;
+   -- expect: only authenticated / app_state (anon gone from all three; authenticated gone from ai_cache and ai_usage)
+
+   select count(*) from public.ai_cache where user_id is null;
+   -- expect: 0
+   ```
+   (Run against a local copy of the migrations, these return exactly that.)
+3. Re-run the security advisor (Dashboard → Advisors → Security). The two "RLS enabled, no policy" notes on `ai_cache` and `ai_usage` remain by design (service role only).
+
+### 5. Enable leaked-password protection
+Dashboard → Authentication → the password security / attack protection settings → enable "Prevent use of leaked passwords" (checks HaveIBeenPwned) → Save. Supabase's docs list this feature as available on paid plans, so if the toggle is locked, it depends on the project's plan. Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+### 6. Bump the version and build a signed APK
+1. Edit `apps/web/version.json`. The code must be higher than 7 (the current release), e.g. `{ "name": "2.2.0", "code": 8 }`. Gradle reads both for `versionName`/`versionCode`, and the in-app update check compares the code.
+2. Put the signing key back (not in git; see `apps/web/android/keystore/README.md`): `apps/web/android/keystore/companion-release.jks` and `release.properties`. Updates only install if they're signed with this same key (certificate SHA-256 in that README).
+3. Build (Java 21, Android SDK 35):
+   ```
+   pnpm install --frozen-lockfile
+   pnpm --filter web build
+   cd apps/web && npx cap sync android
+   cd android && ANDROID_HOME=/path/to/sdk ./gradlew assembleRelease
+   # -> apps/web/android/app/build/outputs/apk/release/app-release.apk
+   ```
+4. Check the signature: `apksigner verify --print-certs app-release.apk`. The SHA-256 must match the README.
+5. Commit the version bump to `main`.
+6. Publish (only when the device tests below pass): copy the APK to `pawse-releases/apk/Pawse-<name>.apk`, compute `sha256sum`, then update `pawse-releases/latest.json` (`name`, `code`, `url`, `notes`, `sha256`) and its README table. Installed apps show "Update available" when `latest.json`'s code is higher than theirs.
+
+### 7. Test on real Android devices before publishing
+Use two phones (A and B) and a test account, not a real user's.
+- **Login and recovery:** create an account on A, confirm by email link (it opens the app), sign out, sign in, "Forgot password" link → new password works.
+- **First sync on a new device:** on B, sign in to the same account → "checking your account" → A's companion and history appear, with no onboarding and no second pet.
+- **New device that logged before its first sync (B17):** on a fresh install of B, sign in to the account and switch on airplane mode before "checking your account" finishes. Onboarding appears (the first sync couldn't run). Create a pet and log a slip, switch airplane mode off, then Me → Account → "Sync now". Expected: B shows only the account's companion (no second pet on Home or in Me → Hall), and B's slip now appears in the account's history on both A and B.
+- **Second-device sync:** log a slip on A → within about 5 minutes (or Me → Account → "Sync now") it appears on B; rename the pet on B → it shows on A; mark the same day clean on B after A logged a slip → the slip wins on both.
+- **Offline:** on A in airplane mode, log a slip and a clean day → Me → Account says changes will sync later → turn the network on → they reach B.
+- **Local wipe vs account deletion:** on A, Me → Your data → "Delete all data on this phone" → "checking your account" → the full history returns and B is unaffected. Then, on a throwaway account only, Me → Account → Delete account → everything is gone on all phones, and signing in fails.
+- **PIN:** set a PIN, background the app past the auto-lock time → the lock screen appears; 5 wrong tries → back-off; "Forgot PIN → Erase" while signed in → the history returns from the account.
+- **Widget privacy:** add the home-screen widget. Without a PIN it shows today's status; set a PIN → it changes immediately to "Tap to check in"; remove the PIN → the status returns; tap → the quick check-in opens.
+- **Notifications:** on Android 13+, accept the permission prompt; set the reminder for a few minutes ahead → it fires; mark the day clean → no reminder that day; over 2–3 days, count the notifications: **never more than two in a day**, including after reinstalling over the old version (the old repeating reminders must not fire alongside the new ones).
+- **Midnight rollover:** leave the app open on Home across midnight (or change the phone's clock) → "Today" resets to "Not checked in yet", and the week strip and streak update.
+- **Also:** AI unavailable (airplane mode during a slip) → the plain line stands; the 3D pet runs smoothly on a low-end phone; "can pass away" off in Me → Feel and region → a pet at the top age stays frail and recovers on clean days.
+
+### 8. After release
+- **Rotate the OpenRouter key** (deliberately not done yet): create a new key in OpenRouter, update the secret as in step 2, confirm AI still works, then revoke the old key. It has appeared in plaintext in the old deployed source and in an earlier session transcript.
+- Optionally reconcile the migration history (it lists only 0001) using the Supabase CLI's migration repair, after reading its docs; not verified here.
+
+**Release-ready verdict:** the code and every available automated check are ready. Release is **not** ready until steps 2–7 are done and the device tests pass.
 
 ## Follow-ups
 
-- **Rotate the OpenRouter key.** Deliberately not done in this round, at your instruction. The current key has appeared in plaintext in the deployed function source and in an earlier session transcript. Once the secret-only deployment works, revoke it in OpenRouter, create a new one, and update the secret.
-- **B17:** a new phone that logs data before its first successful sync still keeps two companions side by side. This needs a product rule for merging histories.
+- **Rotate the OpenRouter key** (step 8).
+- **Decide** whether "can pass away" should default off, and confirm or reverse the quiet-day decision (`QUIET_DAYS_AGE`).
 - **B12:** `deductions.baseline_months` is still sent as null.
-- **B11:** some lines aren't in all three tones (e.g. `dyingBanner`, the LogSheet absorbed/binge notes).
-- **B5b:** notification volume can exceed two a day; measure it on a device first.
-- Pet death is still permanent (a product decision).
-- Large bundle chunks (`Pet3D` ~1 MB); consider further splitting.
-- **Subscription and pricing validation:** test willingness to pay ₹99/month with target users, decide on distribution (store billing vs sideloaded plus a payment provider), and specify what would be gated before any billing or entitlement code is written. No payment code was added (see below).
+- **Tones:** pet condition texts and a few health-sheet lines still have one wording for all tones.
+- **Bundle size:** large chunks (`Pet3D` ~1 MB); consider further splitting.
+- **Vercel:** detach the commandcode and delecta projects from this repository.
+- **Subscription and pricing validation:** test willingness to pay ₹99/month with target users, decide on distribution (store billing vs sideloaded plus a payment provider), and specify what would be gated before any billing or entitlement code is written. No payment code was added.
 
 ## Monetisation readiness (no billing added)
 

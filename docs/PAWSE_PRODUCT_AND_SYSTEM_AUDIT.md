@@ -2,7 +2,7 @@
 
 Date: 2026-10-24 · Branch audited: `claude/pawse-audit-6h0t1a` (head `40b7072`, same code as `main` plus the audit command) · Companion repo: `jithujsam/pawse-releases` (head `b6172ad`)
 
-> **Status note (added later):** this report describes the code as it was at audit time. Several findings have since been fixed in the repository: B1, B2, B3, B4, B6, B19 (repo only), B20, B21 and B22, plus a quiet-day policy change. See `docs/PAWSE_OVERNIGHT_LOG.md` for what changed, what was verified, and what still needs production or device work. The findings below are left as originally written.
+> **Status note (added later):** this report describes the code as it was at audit time. Several findings have since been fixed in the repository: B1, B2, B3, B4, B5b, B6, B11 (mostly), B17, B19 (repo only), B20, B21 and B22. There's also a quiet-day policy change and an opt-in "pets never pass away" setting (death remains the default). See `docs/PAWSE_OVERNIGHT_LOG.md` for what changed, what was verified, and what still needs production or device work. The findings below are left as originally written.
 
 This is a read-only audit. No application code, configuration, schema, dependency or existing document was changed. The only file written is this report.
 
