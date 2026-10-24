@@ -120,6 +120,8 @@ export interface Settings {
   savingsGoal: SavingsGoal | null;
   /** A heads-up before the hour slips usually happen. */
   riskNudge: boolean;
+  /** Show the 3D pet where one exists (dog, fox). Off means the 2D art everywhere. */
+  pet3d: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
 }

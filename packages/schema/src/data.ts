@@ -90,6 +90,7 @@ export const SettingsSchema = z.object({
   savingsGoal: z.object({ label: z.string().min(1).max(40), target: z.number().min(1).max(100_000_000) }).nullable(),
   riskNudge: z.boolean(),
   neglectFrom: day.nullable(),
+  pet3d: z.boolean(),
 }).partial();
 
 export const AppDataSchema = z.object({

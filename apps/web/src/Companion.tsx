@@ -1,9 +1,12 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { Stage } from "@detox/engine";
 import { haptic } from "./haptics";
 import { coatFor, mix } from "./pets";
 import { Burst } from "./ui/Controls";
+import { has3D, webglOk, type Species3D } from "./pet3d-support";
+const Pet3D = lazy(() => import("./Pet3D").then((m) => ({ default: m.Pet3D })));
+import { useData } from "./store";
 import type { Accessory, Personality, Species } from "./types";
 
 /** How the companion feels right now. "sad" is the hunger strike after a slip: low, not sick. */
@@ -319,6 +322,9 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
   const stroke = useRef<{ x: number; dist: number; down: boolean }>({ x: 0, dist: 0, down: false });
   const touchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const low = art.mood === "dying" || art.stage === "frail" || art.stage === "dead";
+  const allow3d = useData().settings.pet3d;
+  const [failed3d, setFailed3d] = useState(false);
+  const use3d = allow3d && !failed3d && has3D(art.species) && webglOk();
 
   // Blink on an irregular rhythm, like something alive.
   useEffect(() => {
@@ -389,7 +395,10 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       onPointerCancel={() => { stroke.current = { x: 0, dist: 0, down: false }; }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); haptic.tap(); play("petted", 1200); setHearts((h) => h + 1); onReact?.("petted"); } }}
       whileTap={interactive ? { scale: 0.97 } : undefined}>
-      <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />
+      {use3d
+        ? <Suspense fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />}><Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
+            size={art.size ?? 280} onFail={() => setFailed3d(true)} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
+        : <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />}
       <Burst burst={hearts} kind="heart" count={6} />
       <Burst burst={sparks} kind="spark" count={8} />
     </motion.div>

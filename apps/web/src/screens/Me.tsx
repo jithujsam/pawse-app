@@ -316,6 +316,7 @@ function FeelPage() {
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
+      <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint="Dogs and foxes in animated 3D. Off uses the flat drawing everywhere, which saves battery." />
       <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
