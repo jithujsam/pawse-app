@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
-  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, NO_DEATH_CEILING_MONTHS, simulate, STAGE_LABEL, stageForAge,
+  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, simulate, STAGE_LABEL, stageForAge,
   type DayInput, type DayState, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
@@ -11,7 +11,7 @@ import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
-import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone, Urge } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Personality, RecoveryPlan, Species, StrategyId, Tone, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
 /** Where ai.ts keeps AI results on this phone; cleared with everything else on a reset. */
@@ -135,7 +135,7 @@ export interface CompanionView {
  */
 export const QUIET_DAYS_AGE = false;
 
-export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
+export function viewCompanion(d: AppData, companionId: string, upTo = today()): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
@@ -148,23 +148,11 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
     day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
-  // A companion that already died stays as it was; otherwise, with passing away switched off, it can't reach 100.
-  const noDeath = d.settings.petsCanDie === false && !companion.diedOn && !opts.ignoreNoDeath;
-  const states = simulate(inputs, noDeath ? { ceilingMonths: NO_DEATH_CEILING_MONTHS } : {});
+  // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
+  const states = simulate(inputs, d.settings.petLife === "classic" ? {} : CONTINUITY);
   const current = states[states.length - 1];
   const age = companion.finalAge ?? current?.visibleAge ?? 0;
   return { companion, habit, states, current, age, stage: stageForAge(age), dead: companion.diedOn !== null };
-}
-
-/**
- * Passing away can be switched back on only while that wouldn't mean the companion had already died: with it off,
- * damage past the ceiling was never counted, but the standard rules would count it. False when switching it on now
- * would end the companion's life on the spot.
- */
-export function canAllowPassingAway(d: AppData): boolean {
-  const c = activeCompanion(d);
-  if (!c || c.diedOn) return true;
-  return !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead");
 }
 
 export const activeCompanion = (d: AppData): Companion | undefined => {
@@ -288,6 +276,18 @@ export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => 
 
 // ---------- actions ----------
 
+const withoutRest = (s: AppData["settings"], day: string) => (s.restDays.includes(day) ? { ...s, restDays: s.restDays.filter((x) => x !== day) } : s);
+
+export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] });
+
+function cleanPlan(p: RecoveryPlan): RecoveryPlan {
+  const list = (xs: string[], n: number, len: number) => [...new Set(xs.map((x) => x.trim().slice(0, len)).filter(Boolean))].slice(0, n);
+  return {
+    goal: p.goal, reasons: list(p.reasons, 8, 80), situations: list(p.situations, 8, 60), firstStep: p.firstStep.trim().slice(0, 140),
+    strategies: [...new Set(p.strategies)].slice(0, 7), supportName: p.supportName.trim().slice(0, 40), ifThen: list(p.ifThen, 8, 160),
+  };
+}
+
 export interface Deduction {
   entry: Entry;
   line: string;
@@ -324,7 +324,7 @@ export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null }) {
+  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
@@ -333,7 +333,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
+      settings: { ...data.settings, neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true, plan: o.plan ? cleanPlan(o.plan) : data.settings.plan },
       companions: [companion], habits: [habit],
     });
   },
@@ -410,7 +410,8 @@ export const actions = {
       ...data,
       entries: [...data.entries, entry],
       cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
-      settings: { ...data.settings, celebrated: [] },
+      // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
+      settings: withoutRest(data.settings, day),
     };
     let died = false;
     const v = viewCompanion(next, companion.id);
@@ -432,8 +433,47 @@ export const actions = {
   markClean(habitId: string, day = today()) {
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
-    commit({ ...data, cleanDays: [...data.cleanDays, { habitId, day }] });
+    commit({ ...data, cleanDays: [...data.cleanDays, { habitId, day }], settings: withoutRest(data.settings, day) });
     return true;
+  },
+
+  /**
+   * Marks a day as intentionally not tracked (or clears that). A day with a slip or marked as goal met
+   * can't be a rest day: what was recorded wins. Rest days never count as progress or as a lapse.
+   */
+  setRest(habitId: string, day: string, on: boolean): boolean {
+    if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day))) return false;
+    const rest = data.settings.restDays.filter((x) => x !== day);
+    commit({ ...data, settings: { ...data.settings, restDays: on ? [...rest, day].sort().slice(-4000) : rest } });
+    return true;
+  },
+
+  /** Saves the person's plan. Text is trimmed and capped; empty items are dropped. */
+  savePlan(p: RecoveryPlan) { commit({ ...data, settings: { ...data.settings, plan: cleanPlan(p) } }); },
+
+  /** Adds one if-then plan (e.g. from a lapse reflection or weekly review) without duplicating it. */
+  addIfThen(text: string) {
+    const t = text.trim().slice(0, 160);
+    if (!t) return;
+    const plan = data.settings.plan ?? emptyPlan();
+    if (plan.ifThen.some((x) => x.toLowerCase() === t.toLowerCase())) return;
+    commit({ ...data, settings: { ...data.settings, plan: { ...plan, ifThen: [...plan.ifThen, t].slice(-8) } } });
+  },
+
+  /**
+   * Optional reflection after a lapse: what came before it and one small adjustment. Stored on the slip
+   * itself, so it never changes the companion's age and goes with the slip if it is deleted.
+   */
+  reflectOnLapse(entryId: string, r: { before: string; adjust: string }) {
+    const before = r.before.trim().slice(0, 160), adjust = r.adjust.trim().slice(0, 160);
+    commit({ ...data, entries: data.entries.map((e) => (e.id === entryId ? { ...e, values: { ...e.values, lapse_before: before, lapse_adjust: adjust } } : e)) });
+  },
+
+  /** The one adjustment picked for the week after a weekly review. */
+  setWeekFocus(week: string, text: string) {
+    const t = text.trim().slice(0, 160);
+    const rest = data.settings.weekFocus.filter((w) => w.week !== week);
+    commit({ ...data, settings: { ...data.settings, weekFocus: (t ? [...rest, { week, text: t }] : rest).sort((a, b) => a.week.localeCompare(b.week)).slice(-60) } });
   },
 
   deleteEntry: (id: string) => commit({ ...data, entries: data.entries.filter((e) => e.id !== id) }),
@@ -444,9 +484,13 @@ export const actions = {
   resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
-  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"]) {
+  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}) {
     const now = new Date();
-    const urge: Urge = { id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`, strength: Math.max(1, Math.min(5, Math.round(strength))), outcome, createdAt: Date.now() };
+    const urge: Urge = {
+      id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      strength: Math.max(1, Math.min(5, Math.round(strength))), outcome, createdAt: Date.now(),
+      strategy: extra.strategy ?? null, trigger: extra.trigger?.trim().slice(0, 40) || null,
+    };
     commit({ ...data, urges: [...data.urges, urge] });
     return urge;
   },

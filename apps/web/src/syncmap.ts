@@ -66,7 +66,7 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
       { table: "deductions", row: { ...base, entry_id: l.row.id, months_lost: l.row.months, severity: Math.max(0.5, l.row.severity), baseline_months: null, ai_adjust_pct: l.row.aiAdjustPct, body_effects: l.row.effects, explanation: l.row.explanation.slice(0, 200), source: l.row.source } },
     ];
     case "k": return [{ table: "clean_days", row: { ...base, habit_id: l.row.habitId, day: l.row.day, deleted_at: null } }];
-    case "u": return [{ table: "urges", row: { ...base, id: l.row.id, habit_id: l.row.habitId, occurred_on: l.row.day, occurred_at: l.row.time, strength: l.row.strength, outcome: l.row.outcome, client_created_at: l.row.createdAt, deleted_at: null } }];
+    case "u": return [{ table: "urges", row: { ...base, id: l.row.id, habit_id: l.row.habitId, occurred_on: l.row.day, occurred_at: l.row.time, strength: l.row.strength, outcome: l.row.outcome, strategy: l.row.strategy ?? null, trigger: l.row.trigger ?? null, client_created_at: l.row.createdAt, deleted_at: null } }];
     case "j": return [{ table: "journal", row: { ...base, day: l.row.day, mood: l.row.mood, body: l.row.body, deleted_at: null } }];
     case "w": {
       const habit = d.habits[0];
@@ -159,7 +159,8 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     const key = `u:${r.id}`;
     if (!wins(key, r)) continue;
     urges = urges.filter((u) => u.id !== r.id);
-    if (!r.deleted_at) urges = [...urges, { id: String(r.id), habitId: String(r.habit_id), day: String(r.occurred_on), time: time(r.occurred_at), strength: Number(r.strength), outcome: r.outcome as Urge["outcome"], createdAt: Number(r.client_created_at) }];
+    if (!r.deleted_at) urges = [...urges, { id: String(r.id), habitId: String(r.habit_id), day: String(r.occurred_on), time: time(r.occurred_at), strength: Number(r.strength), outcome: r.outcome as Urge["outcome"], createdAt: Number(r.client_created_at),
+      strategy: (r.strategy as Urge["strategy"]) ?? null, trigger: typeof r.trigger === "string" ? r.trigger : null }];
   }
   for (const r of p.journal ?? []) {
     const key = `j:${r.day}`;

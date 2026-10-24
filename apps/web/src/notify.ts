@@ -13,8 +13,8 @@ export const remindersSupported = native;
  * Everything Pawse sends is planned here, in one place, as one-shot notifications for the next two weeks:
  * at most MAX_PER_DAY on any local calendar day. Each re-plan cancels the previous plan first and runs one at a
  * time, so retries and rescheduling can never stack extra notifications. When more than two want the same day,
- * the most useful win: the check-in reminder (or, after quiet days, the gentle "we miss you" note that replaces
- * it), then a note about something that happened today, then the risky-hour heads-up, then the good-morning.
+ * the most useful win: the check-in reminder (or, after days without a record, the neutral note that replaces it),
+ * then a thank-you for a good day, then the risky-hour heads-up, then the good-morning. A slip sends nothing.
  */
 export const MAX_PER_DAY = 2;
 const HORIZON_DAYS = 14;
@@ -23,8 +23,8 @@ const MANAGED_IDS = Array.from({ length: 100 }, (_, i) => FIRST_ID + i);
 /** Ids older versions used for repeating schedules (daily, care, risky hour, lapse). Cancelled so they can't add to the count. */
 const LEGACY_IDS = [1001, 2001, 2002, 2003, 2004, 2010, 2011, 2012, 2013];
 
-export type NoteKind = "daily" | "lapse" | "thanks" | "strike" | "risk" | "morning";
-const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, strike: 1, risk: 2, morning: 3 };
+export type NoteKind = "daily" | "lapse" | "thanks" | "risk" | "morning";
+const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, risk: 2, morning: 3 };
 
 export interface PlanInput {
   now: Date;
@@ -51,13 +51,14 @@ export interface Planned { id: number; kind: NoteKind; at: Date; title: string; 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const atTime = (base: Date, dayOffset: number, hour: number, minute: number) => { const d = new Date(base); d.setDate(d.getDate() + dayOffset); d.setHours(hour, minute, 0, 0); return d; };
 
+/**
+ * When check-ins stop: two neutral notes, after 2 and 7 days without a record. They never imply the pet suffers
+ * from silence (an unrecorded day is missing data) and never shame (PRD §19.8).
+ */
 function lapseNotes(tone: Tone, n: string): [number, string, string][] {
-  const g = tone === "gentle", b = tone === "brutal";
   return [
-    [2, `${n} misses you`, g ? "No rush. When you're ready, a ten-second check-in." : b ? "Two days without a check-in. How have they gone?" : "How have the last couple of days been? Ten seconds to check in."],
-    [4, `${n} is thinking of you`, g ? `${n} heals on days you check in. Whenever you're ready.` : b ? `Four quiet days. ${n} heals only on days you check in.` : `Pets only heal on days you check in. A quick one today gets that going.`],
-    [7, "A week without news", g ? `${n} is still here. Whenever you're ready, one check-in picks things up again.` : b ? `A week. ${n} is still here; one check-in restarts the healing.` : `${n} is still here. One check-in and healing starts again; the quiet days don't count against you.`],
-    [10, `${n} is still waiting`, g ? `${n} is still here and still hoping. Come say hi.` : b ? `Ten quiet days, no harm done. Check in when you're ready.` : `Ten quiet days, no harm done. ${n} is ready when you are.`],
+    [2, "A quick check-in?", tone === "gentle" ? "Whenever you're ready. How have the last couple of days gone?" : tone === "brutal" ? "Two days unrecorded. How did they go?" : "How have the last couple of days gone? It takes ten seconds."],
+    [7, `${n} is here when you're ready`, tone === "brutal" ? "Unrecorded days don't count against you. Pick it up today." : "Days you don't record don't count against you. Pick up whenever it suits you."],
   ];
 }
 
@@ -93,10 +94,8 @@ export function planNotifications(p: PlanInput): Planned[] {
       const tonight = atTime(ev, 0, 21, 15);
       add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name));
       add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name));
-    } else {
-      const later = new Date(ev.getTime() + 2 * 3600_000);
-      add("strike", later.getHours() >= 22 || dayKey(later) !== dayKey(ev) ? atTime(ev, 1, 8, 30) : later, careNote("strike", p.personality, p.tone, p.name));
     }
+    // A slip gets no notification: a guilt nudge from the pet hours later doesn't help anyone (PRD §19.8).
   }
 
   const byDay = new Map<string, Omit<Planned, "id">[]>();

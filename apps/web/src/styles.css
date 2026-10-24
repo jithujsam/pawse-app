@@ -377,8 +377,11 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .weekstrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding-top: 4px; }
 .wday { display: grid; justify-items: center; gap: 6px; }
 .wday i { width: 22px; height: 22px; border-radius: 50%; background: var(--raised); display: block; }
-.wday[data-s="slip"] i { background: var(--negative); }
-.wday[data-s="clean"] i { background: var(--positive); }
+/* Five day states. Shape as well as colour, so they read without colour vision: filled, filled, ring, dashed, small. */
+.wday[data-s="lapse"] i { background: var(--negative); }
+.wday[data-s="met"] i { background: var(--positive); }
+.wday[data-s="urge"] i { background: transparent; border: 4px solid var(--positive); }
+.wday[data-s="rest"] i { background: transparent; border: 2px dashed var(--muted); }
 .wday[data-s="future"] i { background: transparent; border: 2px dashed var(--control); }
 .wday[data-today="true"] .small { color: var(--text); font-weight: 800; }
 .wday[data-today="true"] i { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
@@ -526,13 +529,17 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .dow { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
 .day { aspect-ratio: 1; border: 0; border-radius: 14px; background: var(--raised); cursor: pointer; font-size: 14px; font-weight: 600; display: grid; place-items: center; position: relative; }
 .day > span { position: relative; z-index: 1; }
-.day[data-s="slip"] { background: var(--negative); color: #fff; }
-.day[data-s="clean"] { background: var(--positive); color: #fff; }
+.day[data-s="lapse"] { background: var(--negative); color: #fff; }
+.day[data-s="met"] { background: var(--positive); color: #fff; }
+.day[data-s="urge"] { background: var(--surface); box-shadow: inset 0 0 0 3px var(--positive); }
+.day[data-s="rest"] { background: repeating-linear-gradient(135deg, var(--raised) 0 6px, transparent 6px 10px); color: var(--muted); }
 .day[data-s="future"] { background: transparent; color: var(--muted); cursor: default; }
 .day[data-today="true"] { font-weight: 900; }
 .day-ring { position: absolute; inset: -3px; border-radius: 16px; border: 2.5px solid var(--text); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.legend i[data-s="urge"] { background: transparent !important; box-shadow: inset 0 0 0 2px var(--positive); }
+.legend i[data-s="rest"] { background: transparent !important; border: 1.5px dashed var(--muted); }
 .cal h2 { min-width: 0; text-align: center; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .tag { background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
@@ -597,3 +604,24 @@ body.privacy #root { filter: blur(24px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* ---------- recovery (PAWSE 3.0) ---------- */
+.inline-add { display: flex; gap: 8px; align-items: center; }
+.inline-add .input { flex: 1; min-width: 0; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.chips.scroll-x { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chips.scroll-x .chip { flex: none; }
+.tight-row { justify-content: flex-start; flex-wrap: wrap; gap: 4px; margin: -8px 0 -4px; }
+.plan-card b { font-size: 16px; }
+.breath-label { font: 700 22px var(--font); }
+.urge-check { background: var(--raised); }
+.obs-strength { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; background: var(--raised); color: var(--muted); }
+.obs-strength[data-k="pattern"] { color: var(--text); }
+.review-days { margin: 0; display: grid; gap: 6px; }
+.review-days dt, .review-days dd { margin: 0; display: flex; align-items: center; gap: 8px; }
+.review-days .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--raised); display: inline-block; }
+.review-days .dot[data-s="lapse"] { background: var(--negative); }
+.review-days .dot[data-s="met"] { background: var(--positive); }
+.review-days .dot[data-s="urge"] { background: transparent; border: 3px solid var(--positive); }
+.review-days .dot[data-s="rest"] { background: transparent; border: 2px dashed var(--muted); }
+.inline-add .btn { width: auto; flex: none; padding-inline: 18px; }

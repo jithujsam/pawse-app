@@ -8,14 +8,15 @@ import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
 import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
-import { actions } from "../store";
+import { actions, emptyPlan } from "../store";
+import { HelpSection, planHasCrisis, WhySection } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
 import { has3D } from "../pet3d-support";
 import { say } from "../voice";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
-import type { Baseline, Measure, Personality, Species, Tone } from "../types";
+import type { Baseline, Measure, Personality, RecoveryPlan, Species, Tone } from "../types";
 
 const MEASURES: { id: Measure; label: string; hint: string }[] = [
   { id: "money", label: "Money spent", hint: "How much each time" },
@@ -30,7 +31,7 @@ const BASELINES: { id: Baseline; label: string }[] = [
 const REMINDERS = [{ t: "09:00", label: "Morning" }, { t: "13:00", label: "Midday" }, { t: "20:00", label: "Evening" }, { t: "22:00", label: "Late" }];
 const STORY = [
   { title: "Meet a friend who's rooting for you", body: "A little pet lives here. Good days keep them healthy and happy, and they notice every one." },
-  { title: "Every slip has a way back", body: "You'll see what a slip cost, and exactly how many clean days win it back. Nothing is hopeless." },
+  { title: "Every slip has a way back", body: "You'll see what a slip cost, and exactly how many good days win it back. Nothing is hopeless." },
   { title: "Private, kind, yours", body: "Your progress is yours alone. No lectures, no judgement, just a pet that's glad you're here." },
 ];
 
@@ -38,13 +39,15 @@ const DRAFT = "companion/onboarding-draft";
 interface Draft {
   step: number; species: Species; companionName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
   baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; personality: Personality;
+  plan: RecoveryPlan;
 }
 const initial: Draft = {
   step: 1, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
   baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", personality: "playful",
+  plan: emptyPlan(),
 };
-const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, step: Math.max(1, d.step) }; } catch { return initial; } };
-const LAST = 10;
+const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.max(1, d.step) }; } catch { return initial; } };
+const LAST = 12;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
@@ -58,6 +61,8 @@ export function Onboarding() {
   const name = d.companionName.trim() || NAMES[d.species][0];
   const crisis = hasCrisisLanguage(d.what);
   const restriction = isRestrictionRelated(d.what);
+  const setPlan = (p: Partial<RecoveryPlan>) => setD((s) => ({ ...s, plan: { ...s.plan, ...p } }));
+  const planCrisis = planHasCrisis(d.plan);
 
   const pickWhat = (text: string, c?: HabitClass, m?: Measure) => {
     const k = c ?? inferClass(text);
@@ -65,7 +70,7 @@ export function Onboarding() {
   };
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -104,7 +109,7 @@ export function Onboarding() {
             {d.step === 3 && <NameStep d={d} up={up} onNext={() => go(4)} />}
 
             {d.step === 4 && (<>
-              <motion.h1 variants={rise}>What would you like to let go of?</motion.h1>
+              <motion.h1 variants={rise}>What would you like to change?</motion.h1>
               <motion.p className="muted" variants={rise}>Say it in your own words, or pick one. This stays between you and {name}.</motion.p>
               <motion.div className="chips" variants={rise}>
                 {SUGGESTIONS.map((s) => <Chip key={s.label} pressed={d.what === s.label} onClick={() => pickWhat(s.label, s.cls, s.measure)}>{s.label}</Chip>)}
@@ -148,6 +153,28 @@ export function Onboarding() {
             </>)}
 
             {d.step === 7 && (<>
+              <motion.h1 variants={rise}>Why it matters</motion.h1>
+              <motion.p className="muted" variants={rise}>Your goal and your reasons, in your words. Pawse shows them back to you when things get hard. All optional.</motion.p>
+              <motion.div className="stack" variants={rise}><WhySection plan={d.plan} set={setPlan} /></motion.div>
+              {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+              <motion.div className="stack tight" variants={rise}>
+                <Button disabled={planCrisis} onClick={() => go(8)}>Continue</Button>
+                <Button variant="text" onClick={() => go(9)}>Skip the plan for now</Button>
+              </motion.div>
+            </>)}
+
+            {d.step === 8 && (<>
+              <motion.h1 variants={rise}>A first step, and what helps</motion.h1>
+              <motion.p className="muted" variants={rise}>Something small and realistic is enough. You can change all of this later in Me → Your plan.</motion.p>
+              <motion.div className="stack" variants={rise}><HelpSection plan={d.plan} set={setPlan} cls={d.cls} /></motion.div>
+              {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+              <motion.div className="stack tight" variants={rise}>
+                <Button disabled={planCrisis} onClick={() => go(9)}>Continue</Button>
+                <Button variant="text" onClick={() => go(9)}>Skip for now</Button>
+              </motion.div>
+            </>)}
+
+            {d.step === 9 && (<>
               <motion.h1 variants={rise}>How should {name} talk to you?</motion.h1>
               <motion.div className="preview" variants={rise}>
                 <CompanionArt species={d.species} coat={d.coat} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
@@ -166,13 +193,13 @@ export function Onboarding() {
                 ))}
               </motion.div>
               <motion.p className="muted small" variants={rise}>Every tone is respectful. It describes what happened, never who you are. Change it any time.</motion.p>
-              <motion.div variants={rise}><Button onClick={() => go(8)}>Continue</Button></motion.div>
+              <motion.div variants={rise}><Button onClick={() => go(10)}>Continue</Button></motion.div>
             </>)}
 
-            {d.step === 8 && (<>
+            {d.step === 10 && (<>
               <motion.div className="bell" variants={rise} animate={{ rotate: [0, -14, 12, -8, 6, 0] }} transition={{ duration: 1, delay: 0.4 }}>{Icon.bell}</motion.div>
               <motion.h1 variants={rise}>A daily nudge</motion.h1>
-              <motion.p className="muted" variants={rise}>One quiet reminder to check in, in {name}'s voice. Never more than two a day.</motion.p>
+              <motion.p className="muted" variants={rise}>One quiet reminder a day to check in, in {name}'s voice. You can turn any reminder off later.</motion.p>
               <motion.div className="chips" variants={rise}>
                 {REMINDERS.map((r) => <Chip key={r.t} pressed={d.reminder === r.t} onClick={() => up({ reminder: r.t })}>{r.label} · {fmtTime(r.t)}</Chip>)}
               </motion.div>
@@ -180,22 +207,22 @@ export function Onboarding() {
                 <TimePicker label="Reminder time" value={d.reminder} onChange={(v) => up({ reminder: v })} />
               </motion.div>
               <motion.div className="stack tight" variants={rise}>
-                <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(9); }}>Turn on reminders</Button>
-                <Button variant="text" onClick={() => go(9)}>Not now</Button>
+                <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(11); }}>Turn on reminders</Button>
+                <Button variant="text" onClick={() => go(11)}>Not now</Button>
               </motion.div>
             </>)}
 
-            {d.step === 9 && (<>
+            {d.step === 11 && (<>
               <motion.h1 variants={rise}>One last thing</motion.h1>
               <motion.div className="card stack" variants={rise}>
                 <p>{DISCLAIMER}</p>
                 <p className="muted small">Age and body effects are illustrative estimates. They are not a health prediction.</p>
               </motion.div>
               <motion.div variants={rise}><Switch checked={adult} onChange={setAdult} label="I'm 18 or older" hint="And I understand this is not medical advice." /></motion.div>
-              <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(10)}>Meet {name}</Button></motion.div>
+              <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(12)}>Meet {name}</Button></motion.div>
             </>)}
 
-            {d.step === 10 && <Hatch species={d.species} coat={d.coat} name={name} tone={d.tone} onDone={finish} />}
+            {d.step === 12 && <Hatch species={d.species} coat={d.coat} name={name} tone={d.tone} onDone={finish} />}
           </motion.div>
         </motion.div>
       </AnimatePresence>

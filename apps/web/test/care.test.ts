@@ -42,10 +42,10 @@ describe("companion voice", () => {
   it("the recovery line carries the engine's numbers", () => {
     for (const t of TONES) {
       const l = recoveryLine(t, "Miso", 3, { days: 12, label: "Young" });
-      expect(l).toContain("3 clean days");
-      expect(l).toContain("12 clean days");
+      expect(l).toContain("3 good days");
+      expect(l).toContain("12 good days");
     }
-    expect(recoveryLine("honest", "Miso", 1, null)).toContain("1 clean day ");
+    expect(recoveryLine("honest", "Miso", 1, null)).toContain("1 good day ");
   });
 });
 

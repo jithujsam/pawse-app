@@ -32,13 +32,13 @@ Pacing table unchanged (the simulation uses the deterministic baseline only):
 - `applyAiAdjustment` no longer caps a baseline above 12 months to 12 whenever the AI answers. Before, an 18-month slip became 12 at a 0% adjustment (a 33% cut); a 24-month slip lost half. Now the AI moves any slip by at most ±30% and never above its own baseline once that is over 12.
 - AI polish no longer decides life or death: if the nudge alone would kill the companion (or spare it), the baseline months stand.
 
-## 2026-10-24, optional no-death ceiling (pnpm simulate)
+## 2026-10-24, PAWSE 3.0 continuity option (pnpm simulate)
 
-Pacing table unchanged (the ceiling is off unless the person turns "can pass away" off):
+Default (PRD) pacing unchanged:
 
     light   2 slips/week, severity 1.0   d1:0.0  d7:0.3  d14:0.4  d28:0.7  d42:0.9  d56:1.2  d90:2.0
     medium  1 slip/day, severity 1.0     d1:0.3  d7:2.3  d14:4.7  d28:9.3  d42:14.0 d56:18.7 d90:30.0
     heavy   3 slips/day, severity 1.5    d1:1.9  d7:13.1 d14:26.3 d28:52.5 d42:78.8 d56:100.0 d90:100.0
 
-- `simulate(days, { ceilingMonths })`: net damage stops at the ceiling (1188 months = age 99, frail). Damage past it isn't counted toward lifetime damage, the scar floor or binge scars, otherwise the floor would climb to the ceiling and a heavy user's pet could never heal.
-- Tests pin that omitting the option gives exactly the standard fold.
+- `simulate(days, CONTINUITY)` caps net damage at 1188 months (age 99) and turns off the scar floor and binge scars. Below the cap, pacing is identical (tests: medium reaches old on the same day; heavy reaches frail on the same day, then plateaus at 99 instead of dying).
+- The app uses continuity by default and the PRD rules when the person turns on classic rules.

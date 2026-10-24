@@ -28,9 +28,10 @@ describe("AI polish on a slip", () => {
     expect(getData().entries[0]).toMatchObject({ months: 5.2, aiAdjustPct: 30, source: "ai" });
   });
 
-  it("never lets the AI's nudge be what kills the companion", () => {
+  it("never lets the AI's nudge be what kills the companion (classic rules, where death exists)", () => {
     // 50 old slips of 23.8 months = 1190 net; today's 8-month slip leaves it alive at 1198 of 1200.
     load([...Array.from({ length: 50 }, (_, i) => entry(`old${i}`, addDays(t0, -50 + i), 23.8)), entry("e1", t0, 8)]);
+    actions.setSettings({ petLife: "classic" });
     expect(viewCompanion(getData(), C).stage).not.toBe("dead");
     expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
     expect(getData().companions[0].diedOn).toBeNull();
@@ -116,18 +117,11 @@ describe("slip, clean and nothing logged are three different days", () => {
   });
 });
 
-describe("when pets can't pass away (opt-in)", () => {
+describe("pet life rules: continuity by default, classic opt-in (PRD §19.1)", () => {
   const heavy = () => Array.from({ length: 60 }, (_, i) => entry(`h${i}`, addDays(t0, -59 + i), 24));
-  it("is off by default: the standard rules apply and a companion can die", () => {
-    expect(blank().settings.petsCanDie).toBe(true);
-    load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
-    actions.logSlip(H, {}, t0);
-    expect(getData().companions[0].diedOn).not.toBeNull();
-  });
-
-  it("switched off: the heaviest history leaves the companion frail at 99, alive, and healing on clean days", () => {
+  it("by default (continuity) the heaviest history leaves the companion frail at 99, alive, and it can heal", () => {
+    expect(blank().settings.petLife).toBe("continuity");
     load(heavy());
-    actions.setSettings({ petsCanDie: false });
     const d = actions.logSlip(H, {}, t0);
     expect(d.died).toBe(false);
     const v = viewCompanion(getData(), C);
@@ -136,29 +130,26 @@ describe("when pets can't pass away (opt-in)", () => {
     expect(getData().companions[0].diedOn).toBeNull();
   });
 
-  it("can't be switched back on while the standard rules would mean the companion had already died", async () => {
-    const { canAllowPassingAway } = await import("../src/store");
-    load(heavy());
-    actions.setSettings({ petsCanDie: false });
-    expect(canAllowPassingAway(getData())).toBe(false);
-    load([entry("one", t0, 4)]);
-    actions.setSettings({ petsCanDie: false });
-    expect(canAllowPassingAway(getData())).toBe(true);
+  it("classic rules (opt-in) keep the PRD death rule", () => {
+    load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
+    actions.setSettings({ petLife: "classic" });
+    actions.logSlip(H, {}, t0);
+    expect(getData().companions[0].diedOn).not.toBeNull();
   });
 
-  it("never rewrites history: a companion that already died stays in the Hall", () => {
+  it("never rewrites history: a companion that already died stays in the Hall under either rule", () => {
     load(heavy());
-    actions.applyRemote({ ...getData(), settings: { ...getData().settings, petsCanDie: false }, companions: [{ ...getData().companions[0], diedOn: addDays(t0, -10), finalAge: 100 }] });
+    actions.applyRemote({ ...getData(), companions: [{ ...getData().companions[0], diedOn: addDays(t0, -10), finalAge: 100 }] });
     const v = viewCompanion(getData(), C);
     expect(v.dead).toBe(true);
     expect(v.age).toBe(100);
   });
 
-  it("the setting survives storage and travels with the account", async () => {
+  it("the rule survives storage and travels with the account", async () => {
     const { normalize } = await import("../src/persist");
     const { portableSettings } = await import("../src/syncmap");
-    const s = { ...blank(), settings: { ...blank().settings, petsCanDie: false, onboarded: true } };
-    expect(normalize(JSON.parse(JSON.stringify(s)))!.settings.petsCanDie).toBe(false);
-    expect(portableSettings(s.settings)).toMatchObject({ petsCanDie: false });
+    const s = { ...blank(), settings: { ...blank().settings, petLife: "classic" as const, onboarded: true } };
+    expect(normalize(JSON.parse(JSON.stringify(s)))!.settings.petLife).toBe("classic");
+    expect(portableSettings(s.settings)).toMatchObject({ petLife: "classic" });
   });
 });

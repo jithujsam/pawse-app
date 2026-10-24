@@ -5,7 +5,7 @@ import type { AppData, Species, Tone } from "./types";
 
 /**
  * The pet's health, explained. Everything here is derived from the engine's numbers and the log,
- * written in plain words: what's wrong, why, and how many clean days fix it. The conditions are
+ * written in plain words: what's wrong, why, and how many good days fix it. The conditions are
  * illustrative pet ailments that mirror the habit, not medical claims about the person.
  */
 export type Level = "thriving" | "healthy" | "okay" | "unwell" | "critical";
@@ -34,17 +34,17 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const g = tone === "gentle", b = tone === "brutal";
   const lines: Record<Level, [string, string]> = {
     thriving: [`${name} is thriving`, streak > 1
-      ? `${streak} clean days in a row and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
+      ? `${streak} good days in a row and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
       : `Healthy, bright and happy. Keep the check-ins coming and it will stay that way.`],
     healthy: [`${name} is healthy`, slipped
-      ? `${name} is strong enough to handle today, but won't eat until there's a clean day. ${b ? "Make tomorrow count." : "Tomorrow is a good place to start."}`
-      : `In good shape. ${streak ? `${streak} clean ${streak === 1 ? "day" : "days"} so far` : "A clean day today would make it even better"}.`],
+      ? `${name} is strong enough to handle today, but won't eat until there's a good day. ${b ? "Make tomorrow count." : "Tomorrow is a good place to start."}`
+      : `In good shape. ${streak ? `${streak} good ${streak === 1 ? "day" : "days"} so far` : "A good day today would make it even better"}.`],
     okay: [`${name} is okay`, slipped
-      ? `Not great today: ${name} felt that slip and is off their food. A few clean days will turn it around.`
+      ? `Not great today: ${name} felt that slip and is off their food. A few good days will turn it around.`
       : silent > 1 ? `${name} hasn't heard from you in ${silent} days. No harm done: a check-in picks things up again.`
-        : `Doing all right, with some wear showing. ${g ? "Every clean day helps a little." : "A clean streak is the fastest way back."}`],
+        : `Doing all right, with some wear showing. ${g ? "Every good day helps a little." : "A run of good days is the fastest way back."}`],
     unwell: [`${name} isn't doing well`, `${b ? "Straight talk: " : ""}${name} is unwell${slipped ? " and not eating" : ""}. Keeping the habit in check for a while is what helps most. You can do this, one day at a time.`],
-    critical: [`${name} needs you`, `${name} is very weak right now. ${g ? "It's not too late." : "This is the moment to change course."} A clean day today starts the healing, and every day after adds to it.`],
+    critical: [`${name} needs you`, `${name} is very weak right now. ${g ? "It's not too late." : "This is the moment to change course."} A good day today starts the healing, and every day after adds to it.`],
   };
   const [title, body] = lines[level];
   return { level, heart, title, body, silent };
@@ -127,18 +127,18 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
 
   if (slipped) {
     const [n, w] = pick("appetite", s);
-    out.push({ id: "appetite", name: n, what: w, why: `There was a slip today, and ${name} feels it.`, fix: "1 clean day and the appetite comes back.", days: 1, tone: s === "rabbit" ? "moderate" : "mild" });
+    out.push({ id: "appetite", name: n, what: w, why: `There was a slip today, and ${name} feels it.`, fix: "1 good day and the appetite comes back.", days: 1, tone: s === "rabbit" ? "moderate" : "mild" });
   }
   if (week.length >= 2 || (week.length >= 1 && v.age >= 30)) {
     const [n, w] = pick(habit.cls as CondKey, s);
     const days = cleanDaysToUndo(weekDamage);
-    out.push({ id: habit.cls, name: n, what: w, why: `${week.length} ${week.length === 1 ? "slip" : "slips"} this week of ${habit.name.toLowerCase()}.`, fix: `${days} clean days in a row clears it up.`, days, tone: week.length >= 5 ? "serious" : week.length >= 3 ? "moderate" : "mild" });
+    out.push({ id: habit.cls, name: n, what: w, why: `${week.length} ${week.length === 1 ? "slip" : "slips"} this week of ${habit.name.toLowerCase()}.`, fix: `${days} good days in a row clears it up.`, days, tone: week.length >= 5 ? "serious" : week.length >= 3 ? "moderate" : "mild" });
   }
   if (v.stage === "middle" || v.stage === "old" || v.stage === "frail") {
     const [n, w] = pick("aging", s);
     const days = plan?.stageBack?.days ?? cleanDaysToAge(v.current!, 49.9);
     out.push({ id: "aging", name: n, what: w, why: `${name} has aged early: ${STAGE_LABEL[v.stage].toLowerCase()} at age ${Math.round(v.age)}.`,
-      fix: days ? `${days} clean days in a row to feel younger again.` : "Some of this is permanent now, but clean days still help.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
+      fix: days ? `${days} good days in a row to feel younger again.` : "Some of this is permanent now, but good days still help.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
   }
   if (silent >= 2) {
     const [n, w] = pick("lonely", s);

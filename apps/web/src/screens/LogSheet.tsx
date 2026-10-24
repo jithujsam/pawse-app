@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
-import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
+import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL } from "../copy";
+import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
@@ -9,7 +10,7 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { actions, slipRequest, useData, type Deduction } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Button, Chip, Icon, Segmented } from "../ui/Controls";
+import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import type { Entry, Habit } from "../types";
 
@@ -62,6 +63,9 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
   const [ageBefore] = useState(age);
+  // What the person had built before this slip, so the result can say plainly that it still stands.
+  const [keptMet] = useState(() => { const slips = new Set(data.entries.filter((e) => e.habitId === habit.id).map((e) => e.day)); return data.cleanDays.filter((c) => c.habitId === habit.id && !slips.has(c.day)).length; });
+  const [keptUrges] = useState(() => data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length);
   const alive = useRef(true);
   const [polishing, setPolishing] = useState(false);
   const [shake, setShake] = useState(0);
@@ -111,6 +115,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
     const shrugged = result.absorbed > 0 && felt < 0.05;
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
+        <motion.h2 variants={rise}>{lapseHeadline(data.settings.tone, name)}</motion.h2>
         <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : day === addDays(today(), -1) ? "yesterday" : fmtDay(day)}{time ? ` at ${fmtTime(time)}` : ""}</motion.p>
         <motion.div className="deduction" variants={rise}>
           <span>{shrugged ? `${name} shrugged it off` : "That cost " + name}</span>
@@ -120,7 +125,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
             <motion.i className="added" initial={{ width: 0 }} animate={{ width: `${Math.max(0.6, ageAfter - ageBefore)}%` }} transition={{ ...spring.calm, delay: 0.35 }} style={{ left: `${ageBefore}%` }} />
           </div>
           {result.absorbed > 0 && <span className="small">{absorbedLine(data.settings.tone, name, result.streakBefore, result.absorbed, shrugged)}</span>}
-          {result.binge && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
+          {result.binge && data.settings.petLife === "classic" && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
           {!shrugged && result.effectLine && <span>{result.effectLine}</span>}
           <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
         </motion.div>
@@ -130,8 +135,8 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
           </motion.p>
         </AnimatePresence>
         {polishing && <div className="shimmer-line" aria-live="polite"><span className="sr-only">Finding the right words</span></div>}
-        <motion.p className="muted small" variants={rise}>{slipKicker(data.settings.tone, name)}</motion.p>
-        <motion.div variants={rise}><Button onClick={onClose}>Done</Button></motion.div>
+        <motion.p className="muted small" variants={rise}>{progressKept(data.settings.tone, keptMet, keptUrges)}</motion.p>
+        <motion.div variants={rise}><LapseReflection entryId={result.entry.id} habit={habit} onDone={onClose} /></motion.div>
       </motion.div>
     );
   }
@@ -190,5 +195,49 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
       ))}
       <motion.div variants={rise}><Button onClick={save} className={missing.length ? "soft-disabled" : ""}>Save slip</Button></motion.div>
     </motion.div>
+  );
+}
+
+/**
+ * Optional, after a slip: what came before it and one small adjustment. Skipping is always fine, and nothing
+ * here changes the companion. The adjustment can go into the plan as an if-then.
+ */
+function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: Habit; onDone: () => void }) {
+  const data = useData();
+  const plan = data.settings.plan;
+  const [open, setOpen] = useState(false);
+  const [before, setBefore] = useState("");
+  const [adjust, setAdjust] = useState("");
+  const [keep, setKeep] = useState(true);
+  const crisis = hasCrisisLanguage(before) || hasCrisisLanguage(adjust);
+  const ideas = [...(plan?.ifThen ?? []).slice(0, 1), ...frictionIdeas(habit.cls, habit.name).slice(0, 2), "Check in tomorrow evening, whatever happens"];
+  function save() {
+    if (crisis) return;
+    if (before.trim() || adjust.trim()) actions.reflectOnLapse(entryId, { before, adjust });
+    if (keep && adjust.trim()) actions.addIfThen(adjust);
+    haptic.success();
+    onDone();
+  }
+  if (!open) return (
+    <div className="stack tight">
+      {plan?.firstStep && <p className="small">Back to your plan: <b>{plan.firstStep}</b></p>}
+      <Button onClick={onDone}>Back to my day</Button>
+      <Button variant="secondary" onClick={() => setOpen(true)}>Reflect for a moment (optional)</Button>
+    </div>
+  );
+  return (
+    <div className="card stack">
+      <label className="field"><span className="field-label">What was happening just before?</span>
+        <input className="input" autoComplete="off" maxLength={160} value={before} placeholder="e.g. long day, tired, phone in bed" onChange={(e) => setBefore(e.target.value)} />
+      </label>
+      <div className="field"><span className="field-label">One small thing to try next time</span>
+        <div className="chips" role="radiogroup" aria-label="Ideas">{ideas.map((x) => <Chip key={x} pressed={adjust === x} onClick={() => setAdjust(adjust === x ? "" : x)}>{x}</Chip>)}</div>
+        <input className="input" autoComplete="off" maxLength={160} value={adjust} placeholder="Or your own, e.g. If I'm home alone after 10, I'll make tea" onChange={(e) => setAdjust(e.target.value)} aria-label="Your own adjustment" />
+      </div>
+      {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It will show up in Me → Your plan and when an urge hits." />}
+      {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+      <Button onClick={save} disabled={crisis}>Save and go back</Button>
+      <Button variant="text" onClick={onDone}>Skip</Button>
+    </div>
   );
 }

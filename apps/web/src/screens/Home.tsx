@@ -19,6 +19,7 @@ import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
 import { openDownload, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
+import { afterSlipLine, careDays, dayStatus, milestoneToCelebrate, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
 
 export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
@@ -40,7 +41,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
   const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
-  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); };
+  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); else if (a === "rest") rest(true); };
   useEffect(() => { const run = () => quickRef.current(takeQuick()); run(); return onQuick(run); }, []);
 
   useEffect(() => { if (!just) return; const t = setTimeout(() => setJust(null), 3500); return () => clearTimeout(t); }, [just]);
@@ -49,7 +50,11 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const t0 = today();
   const slippedToday = data.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const cleanToday = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
+  const resting = data.settings.restDays.includes(t0);
   const checked = slippedToday || cleanToday;
+  const myPlan = data.settings.plan;
+  const weekFocus = data.settings.weekFocus.find((w) => w.week === weekStart(t0))?.text;
+  const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
   const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
   const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
   const week = weekStats(data, habit.id, weekStart(t0));
@@ -64,7 +69,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : lonely ? welcomeBackLine(tone, companion.name)
-    : slippedToday && !just ? say("strike", personality, tone)
+    : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
 
@@ -81,27 +86,32 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
 
   function clean() {
     if (cleanToday) return;
-    if (!actions.markClean(habit.id)) { haptic.warn(); setNote("You already logged a slip today, so today can't be marked clean."); return; }
+    if (!actions.markClean(habit.id)) { haptic.warn(); setNote("You already logged a slip today, so today can't be marked as goal met."); return; }
     haptic.success();
     setJust("clean"); setSparks((s) => s + 1);
     setNote(say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
-    const s = cleanStreak({ ...data, cleanDays: [...data.cleanDays, { habitId: habit.id, day: t0 }] }, habit.id);
-    const hit = MILESTONES.find((m) => m === s && !data.settings.celebrated.includes(m));
-    if (hit) { setTimeout(() => setMilestone(hit), 900); actions.celebrate(hit); }
+    const s = careDays({ ...data, cleanDays: [...data.cleanDays, { habitId: habit.id, day: t0 }] }, habit.id);
+    const m = milestoneToCelebrate(s, data.settings.celebrated, MILESTONES);
+    if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setSettings({ celebrated: m.seen }); }
     else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, t0) } });
+  }
+  function rest(on: boolean) {
+    if (!actions.setRest(habit.id, t0, on)) return;
+    haptic.select();
+    if (on) toast(restLine(tone), { action: { label: "Undo", run: () => actions.setRest(habit.id, t0, false) } });
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
-    setNote(d.binge ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
-    void scheduleCare("slip", careOpts());
+    setNote(d.binge && data.settings.petLife === "classic" ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
+    // No "won't eat" notification after a slip: a guilt nudge from the pet hours later doesn't help anyone.
   }
   const react = (r: Reaction) => setNote(say(r, personality, tone));
 
   const ws = weekStart(t0);
   const strip = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(ws, i);
-    const s = d > t0 ? "future" : data.entries.some((e) => e.habitId === habit.id && e.day === d) ? "slip" : data.cleanDays.some((c) => c.habitId === habit.id && c.day === d) ? "clean" : "none";
+    const s = dayStatus(data, habit.id, d, t0);
     return { d, s, label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
   });
 
@@ -157,7 +167,14 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         </div>
       </motion.section>
 
-      {age >= 90 && <motion.div className="banner danger" role="alert" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
+      {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
+
+      {focus && (
+        <motion.section className="card stack tight plan-card" aria-label="Your plan" variants={rise}>
+          <span className="muted small">{focus.kind === "week" ? "This week's focus" : "Your first step"}</span>
+          <b>{focus.text}</b>
+        </motion.section>
+      )}
 
       <AnimatePresence initial={false}>
         {showPlan && plan && (
@@ -170,23 +187,27 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
       </AnimatePresence>
 
       <motion.section className="checkin" aria-label="Today's check-in" variants={rise}>
-        <div className="row"><h2>Today</h2><span className="muted small">{checked ? (cleanToday ? "Checked in" : "Logged") : "Not checked in yet"}</span></div>
+        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : resting ? "Not tracking" : "Not recorded yet"}</span></div>
         <div className="actions">
           <Button variant="secondary" className="slip-btn" onClick={() => setSheet(true)}>I slipped</Button>
           <motion.button className="btn clean-btn" data-done={cleanToday} onClick={clean} aria-pressed={cleanToday} disabled={slippedToday}
             whileTap={cleanToday || slippedToday ? undefined : { scale: 0.95 }} transition={spring.snappy} layout>
             <AnimatePresence mode="wait" initial={false}>
               {cleanToday
-                ? <motion.span key="done" className="btn-inner" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={spring.bouncy}>{Icon.check} Clean today</motion.span>
-                : <motion.span key="todo" className="btn-inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.8 }}>Clean today</motion.span>}
+                ? <motion.span key="done" className="btn-inner" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={spring.bouncy}>{Icon.check} Goal met</motion.span>
+                : <motion.span key="todo" className="btn-inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.8 }}>Goal met today</motion.span>}
             </AnimatePresence>
           </motion.button>
         </div>
+        <div className="row tight-row">
+          <Button variant="text" onClick={() => setUrge(true)}>Having an urge?</Button>
+          {!checked && <Button variant="text" onClick={() => rest(!resting)} aria-pressed={resting}>{resting ? "Track today after all" : "Not tracking today"}</Button>}
+        </div>
         <div className="weekstrip" aria-label="This week">
           {strip.map((x) => (
-            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${x.s}`}>
+            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${STATUS_LABEL[x.s]}`}>
               <span className="muted small">{x.label}</span>
-              <motion.i layout initial={false} animate={{ scale: x.s === "none" || x.s === "future" ? 0.7 : 1 }} transition={spring.bouncy} />
+              <motion.i layout initial={false} animate={{ scale: x.s === "unrecorded" || x.s === "future" ? 0.7 : 1 }} transition={spring.bouncy} />
             </div>
           ))}
         </div>
@@ -197,7 +218,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         <div className="card stat"><div className="muted small">Life lost this week</div><div className="v"><AnimatedNumber value={week.months} decimals={1} /> <small>mo</small></div></div>
         {habit.unit === "money"
           ? <div className="card stat"><div className="muted small">Spent this week</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(week.spend)} /></div></div>
-          : <div className="card stat"><div className="muted small">Clean days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
+          : <div className="card stat"><div className="muted small">Goal-met days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
         <button className="card stat link-card" onClick={() => onNavigate("insights")}>
           <span className="muted small">Your patterns, in words</span>
           <span className="link-row"><b>Insights</b>{Icon.chevR}</span>

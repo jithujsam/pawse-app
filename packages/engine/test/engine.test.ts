@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, NO_DEATH_CEILING_MONTHS, repeatMultiplier, simulate, stageForAge } from "../src";
+import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, repeatMultiplier, simulate, stageForAge } from "../src";
 import { pattern } from "../src/simulate";
 
 const firstDay = (states: ReturnType<typeof simulate>, age: number) => states.findIndex((s) => s.visibleAge >= age) + 1;
@@ -150,21 +150,36 @@ describe("missed check-ins", () => {
   });
 });
 
-describe("optional no-death ceiling", () => {
-  it("leaves the standard rules (and the PRD 5.3 pacing) untouched when not asked for", () => {
-    const days = pattern(120, () => 3, 1.5);
+// Continuity rules (PAWSE 3.0): an option on the fold. The PRD 5.3 pacing table above is pinned with
+// the default options; these tests pin what continuity changes and that it leaves ordinary pacing alone.
+describe("continuity rules", () => {
+  it("default options reproduce the PRD fold exactly", () => {
+    const days = pattern(120, (i) => (i % 3 === 0 ? 3 : i % 5 === 0 ? 1 : 0), 1.5);
     expect(simulate(days, {})).toEqual(simulate(days));
-    expect(firstDay(simulate(days), 100)).toBeGreaterThanOrEqual(50);
   });
-  it("with the ceiling, the heaviest pattern stays frail at age 99 and never dies", () => {
-    const s = simulate(pattern(400, () => 5, 3), { ceilingMonths: NO_DEATH_CEILING_MONTHS });
-    expect(s.some((x) => x.stage === "dead")).toBe(false);
-    expect(Math.max(...s.map((x) => x.visibleAge))).toBeCloseTo(99, 9);
-    expect(s[s.length - 1].stage).toBe("frail");
+  it("pacing below the ceiling is unchanged: light and medium patterns age the same until scars matter", () => {
+    const medium = pattern(200, () => 1, 1.0);
+    const a = simulate(medium), b = simulate(medium, CONTINUITY);
+    expect(firstDay(b, 70)).toBe(firstDay(a, 70));
+    expect(b[199].visibleAge).toBeCloseTo(a[199].visibleAge, 9);
   });
-  it("a clean day heals straight away from the ceiling", () => {
-    const s = simulate([...pattern(200, () => 5, 3), ...pattern(10, () => 0, 1)], { ceilingMonths: NO_DEATH_CEILING_MONTHS });
-    expect(s[200].healedMonths).toBe(1.5);
-    expect(s[209].visibleAge).toBeLessThan(99);
+  it("the heavy pattern reaches frail on the same day but never dies", () => {
+    const heavy = pattern(120, () => 3, 1.5);
+    const a = simulate(heavy), b = simulate(heavy, CONTINUITY);
+    expect(firstDay(b, 80)).toBe(firstDay(a, 80));
+    expect(b.some((s) => s.stage === "dead")).toBe(false);
+    expect(Math.max(...b.map((s) => s.visibleAge))).toBeCloseTo(99, 9);
+  });
+  it("recovery starts on the first clean day even after a long heavy stretch", () => {
+    const s = simulate([...pattern(120, () => 3, 1.5), ...pattern(1, () => 0, 1)], CONTINUITY);
+    expect(s[120].healedMonths).toBe(1.5);
+    expect(s[120].visibleAge).toBeLessThan(s[119].visibleAge);
+  });
+  it("without scars, enough clean days bring the companion all the way back", () => {
+    const s = simulate([...pattern(10, () => 3, 1.5), ...pattern(400, () => 0, 1)], CONTINUITY);
+    const last = s[s.length - 1];
+    expect(last.netMonths).toBe(0);
+    expect(floorAge(last)).toBe(0);
+    expect(cleanDaysToAge(s[9], 0)).not.toBeNull();
   });
 });

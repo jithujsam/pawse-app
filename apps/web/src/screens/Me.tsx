@@ -12,7 +12,9 @@ import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, bestStreak, canAllowPassingAway, cleanStreak, useActiveView, useData, vault } from "../store";
+import { actions, bestStreak, cleanStreak, useActiveView, useData, vault, viewCompanion } from "../store";
+import { careDays } from "../recovery";
+import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
 import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
@@ -30,7 +32,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
 
-type Page = "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
+type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
 
 export function Me() {
   const data = useData();
@@ -63,6 +65,11 @@ export function Me() {
       {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
 
       <motion.div variants={rise}>
+        <Group title="Your plan">
+          <Row icon={Icon.list} label="Goal, reasons and what helps" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
+        </Group>
+      </motion.div>
+      <motion.div variants={rise}>
         <Group title="Companion">
           <Row icon={Icon.paw} label="Your companion" value={companion.name} onClick={() => setPage("pet")} />
           <Row icon={Icon.chat} label="Voice" value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
@@ -94,6 +101,7 @@ export function Me() {
         </Group>
       </motion.div>
 
+      <SubPage open={page === "plan"} title="Your plan" onClose={close}><PlanPage /></SubPage>
       <SubPage open={page === "pet"} title="Your companion" onClose={close}><PetPage /></SubPage>
       <SubPage open={page === "voice"} title="Voice" onClose={close}><VoicePage /></SubPage>
       <SubPage open={page === "reminders"} title="Reminders" onClose={close}><RemindersPage /></SubPage>
@@ -118,6 +126,9 @@ function PetPage() {
   const [name, setName] = useState(companion.name);
   const hall = data.companions.filter((c) => c.diedOn);
   const best = Math.max(bestStreak(data, habit.id), cleanStreak(data, habit.id));
+  const care = careDays(data, habit.id);
+  // Classic rules can only be switched on if the history wouldn't already mean death under them.
+  const classicDead = settings.petLife !== "classic" && viewCompanion({ ...data, settings: { ...settings, petLife: "classic" } }, companion.id).states.some((s) => s.stage === "dead");
   const save = () => {
     const n = name.trim();
     if (!n || n === companion.name) { setName(companion.name); return; }
@@ -161,23 +172,31 @@ function PetPage() {
       </div>
     </section>
     <section className="card stack">
-      <div className="row"><h2>Wardrobe</h2><span className="muted small">Best streak {best} {best === 1 ? "day" : "days"}</span></div>
+      <div className="row"><h2>Wardrobe</h2><span className="muted small">{care} {care === 1 ? "day" : "days"} of care</span></div>
       <div className="wardrobe">
         <motion.button className="ward" data-on={!settings.wear} whileTap={{ scale: 0.94 }} onClick={() => { haptic.select(); actions.setSettings({ wear: null }); }}><b>None</b></motion.button>
         {ACCESSORIES.map((a) => {
-          const open = best >= a.days;
+          const open = Math.max(best, care) >= a.days;
           return (
             <motion.button key={a.id} className="ward" data-on={settings.wear === a.id} disabled={!open} whileTap={open ? { scale: 0.94 } : undefined}
               onClick={() => { haptic.select(); actions.setSettings({ wear: a.id }); }}>
-              <b>{a.label}</b><span className="small muted">{open ? "Unlocked" : `${a.days} clean days`}</span>
+              <b>{a.label}</b><span className="small muted">{open ? "Unlocked" : `${a.days} days of care`}</span>
             </motion.button>
           );
         })}
       </div>
-      <p className="muted small">Each one unlocks with a clean streak, and stays yours.</p>
+      <p className="muted small">Days of care are days with your goal met or an urge managed. They add up and never reset, and every unlock stays yours.</p>
     </section>
     <section className="card stack">
-      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint={settings.remindersOn ? "A thank-you after clean days, and a note when it won't eat" : "Needs reminders to be on"} />
+      <h2>How {companion.name}'s health works</h2>
+      <p className="small">Slips you log age {companion.name} a little. Days with your goal met heal them. Days you don't record change nothing. {settings.petLife === "classic"
+        ? "Classic rules are on: some damage is permanent, and at 100 a companion dies and you adopt a new one."
+        : `${companion.name} can get very frail but never dies, and every month can heal back with enough good days.`}</p>
+      <Switch checked={settings.petLife === "classic"} onChange={(v) => { if (v && classicDead) return; actions.setSettings({ petLife: v ? "classic" : "continuity" }); }}
+        label="Classic rules" hint={classicDead ? `Not available: under classic rules ${companion.name}'s history would already have ended.` : "Permanent scars and death at 100. Off by default."} />
+    </section>
+    <section className="card stack">
+      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint={settings.remindersOn ? "A thank-you after good days, and a note when it won't eat" : "Needs reminders to be on"} />
     </section>
     <section className="card stack">
       <h2>Hall of Companions</h2>
@@ -231,7 +250,7 @@ function RemindersPage() {
       )}</AnimatePresence>
       <p className="muted small">One quiet nudge a day, in {companion.name}'s voice.</p>
       <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label="Risky-hour heads-up" hint="Once your pattern is clear, a note half an hour before your usual slip time" />
-      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint="A thank-you after clean days, and a note when it won't eat" />
+      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint="A thank-you after good days, and a note when it won't eat" />
     </section>
   );
 }
@@ -364,23 +383,12 @@ function AppearancePage() {
 }
 
 function FeelPage() {
-  const data = useData();
-  const { settings } = data;
-  const name = useActiveView()?.companion.name ?? "Your companion";
-  const setPassing = (on: boolean) => {
-    if (on && !canAllowPassingAway(data)) {
-      toast(`Not yet: under the standard rules ${name} would already be gone. Some clean days first, then try again.`, { kind: "bad", ms: 5000 });
-      return;
-    }
-    actions.setSettings({ petsCanDie: on });
-  };
+  const { settings } = useData();
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
       <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
-      <Switch checked={settings.petsCanDie} onChange={setPassing} label={`${name} can pass away`}
-        hint={settings.petsCanDie ? "At age 100 a companion dies and you can adopt a new one. Turn off to keep them: very frail at worst, never gone." : `${name} can get very frail but never dies, and clean days always bring them back.`} />
-      {settings.petsCanDie && <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />}
+      <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>

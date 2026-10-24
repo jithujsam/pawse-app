@@ -78,9 +78,40 @@ export interface Urge {
   day: string;
   time: string | null;
   strength: number;
+  /** rode_it_out: the person managed it without acting on it. slipped: they acted on it. */
   outcome: "rode_it_out" | "slipped";
   createdAt: number;
+  /** The coping strategy the person was using when it ended, if they picked one. */
+  strategy?: StrategyId | null;
+  /** What they said set it off, if anything (a mood or situation label, in their words). */
+  trigger?: string | null;
 }
+
+/** Ways to get through an urge. The person can switch between them at any point. */
+export type StrategyId = "observe" | "name" | "move" | "friction" | "breathe" | "replace" | "reach";
+
+/** What the person is aiming for. Their goal, not ours. */
+export type GoalKind = "stop" | "reduce" | "understand";
+
+/** The person's own plan: why, what's hard, what helps, and one realistic next step. Everything is optional. */
+export interface RecoveryPlan {
+  goal: GoalKind | null;
+  /** Reasons for change, in their words (chip labels or typed). */
+  reasons: string[];
+  /** Situations that tend to be difficult (late at night, payday...). */
+  situations: string[];
+  /** One small, realistic first step. */
+  firstStep: string;
+  /** Strategies they'd like offered first when an urge hits, in order. */
+  strategies: StrategyId[];
+  /** Someone they could reach out to. A name only: no numbers or contacts are stored. */
+  supportName: string;
+  /** If-then plans, mostly added after a lapse ("If I'm home alone after 10, then I'll ..."). */
+  ifThen: string[];
+}
+
+/** The one adjustment picked in a weekly review, for the week that follows it. */
+export interface WeekFocus { week: string; text: string }
 
 /** One short reflection per day. */
 export interface JournalEntry { day: string; mood: number; body: string }
@@ -126,13 +157,19 @@ export interface Settings {
   accent: "pet" | "coral" | "ocean" | "forest" | "berry" | "plum" | "slate";
   /** Show the 3D pet where one exists (dog, fox). Off means the 2D art everywhere. */
   pet3d: boolean;
-  /**
-   * Whether a companion passes away at age 100 (the PRD rule, and the default). Off: it can become very frail
-   * (age 99) but never dies, and clean days always bring it back. Companions that already died stay in the Hall.
-   */
-  petsCanDie: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
+  /** The person's recovery plan (onboarding, editable in Me). Null until they start one. */
+  plan: RecoveryPlan | null;
+  /** Days the person chose not to track. Neither progress nor a lapse; never counted either way. */
+  restDays: string[];
+  /** One adjustment per reviewed week. */
+  weekFocus: WeekFocus[];
+  /**
+   * continuity: the companion can become very frail but never dies, and all damage can heal back.
+   * classic: the PRD rules, with death at 100, a permanent scar floor and binge scars.
+   */
+  petLife: "continuity" | "classic";
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";
