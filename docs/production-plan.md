@@ -7,8 +7,9 @@ The PRD stays the source of truth. Nothing here changes engine math.
 ## Status
 
 - Phase 1: done.
-- Phase 2: done in the app. Migration `0002_normalized.sql` is written but not yet applied, so sync has not run against a real database yet. The sync mapping is covered by unit tests only.
-- Phase 3: done in the app. The hardened `ai` function is written; it still has to be deployed, and `OPENROUTER_API_KEY` set as a function secret.
+- Phase 2: done in the app. Migration `0002_normalized.sql` is tested against a local Postgres (`supabase/tests/`) but not yet applied to the live project, so sync has not run against the real database.
+- Phase 3: done. The `ai` function is deployed (GPT-4.1 mini via OpenRouter). It still needs the `OPENROUTER_API_KEY` secret in the live project.
+- Auth: login required; email links open the app through `app.detoxcompanion://auth-callback` (PKCE).
 - Round 2: serif headings (Newsreader), research-based one-tap check-in questions (`docs/check-in-questions.md`), equal-size card groups, login required before use, and a sandboxed simulator in You that plays one day every 2 seconds.
 - Not done: biometric unlock, home-screen widgets (PRD phase 4).
 
