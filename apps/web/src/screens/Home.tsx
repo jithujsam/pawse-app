@@ -6,9 +6,8 @@ import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { scheduleCare, scheduleRisk } from "../notify";
-import { actions, cleanStreak, recoveryPlan, riskyHour, treatsLeft, useActiveView, useData, weekStats, type Deduction } from "../store";
-import { useTalkBack } from "../talk";
+import { scheduleCare, scheduleLapse, scheduleRisk } from "../notify";
+import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, weekStats, type Deduction } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -16,6 +15,8 @@ import { Coach } from "../ui/Coach";
 import { recoveryLine, say } from "../voice";
 import { LogSheet } from "./LogSheet";
 import { UrgeSheet } from "./UrgeSheet";
+import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
+import { conditions, healthReport } from "../health";
 import { openDownload, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { ACCESSORIES } from "../pets";
@@ -35,7 +36,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const [milestone, setMilestone] = useState<number | null>(null);
   const [act, setAct] = useState<Gesture>("none");
   const actTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const talk = useTalkBack();
   const update = useUpdate();
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
@@ -50,25 +50,32 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const slippedToday = data.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const cleanToday = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
   const checked = slippedToday || cleanToday;
-  const mood = moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
+  const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
+  const mood = lonely && !just ? "sad" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
   const week = weekStats(data, habit.id, weekStart(t0));
   const streak = cleanStreak(data, habit.id);
   const weekClean = data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= weekStart(t0) && c.day <= t0).length;
   const age = view.age;
   const danger = age >= 80;
-  const treats = treatsLeft(data, habit.id);
-  const fedToday = data.settings.fedOn === t0;
+  const report = healthReport(data, view, tone);
+  const conds = conditions(data, view);
+  const [health, setHealth] = useState<HealthTab | null>(null);
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
+    : lonely ? `There you are! ${companion.name} missed you. A check-in today starts the healing again.`
     : slippedToday && !just ? say("strike", personality, tone)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
-  const gesture: Gesture = talk.state === "talking" ? "talk" : talk.state === "listening" ? "perk" : act;
+  const gesture: Gesture = act;
 
   // Keep the risky-hour heads-up in step with the person's actual pattern.
   const risk = riskyHour(data, habit.id);
   useEffect(() => { void scheduleRisk(risk, { tone, personality, name: companion.name, enabled: data.settings.riskNudge && data.settings.remindersOn }); },
     [risk, tone, personality, companion.name, data.settings.riskNudge, data.settings.remindersOn]);
+
+  // "We miss you" reminders count from the latest check-in.
+  const lastCheckIn = [companion.bornOn, ...data.entries.filter((e) => e.habitId === habit.id).map((e) => e.day), ...data.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day)].sort().pop()!;
+  useEffect(() => { void scheduleLapse(lastCheckIn, { tone, name: companion.name, enabled: data.settings.remindersOn }); }, [lastCheckIn, tone, companion.name, data.settings.remindersOn]);
 
   const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn });
@@ -89,18 +96,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
     setJust("slip"); haptic.heavy();
     setNote(d.binge ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
     void scheduleCare("slip", careOpts());
-  }
-  function feed() {
-    const r = actions.feed(habit.id);
-    if (r === "strike") { haptic.warn(); perform("refuse", 2200); setNote(say("strike", personality, tone)); return; }
-    if (r === "full") { haptic.tap(); perform("tilt", 1400); setNote(say("full", personality, tone)); return; }
-    haptic.success(); perform("eat", 2000); setNote(say("fed", personality, tone));
-  }
-  function treat() {
-    const r = actions.giveTreat(habit.id);
-    if (r === "strike") { haptic.warn(); perform("refuse", 2200); setNote(say("strike", personality, tone)); return; }
-    if (r === "empty") { haptic.tap(); perform("side", 1600); setNote(say("noTreats", personality, tone)); return; }
-    haptic.success(); perform("treat", 1400); setSparks((s) => s + 1); setNote(say("treat", personality, tone));
   }
   const react = (r: Reaction) => setNote(say(r, personality, tone));
 
@@ -139,7 +134,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         <div className="pet-stage-live">
           <LiveCompanion species={companion.species} coat={companion.coat} personality={personality} accessory={data.settings.wear}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} />
-          <Bowl state={act === "eat" ? "eating" : slippedToday ? "untouched" : fedToday ? "empty" : "ready"} />
         </div>
         <AnimatePresence mode="wait">
           <motion.p key={line} className="speech" aria-live="polite"
@@ -147,20 +141,15 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
             {line}
           </motion.p>
         </AnimatePresence>
-        <div className="care-row" role="group" aria-label="Care">
-          <motion.button className="care-btn" onClick={feed} whileTap={{ scale: 0.9 }} transition={spring.snappy} data-state={slippedToday ? "strike" : fedToday ? "done" : "ready"}>
-            <span className="care-ico" aria-hidden>{CareIcon.bowl}</span><span className="small">{slippedToday ? "Not eating" : fedToday ? "Fed" : "Feed"}</span>
-          </motion.button>
-          <motion.button className="care-btn" onClick={treat} whileTap={{ scale: 0.9 }} transition={spring.snappy} aria-label={`Give a treat, ${treats} left`}>
-            <span className="care-ico" aria-hidden>{CareIcon.treat}{treats > 0 && <i className="care-badge">{treats > 99 ? "99+" : treats}</i>}</span><span className="small">Treat</span>
-          </motion.button>
-          {talk.supported && (
-            <motion.button className="care-btn" data-state={talk.state} whileTap={{ scale: 0.9 }} transition={spring.snappy}
-              aria-label="Hold to talk. Your companion repeats it."
-              onPointerDown={(e) => { e.preventDefault(); haptic.tap(); void talk.start(); }} onPointerUp={talk.stop} onPointerLeave={talk.stop} onContextMenu={(e) => e.preventDefault()}>
-              <span className="care-ico" aria-hidden>{CareIcon.mic}</span><span className="small">{talk.state === "listening" ? "Listening…" : talk.state === "denied" ? "Mic off" : "Hold to talk"}</span>
+        <div className="vitals" role="group" aria-label={`${companion.name}'s health`}>
+          {VITALS.map((v) => (
+            <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
+              aria-label={v.id === "health" ? `Health: ${report.title}, ${report.heart} of 100` : v.label}>
+              <span className="vital-ico">{v.id === "health" ? <Heart value={report.heart} level={report.level} size={24} /> : v.icon}
+                {v.id === "conditions" && conds.length > 0 && <i className="care-badge" data-tone={conds.some((c) => c.tone === "serious") ? "bad" : "warn"}>{conds.length}</i>}</span>
+              <span className="small">{v.id === "health" ? `${report.heart}` : v.label}</span>
             </motion.button>
-          )}
+          ))}
         </div>
         <div className="agetext"><span>Age <b><AnimatedNumber value={Math.round(age)} /></b></span><span className="muted">Life left <AnimatedNumber value={100 - Math.round(age)} /></span></div>
         <div className={`agebar${danger ? " danger" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(age)} aria-label="Visible age">
@@ -216,35 +205,21 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         </button>
       </motion.section>
 
+      <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
       <UrgeSheet open={urge} onClose={() => setUrge(false)} onSlipped={() => { setUrge(false); setTimeout(() => setSheet(true), 350); }} />
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
       <Milestone days={milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-      {!data.settings.coachSeen && !sheet && !urge && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
+      {!data.settings.coachSeen && !sheet && !urge && !health && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
     </motion.main>
   );
 }
 
-const CareIcon = {
-  bowl: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12h18a9 6 0 0 1-18 0z" /><path d="M8 9c0-2 2-2 2-4M13 9c0-2 2-2 2-4" /></svg>,
-  treat: <svg viewBox="0 0 24 24" className="ico"><path d="M7 8a3 3 0 1 1 3-3h4a3 3 0 1 1 3 3v8a3 3 0 1 1-3 3h-4a3 3 0 1 1-3-3z" /></svg>,
-  mic: <svg viewBox="0 0 24 24" className="ico"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>,
-};
-
-/** The food bowl beside the companion. After a slip, food sits untouched. */
-function Bowl({ state }: { state: "ready" | "eating" | "empty" | "untouched" }) {
-  const full = state === "ready" || state === "untouched";
-  return (
-    <svg className={`bowl bowl-${state}`} viewBox="0 0 60 34" width="54" height="31" aria-hidden>
-      {(full || state === "eating") && (
-        <g className="kibble">
-          {[[18, 12], [26, 9], [34, 11], [42, 13], [22, 15], [30, 14], [38, 15]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.6" fill={i % 2 ? "#b8743a" : "#a0612b"} />)}
-        </g>
-      )}
-      <path d="M6 15h48l-5 15a3 3 0 0 1-3 2H14a3 3 0 0 1-3-2z" fill="var(--accent)" />
-      <path d="M6 15h48" stroke="color-mix(in srgb, var(--accent) 60%, #000)" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
+const VITALS: { id: HealthTab; label: string; icon: React.JSX.Element | null }[] = [
+  { id: "health", label: "Health", icon: null },
+  { id: "history", label: "History", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></svg> },
+  { id: "conditions", label: "Conditions", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M6 3v6a4 4 0 0 0 8 0V3M10 13v2a5 5 0 0 0 10 0v-2" /><circle cx="20" cy="11" r="2" /></svg> },
+  { id: "stats", label: "You & pet", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2" /></svg> },
+];
 
 function Milestone({ days, name, onClose, view }: { days: number | null; name: string; onClose: () => void; view: NonNullable<ReturnType<typeof useActiveView>> }) {
   const data = useData();

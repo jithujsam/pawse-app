@@ -119,3 +119,22 @@ describe("recovery plan", () => {
     expect(cleanDaysToAge(last, 1)).toBeNull();
   });
 });
+
+describe("missed check-ins", () => {
+  const silent = (n: number, from = 0) => pattern(n, () => 0, 1).map((d, i) => ({ ...d, day: `2027-01-${String(from + i + 1).padStart(2, "0")}`, clean: false, missed: true }));
+  it("two silent days are free; each one after that costs 1.5 months", () => {
+    const s = simulate(silent(5));
+    expect(s.map((x) => x.neglectMonths)).toEqual([0, 0, 1.5, 1.5, 1.5]);
+    expect(s[4].netMonths).toBeCloseTo(4.5, 9);
+  });
+  it("any check-in resets the count, and unflagged days (today, history before the rule) cost nothing", () => {
+    const days = [...silent(3), { day: "2027-01-04", damage: [], clean: true }, ...silent(2, 4)];
+    expect(simulate(days).reduce((a, x) => a + x.neglectMonths, 0)).toBe(1.5);
+    expect(simulate(pattern(10, () => 0, 1).map((d) => ({ ...d, clean: false }))).every((x) => x.neglectMonths === 0)).toBe(true);
+  });
+  it("the reserve absorbs loneliness first, like any other damage", () => {
+    const s = simulate([...pattern(1, () => 1, 1), ...pattern(80, () => 0, 1), ...silent(4)]);
+    expect(s[s.length - 1].absorbedMonths).toBe(1.5);
+    expect(s[s.length - 1].damageMonths).toBe(0);
+  });
+});

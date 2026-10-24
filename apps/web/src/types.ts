@@ -120,6 +120,8 @@ export interface Settings {
   savingsGoal: SavingsGoal | null;
   /** A heads-up before the hour slips usually happen. */
   riskNudge: boolean;
+  /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
+  neglectFrom: string | null;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";

@@ -10,6 +10,9 @@ export const RESERVE_MAX_ABSORB_PER_DAY = 6;
 /** A day with this many slips is a binge: part of its damage becomes a permanent scar (lower life expectancy). */
 export const BINGE_SLIPS = 3;
 export const BINGE_SCAR_RATIO = 0.25;
+/** Missed check-ins: after a grace of 2 silent days, each further silent day costs this much (loneliness). */
+export const NEGLECT_GRACE_DAYS = 2;
+export const NEGLECT_MONTHS = 1.5;
 export const MIN_SEVERITY = 0.5;
 export const MAX_SEVERITY = 3.0;
 export const MAX_REPEAT_MULTIPLIER = 2.0;

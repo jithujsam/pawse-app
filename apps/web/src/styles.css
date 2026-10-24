@@ -1,6 +1,6 @@
 /* One palette. The only colour that changes is the accent, and it comes from the pet. Light by day, warm charcoal by night. */
 :root {
-  --accent: #3a6ea5; --accent-dark: #8db8ea;
+  --accent: #c2572a; --accent-dark: #f09a6c;
   --ground: color-mix(in srgb, var(--accent) 5%, #f4f6f8); --surface: #ffffff; --raised: color-mix(in srgb, var(--accent) 6%, #eef1f4); --control: color-mix(in srgb, var(--accent) 12%, #d3d9e0);
   --hero-a: color-mix(in srgb, var(--accent) 17%, #ffffff); --hero-b: color-mix(in srgb, var(--accent) 6%, #ffffff);
   --text: #16202b; --muted: #5d6874; --on-accent: #ffffff; --soft: color-mix(in srgb, var(--accent) 14%, #ffffff);
@@ -301,6 +301,36 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .care-btn[data-state="listening"] .care-ico { color: var(--on-accent); animation: pulse 1s ease-in-out infinite; }
 .care-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .agebar { position: relative; }
+.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.vital { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 4px; cursor: pointer; padding: 0; font-weight: 600; }
+.vital-ico { position: relative; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--surface) 78%, transparent); color: var(--accent); box-shadow: var(--shadow); }
+.vital-ico .ico { width: 22px; height: 22px; }
+.vital .small { font-size: 12px; }
+.vital:focus-visible .vital-ico { outline: 2px solid var(--accent); outline-offset: 2px; }
+.care-badge[data-tone="warn"] { background: #d9a531; }
+.care-badge[data-tone="bad"] { background: var(--negative); }
+.vital .care-badge { top: -2px; right: -4px; }
+.health-tabs .seg { font-size: 13px; min-height: 40px; padding: 0 4px; }
+.health-hero { display: flex; align-items: center; gap: 16px; }
+.health-num { font: 600 34px/1 var(--serif); }
+.health-num small { font: 600 14px var(--font); color: var(--muted); }
+.cond { border-left: 4px solid #d9a531; }
+.cond[data-tone="mild"] { border-left-color: var(--positive); }
+.cond[data-tone="serious"] { border-left-color: var(--negative); }
+.cond-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.cond-fix { color: var(--text); }
+.stats.stats-3 { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stats-3 .stat { min-height: 84px; padding: 12px; }
+.stat .v.sm { font-size: 20px; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.timeline li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; position: relative; padding-bottom: 14px; }
+.timeline li::before { content: ""; position: absolute; left: 9px; top: 14px; bottom: 0; width: 2px; background: var(--line); }
+.timeline li:last-child::before { display: none; }
+.timeline li > i { width: 12px; height: 12px; margin: 4px; border-radius: 50%; background: var(--control); display: block; }
+.timeline li > div { display: grid; gap: 2px; }
+.timeline li[data-kind="slip"] > i, .timeline li[data-kind="binge"] > i, .timeline li[data-kind="lonely"] > i { background: var(--negative); }
+.timeline li[data-kind="clean"] > i, .timeline li[data-kind="shrug"] > i, .timeline li[data-kind="urge"] > i { background: var(--positive); }
+.timeline li[data-kind="milestone"] > i, .timeline li[data-kind="born"] > i { background: var(--accent); }
 .agebar-cap { position: absolute; top: 0; bottom: 0; right: 0; background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--negative) 40%, transparent) 0 3px, transparent 3px 6px); border-left: 2px solid var(--negative); }
 .plan p { font-weight: 550; }
 .unlock { background: var(--soft); border-radius: 14px; padding: 8px 14px; font-size: 14px; }

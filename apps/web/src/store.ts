@@ -79,6 +79,7 @@ export async function boot(): Promise<Boot> {
     const loaded = raw === undefined ? null : normalize(raw);
     if (raw !== undefined && !loaded) await kv.set(`data.unreadable.${Date.now()}`, raw);
     data = migrateIds(loaded ?? blank());
+    if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
     if (legacy || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
   } catch { data = blank(); }
   return { kind: "ready" };
@@ -90,6 +91,7 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   if (!r) return false;
   vaultKey = r.k;
   data = migrateIds(normalize(r.value) ?? blank());
+  if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
   listeners.forEach((l) => l());
   return true;
 }
@@ -127,8 +129,10 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
   const damage = new Map<string, number[]>();
   for (const e of d.entries) if (e.companionId === companionId) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
   const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
+  const from = d.settings.neglectFrom;
+  // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    day, damage: damage.get(day) ?? [], clean: clean.has(day),
+    day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
   const states = simulate(inputs);
   const current = states[states.length - 1];
@@ -200,6 +204,15 @@ export function treatsLeft(d: AppData, habitId: string): number {
   return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - d.settings.treatsGiven);
 }
 
+/** Days since the last check-in (slip or clean day), counting from yesterday. 0 if today or yesterday is logged. */
+export function silentDays(d: AppData, habitId: string, bornOn: string): number {
+  const t = today();
+  let last = bornOn;
+  for (const e of d.entries) if (e.habitId === habitId && e.day > last) last = e.day;
+  for (const c of d.cleanDays) if (c.habitId === habitId && c.day > last) last = c.day;
+  return Math.max(0, daysBetween(last, t) - 1);
+}
+
 export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => {
   const end = addDays(weekStartDay, 6);
   const es = d.entries.filter((e) => e.habitId === habitId && e.day >= weekStartDay && e.day <= end);
@@ -258,7 +271,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
+      settings: { ...data.settings, neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
       companions: [companion], habits: [habit],
     });
   },
@@ -377,21 +390,6 @@ export const actions = {
     commit({ ...data, journal: mood ? [...rest, entry].sort((a, b) => a.day.localeCompare(b.day)) : rest });
   },
 
-  /** Feeding: true if the companion ate. It refuses on a day with a slip, and eats once a day. */
-  feed(habitId: string): "ate" | "full" | "strike" {
-    const t = today();
-    if (data.entries.some((e) => e.habitId === habitId && e.day === t)) return "strike";
-    if (data.settings.fedOn === t) return "full";
-    commit({ ...data, settings: { ...data.settings, fedOn: t } });
-    return "ate";
-  },
-  /** Gives one treat from the jar (one is earned per clean day). */
-  giveTreat(habitId: string): "ate" | "empty" | "strike" {
-    if (data.entries.some((e) => e.habitId === habitId && e.day === today())) return "strike";
-    if (treatsLeft(data, habitId) <= 0) return "empty";
-    commit({ ...data, settings: { ...data.settings, treatsGiven: data.settings.treatsGiven + 1 } });
-    return "ate";
-  },
   setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "personality">) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
 

@@ -125,6 +125,8 @@ A companion that has been well for about two months shrugs off a one-off slip: v
 
 **Appetite (v2, presentation only):** on a day with a slip the companion refuses food ("Not hungry. Not until you stop."); it eats again after a clean day. This is behaviour and copy, not engine math.
 
+**Missed check-ins (v3):** a day with nothing logged (no slip, no clean day) is "quiet". The first two quiet days in a row cost nothing; each further one costs 1.5 months (loneliness), absorbed first by the hidden reserve. The rule only applies from the day it shipped on a given account (no retroactive ageing), never to today, and never after death. Healing still needs a clean day, so a pet only recovers when the person keeps checking in. Reminders go out after 2, 4, 7 and 10 quiet days.
+
 **Rough pacing targets (to be tuned in playtests):**
 
 | Pattern | Roughly reaches stage | Time |

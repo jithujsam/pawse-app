@@ -1,5 +1,5 @@
 import {
-  BINGE_SCAR_RATIO, BINGE_SLIPS, CLEAN_DAY_HEAL_MONTHS, LIFE_BUDGET_MONTHS, RESERVE_GAIN_MONTHS,
+  BINGE_SCAR_RATIO, BINGE_SLIPS, CLEAN_DAY_HEAL_MONTHS, LIFE_BUDGET_MONTHS, NEGLECT_GRACE_DAYS, NEGLECT_MONTHS, RESERVE_GAIN_MONTHS,
   RESERVE_MAX_ABSORB_PER_DAY, RESERVE_MAX_MONTHS, SCAR_FLOOR_RATIO,
 } from "./constants";
 import { stageForAge, type Stage } from "./stage";
@@ -11,6 +11,8 @@ export interface DayInput {
   /** months_lost for each slip logged that day. */
   damage: number[];
   clean: boolean;
+  /** Nothing was logged this day (no slip, no clean day). After a short grace, silence costs a little. */
+  missed?: boolean;
 }
 
 export interface DayState {
@@ -30,6 +32,8 @@ export interface DayState {
   floorMonths: number;
   /** True on a day with BINGE_SLIPS or more slips. */
   binge: boolean;
+  /** Damage from going silent (missed check-ins past the grace days). Included in damageMonths. */
+  neglectMonths: number;
 }
 
 export function ageFromMonths(netMonths: number): number {
@@ -45,9 +49,12 @@ export function simulate(days: DayInput[]): DayState[] {
   let lifetime = 0;
   let reserve = 0;
   let bingeScar = 0;
+  let silent = 0;
   const out: DayState[] = [];
   for (const d of days) {
-    const raw = d.damage.reduce((a, b) => a + b, 0);
+    silent = d.missed && d.damage.length === 0 && !d.clean ? silent + 1 : 0;
+    const neglect = silent > NEGLECT_GRACE_DAYS ? NEGLECT_MONTHS : 0;
+    const raw = d.damage.reduce((a, b) => a + b, 0) + neglect;
     // A healthy companion's reserve takes the first hit, up to a daily cap.
     const absorbed = Math.min(reserve, raw, RESERVE_MAX_ABSORB_PER_DAY);
     reserve -= absorbed;
@@ -68,7 +75,7 @@ export function simulate(days: DayInput[]): DayState[] {
     out.push({
       day: d.day, damageMonths: damage, healedMonths: healed, netMonths: net,
       lifetimeDamage: lifetime, visibleAge, stage: stageForAge(visibleAge),
-      reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: lifetime * SCAR_FLOOR_RATIO + bingeScar, binge,
+      reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: lifetime * SCAR_FLOOR_RATIO + bingeScar, binge, neglectMonths: neglect,
     });
   }
   return out;

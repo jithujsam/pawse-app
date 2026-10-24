@@ -93,3 +93,29 @@ export async function scheduleRisk(hour: number | null, o: { tone: Tone; persona
     notifications: [{ id: RISK_ID, title, body, schedule: { on: { hour: Math.floor(at / 60), minute: at % 60 }, allowWhileIdle: true }, extra: { open: "home" } }],
   }).catch(() => undefined);
 }
+
+const LAPSE_IDS = [2010, 2011, 2012, 2013];
+/**
+ * If check-ins stop, gentle reminders after 2, 4, 7 and 10 quiet days, rescheduled from the last
+ * check-in every time the app opens or a day is logged. Honest about the cost, never morbid.
+ */
+export async function scheduleLapse(lastCheckIn: string, o: { tone: Tone; name: string; enabled: boolean }) {
+  if (!native) return;
+  await LocalNotifications.cancel({ notifications: LAPSE_IDS.map((id) => ({ id })) }).catch(() => undefined);
+  if (!o.enabled) return;
+  const perm = await LocalNotifications.checkPermissions().catch(() => ({ display: "denied" }));
+  if (perm.display !== "granted") return;
+  const n = o.name;
+  const notes: [number, string, string][] = [
+    [2, `${n} misses you`, o.tone === "brutal" ? "Two days without a check-in. How have they gone?" : "How have the last couple of days been? Ten seconds to check in."],
+    [4, `${n} is getting lonely`, `Pets only heal on days you check in. ${o.tone === "gentle" ? "Whenever you're ready." : "A quick one today keeps it that way."}`],
+    [7, `A week without news`, `${n} has started aging from loneliness. One check-in and healing starts again.`],
+    [10, `${n} really needs you`, o.tone === "gentle" ? `${n} is still here and still hoping. Come say hi.` : `Ten quiet days. ${n} is fading a little each day. Check in and turn it around.`],
+  ];
+  const [y, m, d] = lastCheckIn.split("-").map(Number);
+  const now = Date.now();
+  const list = notes.map(([days, title, body], i) => ({ id: LAPSE_IDS[i], title, body, at: new Date(y, m - 1, d + days, 19, 30) }))
+    .filter((x) => x.at.getTime() > now)
+    .map(({ at, ...x }) => ({ ...x, schedule: { at, allowWhileIdle: true }, extra: { open: "home" } }));
+  if (list.length) await LocalNotifications.schedule({ notifications: list }).catch(() => undefined);
+}
