@@ -34,6 +34,12 @@ let running: Promise<void> | null = null;
 let again = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let failures = 0;
+/**
+ * Bumped whenever this phone's sync state is thrown away (sign-out, or the phone's copy being wiped).
+ * A cycle that started before the bump stops at its next step, so it can't write old cursors into the
+ * fresh state or apply the account's rows onto a phone that was just wiped or signed out.
+ */
+let generation = 0;
 /** What this phone last pushed, so its own rows coming back are not re-applied. */
 const echo = new Map<string, number>();
 
@@ -45,9 +51,12 @@ onCommit((prev, next, source) => {
   if (source === "reset") {
     // The phone's copy was wiped, not the account's. Forget what was pending and where the pulls were,
     // so the next sync is a first sync that restores the account instead of deleting it.
-    meta = emptyMeta(); echo.clear();
+    meta = emptyMeta(); echo.clear(); generation++;
+    // Until the restore lands, the app shows "checking your account" rather than a fresh onboarding.
+    setStatus({ last: null });
     saveMeta();
-    schedule(500);
+    // A cycle in flight stops at its next step (stale generation); then the loop runs a fresh first sync.
+    if (running) again = true; else schedule(0);
     return;
   }
   if (source !== "local") return;
@@ -75,6 +84,7 @@ export async function startSync(uid: string): Promise<void> {
 }
 
 export function stopSync() {
+  generation++;
   userId = null; clearTimeout(timer); echo.clear();
   setStatus({ state: "off", pending: 0 });
 }
@@ -91,7 +101,8 @@ export function syncNow(): Promise<void> {
     try {
       do { again = false; await cycle(userId!); } while (again && userId);
       failures = 0;
-      setStatus({ state: "idle", last: Date.now() });
+      // Signed out mid-cycle: stay "off" rather than reporting a backup that belongs to nobody.
+      if (userId) setStatus({ state: "idle", last: Date.now() });
     } catch (e) {
       failures++;
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;
@@ -121,12 +132,15 @@ async function pullTable(table: Table, uid: string): Promise<Record<string, unkn
 }
 
 async function cycle(uid: string) {
+  const gen = generation;
+  const stale = () => gen !== generation;
   const first = Object.keys(meta.cursor).length === 0;
 
   // 1. pull
   const pulled = {} as Pulled;
   // All tables at once: one round trip instead of seven.
   const rows = await Promise.all(PUSH_ORDER.map((t) => (missing.has(t) ? Promise.resolve([]) : pullTable(t, uid))));
+  if (stale()) return;
   PUSH_ORDER.forEach((t, i) => { pulled[t] = rows[i]; });
   const seen: Partial<Record<Table, string>> = {};
   for (const t of PUSH_ORDER) for (const r of pulled[t] ?? []) if (!seen[t] || String(r.updated_at) > seen[t]!) seen[t] = String(r.updated_at);
@@ -170,6 +184,7 @@ async function cycle(uid: string) {
     let q = supabase!.from(ts.table).update({ deleted_at: new Date(t).toISOString(), client_updated_at: t });
     for (const [col, v] of Object.entries(ts.match)) q = q.eq(col, v);
     const { error } = await q;
+    if (stale()) return;
     if (error) throw new Error(`delete ${k}: ${error.message}`);
     if (meta.removed[k] === t) delete meta.removed[k];
     echo.set(k, t);
@@ -196,6 +211,7 @@ async function cycle(uid: string) {
         batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
         ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
       }
+      if (stale()) return;
       if (error) throw new Error(`${t}: ${error.message}`);
     }
   }

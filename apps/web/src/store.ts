@@ -240,7 +240,8 @@ export const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, dai
  */
 export function moneyKept(d: AppData, habitId: string, bornOn: string): { saved: number; days: number } | null {
   const baseline = d.settings.baseline;
-  const amounts = d.entries.filter((e) => e.habitId === habitId && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
+  // This life only: spending from earlier companions' lives isn't set against days counted since this one was born.
+  const amounts = d.entries.filter((e) => e.habitId === habitId && e.day >= bornOn && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
   const typical = median(amounts);
   if (!baseline || !typical) return null;
   const days = checkedInDays(d, habitId, bornOn).length;

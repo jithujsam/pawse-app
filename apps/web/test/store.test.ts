@@ -68,6 +68,11 @@ describe("missing days", () => {
     expect(moneyKept(world([], [{ day: born, amount: 200 }], null), H, born)).toBeNull();
   });
 
+  it("money kept after a rebirth ignores spending from the earlier life", () => {
+    const d = world([addDays(born, 1)], [{ day: addDays(born, -5), amount: 900 }, { day: born, amount: 200 }]);
+    expect(moneyKept(d, H, born)).toEqual({ saved: 2 * 200 - 200, days: 2 });
+  });
+
   it("recent pace is slips per checked-in week, and unknown with nothing logged", () => {
     expect(recentPace(world([], []), H, born)).toBeNull();
     const d = world([addDays(t0, -1), addDays(t0, -2), addDays(t0, -3)], [{ day: t0, amount: 100 }]);
