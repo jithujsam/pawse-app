@@ -99,10 +99,14 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   return true;
 }
 
+const pinWatchers = new Set<() => void>();
+/** Called when app lock is turned on or off, e.g. so the home screen widget hides or shows today's status. */
+export const onPinChange = (fn: () => void) => { pinWatchers.add(fn); return () => { pinWatchers.delete(fn); }; };
+
 export const vault = {
   hasPin: () => vaultKey !== null,
-  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length); },
-  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength"); },
+  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length).catch(() => undefined); pinWatchers.forEach((w) => w()); },
+  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength").catch(() => undefined); pinWatchers.forEach((w) => w()); },
   pinLength: async () => (await kv.get<number>("pinLength").catch(() => undefined)) ?? 4,
   /** Re-checks the current PIN without changing anything. */
   async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },

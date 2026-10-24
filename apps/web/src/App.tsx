@@ -6,7 +6,7 @@ import { Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
 import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
-import { actions, cleanStreak, useActiveView, useData, vault, type Boot } from "./store";
+import { actions, cleanStreak, onPinChange, useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -123,6 +123,8 @@ function Shell() {
   useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
   // The home screen widget opens straight into the quick check-in.
   useEffect(() => { const open = () => { setTab("home"); setQuick(true); }; window.addEventListener(OPEN_QUICK, open); return () => window.removeEventListener(OPEN_QUICK, open); }, []);
+  const [pinTick, setPinTick] = useState(0);
+  useEffect(() => onPinChange(() => setPinTick((n) => n + 1)), []);
   useEffect(() => {
     if (!view?.habit || !data.settings.onboarded) return;
     const t0 = today();
@@ -133,7 +135,7 @@ function Shell() {
     if (vault.hasPin()) { updateWidget({ species: view.companion.species, name: view.companion.name, line: "Tap to check in", sad: false }); return; }
     const line = slipped ? "Hasn't eaten today. A clean day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} clean · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
     updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
-  }, [data, view]);
+  }, [data, view, pinTick]);
   useRootBack(() => { if (tab === "home") return false; dir.current = -1; setTab("home"); return true; });
 
   const go = (t: Tab) => {

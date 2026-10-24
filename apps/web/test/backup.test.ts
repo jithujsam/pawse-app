@@ -62,3 +62,17 @@ describe("PIN encryption", () => {
     expect(a.ct).not.toBe(b.ct);
   });
 });
+
+describe("app lock changes", () => {
+  it("tell listeners (the widget) when the PIN is turned on and off", async () => {
+    const { onPinChange, vault } = await import("../src/store");
+    let n = 0;
+    const off = onPinChange(() => n++);
+    await vault.setPin("4826");
+    expect(vault.hasPin()).toBe(true);
+    await vault.removePin();
+    expect(vault.hasPin()).toBe(false);
+    expect(n).toBe(2);
+    off();
+  });
+});
