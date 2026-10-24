@@ -4,6 +4,8 @@ import { fmtDay, today } from "../dates";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions, useData } from "../store";
+import { CRISIS_MESSAGE } from "../copy";
+import { hasCrisisLanguage } from "../crisis";
 import { Button } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
@@ -32,7 +34,11 @@ export function Reflect() {
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
   const recent = [...data.journal].filter((j) => j.day !== t0).slice(-4).reverse();
 
+  const [crisis, setCrisis] = useState(false);
   function save() {
+    // Same care as the slip sheet: distress comes first, and nothing is saved.
+    if (hasCrisisLanguage(body)) { setCrisis(true); return; }
+    setCrisis(false);
     actions.setJournal(t0, mood, body.trim());
     haptic.success();
     setOpen(false);
@@ -58,6 +64,7 @@ export function Reflect() {
             <label className="field"><span className="field-label">{prompt}</span>
               <textarea className="input" value={body} maxLength={600} rows={3} placeholder="A sentence is plenty. Stays private." onChange={(e) => setBody(e.target.value)} />
             </label>
+            {crisis && <p className="banner danger" role="alert">{CRISIS_MESSAGE}</p>}
             <Button disabled={!mood} onClick={save}>Save reflection</Button>
           </motion.div>
         )}

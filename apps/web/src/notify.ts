@@ -7,6 +7,8 @@ import type { Personality, Tone } from "./types";
 
 const DAILY_ID = 1001;
 const native = Capacitor.isNativePlatform();
+/** Reminders are scheduled only by the phone app; the web build can't fire them on time. */
+export const remindersSupported = native;
 
 /** Schedules (or replaces) the one daily check-in reminder. On the web, reminders are not scheduled. */
 export async function scheduleDaily(time: string, tone: Tone, name: string): Promise<boolean> {
@@ -25,7 +27,10 @@ export async function cancelDaily() {
   if (native) await LocalNotifications.cancel({ notifications: [{ id: DAILY_ID }] }).catch(() => undefined);
 }
 
-/** Asks permission once, then schedules. Returns whether reminders are on. */
+/**
+ * Asks permission once, then schedules. Returns whether reminders are on. Only the phone app can schedule
+ * them, so on the web this stays off rather than claiming a reminder that would never arrive.
+ */
 export async function requestReminders(time: string, tone: Tone, name: string): Promise<boolean> {
   try {
     let granted = false;
@@ -33,8 +38,6 @@ export async function requestReminders(time: string, tone: Tone, name: string): 
       const p = await LocalNotifications.requestPermissions();
       granted = p.display === "granted";
       if (granted) await scheduleDaily(time, tone, name);
-    } else if ("Notification" in window) {
-      granted = (await Notification.requestPermission()) === "granted";
     }
     actions.setSettings({ remindersOn: granted, reminder: time });
     return granted;
