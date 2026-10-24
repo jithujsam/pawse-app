@@ -99,10 +99,14 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   return true;
 }
 
+const pinWatchers = new Set<() => void>();
+/** Called when app lock is turned on or off, e.g. so the home screen widget hides or shows today's status. */
+export const onPinChange = (fn: () => void) => { pinWatchers.add(fn); return () => { pinWatchers.delete(fn); }; };
+
 export const vault = {
   hasPin: () => vaultKey !== null,
-  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length); },
-  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength"); },
+  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length).catch(() => undefined); pinWatchers.forEach((w) => w()); },
+  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength").catch(() => undefined); pinWatchers.forEach((w) => w()); },
   pinLength: async () => (await kv.get<number>("pinLength").catch(() => undefined)) ?? 4,
   /** Re-checks the current PIN without changing anything. */
   async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },
@@ -131,7 +135,7 @@ export interface CompanionView {
  */
 export const QUIET_DAYS_AGE = false;
 
-export function viewCompanion(d: AppData, companionId: string, upTo = today()): CompanionView {
+export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
@@ -145,10 +149,23 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
     day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
   // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
-  const states = simulate(inputs, d.settings.petLife === "classic" ? {} : CONTINUITY);
+  // A companion that already died stays as it was.
+  const continuity = d.settings.petLife !== "classic" && !companion.diedOn && !opts.ignoreNoDeath;
+  const states = simulate(inputs, continuity ? CONTINUITY : {});
   const current = states[states.length - 1];
   const age = companion.finalAge ?? current?.visibleAge ?? 0;
   return { companion, habit, states, current, age, stage: stageForAge(age), dead: companion.diedOn !== null };
+}
+
+/**
+ * Classic rules (death, scars) can be switched on only while that wouldn't mean the companion had already died:
+ * under continuity, damage past the ceiling was never counted, but the classic rules would count it. False when
+ * switching them on now would end the companion's life on the spot.
+ */
+export function canAllowPassingAway(d: AppData): boolean {
+  const c = activeCompanion(d);
+  if (!c || c.diedOn) return true;
+  return !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead");
 }
 
 export const activeCompanion = (d: AppData): Companion | undefined => {
@@ -241,7 +258,8 @@ export const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, dai
  */
 export function moneyKept(d: AppData, habitId: string, bornOn: string): { saved: number; days: number } | null {
   const baseline = d.settings.baseline;
-  const amounts = d.entries.filter((e) => e.habitId === habitId && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
+  // This life only: spending from earlier companions' lives isn't set against days counted since this one was born.
+  const amounts = d.entries.filter((e) => e.habitId === habitId && e.day >= bornOn && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
   const typical = median(amounts);
   if (!baseline || !typical) return null;
   const days = checkedInDays(d, habitId, bornOn).length;

@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine } from "../copy";
+import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { scheduleCare, scheduleLapse, scheduleRisk } from "../notify";
+import { scheduleCare, updateNotifications } from "../notify";
 import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, weekStats, type Deduction } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -68,19 +68,18 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
-    : lonely ? `There you are! ${companion.name} is glad you're back. No catching up needed: just today.`
+    : lonely ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
 
-  // Keep the risky-hour heads-up in step with the person's actual pattern.
+  // One notification plan (at most two a day), kept in step with today's check-in, the risky hour and quiet days.
   const risk = riskyHour(data, habit.id);
-  useEffect(() => { void scheduleRisk(risk, { tone, personality, name: companion.name, enabled: data.settings.riskNudge && data.settings.remindersOn }); },
-    [risk, tone, personality, companion.name, data.settings.riskNudge, data.settings.remindersOn]);
-
-  // "We miss you" reminders count from the latest check-in.
   const lastCheckIn = [companion.bornOn, ...data.entries.filter((e) => e.habitId === habit.id).map((e) => e.day), ...data.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day)].sort().pop()!;
-  useEffect(() => { void scheduleLapse(lastCheckIn, { tone, name: companion.name, enabled: data.settings.remindersOn }); }, [lastCheckIn, tone, companion.name, data.settings.remindersOn]);
+  const { remindersOn, reminder, riskNudge, careNotes } = data.settings;
+  useEffect(() => {
+    void updateNotifications({ enabled: remindersOn, reminder, tone, name: companion.name, personality, checkedToday: checked, lastCheckIn, riskHour: riskNudge ? risk : null, careNotes });
+  }, [remindersOn, reminder, tone, companion.name, personality, checked, lastCheckIn, riskNudge, risk, careNotes]);
 
   const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn });
@@ -105,7 +104,8 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
     setNote(d.binge && data.settings.petLife === "classic" ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
-    // No "won't eat" notification after a slip: a guilt nudge from the pet hours later doesn't help anyone.
+    // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
+    void scheduleCare("slip", careOpts());
   }
   const react = (r: Reaction) => setNote(say(r, personality, tone));
 

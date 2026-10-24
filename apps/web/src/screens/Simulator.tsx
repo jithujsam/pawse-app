@@ -19,7 +19,7 @@ const PATTERNS: { value: Pattern; label: string; hint: string }[] = [
   { value: "daily", label: "Daily", hint: "1 slip a day" },
   { value: "heavy", label: "Heavy", hint: "3 slips a day" },
   { value: "random", label: "Mixed", hint: "Good and bad days" },
-  { value: "recover", label: "Recover", hint: "A rough week, two clean months, then a one-off slip and a binge" },
+  { value: "recover", label: "Recover", hint: "A rough week, two good months, then a one-off slip and a binge" },
 ];
 const SPEEDS = [{ value: "2000", label: "2s" }, { value: "1000", label: "1s" }, { value: "400", label: "Fast" }, { value: "100", label: "Max" }];
 

@@ -1,6 +1,6 @@
 import {
   BINGE_SCAR_RATIO, BINGE_SLIPS, CLEAN_DAY_HEAL_MONTHS, LIFE_BUDGET_MONTHS, NEGLECT_GRACE_DAYS, NEGLECT_MONTHS, RESERVE_GAIN_MONTHS,
-  RESERVE_MAX_ABSORB_PER_DAY, RESERVE_MAX_MONTHS, SCAR_FLOOR_RATIO,
+  NO_DEATH_CEILING_MONTHS, RESERVE_MAX_ABSORB_PER_DAY, RESERVE_MAX_MONTHS, SCAR_FLOOR_RATIO,
 } from "./constants";
 import { stageForAge, type Stage } from "./stage";
 
@@ -38,18 +38,22 @@ export interface DayState {
 
 /**
  * Optional rules for one companion's fold. With neither set, the fold is exactly the PRD 5.3 engine.
- * - ceilingMonths: net damage never goes above this, so visible age stops short of 100 (no death) and
- *   recovery starts with the first clean day instead of first paying off damage past the end of life.
+ * - ceilingMonths: net damage never goes above this, so visible age stops short of 100 (no death). Damage past
+ *   the ceiling isn't counted at all (not toward lifetime damage, the scar floor or binge scars), so good days
+ *   always bring the companion back.
  * - scars: false turns off the permanent scar floor and binge scars, so full recovery is always possible.
  */
 export interface SimOptions { ceilingMonths?: number; scars?: boolean }
+/** Kept for callers written against the name used in the release-readiness work. */
+export type SimulateOptions = SimOptions;
 
 /** The continuity rules: the companion can get very frail but never dies, and every month can heal back. */
-export const CONTINUITY: SimOptions = { ceilingMonths: LIFE_BUDGET_MONTHS * 0.99, scars: false };
+export const CONTINUITY: SimOptions = { ceilingMonths: NO_DEATH_CEILING_MONTHS, scars: false };
 
 export function ageFromMonths(netMonths: number): number {
   return Math.min(100, Math.max(0, (netMonths / LIFE_BUDGET_MONTHS) * 100));
 }
+
 
 /**
  * Pure fold over the history. Visible age is always recomputable from the entries,
@@ -71,7 +75,9 @@ export function simulate(days: DayInput[], opts: SimOptions = {}): DayState[] {
     // A healthy companion's reserve takes the first hit, up to a daily cap.
     const absorbed = Math.min(reserve, raw, RESERVE_MAX_ABSORB_PER_DAY);
     reserve -= absorbed;
-    const damage = raw - absorbed;
+    // With a ceiling, damage past it never ages the companion, so it doesn't count toward scars either.
+    // Without one (the standard rules) this is all of it.
+    const damage = Math.min(raw - absorbed, Math.max(0, ceiling - net));
     const binge = d.damage.length >= BINGE_SLIPS;
     lifetime += damage;
     net = Math.min(ceiling, net + damage);
