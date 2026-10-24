@@ -21,9 +21,11 @@ export function passwordScore(p: string): number {
 const SCORE = ["Too easy to guess", "Weak", "Okay", "Good", "Strong"];
 
 function friendly(msg: string): string {
-  if (/invalid login/i.test(msg)) return "That email and password don't match.";
+  if (/invalid login/i.test(msg)) return "That email and password don't match. If you've forgotten it, tap Forgot password.";
   if (/already registered|already been registered/i.test(msg)) return "There's already an account with that email. Try signing in.";
+  if (/email rate limit/i.test(msg)) return "Too many emails have been sent in the last hour. Try again later, or sign in if you already have an account.";
   if (/rate limit|too many/i.test(msg)) return "Too many tries. Wait a minute and try again.";
+  if (/email not confirmed/i.test(msg)) return "Confirm your email first: open the link we sent you on this phone.";
   if (/network|fetch/i.test(msg)) return "Couldn't reach the server. Check your connection.";
   if (/weak|pwned|leaked/i.test(msg)) return "That password has shown up in data leaks. Pick another.";
   return msg;
@@ -129,6 +131,10 @@ export function Account({ compact = false }: { compact?: boolean }) {
       : await supabase!.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) { setMsg(friendly(error.message)); haptic.warn(); return; }
+    // An address that already has an account gets a silent success and no email (so accounts can't be probed). Say so.
+    if (mode === "up" && !data.session && data.user && (data.user.identities?.length ?? 0) === 0) {
+      setMode("in"); setMsg("There's already an account with this email. Sign in with its password, or tap Forgot password."); haptic.warn(); return;
+    }
     if (data.session) { haptic.success(); toast(mode === "up" ? "Account created" : "Signed in", { kind: "good" }); }
     else { setSent(email.trim()); setMsg(null); }
   }
