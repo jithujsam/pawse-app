@@ -90,7 +90,6 @@ function prompt(r: SlipR | WeeklyR) {
   };
 }
 
-
 function extractJson(s: string): unknown {
   const start = s.indexOf("{"), end = s.lastIndexOf("}");
   return JSON.parse(start >= 0 && end > start ? s.slice(start, end + 1) : s);
