@@ -112,7 +112,7 @@ export function CalendarScreen() {
                       return tags.length ? <div className="tags">{tags.map((t) => <span key={t} className="tag">{t}</span>)}</div> : null;
                     })()}
                     {e.explanation && <span className="small">{e.explanation}</span>}
-                    {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Attached" src={String(e.values[f.id])} className="entry-photo" />)}
+                    {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Photo attached to this slip" src={String(e.values[f.id])} className="entry-photo" width={640} height={480} loading="lazy" decoding="async" />)}
                     {e.time && <span className="muted small">{e.time}</span>}
                   </motion.div>
                 ))}

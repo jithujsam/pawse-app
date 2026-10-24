@@ -75,7 +75,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "report") => void }) {
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
-        <LiveCompanion species={companion.species} stage={view.stage} mood={mood} age={age} size={270} />
+        <LiveCompanion species={companion.species} stage={view.stage} mood={mood} age={age} size={200} />
         <AnimatePresence mode="wait">
           <motion.p key={line} className="speech" aria-live="polite"
             initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>

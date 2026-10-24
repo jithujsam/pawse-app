@@ -44,7 +44,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
         <div className="chips">
           {(["dog", "cat", "rabbit"] as Species[]).map((s) => <Chip key={s} pressed={species === s} onClick={() => setSpecies(s)}>{s[0].toUpperCase() + s.slice(1)}</Chip>)}
         </div>
-        <label className="field"><span className="field-label">New name</span><input className="input" value={name} maxLength={20} placeholder="Biscuit" onChange={(e) => setName(e.target.value)} /></label>
+        <label className="field"><span className="field-label">New name</span><input className="input" autoComplete="off" value={name} maxLength={20} placeholder="Biscuit" onChange={(e) => setName(e.target.value)} /></label>
         <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species); actions.resetCelebrations(); onDone(); }}>Adopt a new {species === "dog" ? "puppy" : species === "cat" ? "kitten" : "bunny"}</Button>
       </motion.section>
     </main>

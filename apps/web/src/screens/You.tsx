@@ -101,12 +101,12 @@ export function You() {
         <AnimatePresence>{settings.remindersOn && (
           <motion.label className="field" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
             <span className="field-label">Time</span>
-            <input className="input" type="time" value={settings.reminder} onChange={(e) => void setReminder(e.target.value)} />
+            <input className="input" autoComplete="off" type="time" value={settings.reminder} onChange={(e) => void setReminder(e.target.value)} />
           </motion.label>
         )}</AnimatePresence>
         <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
         <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
-        <label className="field"><span className="field-label">Currency label</span><input className="input" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
+        <label className="field"><span className="field-label">Currency label</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       </motion.section>
 
       <motion.section className="card stack" variants={rise}>
@@ -116,13 +116,13 @@ export function You() {
             {habit.fields.map((f) => (
               <motion.div layout className="item" key={f.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
                 {editing ? (<>
-                  <input className="input" value={f.label} aria-label="Question" maxLength={80} onChange={(e) => setField(f.id, { label: e.target.value })} />
+                  <input className="input" autoComplete="off" value={f.label} aria-label="Question" maxLength={80} onChange={(e) => setField(f.id, { label: e.target.value })} />
                   <div className="row">
                     <select className="input select" value={f.type} aria-label="Type" onChange={(e) => setField(f.id, { type: e.target.value as FieldType })}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
                     <button className="icon-btn danger" aria-label="Remove question" onClick={() => rmField(f.id)}>{Icon.trash}</button>
                   </div>
                   {(f.type === "choice" || f.type === "multi") && (
-                    <input className="input" aria-label="Answers, separated by commas" placeholder="Answers, separated by commas" maxLength={300}
+                    <input className="input" autoComplete="off" aria-label="Answers, separated by commas" placeholder="Answers, separated by commas" maxLength={300}
                       defaultValue={(f.options ?? []).map((o) => o.label).join(", ")}
                       onBlur={(e) => setField(f.id, { options: e.target.value.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 12).map((label) => ({ id: f.options?.find((o) => o.label === label)?.id ?? label.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40), label: label.slice(0, 40), trigger: f.options?.find((o) => o.label === label)?.trigger })) })} />
                   )}

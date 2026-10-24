@@ -115,7 +115,7 @@ export function Onboarding() {
                 {SUGGESTIONS.map((s) => <Chip key={s.label} pressed={d.what === s.label} onClick={() => pickWhat(s.label, s.cls, s.measure)}>{s.label}</Chip>)}
               </motion.div>
               <motion.label className="field" variants={rise}><span className="field-label">In your own words</span>
-                <input className="input" value={d.what} maxLength={60} placeholder="For example: late-night snack orders" onChange={(e) => pickWhat(e.target.value)} />
+                <input className="input" autoComplete="off" value={d.what} maxLength={60} placeholder="e.g. late-night snack orders…" onChange={(e) => pickWhat(e.target.value)} />
               </motion.label>
               <AnimatePresence>
                 {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{CRISIS_MESSAGE}</motion.div>}
@@ -192,7 +192,7 @@ export function Onboarding() {
                 {REMINDERS.map((r) => <Chip key={r.t} pressed={d.reminder === r.t} onClick={() => up({ reminder: r.t })}>{r.label} · {r.t}</Chip>)}
               </motion.div>
               <motion.label className="field" variants={rise}><span className="field-label">Or pick a time</span>
-                <input className="input" type="time" value={d.reminder} onChange={(e) => up({ reminder: e.target.value })} />
+                <input className="input" autoComplete="off" type="time" value={d.reminder} onChange={(e) => up({ reminder: e.target.value })} />
               </motion.label>
               <motion.div className="stack tight" variants={rise}>
                 <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(8); }}>Turn on reminders</Button>
@@ -260,7 +260,7 @@ function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
       <AnimatePresence>{shown && <motion.span className="name-tag" initial={{ opacity: 0, y: 8, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={spring.bouncy}>{shown}</motion.span>}</AnimatePresence>
     </motion.div>
     <motion.h1 variants={rise}>What will you call them?</motion.h1>
-    <motion.input className="input big" variants={rise} value={d.companionName} placeholder={NAMES[d.species][0]} maxLength={20} aria-label="Companion name"
+    <motion.input className="input big" autoComplete="off" variants={rise} value={d.companionName} placeholder={NAMES[d.species][0]} maxLength={20} aria-label="Companion name"
       onChange={(e) => typed(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") onNext(); }} />
     <motion.div className="chips" variants={rise}>
       {NAMES[d.species].map((n) => <Chip key={n} pressed={d.companionName === n} onClick={() => typed(n)}>{n}</Chip>)}

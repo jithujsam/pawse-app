@@ -140,7 +140,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
         <motion.div className="field" key={f.id} variants={rise}
           animate={missing.some((m) => m.id === f.id) && shake ? { x: [0, -8, 8, -5, 5, 0] } : undefined} transition={{ duration: 0.4 }}>
           <span className="field-label">{f.label}{f.required && <span className="req" aria-label="required"> ·</span>}</span>
-          {f.type === "text" && <input className="input" maxLength={120} value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} aria-label={f.label} />}
+          {f.type === "text" && <input className="input" autoComplete="off" maxLength={120} value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} aria-label={f.label} />}
           {(f.type === "number" || f.type === "money") && (<>
             <div className="amount-wrap">
               {f.type === "money" && <span className="prefix">{data.settings.currency}</span>}
@@ -171,7 +171,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
           {f.type === "photo" && (
             <label className="photo-tile">
               {typeof values[f.id] === "string" && values[f.id]
-                ? <motion.img src={String(values[f.id])} alt="Attached" initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} />
+                ? <motion.img src={String(values[f.id])} alt="Photo attached to this slip" width={640} height={480} initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} />
                 : <span className="muted">{Icon.camera} Add a photo · stays on this phone</span>}
               <input type="file" accept="image/*" className="sr-only" onChange={async (e) => { const file = e.target.files?.[0]; if (file) set(f.id, await shrink(file)); }} />
             </label>
