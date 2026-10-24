@@ -1,15 +1,18 @@
-import type { AppData, CleanDay, Companion, Entry, Habit, Settings } from "./types";
+import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, Urge } from "./types";
 
 /**
  * Pure mapping between what the phone keeps and the normalised tables.
- * Each local row has a key: "c:<id>", "h:<id>", "e:<id>", "k:<habitId>:<day>", "w:<week>", or "s" for settings.
+ * Each local row has a key: "c:<id>", "h:<id>", "e:<id>", "k:<habitId>:<day>", "w:<week>", "u:<id>" (urge),
+ * "j:<day>" (journal), or "s" for settings.
  */
 
-export type Table = "profiles" | "companions" | "habits" | "entries" | "deductions" | "clean_days" | "weekly_reports";
+export type Table = "profiles" | "companions" | "habits" | "entries" | "deductions" | "clean_days" | "weekly_reports" | "urges" | "journal";
 /** Parents before children, so ownership checks pass on insert. */
-export const PUSH_ORDER: Table[] = ["profiles", "companions", "habits", "entries", "deductions", "clean_days", "weekly_reports"];
+export const PUSH_ORDER: Table[] = ["profiles", "companions", "habits", "entries", "deductions", "clean_days", "weekly_reports", "urges", "journal"];
+/** Tables added in v2. A server without them keeps syncing everything else. */
+export const OPTIONAL_TABLES: Table[] = ["urges", "journal"];
 
-type Local = { kind: "c"; row: Companion } | { kind: "h"; row: Habit; position: number } | { kind: "e"; row: Entry } | { kind: "k"; row: CleanDay } | { kind: "w"; week: string; text: string } | { kind: "s"; row: Settings };
+type Local = { kind: "c"; row: Companion } | { kind: "h"; row: Habit; position: number } | { kind: "e"; row: Entry } | { kind: "k"; row: CleanDay } | { kind: "w"; week: string; text: string } | { kind: "s"; row: Settings } | { kind: "u"; row: Urge } | { kind: "j"; row: JournalEntry };
 
 export function indexRows(d: AppData): Map<string, Local> {
   const m = new Map<string, Local>();
@@ -19,6 +22,8 @@ export function indexRows(d: AppData): Map<string, Local> {
   for (const e of d.entries) m.set(`e:${e.id}`, { kind: "e", row: e });
   for (const k of d.cleanDays) m.set(`k:${k.habitId}:${k.day}`, { kind: "k", row: k });
   for (const [week, text] of Object.entries(d.summaries)) m.set(`w:${week}`, { kind: "w", week, text });
+  for (const u of d.urges ?? []) m.set(`u:${u.id}`, { kind: "u", row: u });
+  for (const j of d.journal ?? []) m.set(`j:${j.day}`, { kind: "j", row: j });
   return m;
 }
 
@@ -61,6 +66,8 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
       { table: "deductions", row: { ...base, entry_id: l.row.id, months_lost: l.row.months, severity: Math.max(0.5, l.row.severity), baseline_months: null, ai_adjust_pct: l.row.aiAdjustPct, body_effects: l.row.effects, explanation: l.row.explanation.slice(0, 200), source: l.row.source } },
     ];
     case "k": return [{ table: "clean_days", row: { ...base, habit_id: l.row.habitId, day: l.row.day, deleted_at: null } }];
+    case "u": return [{ table: "urges", row: { ...base, id: l.row.id, habit_id: l.row.habitId, occurred_on: l.row.day, occurred_at: l.row.time, strength: l.row.strength, outcome: l.row.outcome, client_created_at: l.row.createdAt, deleted_at: null } }];
+    case "j": return [{ table: "journal", row: { ...base, day: l.row.day, mood: l.row.mood, body: l.row.body, deleted_at: null } }];
     case "w": {
       const habit = d.habits[0];
       return habit ? [{ table: "weekly_reports", row: { ...base, habit_id: habit.id, week_start: l.week, summary: l.text } }] : [];
@@ -75,6 +82,8 @@ export function tombstone(key: string): { table: Table; match: Record<string, st
   if (kind === "h") return { table: "habits", match: { id: a } };
   if (kind === "e") return { table: "entries", match: { id: a } };
   if (kind === "k") return { table: "clean_days", match: { habit_id: a, day: b } };
+  if (kind === "u") return { table: "urges", match: { id: a } };
+  if (kind === "j") return { table: "journal", match: { day: a } };
   return null;
 }
 
@@ -85,7 +94,7 @@ const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 const time = (v: unknown) => (typeof v === "string" ? v.slice(0, 5) : null);
 
 export interface Pulled {
-  profiles: R[]; companions: R[]; habits: R[]; entries: R[]; deductions: R[]; clean_days: R[]; weekly_reports: R[];
+  profiles: R[]; companions: R[]; habits: R[]; entries: R[]; deductions: R[]; clean_days: R[]; weekly_reports: R[]; urges?: R[]; journal?: R[];
 }
 
 /**
@@ -96,6 +105,7 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
   const applied: string[] = [];
   const wins = (key: string, r: R) => { const t = pending[key]; const ok = t === undefined || Number(r.client_updated_at) >= t; if (ok) applied.push(key); return ok; };
   let { companions, habits, entries, cleanDays, settings, summaries } = d;
+  let urges = d.urges ?? [], journal = d.journal ?? [];
 
   for (const r of p.profiles) if (wins("s", r) && r.settings && typeof r.settings === "object") settings = { ...settings, ...(r.settings as Partial<Settings>), ...Object.fromEntries(DEVICE_ONLY.map((k) => [k, settings[k]])) };
 
@@ -145,8 +155,23 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
   }
   for (const r of p.weekly_reports) if (r.summary && wins(`w:${r.week_start}`, r)) summaries = { ...summaries, [String(r.week_start)]: String(r.summary) };
 
+  for (const r of p.urges ?? []) {
+    const key = `u:${r.id}`;
+    if (!wins(key, r)) continue;
+    urges = urges.filter((u) => u.id !== r.id);
+    if (!r.deleted_at) urges = [...urges, { id: String(r.id), habitId: String(r.habit_id), day: String(r.occurred_on), time: time(r.occurred_at), strength: Number(r.strength), outcome: r.outcome as Urge["outcome"], createdAt: Number(r.client_created_at) }];
+  }
+  for (const r of p.journal ?? []) {
+    const key = `j:${r.day}`;
+    if (!wins(key, r)) continue;
+    journal = journal.filter((j) => j.day !== r.day);
+    if (!r.deleted_at) journal = [...journal, { day: String(r.day), mood: Number(r.mood), body: String(r.body ?? "") }];
+  }
+
   entries = [...entries].sort((a, b) => a.createdAt - b.createdAt);
-  return { data: { ...d, companions, habits, entries, cleanDays, settings, summaries }, applied };
+  urges = [...urges].sort((a, b) => a.createdAt - b.createdAt);
+  journal = [...journal].sort((a, b) => a.day.localeCompare(b.day));
+  return { data: { ...d, companions, habits, entries, cleanDays, settings, summaries, urges, journal }, applied };
 }
 
 /** On a fresh phone that only just finished onboarding, the account's history should replace it rather than sit beside it. */

@@ -15,7 +15,7 @@ window.addEventListener("pagehide", () => { void flush(); });
 listenForAuthLinks();
 
 const root = createRoot(document.getElementById("root")!);
-if (import.meta.env.DEV && location.hash === "#gallery") void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />));
+if (import.meta.env.DEV && location.hash.startsWith("#gallery")) void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />));
 else void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));
 
 // Offline support for the installed web app. The Android app already ships its files.

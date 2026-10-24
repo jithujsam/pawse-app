@@ -2,9 +2,11 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { toast } from "./ui/Toast";
+import { OPEN_QUICK } from "./widget";
 
 /** Finishes sign-in when an email link opens the app (app.detoxcompanion://auth-callback?code=...). */
 async function handle(link: string) {
+  if (link.startsWith("app.detoxcompanion://open/quick")) { window.dispatchEvent(new Event(OPEN_QUICK)); return; }
   if (!supabase || !link.startsWith("app.detoxcompanion://auth-callback")) return;
   const u = new URL(link.replace("app.detoxcompanion://", "https://app/"));
   const params = new URLSearchParams(u.search || u.hash.slice(1));

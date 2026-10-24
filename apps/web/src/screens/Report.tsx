@@ -8,7 +8,7 @@ import { pickedLabels } from "../questions";
 import { verdict } from "../copy";
 import { addDays, daysBetween, fmtDay, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
-import { actions, cleanStreak, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { actions, cleanStreak, median, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon } from "../ui/Controls";
 import type { Baseline } from "../types";
@@ -16,6 +16,33 @@ import type { Baseline } from "../types";
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
+
+const fmtHour = (h: number) => `${h % 12 || 12}${h < 12 ? "am" : "pm"}`;
+
+function SavingsGoal({ saved, goal, currency }: { saved: number; goal: { label: string; target: number } | null; currency: string }) {
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(goal?.label ?? "");
+  const [target, setTarget] = useState(goal ? String(goal.target) : "");
+  if (editing) return (
+    <div className="stack tight">
+      <label className="field"><span className="field-label">Saving toward</span><input className="input" autoComplete="off" maxLength={40} placeholder="New headphones" value={label} onChange={(e) => setLabel(e.target.value)} /></label>
+      <label className="field"><span className="field-label">It costs</span><input className="input" inputMode="decimal" type="number" min="1" placeholder="5000" value={target} onChange={(e) => setTarget(e.target.value)} /></label>
+      <div className="actions">
+        <Button disabled={!label.trim() || !(Number(target) > 0)} onClick={() => { actions.setSettings({ savingsGoal: { label: label.trim(), target: Math.round(Number(target)) } }); setEditing(false); }}>Save goal</Button>
+        <Button variant="secondary" onClick={() => { if (goal) actions.setSettings({ savingsGoal: null }); setEditing(false); }}>{goal ? "Remove" : "Cancel"}</Button>
+      </div>
+    </div>
+  );
+  if (!goal) return <Button variant="secondary" onClick={() => setEditing(true)}>Set something to save for</Button>;
+  const pct = Math.min(100, (saved / goal.target) * 100);
+  return (
+    <div className="stack tight">
+      <div className="row"><b>{goal.label}</b><span className="muted small">{currency} {Math.min(saved, goal.target).toLocaleString()} of {goal.target.toLocaleString()}</span></div>
+      <div className="progress goal" aria-hidden><motion.i initial={{ width: 0 }} animate={{ width: `${Math.max(2, pct)}%` }} transition={spring.calm} /></div>
+      <div className="row"><span className="small">{pct >= 100 ? "You've kept enough. Treat yourself, guilt-free." : `${Math.round(pct)}% there.`}</span><Button variant="text" onClick={() => setEditing(true)}>Edit</Button></div>
+    </div>
+  );
+}
 
 function Delta({ cur, prev, unit = "", good = "down" }: { cur: number; prev: number; unit?: string; good?: "up" | "down" }) {
   if (cur === prev) return <span className="delta flat">same as last week</span>;
@@ -92,6 +119,25 @@ export function Report() {
 
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 
+  // Urges: noticing and riding them out is the skill that predicts lasting change.
+  const urgeLog = data.urges.filter((u) => u.habitId === habit.id);
+  const urgesWeek = urgeLog.filter((u) => u.day >= ws);
+  const rode = urgeLog.filter((u) => u.outcome === "rode_it_out").length;
+  // When it happens: weekday x four-hour block.
+  const grid = Array.from({ length: 7 }, () => Array(6).fill(0) as number[]);
+  for (const e of all) { const h = slipHour(e); if (h !== null) grid[(parse(e.day).getDay() + 6) % 7][Math.floor(h / 4)]++; }
+  const gridMax = Math.max(1, ...grid.flat());
+  const timed = grid.flat().reduce((a, b) => a + b, 0);
+  const risk = riskyHour(data, habit.id);
+  // Money kept: the old pace (from onboarding) against what was actually spent.
+  const amounts = all.map((e) => e.amount).filter((a): a is number => a !== null && a > 0);
+  const typical = median(amounts);
+  const daysTracked = Math.max(1, daysBetween(companion.bornOn, today()) + 1);
+  const expected = baseline && typical ? (BASELINE_PER_WEEK[baseline] * daysTracked / 7) * typical : null;
+  const spent = amounts.reduce((a, b) => a + b, 0);
+  const saved = expected !== null ? Math.max(0, Math.round(expected - spent)) : null;
+  const goal = data.settings.savingsGoal;
+
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>Insights</motion.h1>
@@ -106,6 +152,44 @@ export function Report() {
             ? <div className="stat"><div className="muted small">Spent</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
             : <div className="stat"><div className="muted small">Clean streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">right now</span></div>}
         </div>
+      </motion.section>
+
+      <motion.section className="card stack" aria-label="Urges" variants={rise}>
+        <div className="row"><h2>Urges ridden out</h2><span className="muted small">{urgesWeek.length} this week</span></div>
+        {urgeLog.length === 0
+          ? <p className="muted">Next time a craving hits, tap + and choose "Having an urge". Riding one out is the skill that changes habits.</p>
+          : <>
+              <div className="stats">
+                <div className="stat item"><span className="muted small">Ridden out</span><b className="v"><AnimatedNumber value={rode} from={0} /></b></div>
+                <div className="stat item"><span className="muted small">Success rate</span><b className="v"><AnimatedNumber value={Math.round((rode / urgeLog.length) * 100)} from={0} /><small>%</small></b></div>
+              </div>
+              <p className="small">{rode === urgeLog.length ? "Every urge you've noticed, you've ridden out." : `${urgeLog.length - rode} of ${urgeLog.length} ended in a slip. Each one you ride out makes the next quieter.`}</p>
+            </>}
+      </motion.section>
+
+      {money && (
+        <motion.section className="card stack" aria-label="Money" variants={rise}>
+          <div className="row"><h2>Money kept</h2>{saved !== null && <span className="muted small">vs your old pace</span>}</div>
+          {saved === null
+            ? <p className="muted">{baseline ? "Log a slip with an amount and this shows what you're keeping compared with before." : "This needs your starting pace, set during setup."}</p>
+            : <p className="big-money"><small>{currency}</small> <AnimatedNumber value={saved} from={0} /></p>}
+          <SavingsGoal saved={saved ?? 0} goal={goal} currency={currency} />
+        </motion.section>
+      )}
+
+      <motion.section className="card stack" aria-label="When it happens" variants={rise}>
+        <div className="row"><h2>When it happens</h2>{risk !== null && <span className="muted small">Peak around {fmtHour(risk)}</span>}</div>
+        {timed < 3 ? <p className="muted">A map of your risky hours appears after a few slips.</p> : (
+          <div className="heat" role="img" aria-label={`Slips by weekday and time of day. ${risk !== null ? `Most often around ${fmtHour(risk)}.` : ""}`}>
+            <span />{["12a", "4a", "8a", "12p", "4p", "8p"].map((l) => <span key={l} className="heat-h">{l}</span>)}
+            {grid.map((row, d) => [
+              <span key={`d${d}`} className="heat-d">{["M", "T", "W", "T", "F", "S", "S"][d]}</span>,
+              ...row.map((n, b) => <motion.i key={`${d}-${b}`} className="heat-cell" style={{ ["--a" as string]: n / gridMax }} data-n={n}
+                initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.soft, delay: (d * 6 + b) * 0.008 }} title={`${n}`} />),
+            ])}
+          </div>
+        )}
+        {risk !== null && <p className="small">{companion.name} will send a heads-up half an hour before {fmtHour(risk)}, if reminders are on.</p>}
       </motion.section>
 
       {baseline && all.length + data.cleanDays.length >= 3 && (

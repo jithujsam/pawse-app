@@ -12,11 +12,23 @@ import type { Personality, Tone } from "./types";
 export type Event =
   | "petted" | "giggle" | "dizzy" | "stroke"
   | "fed" | "full" | "strike" | "treat" | "noTreats"
-  | "cleanThanks" | "shrug" | "binge" | "slip";
+  | "cleanThanks" | "shrug" | "binge" | "slip" | "rodeOut" | "urgeStart";
 
 type Lines = Record<Personality, Record<Tone, string[]>>;
 
 const L: Record<Event, Lines> = {
+  urgeStart: {
+    playful: { gentle: ["I'm right here. Breathe with me!", "Let's wait it out together!"], honest: ["It'll pass. Breathe with me.", "Two minutes. You and me."], brutal: ["Don't. Breathe with me instead."] },
+    calm: { gentle: ["In, and out. I'm here.", "Slow breaths. It passes."], honest: ["Breathe. The wave peaks and falls.", "Stay with me for two minutes."], brutal: ["Sit with it. Don't act on it."] },
+    sassy: { gentle: ["Ugh, cravings. Let's ignore it together.", "Breathe. Be dramatic later."], honest: ["Watch it fizzle. Breathe.", "It's loud, not in charge."], brutal: ["Not today. Breathe."] },
+    wise: { gentle: ["Notice it. You don't have to obey it.", "An urge is a wave. Let it pass."], honest: ["Urges rise and fall. Ride this one.", "Breathe. Watch it change."], brutal: ["A craving is a request, not an order."] },
+  },
+  rodeOut: {
+    playful: { gentle: ["You did it! I'm so proud!", "Wave surfed! High five!"], honest: ["It passed and you didn't! Amazing!", "That's how it's done!"], brutal: ["That's a win. Count it."] },
+    calm: { gentle: ["Well done. That was strong.", "It passed. You stayed. Lovely."], honest: ["You waited it out. That's a skill.", "Quietly brilliant."], brutal: ["Good. That's the work."] },
+    sassy: { gentle: ["Look at you, all disciplined.", "The craving lost. Obviously."], honest: ["Craving: zero. You: one.", "Told you it was all talk."], brutal: ["See? You don't have to obey it."] },
+    wise: { gentle: ["Each wave ridden makes the next smaller.", "You were stronger than the moment."], honest: ["This is how habits change: one urge at a time.", "You chose. That matters."], brutal: ["You didn't give in. Remember this feeling."] },
+  },
   petted: {
     playful: { gentle: ["Again! Again!", "That's my favourite spot!"], honest: ["Ooh, right there.", "More of that, please."], brutal: ["Okay, that's nice. Don't stop."] },
     calm: { gentle: ["Mm. That's lovely.", "I could sleep like this."], honest: ["That helps.", "Nice and slow. Good."], brutal: ["Fine. That's nice."] },
@@ -113,10 +125,19 @@ export function recoveryLine(tone: Tone, name: string, undo: number, stage: { da
 }
 
 /** Notifications in the companion's voice. Title is the pet's name; body speaks in first person. */
-export function careNote(kind: "thanks" | "strike" | "morning", personality: Personality | undefined, tone: Tone, name: string): { title: string; body: string } {
+export function careNote(kind: "thanks" | "strike" | "morning" | "risk", personality: Personality | undefined, tone: Tone, name: string): { title: string; body: string } {
   if (kind === "thanks") return { title: name, body: say("cleanThanks", personality, tone) };
   if (kind === "strike") return { title: `${name} hasn't eaten`, body: say("strike", personality, tone) };
   const p = personality ?? "playful";
+  if (kind === "risk") {
+    const risk: Record<Personality, Record<Tone, string>> = {
+      playful: { gentle: "This is usually a tricky hour. Want to hang out with me instead?", honest: "Heads up: this is when slips usually happen. Come say hi?", brutal: "This is your weak hour. Don't. Come see me." },
+      calm: { gentle: "A gentle heads-up: this hour can be hard. I'm here.", honest: "This is usually the hard hour. Breathe with me if it comes.", brutal: "Hard hour coming. Have a plan." },
+      sassy: { gentle: "It's that hour again. Let's be boring together.", honest: "Your usual slip o'clock. Let's not.", brutal: "Slip o'clock. Prove me wrong." },
+      wise: { gentle: "This hour has been hard before. It doesn't have to be tonight.", honest: "Patterns repeat until we change them. This is the hour.", brutal: "You know this hour. Decide now, not later." },
+    };
+    return { title: name, body: risk[p][tone] };
+  }
   const morning: Record<Personality, Record<Tone, string>> = {
     playful: { gentle: "Slept so well! Thank you for yesterday!", honest: "Woke up feeling great. Yesterday was clean!", brutal: "Good sleep. Yesterday was clean. Repeat it." },
     calm: { gentle: "A good night's sleep. Thank you.", honest: "I slept well after a clean day.", brutal: "Rested. Keep today clean too." },

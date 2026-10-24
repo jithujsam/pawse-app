@@ -262,6 +262,14 @@ Design intent: the death should land emotionally but must not end the user's jou
 
 Addictions and their questions, tone, reminder time, companion list and Hall of Companions, data export, delete all data, safety resources.
 
+### 7.9 v2 additions
+
+- **Urge SOS** (centre button): rate the urge 1 to 5, then two minutes of paced breathing (4 in, 4 hold, 6 out) with the companion, then an honest outcome. Ridden-out urges are counted and celebrated; they never change visible age.
+- **Reflect** (Journey): one mood (1 to 5) and an optional sentence per day, with rotating prompts including an if-then plan.
+- **Insights**: urges ridden out and success rate, a weekday by time-of-day map of slips, money kept against the starting pace, and an optional savings goal.
+- **Risky-hour heads-up**: once at least 5 timed slips show a clear peak, a daily note 30 minutes before it, in the companion's voice.
+- **Widget** (Android): companion, name and one line about today; looks sad on a slip day; tapping opens the quick check-in.
+
 ## 8. Functional requirements
 
 **P0 (must have for first playable):**

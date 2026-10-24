@@ -14,7 +14,7 @@ export function useTalkBack() {
   const rec = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const ctx = useRef<AudioContext | null>(null);
-  const stopTimer = useRef<ReturnType<typeof setTimeout>>();
+  const stopTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const supported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined";
 
   useEffect(() => () => { clearTimeout(stopTimer.current); rec.current?.stream.getTracks().forEach((t) => t.stop()); void ctx.current?.close(); }, []);

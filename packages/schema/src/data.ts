@@ -59,6 +59,16 @@ export const EntrySchema = z.object({
 
 export const CleanDaySchema = z.object({ habitId: id, day });
 
+export const UrgeSchema = z.object({
+  id, habitId: id, day,
+  time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable(),
+  strength: z.number().int().min(1).max(5),
+  outcome: z.enum(["rode_it_out", "slipped"]),
+  createdAt: z.number(),
+});
+
+export const JournalSchema = z.object({ day, mood: z.number().int().min(1).max(5), body: z.string().max(600) });
+
 export const SettingsSchema = z.object({
   tone: z.enum(["gentle", "honest", "brutal"]),
   reminder: z.string().regex(/^\d{2}:\d{2}$/),
@@ -77,6 +87,8 @@ export const SettingsSchema = z.object({
   treatsGiven: z.number().int().min(0).max(100_000),
   fedOn: day.nullable(),
   careNotes: z.boolean(),
+  savingsGoal: z.object({ label: z.string().min(1).max(40), target: z.number().min(1).max(100_000_000) }).nullable(),
+  riskNudge: z.boolean(),
 }).partial();
 
 export const AppDataSchema = z.object({
@@ -86,6 +98,8 @@ export const AppDataSchema = z.object({
   habits: z.array(HabitSchema).max(50),
   entries: z.array(EntrySchema).max(100_000),
   cleanDays: z.array(CleanDaySchema).max(100_000),
+  urges: z.array(UrgeSchema).max(100_000).default([]),
+  journal: z.array(JournalSchema).max(20_000).default([]),
   summaries: z.record(z.string().max(800)).default({}),
   updatedAt: z.number().default(0),
 });

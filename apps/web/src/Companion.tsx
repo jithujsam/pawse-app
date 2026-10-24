@@ -317,7 +317,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
   const lastMove = useRef(0);
   const pokes = useRef<number[]>([]);
   const stroke = useRef<{ x: number; dist: number; down: boolean }>({ x: 0, dist: 0, down: false });
-  const touchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const touchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const low = art.mood === "dying" || art.stage === "frail" || art.stage === "dead";
 
   // Blink on an irregular rhythm, like something alive.

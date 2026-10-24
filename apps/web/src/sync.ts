@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { kv } from "./db";
 import { actions, getData, onCommit } from "./store";
 import { supabase } from "./supabase";
-import { diff, indexRows, isFreshLocal, merge, PUSH_ORDER, tombstone, toRemote, type Pulled, type Table } from "./syncmap";
+import { diff, indexRows, isFreshLocal, merge, OPTIONAL_TABLES, PUSH_ORDER, tombstone, toRemote, type Pulled, type Table } from "./syncmap";
 
 /**
  * Offline-first sync. Every local change is recorded as a pending key; pushes are batched upserts in
@@ -11,8 +11,11 @@ import { diff, indexRows, isFreshLocal, merge, PUSH_ORDER, tombstone, toRemote, 
 
 const CONFLICT: Record<Table, string> = {
   profiles: "id", companions: "id", habits: "id", entries: "id", deductions: "entry_id",
-  clean_days: "habit_id,day", weekly_reports: "habit_id,week_start",
+  clean_days: "habit_id,day", weekly_reports: "habit_id,week_start", urges: "id", journal: "user_id,day",
 };
+/** v2 tables the server turned out not to have yet; retried after a restart. */
+const missing = new Set<Table>();
+const isMissingTable = (msg: string) => /does not exist|could not find the table|schema cache/i.test(msg);
 const OVERLAP_MS = 5000;
 
 interface Meta { cursor: Partial<Record<Table, string>>; pending: Record<string, number>; removed: Record<string, number> }
@@ -100,6 +103,7 @@ async function pullTable(table: Table, uid: string): Promise<Record<string, unkn
     q = table === "profiles" ? q.eq("id", uid) : q.eq("user_id", uid);
     if (since) q = q.gt("updated_at", new Date(new Date(since).getTime() - OVERLAP_MS).toISOString());
     const { data, error } = await q;
+    if (error && OPTIONAL_TABLES.includes(table) && isMissingTable(error.message)) { missing.add(table); return []; }
     if (error) throw new Error(`${table}: ${error.message}`);
     out.push(...(data ?? []));
     if (!data || data.length < 1000) break;
@@ -113,10 +117,10 @@ async function cycle(uid: string) {
   // 1. pull
   const pulled = {} as Pulled;
   // All tables at once: one round trip instead of seven.
-  const rows = await Promise.all(PUSH_ORDER.map((t) => pullTable(t, uid)));
+  const rows = await Promise.all(PUSH_ORDER.map((t) => (missing.has(t) ? Promise.resolve([]) : pullTable(t, uid))));
   PUSH_ORDER.forEach((t, i) => { pulled[t] = rows[i]; });
   const seen: Partial<Record<Table, string>> = {};
-  for (const t of PUSH_ORDER) for (const r of pulled[t]) if (!seen[t] || String(r.updated_at) > seen[t]!) seen[t] = String(r.updated_at);
+  for (const t of PUSH_ORDER) for (const r of pulled[t] ?? []) if (!seen[t] || String(r.updated_at) > seen[t]!) seen[t] = String(r.updated_at);
   const drop = (rows: Record<string, unknown>[], key: (r: Record<string, unknown>) => string) =>
     rows.filter((r) => echo.get(key(r)) !== Number(r.client_updated_at));
   pulled.companions = drop(pulled.companions, (r) => `c:${r.id}`);
@@ -126,6 +130,8 @@ async function cycle(uid: string) {
   pulled.deductions = drop(pulled.deductions, (r) => `e:${r.entry_id}`);
   pulled.profiles = drop(pulled.profiles, () => "s");
   pulled.weekly_reports = drop(pulled.weekly_reports, (r) => `w:${r.week_start}`);
+  pulled.urges = drop(pulled.urges ?? [], (r) => `u:${r.id}`);
+  pulled.journal = drop(pulled.journal ?? [], (r) => `j:${r.day}`);
 
   let local = getData();
   if (first) {
@@ -151,6 +157,7 @@ async function cycle(uid: string) {
   for (const [k, t] of Object.entries(meta.removed)) {
     const ts = tombstone(k);
     if (!ts) { delete meta.removed[k]; continue; }
+    if (missing.has(ts.table)) continue;
     let q = supabase!.from(ts.table).update({ deleted_at: new Date(t).toISOString(), client_updated_at: t });
     for (const [col, v] of Object.entries(ts.match)) q = q.eq(col, v);
     const { error } = await q;
@@ -166,9 +173,12 @@ async function cycle(uid: string) {
   for (const [k, t] of Object.entries(snapshot)) {
     for (const u of toRemote(k, data, uid, t)) byTable.set(u.table, [...(byTable.get(u.table) ?? []), u.row]);
   }
+  const held = new Set<string>();
   for (const t of PUSH_ORDER) {
     const rows = byTable.get(t);
     if (!rows?.length) continue;
+    // Rows for a table the server lacks stay pending until it exists.
+    if (missing.has(t)) { for (const [k] of Object.entries(snapshot)) if (toRemote(k, data, uid, 0).some((u) => u.table === t)) held.add(k); continue; }
     for (let i = 0; i < rows.length; i += 500) {
       let batch = rows.slice(i, i + 500);
       let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
@@ -181,6 +191,7 @@ async function cycle(uid: string) {
     }
   }
   for (const [k, t] of Object.entries(snapshot)) {
+    if (held.has(k)) continue;
     if (meta.pending[k] === t) delete meta.pending[k];
     echo.set(k, t);
   }

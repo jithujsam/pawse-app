@@ -1,4 +1,4 @@
-import { CleanDaySchema, CompanionSchema, EntrySchema, HabitSchema, parseAppData, SettingsSchema } from "@detox/schema";
+import { CleanDaySchema, CompanionSchema, EntrySchema, HabitSchema, JournalSchema, parseAppData, SettingsSchema, UrgeSchema } from "@detox/schema";
 import type { AppData, Settings } from "./types";
 
 export const uuid = (): string => {
@@ -13,11 +13,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const defaultSettings = (): Settings => ({
   tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, goal: "",
   baseline: null, haptics: true, remindersOn: false, coachSeen: false, celebrated: [], autoLock: "1m",
-  wear: null, treatsGiven: 0, fedOn: null, careNotes: true,
+  wear: null, treatsGiven: 0, fedOn: null, careNotes: true, savingsGoal: null, riskNudge: true,
 });
 
 export const blank = (): AppData => ({
-  v: 1, settings: defaultSettings(), companions: [], habits: [], entries: [], cleanDays: [], summaries: {}, updatedAt: 0,
+  v: 1, settings: defaultSettings(), companions: [], habits: [], entries: [], cleanDays: [], urges: [], journal: [], summaries: {}, updatedAt: 0,
 });
 
 /** Keeps every row that is valid on its own, so one damaged row never costs the whole history. */
@@ -37,6 +37,8 @@ function salvage(raw: unknown): AppData | null {
     habits: rows(r.habits, HabitSchema),
     entries: rows(r.entries, EntrySchema),
     cleanDays: rows(r.cleanDays, CleanDaySchema),
+    urges: rows(r.urges, UrgeSchema),
+    journal: rows(r.journal, JournalSchema),
     summaries,
     updatedAt: typeof r.updatedAt === "number" ? r.updatedAt : 0,
   };
@@ -56,6 +58,8 @@ export function normalize(raw: unknown): AppData | null {
     habits,
     entries: d.entries.filter((e) => habitIds.has(e.habitId) && companions.has(e.companionId)),
     cleanDays: d.cleanDays.filter((c) => habitIds.has(c.habitId)),
+    urges: (d.urges ?? []).filter((u) => habitIds.has(u.habitId)),
+    journal: d.journal ?? [],
   };
 }
 
@@ -71,5 +75,6 @@ export function migrateIds(d: AppData): AppData {
     habits: d.habits.map((h) => ({ ...h, id: fix(h.id), companionId: fix(h.companionId) })),
     entries: d.entries.map((e) => ({ ...e, id: fix(e.id), habitId: fix(e.habitId), companionId: fix(e.companionId) })),
     cleanDays: d.cleanDays.map((c) => ({ ...c, habitId: fix(c.habitId) })),
+    urges: d.urges.map((u) => ({ ...u, id: fix(u.id), habitId: fix(u.habitId) })),
   };
 }

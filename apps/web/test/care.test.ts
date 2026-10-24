@@ -75,3 +75,36 @@ describe("care data", () => {
     expect(mix("#123456", "#ffffff", 0)).toBe("#123456");
   });
 });
+
+import { riskyHour } from "../src/store";
+import { tombstone } from "../src/syncmap";
+
+describe("urges, journal and risky hours", () => {
+  const withUrges = (): AppData => ({
+    ...sample(),
+    urges: [{ id: "11111111-1111-4111-8111-111111111111", habitId: "h1", day: "2026-10-06", time: "22:10", strength: 4, outcome: "rode_it_out", createdAt: 5 }],
+    journal: [{ day: "2026-10-06", mood: 4, body: "Walked instead." }],
+  });
+  it("round-trips urges and journal through storage and sync", () => {
+    const d = normalize(JSON.parse(JSON.stringify(withUrges())))!;
+    expect(d.urges).toHaveLength(1);
+    expect(d.journal[0].body).toBe("Walked instead.");
+    const [u] = toRemote("u:11111111-1111-4111-8111-111111111111", d, "uid", 7);
+    expect(u).toMatchObject({ table: "urges", row: { habit_id: "h1", strength: 4, outcome: "rode_it_out", occurred_at: "22:10" } });
+    const [j] = toRemote("j:2026-10-06", d, "uid", 7);
+    expect(j).toMatchObject({ table: "journal", row: { day: "2026-10-06", mood: 4, user_id: "uid" } });
+    expect(tombstone("j:2026-10-06")).toEqual({ table: "journal", match: { day: "2026-10-06" } });
+    const pulled: Pulled = { profiles: [], companions: [], habits: [], entries: [], deductions: [], clean_days: [], weekly_reports: [],
+      urges: [{ ...u.row, client_updated_at: 9 }], journal: [{ ...j.row, client_updated_at: 9 }] };
+    const back = merge({ ...d, urges: [], journal: [] }, pulled, {}).data;
+    expect(back.urges[0]).toMatchObject({ strength: 4, time: "22:10" });
+    expect(back.journal[0]).toMatchObject({ mood: 4, body: "Walked instead." });
+  });
+  it("finds the risky hour only once there's a clear pattern", () => {
+    const e = sample().entries[0];
+    const at = (h: number, i: number) => ({ ...e, id: `e${i}`, time: `${String(h).padStart(2, "0")}:15` });
+    expect(riskyHour({ ...sample(), entries: [at(22, 1), at(23, 2), at(22, 3), at(9, 4)] }, "h1")).toBeNull();
+    expect(riskyHour({ ...sample(), entries: [at(22, 1), at(23, 2), at(22, 3), at(9, 4), at(21, 5), at(14, 6)] }, "h1")).toBe(22);
+    expect(riskyHour({ ...sample(), entries: [1, 5, 9, 13, 17, 21].map((h, i) => at(h, i)) }, "h1")).toBeNull();
+  });
+});

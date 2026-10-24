@@ -6,6 +6,7 @@ import { bestStreak, cleanStreak, useActiveView, useData } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Icon } from "../ui/Controls";
 import { CalendarSections } from "./Calendar";
+import { Reflect } from "./Reflect";
 
 /** The long view: how far you've come, the next milestone, and every day on the calendar. */
 export function Journey() {
@@ -54,6 +55,8 @@ export function Journey() {
             </>
           : <p className="muted small">Every milestone reached. {companion.name} is proud of you.</p>}
       </motion.section>
+
+      <motion.div variants={rise}><Reflect /></motion.div>
 
       <CalendarSections />
     </motion.main>

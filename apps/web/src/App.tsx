@@ -6,7 +6,7 @@ import { Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
 import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
-import { actions, useActiveView, useData, vault, type Boot } from "./store";
+import { actions, cleanStreak, useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -25,11 +25,13 @@ import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { listenForBack, useRootBack } from "./back";
 import { QuickSheet } from "./screens/QuickSheet";
 import { Icon } from "./ui/Controls";
+import { OPEN_QUICK, updateWidget } from "./widget";
+import { today } from "./dates";
 
 export type Tab = "home" | "insights" | "journey" | "me";
 const TABS: Tab[] = ["home", "insights", "journey", "me"];
 
-const ICONS: Record<Tab, JSX.Element> = {
+const ICONS: Record<Tab, React.JSX.Element> = {
   home: <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>,
   insights: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
   journey: <svg viewBox="0 0 24 24"><path d="M4 19c3 0 3-5 6-5s3 4 6 4 2-9 4-11" /><circle cx="20" cy="6" r="1.6" /></svg>,
@@ -98,6 +100,17 @@ function Shell() {
   }, [uid]);
 
   useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
+  // The home screen widget opens straight into the quick check-in.
+  useEffect(() => { const open = () => { setTab("home"); setQuick(true); }; window.addEventListener(OPEN_QUICK, open); return () => window.removeEventListener(OPEN_QUICK, open); }, []);
+  useEffect(() => {
+    if (!view?.habit || !data.settings.onboarded) return;
+    const t0 = today();
+    const slipped = data.entries.some((e) => e.habitId === view.habit!.id && e.day === t0);
+    const clean = data.cleanDays.some((c) => c.habitId === view.habit!.id && c.day === t0);
+    const streak = cleanStreak(data, view.habit.id);
+    const line = slipped ? "Hasn't eaten today. A clean day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} clean · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
+    updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
+  }, [data, view]);
   useRootBack(() => { if (tab === "home") return false; dir.current = -1; setTab("home"); return true; });
 
   const go = (t: Tab) => {

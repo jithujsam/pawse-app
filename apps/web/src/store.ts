@@ -10,7 +10,7 @@ import { buildFields, countTriggers, pickedLabels, type Intake } from "./questio
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
-import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
 const uid = uuid;
@@ -174,6 +174,23 @@ export function bestStreak(d: AppData, habitId: string): number {
   let best = 0, run = 0, prev = "";
   for (const day of days) { run = prev && addDays(prev, 1) === day ? run + 1 : 1; best = Math.max(best, run); prev = day; }
   return best;
+}
+
+/** The hour slips most often happen, once there's a clear pattern (at least 5 timed slips, 30% within an hour of the peak). */
+export function riskyHour(d: AppData, habitId: string): number | null {
+  const hours = d.entries.filter((e) => e.habitId === habitId).map(slipHour).filter((h): h is number => h !== null);
+  if (hours.length < 5) return null;
+  const count = Array.from({ length: 24 }, (_, h) => hours.filter((x) => Math.min(Math.abs(x - h), 24 - Math.abs(x - h)) <= 1).length);
+  const peak = count.indexOf(Math.max(...count));
+  return count[peak] / hours.length >= 0.3 ? peak : null;
+}
+
+/** The hour of a slip: the time given, or when it was logged if logged the same day. */
+export function slipHour(e: Entry): number | null {
+  if (e.time) return Number(e.time.slice(0, 2));
+  const at = new Date(e.createdAt);
+  const local = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
+  return local === e.day ? at.getHours() : null;
 }
 
 /** Treats in the jar: one per clean day ever, minus those already given. */
@@ -344,6 +361,20 @@ export const actions = {
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
   celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
   resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
+
+  /** Records a craving and how it ended. Tracked only: the engine never sees it. */
+  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"]) {
+    const now = new Date();
+    const urge: Urge = { id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`, strength: Math.max(1, Math.min(5, Math.round(strength))), outcome, createdAt: Date.now() };
+    commit({ ...data, urges: [...data.urges, urge] });
+    return urge;
+  },
+  /** Saves today's (or another day's) reflection; an empty one is removed. */
+  setJournal(day: string, mood: number, body: string) {
+    const rest = data.journal.filter((j) => j.day !== day);
+    const entry = { day, mood: Math.max(1, Math.min(5, Math.round(mood))), body: body.slice(0, 600) };
+    commit({ ...data, journal: mood ? [...rest, entry].sort((a, b) => a.day.localeCompare(b.day)) : rest });
+  },
 
   /** Feeding: true if the companion ate. It refuses on a day with a slip, and eats once a day. */
   feed(habitId: string): "ate" | "full" | "strike" {

@@ -259,7 +259,7 @@ function LookStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
 
 function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void; onNext: () => void }) {
   const [gesture, setGesture] = useState<Gesture>("none");
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const typed = (v: string) => {
     up({ companionName: v });
     setGesture("perk");

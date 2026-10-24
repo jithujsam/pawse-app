@@ -218,6 +218,8 @@ function RemindersPage() {
         </motion.label>
       )}</AnimatePresence>
       <p className="muted small">One quiet nudge a day, in {companion.name}'s voice.</p>
+      <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label="Risky-hour heads-up" hint="Once your pattern is clear, a note half an hour before your usual slip time" />
+      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint="A thank-you after clean days, and a note when it won't eat" />
     </section>
   );
 }

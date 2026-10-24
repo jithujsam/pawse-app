@@ -78,3 +78,18 @@ export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; pers
   }
   await LocalNotifications.schedule({ notifications: list.map((n) => ({ ...n, extra: { open: "home" } })) }).catch(() => undefined);
 }
+
+const RISK_ID = 2004;
+/** A daily heads-up half an hour before the person's usual slip hour. Null hour cancels it. */
+export async function scheduleRisk(hour: number | null, o: { tone: Tone; personality?: Personality; name: string; enabled: boolean }) {
+  if (!native) return;
+  await LocalNotifications.cancel({ notifications: [{ id: RISK_ID }] }).catch(() => undefined);
+  if (hour === null || !o.enabled) return;
+  const perm = await LocalNotifications.checkPermissions().catch(() => ({ display: "denied" }));
+  if (perm.display !== "granted") return;
+  const at = (hour * 60 + 24 * 60 - 30) % (24 * 60);
+  const { title, body } = careNote("risk", o.personality, o.tone, o.name);
+  await LocalNotifications.schedule({
+    notifications: [{ id: RISK_ID, title, body, schedule: { on: { hour: Math.floor(at / 60), minute: at % 60 }, allowWhileIdle: true }, extra: { open: "home" } }],
+  }).catch(() => undefined);
+}

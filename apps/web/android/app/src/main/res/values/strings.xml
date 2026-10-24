@@ -4,4 +4,5 @@
     <string name="title_activity_main">Companion</string>
     <string name="package_name">app.detoxcompanion</string>
     <string name="custom_url_scheme">app.detoxcompanion</string>
+    <string name="widget_description">Your companion and today, at a glance</string>
 </resources>

@@ -4,6 +4,9 @@ import type { Stage } from "@detox/engine";
 
 /** Dev-only: every species, coat, mood and stage on one page, for checking the art. Open /#gallery. */
 export function Gallery() {
+  // #gallery/pet/<species>/<mood>: one pet alone on a clear background, for widget images.
+  const [, , sp, md] = location.hash.slice(1).split("/");
+  if (sp) return <div id="solo" style={{ width: 256, display: "inline-block" }}><CompanionArt species={sp as never} stage="young" mood={(md as Mood) || "happy"} age={12} size={256} /></div>;
   const moods: [Mood, Gesture, Stage, number][] = [["happy", "none", "baby", 2], ["idle", "none", "adult", 35], ["sad", "none", "adult", 40], ["hurt", "none", "young", 20], ["happy", "petted", "young", 15], ["sick", "none", "old", 74], ["dying", "none", "frail", 92], ["idle", "side", "adult", 30]];
   return (
     <div style={{ padding: 12, display: "grid", gap: 8 }}>

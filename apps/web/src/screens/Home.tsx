@@ -6,8 +6,8 @@ import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { scheduleCare } from "../notify";
-import { actions, cleanStreak, recoveryPlan, treatsLeft, useActiveView, useData, weekStats, type Deduction } from "../store";
+import { scheduleCare, scheduleRisk } from "../notify";
+import { actions, cleanStreak, recoveryPlan, riskyHour, treatsLeft, useActiveView, useData, weekStats, type Deduction } from "../store";
 import { useTalkBack } from "../talk";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -15,6 +15,7 @@ import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
 import { recoveryLine, say } from "../voice";
 import { LogSheet } from "./LogSheet";
+import { UrgeSheet } from "./UrgeSheet";
 import { openDownload, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { ACCESSORIES } from "../pets";
@@ -27,18 +28,19 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const { tone, currency } = data.settings;
   const personality = companion.personality;
   const [sheet, setSheet] = useState(false);
+  const [urge, setUrge] = useState(false);
   const [just, setJust] = useState<"slip" | "clean" | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [sparks, setSparks] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
   const [act, setAct] = useState<Gesture>("none");
-  const actTimer = useRef<ReturnType<typeof setTimeout>>();
+  const actTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const talk = useTalkBack();
   const update = useUpdate();
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
   const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
-  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); };
+  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); };
   useEffect(() => { const run = () => quickRef.current(takeQuick()); run(); return onQuick(run); }, []);
 
   useEffect(() => { if (!just) return; const t = setTimeout(() => setJust(null), 3500); return () => clearTimeout(t); }, [just]);
@@ -62,6 +64,11 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
     : slippedToday && !just ? say("strike", personality, tone)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = talk.state === "talking" ? "talk" : talk.state === "listening" ? "perk" : act;
+
+  // Keep the risky-hour heads-up in step with the person's actual pattern.
+  const risk = riskyHour(data, habit.id);
+  useEffect(() => { void scheduleRisk(risk, { tone, personality, name: companion.name, enabled: data.settings.riskNudge && data.settings.remindersOn }); },
+    [risk, tone, personality, companion.name, data.settings.riskNudge, data.settings.remindersOn]);
 
   const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn });
@@ -210,9 +217,10 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         </button>
       </motion.section>
 
+      <UrgeSheet open={urge} onClose={() => setUrge(false)} onSlipped={() => { setUrge(false); setTimeout(() => setSheet(true), 350); }} />
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
       <Milestone days={milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-      {!data.settings.coachSeen && !sheet && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
+      {!data.settings.coachSeen && !sheet && !urge && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
     </motion.main>
   );
 }

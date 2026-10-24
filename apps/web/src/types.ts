@@ -71,6 +71,22 @@ export interface Entry {
 
 export interface CleanDay { habitId: string; day: string }
 
+/** A craving noticed and ridden out (or not). Tracked only: it never changes the companion's age. */
+export interface Urge {
+  id: string;
+  habitId: string;
+  day: string;
+  time: string | null;
+  strength: number;
+  outcome: "rode_it_out" | "slipped";
+  createdAt: number;
+}
+
+/** One short reflection per day. */
+export interface JournalEntry { day: string; mood: number; body: string }
+
+export interface SavingsGoal { label: string; target: number }
+
 export interface Settings {
   tone: Tone;
   reminder: string;
@@ -100,6 +116,10 @@ export interface Settings {
   fedOn: string | null;
   /** Care notifications in the companion's voice (thank-yous, hunger strikes). */
   careNotes: boolean;
+  /** Something to save the money toward (money habits). */
+  savingsGoal: SavingsGoal | null;
+  /** A heads-up before the hour slips usually happen. */
+  riskNudge: boolean;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";
@@ -113,6 +133,8 @@ export interface AppData {
   habits: Habit[];
   entries: Entry[];
   cleanDays: CleanDay[];
+  urges: Urge[];
+  journal: JournalEntry[];
   /** AI weekly summaries keyed by week start (YYYY-MM-DD). */
   summaries: Record<string, string>;
   updatedAt: number;
