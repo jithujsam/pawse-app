@@ -8,6 +8,8 @@ import { z } from "npm:zod@3.23.8";
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "80");
+// Filled in only in the deployed copy of this function, never in git or the app. Prefer the secret.
+const DEPLOY_KEY = "";
 const ORIGINS = new Set(["https://localhost", "capacitor://localhost", "http://localhost", "http://localhost:5173", "http://localhost:4173",
   ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean)]);
 
@@ -118,7 +120,9 @@ Deno.serve(async (req) => {
 
   // Tolerate paste slips: a "Bearer " prefix, quotes, spaces, and invisible characters (zero-width spaces,
   // byte-order marks) that chat and notes apps add. A real key only has letters, digits, dashes and underscores.
-  const key = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
+  const fromSecret = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
+  // A well-formed key is sk-or-v1- plus 64 characters. If the secret isn't, use the key set at deploy time.
+  const key = /^sk-or-v1-[A-Za-z0-9]{64}$/.test(fromSecret) ? fromSecret : DEPLOY_KEY || fromSecret;
   if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;
