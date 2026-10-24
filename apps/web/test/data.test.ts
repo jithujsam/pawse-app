@@ -125,3 +125,30 @@ describe("app lock", () => {
     expect(l.until).toBe(15 * 60_000);
   });
 });
+
+describe("first sync merge rule (adoptAccount)", () => {
+  const pulled = (habits: Record<string, unknown>[]): Pulled => ({ profiles: [], companions: [{ id: "ca" }, { id: "cb" }], habits, entries: [], deductions: [], clean_days: [], weekly_reports: [] });
+  it("picks the account's habit deterministically: lowest position, then id; deleted ones never", async () => {
+    const { adoptAccount } = await import("../src/syncmap");
+    const d = sample();
+    const r = adoptAccount(d, pulled([{ id: "hz", companion_id: "cb", position: 0 }, { id: "ha", companion_id: "ca", position: 0 }, { id: "h0", companion_id: "ca", position: -1, deleted_at: "x" }]))!;
+    expect(r.data.entries[0]).toMatchObject({ habitId: "ha", companionId: "ca" });
+    expect(r.data.companions).toEqual([]);
+    expect(r.push).toContain("e:e1");
+    expect(r.push).not.toContain("s");
+  });
+  it("leaves an empty account to receive this phone's data", async () => {
+    const { adoptAccount } = await import("../src/syncmap");
+    expect(adoptAccount(sample(), pulled([]))).toBeNull();
+  });
+  it("a slip beats a clean mark on the same day", async () => {
+    const { slipBeatsClean } = await import("../src/syncmap");
+    const d = { ...sample(), cleanDays: [{ habitId: "h1", day: "2026-10-02" }, { habitId: "h1", day: "2026-10-03" }] };
+    const r = slipBeatsClean(d);
+    expect(r.removed).toEqual(["k:h1:2026-10-02"]);
+    expect(r.data.cleanDays.map((c) => c.day)).toEqual(["2026-10-03"]);
+    const clean = sample(); // its clean day (10-03) has no slip
+    expect(slipBeatsClean(clean)).toEqual({ data: clean, removed: [] });
+    expect(slipBeatsClean(clean).data).toBe(clean); // nothing changed, nothing rewritten
+  });
+});
