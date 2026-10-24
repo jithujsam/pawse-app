@@ -7,7 +7,7 @@ The PRD stays the source of truth. Nothing here changes engine math.
 ## Status
 
 - Phase 1: done.
-- Phase 2: done in the app. Migration `0002_normalized.sql` is written and tested against the sync code's expectations; it still has to be applied to the Supabase project.
+- Phase 2: done in the app. Migration `0002_normalized.sql` is written but not yet applied, so sync has not run against a real database yet. The sync mapping is covered by unit tests only.
 - Phase 3: done in the app. The hardened `ai` function is written; it still has to be deployed, and `OPENROUTER_API_KEY` set as a function secret.
 - Not done: biometric unlock, home-screen widgets (PRD phase 4).
 
