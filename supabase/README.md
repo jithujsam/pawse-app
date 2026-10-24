@@ -4,7 +4,7 @@ The app works fully offline without any of this. An account adds backup, sync ac
 
 1. Create a project. The app ships with this project's public URL and publishable key (`apps/web/src/supabase.ts`); to point it elsewhere set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `apps/web/.env`.
 2. Apply the migrations in order: `migrations/0001_init.sql`, then `migrations/0002_normalized.sql`.
-3. Authentication: leave email sign-in on. Turn on leaked-password protection. For quick testing you can turn "Confirm email" off.
+3. Authentication: leave email sign-in on and turn on leaked-password protection. Under Authentication → URL Configuration, add `app.detoxcompanion://auth-callback` to Redirect URLs, so confirmation and password-reset emails open the Android app (PKCE code exchange in `src/deeplink.ts`). Add your web address too if you host the web build.
 4. Deploy `functions/ai` (`supabase functions deploy ai`) with JWT verification ON.
 5. Secrets (Dashboard, Edge Functions, Secrets): `OPENROUTER_API_KEY` (required). Optional: `AI_MODELS` (comma-separated OpenRouter model ids, tried in order), `AI_DAILY_LIMIT` (default 80 calls a day per person), `ALLOWED_ORIGINS` (comma-separated, added to the built-in app and localhost origins).
 

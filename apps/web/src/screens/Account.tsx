@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions } from "../store";
-import { configured, supabase, useSession } from "../supabase";
+import { AUTH_REDIRECT, configured, supabase, useSession } from "../supabase";
 import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
 import { Button, Segmented } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -53,6 +53,8 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
+  const [sent, setSent] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
 
   if (!configured || !supabase) {
     return <p className="muted small">Accounts aren't available in this build.</p>;
@@ -102,22 +104,37 @@ export function Account({ compact = false }: { compact?: boolean }) {
     );
   }
 
+  if (sent) {
+    return (
+      <motion.div className="stack center-text" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div className="lock-ico" initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={spring.bouncy}>✉</motion.div>
+        <h2>Check your email</h2>
+        <p className="muted small">We sent a link to <b>{sent}</b>. Open it on this phone and it brings you straight back here, signed in.</p>
+        <Button variant="secondary" disabled={resent} onClick={async () => {
+          const { error } = await supabase!.auth.resend({ type: "signup", email: sent, options: { emailRedirectTo: AUTH_REDIRECT } });
+          if (error) toast(friendly(error.message), { kind: "bad" }); else { setResent(true); toast("Sent again", { kind: "good" }); }
+        }}>{resent ? "Sent again" : "Resend the email"}</Button>
+        <Button variant="text" onClick={() => { setSent(null); setMode("in"); }}>I've confirmed, sign in</Button>
+      </motion.div>
+    );
+  }
+
   const score = passwordScore(password);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (mode === "up" && score < 2) { setMsg("Pick a longer password, ideally 12 characters or more."); haptic.warn(); return; }
     setBusy(true); setMsg(null);
     const { data, error } = mode === "up"
-      ? await supabase!.auth.signUp({ email: email.trim(), password })
+      ? await supabase!.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: AUTH_REDIRECT } })
       : await supabase!.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) { setMsg(friendly(error.message)); haptic.warn(); return; }
     if (data.session) { haptic.success(); toast(mode === "up" ? "Account created" : "Signed in", { kind: "good" }); }
-    else setMsg("Check your email to confirm your address, then sign in.");
+    else { setSent(email.trim()); setMsg(null); }
   }
   async function reset() {
     if (!email.trim()) { setMsg("Type your email above first."); return; }
-    const { error } = await supabase!.auth.resetPasswordForEmail(email.trim());
+    const { error } = await supabase!.auth.resetPasswordForEmail(email.trim(), { redirectTo: AUTH_REDIRECT });
     setMsg(error ? friendly(error.message) : "If there's an account for that email, a reset link is on its way.");
   }
 
@@ -143,5 +160,36 @@ export function Account({ compact = false }: { compact?: boolean }) {
       <Button type="submit" disabled={busy || !/^\S+@\S+\.\S+$/.test(email.trim()) || password.length < 8}>{busy ? "One moment…" : mode === "up" ? "Create account" : "Sign in"}</Button>
       {mode === "in" && <Button variant="text" onClick={reset}>Forgot password?</Button>}
     </form>
+  );
+}
+
+/** Shown after a password-reset link opens the app: the person is signed in and picks a new password. */
+export function NewPassword({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const score = passwordScore(password);
+  return (
+    <main className="screen onboard">
+      <div className="step-inner auth">
+        <h1>Choose a new password</h1>
+        <p className="muted">You opened a reset link, so you're signed in. Pick a new password to finish.</p>
+        <div className="card stack">
+          <label className="field"><span className="field-label">New password</span>
+            <input className="input" type="password" autoComplete="new-password" minLength={8} maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} />
+          </label>
+          {password && <span className="small muted">{SCORE[score]}</span>}
+          {msg && <p className="err" role="alert">{msg}</p>}
+          <Button disabled={busy || score < 2} onClick={async () => {
+            setBusy(true);
+            const { error } = await supabase!.auth.updateUser({ password });
+            setBusy(false);
+            if (error) { setMsg(friendly(error.message)); return; }
+            toast("Password updated", { kind: "good" });
+            onDone();
+          }}>{busy ? "Saving…" : "Save password"}</Button>
+        </div>
+      </div>
+    </main>
   );
 }

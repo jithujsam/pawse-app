@@ -6,10 +6,13 @@ import "./styles.css";
 import { App } from "./App";
 import { Capacitor } from "@capacitor/core";
 import { boot, flush } from "./store";
+import { listenForAuthLinks } from "./deeplink";
 
 // Save straight away when the app is hidden or closed, so nothing is lost if the OS kills it.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flush(); });
 window.addEventListener("pagehide", () => { void flush(); });
+
+listenForAuthLinks();
 
 const root = createRoot(document.getElementById("root")!);
 void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));

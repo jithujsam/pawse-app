@@ -3,6 +3,7 @@ import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { startSync, useSyncStatus } from "./sync";
 import { kv } from "./db";
 import { Restoring, Welcome } from "./screens/Welcome";
+import { NewPassword } from "./screens/Account";
 import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
 import { actions, useActiveView, useData, vault, type Boot } from "./store";
@@ -74,7 +75,8 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("home");
   const dir = useRef(1);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
-  const { session, ready } = useSession();
+  const { session, ready, recovering } = useSession();
+  const [pwDone, setPwDone] = useState(false);
   const sync = useSyncStatus();
   useEffect(() => { document.documentElement.dataset.tint = data.settings.tint ?? "ocean"; }, [data.settings.tint]);
   const uid = session?.user.id;
@@ -102,6 +104,7 @@ function Shell() {
 
   if (!ready) return <div className="app"><Loading /></div>;
   if (!session) return <div className="app"><Welcome /></div>;
+  if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
   if (!data.settings.onboarded && sync.last === null && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
   if (!data.settings.onboarded) return <div className="app"><Suspense fallback={<Loading />}><Onboarding /></Suspense></div>;
 
