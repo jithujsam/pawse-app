@@ -116,8 +116,9 @@ Deno.serve(async (req) => {
   const { data: u } = token ? await admin.auth.getUser(token) : { data: null };
   if (!u?.user) return json(req, { ok: false, error: "unauthorized" }, 401);
 
-  // Tolerate the usual paste slips: surrounding spaces, quotes, or a "Bearer " prefix.
-  const key = (Deno.env.get("OPENROUTER_API_KEY") ?? "").trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
+  // Tolerate paste slips: a "Bearer " prefix, quotes, spaces, and invisible characters (zero-width spaces,
+  // byte-order marks) that chat and notes apps add. A real key only has letters, digits, dashes and underscores.
+  const key = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/^\s*Bearer\s+/i, "").replace(/[^A-Za-z0-9_-]/g, "");
   if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;
@@ -149,7 +150,11 @@ Deno.serve(async (req) => {
       }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!res.ok) { console.warn("upstream", res.status); return json(req, { ok: false, error: "upstream" }); }
+    if (!res.ok) {
+      // Never log the key itself; its shape is enough to tell a paste slip from a revoked key.
+      console.warn("upstream", res.status, res.status === 401 ? `key length ${key.length}, sk-or-v1 prefix ${key.startsWith("sk-or-v1-")}` : "");
+      return json(req, { ok: false, error: "upstream" });
+    }
     const out = await res.json();
     const content = String(out?.choices?.[0]?.message?.content ?? "");
     const check = (body.kind === "slip" ? SlipOut : WeeklyOut).safeParse(extractJson(content));
