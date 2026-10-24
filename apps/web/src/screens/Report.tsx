@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { projectDaysToAge } from "@detox/engine";
+import { aiWeekly } from "../ai";
+import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
-import { activeCompanion, useData, viewCompanion, weekStats } from "../store";
+import { actions, activeCompanion, useData, viewCompanion, weekRequestFor, weekStats } from "../store";
 
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -30,6 +33,19 @@ export function Report() {
   const money = habit.unit === "money";
   const fmt = (n: number) => Math.round(n * 10) / 10;
 
+  const { session } = useSession();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const summary = data.summaries[ws];
+  async function write() {
+    const req = weekRequestFor(habit.id, ws, all.length >= 3 ? DOW[worst] : null);
+    if (!req) return;
+    setBusy(true); setFailed(false);
+    const text = await aiWeekly(req);
+    setBusy(false);
+    if (text) actions.setSummary(ws, text); else setFailed(true);
+  }
+
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 
   return (
@@ -44,6 +60,15 @@ export function Report() {
           {money && <div className="stat" style={{ gridColumn: "1 / -1" }}><div className="muted small">Spent</div><div className="v">{currency} {Math.round(cur.spend).toLocaleString()}</div><div className="muted small">last week {currency} {Math.round(prev.spend).toLocaleString()}</div></div>}
         </div>
       </section>
+
+      {configured && (
+        <section className="card stack" aria-label="Written summary">
+          <h2>In words</h2>
+          {summary ? <p className="bubble" key={summary}>{summary}</p> : <p className="muted">{session ? "A short, honest read of your week, written for you." : "Create an account to get a short written read of your week."}</p>}
+          {failed && <p className="err" role="alert">Couldn't write it just now. Your numbers above are unaffected. Try again later.</p>}
+          {session && <button className="btn secondary" disabled={busy || cur.slips + prev.slips === 0} onClick={write}>{busy ? "Writing…" : summary ? "Write it again" : "Write my summary"}</button>}
+        </section>
+      )}
 
       <section className="card stack">
         <h2>Slips per week, last 8 weeks</h2>

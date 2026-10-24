@@ -1,4 +1,4 @@
-# Detox Companion
+# Companion (working name)
 
 A behaviour tracker where every slip ages a companion and every clean day heals it. See `docs/PRD.md`.
 

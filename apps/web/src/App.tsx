@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { startSync } from "./sync";
+import { useSession } from "./supabase";
 import { activeCompanion, useData, viewCompanion } from "./store";
 import { Onboarding } from "./screens/Onboarding";
 import { Home } from "./screens/Home";
@@ -21,6 +23,10 @@ export function App() {
   const data = useData();
   const [tab, setTab] = useState<Tab>("home");
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
+  const { session } = useSession();
+  useEffect(() => { document.documentElement.dataset.tint = data.settings.tint ?? "ocean"; }, [data.settings.tint]);
+  const uid = session?.user.id;
+  useEffect(() => { if (uid) void startSync(uid); }, [uid]);
 
   if (!data.settings.onboarded) return <div className="app"><Onboarding /></div>;
 
@@ -32,10 +38,10 @@ export function App() {
 
   return (
     <div className="app">
-      {tab === "home" && <Home />}
-      {tab === "calendar" && <CalendarScreen />}
-      {tab === "report" && <Report />}
-      {tab === "you" && <You />}
+      {tab === "home" && <Home key="home" />}
+      {tab === "calendar" && <CalendarScreen key="calendar" />}
+      {tab === "report" && <Report key="report" />}
+      {tab === "you" && <You key="you" />}
       <nav className="tabbar" aria-label="Main">
         {(Object.keys(LABELS) as Tab[]).map((t) => (
           <button key={t} className="tab" aria-current={tab === t ? "page" : undefined} onClick={() => setTab(t)}>
