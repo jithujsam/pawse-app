@@ -18,11 +18,17 @@ async function call(body: SlipRequest | WeeklyRequest): Promise<unknown | null> 
   } catch { return null; }
 }
 
+/**
+ * The whole request is the key: pet name, notes, amounts and counts all shape the sentence, so a result is
+ * only reused for exactly the same slip. This phone's cache is wiped on sign-out and when someone else signs in.
+ */
+export const aiCacheKey = (req: SlipRequest): string => JSON.stringify(req);
+
 export interface SlipAi { months: number; adjustPct: number; effects: string[]; explanation: string }
 
 /** Any failure, invalid output or missing account returns null, and the baseline stands. */
 export async function aiForSlip(req: SlipRequest): Promise<SlipAi | null> {
-  const key = JSON.stringify([req.habitClass, req.tone, req.unit, Math.round((req.amount ?? 0) / Math.max(1, req.median ?? 1) * 4), req.triggers.length, req.nthToday, Math.round(req.baselineMonths)]);
+  const key = aiCacheKey(req);
   const cache = readCache();
   const raw = cache[key] ?? (await call(req));
   const parsed = AiSlipResult.safeParse(raw);
