@@ -1,8 +1,10 @@
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// The project URL and publishable key are public by design: every row is protected by RLS, and the
+// AI key lives only in the edge function. Env vars override them for other projects.
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || "https://syysftnaubbpolrmicvd.supabase.co";
+const anon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || "sb_publishable_KjWDtqAbi7daxhIbs9X_BA_q0ftE35o";
 
 export const configured = Boolean(url && anon);
 export const supabase: SupabaseClient | null = configured

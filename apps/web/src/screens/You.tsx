@@ -10,6 +10,7 @@ import { configured } from "../supabase";
 import { Button, Icon, Segmented, Switch } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
+import { SecurityCard } from "./Security";
 import type { Field, FieldType, Tint } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -77,6 +78,8 @@ export function You() {
           <Account />
         </motion.section>
       )}
+
+      <motion.div variants={rise}><SecurityCard /></motion.div>
 
       <motion.section className="card stack" variants={rise}>
         <h2>Voice</h2>
@@ -148,13 +151,22 @@ export function You() {
         <h2>Safety and data</h2>
         <p className="small">{DISCLAIMER}</p>
         <p className="small muted">If you are in crisis: India, Tele-MANAS 14416. US, call or text 988. Elsewhere, contact your local emergency number.</p>
-        <Button variant="secondary" onClick={exportData}>Export my data</Button>
+        <div className="actions">
+          <Button variant="secondary" onClick={exportData}>Export</Button>
+          <label className="btn secondary file-btn">Restore<input type="file" accept="application/json,.json" className="sr-only" onChange={async (e) => {
+            const f = e.target.files?.[0]; e.target.value = "";
+            if (!f) return;
+            if (f.size > 50_000_000) { toast("That file is too big to be a backup", { kind: "bad" }); return; }
+            const ok = actions.importJson(await f.text());
+            toast(ok ? "Backup restored" : "That file isn't a Companion backup", { kind: ok ? "good" : "bad" });
+          }} /></label>
+        </div>
         <AnimatePresence mode="wait" initial={false}>
           {!confirm
             ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>Delete all data</Button></motion.div>
             : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                 <p className="small">This removes {companion.name}, every log and your settings from this phone. It can't be undone.</p>
-                <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
+                <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
               </motion.div>}
         </AnimatePresence>
       </motion.section>

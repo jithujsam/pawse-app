@@ -76,7 +76,11 @@ export interface Settings {
   coachSeen: boolean;
   /** Clean-streak milestones already celebrated, so each fires once per streak. */
   celebrated: number[];
+  /** How long the app may sit in the background before the PIN is asked again. */
+  autoLock: AutoLock;
 }
+
+export type AutoLock = "immediately" | "1m" | "5m" | "never";
 
 export type Baseline = "many_daily" | "daily" | "few_weekly" | "weekly";
 

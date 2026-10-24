@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { startSync } from "./sync";
 import { useSession } from "./supabase";
-import { useActiveView, useData } from "./store";
+import { useActiveView, useData, vault, type Boot } from "./store";
+import { LockScreen } from "./screens/Lock";
+import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
 import { slide, spring } from "./motion";
 import { Onboarding } from "./screens/Onboarding";
@@ -25,11 +27,35 @@ const ICONS: Record<Tab, JSX.Element> = {
 };
 const LABELS: Record<Tab, string> = { home: "Home", calendar: "Calendar", report: "Report", you: "You" };
 
-export function App() {
+const LOCK_AFTER: Record<string, number> = { immediately: 0, "1m": 60_000, "5m": 300_000, never: Infinity };
+
+export function App({ boot }: { boot: Boot }) {
+  const [lock, setLock] = useState<{ sealed?: Sealed; length: number } | null>(boot.kind === "locked" ? { sealed: boot.sealed, length: 4 } : null);
+  const data = useData();
+  const autoLock = data.settings.autoLock;
+
+  useEffect(() => { if (boot.kind === "locked") void vault.pinLength().then((length) => setLock((l) => l && { ...l, length })); }, [boot.kind]);
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); document.body.classList.toggle("privacy", vault.hasPin()); return; }
+      document.body.classList.remove("privacy");
+      if (vault.hasPin() && hiddenAt && Date.now() - hiddenAt >= (LOCK_AFTER[autoLock ?? "1m"] ?? 60_000)) {
+        void vault.pinLength().then((length) => setLock({ length }));
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [autoLock]);
+
   return (
     <MotionConfig reducedMotion="user">
       <ErrorBoundary>
-        <Shell />
+        <AnimatePresence mode="wait">
+          {lock
+            ? <div className="app" key="lock"><LockScreen sealed={lock.sealed} pinLength={lock.length} onUnlock={() => setLock(null)} /></div>
+            : <Shell key="shell" />}
+        </AnimatePresence>
       </ErrorBoundary>
       <ToastHost />
     </MotionConfig>

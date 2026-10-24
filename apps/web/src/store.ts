@@ -7,39 +7,100 @@ import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, type Intake } from "./questions";
+import { kv, idbAvailable } from "./db";
+import { blank, migrateIds, normalize, uuid } from "./persist";
+import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import type { AppData, Baseline, Companion, Entry, Habit, Species, Tint, Tone } from "./types";
 
-const KEY = "detox-companion/v1";
-const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const LEGACY_KEY = "detox-companion/v1";
+const uid = uuid;
 
-const blank = (): AppData => ({
-  v: 1,
-  settings: { tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, tint: "ocean", goal: "", baseline: null, haptics: true, remindersOn: false, coachSeen: false, celebrated: [] },
-  companions: [], habits: [], entries: [], cleanDays: [], summaries: {}, updatedAt: 0,
-});
-
-function load(): AppData {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const d = JSON.parse(raw) as AppData;
-      if (d?.v === 1) {
-        const b = blank();
-        return { ...b, ...d, settings: { ...b.settings, ...d.settings }, summaries: d.summaries ?? {} };
-      }
-    }
-  } catch { /* storage unavailable */ }
-  return blank();
-}
-
-let data: AppData = load();
+let data: AppData = blank();
 const listeners = new Set<() => void>();
-function commit(next: AppData) {
+export type CommitSource = "local" | "remote";
+const hooks = new Set<(prev: AppData, next: AppData, source: CommitSource) => void>();
+/** Lets sync see exactly which rows changed in each commit. */
+export const onCommit = (fn: (prev: AppData, next: AppData, source: CommitSource) => void) => { hooks.add(fn); return () => { hooks.delete(fn); }; };
+
+function commit(next: AppData, source: CommitSource = "local") {
+  const prev = data;
   data = { ...next, updatedAt: Date.now() };
-  next = data;
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* ignore */ }
   listeners.forEach((l) => l());
+  hooks.forEach((h) => h(prev, data, source));
+  schedulePersist();
 }
+
+// ---------- persistence: IndexedDB, encrypted when a PIN is set ----------
+
+let vaultKey: VaultKey | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | undefined;
+let writing: Promise<void> = Promise.resolve();
+
+function schedulePersist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => { void flush(); }, 250);
+}
+/** Writes now. Called on a timer after each change and when the app goes to the background. */
+export function flush(): Promise<void> {
+  clearTimeout(persistTimer);
+  const snapshot = data;
+  writing = writing.then(async () => {
+    try {
+      if (!idbAvailable()) { localStorage.setItem(LEGACY_KEY, JSON.stringify(snapshot)); return; }
+      // The colour theme alone stays readable, so the lock screen looks like the person's app.
+      await kv.set("tint", snapshot.settings.tint);
+      if (vaultKey) { await kv.set("data.enc", await seal(vaultKey, snapshot)); await kv.del("data"); }
+      else { await kv.set("data", snapshot); await kv.del("data.enc"); }
+    } catch { /* storage full or unavailable: the in-memory copy still works */ }
+  });
+  return writing;
+}
+
+export type Boot = { kind: "ready" } | { kind: "locked"; sealed: Sealed };
+
+/** Loads saved data before the first render. Returns "locked" when a PIN protects it. */
+export async function boot(): Promise<Boot> {
+  if (!idbAvailable()) {
+    try { data = migrateIds(normalize(JSON.parse(localStorage.getItem(LEGACY_KEY) ?? "null")) ?? blank()); } catch { data = blank(); }
+    return { kind: "ready" };
+  }
+  try {
+    const sealed = await kv.get<Sealed>("data.enc");
+    if (sealed) {
+      const tint = await kv.get<string>("tint");
+      if (tint) document.documentElement.dataset.tint = tint;
+      return { kind: "locked", sealed };
+    }
+    let raw = await kv.get<unknown>("data");
+    let legacy = false;
+    if (raw === undefined) { const s = localStorage.getItem(LEGACY_KEY); if (s) { raw = JSON.parse(s); legacy = true; } }
+    const loaded = raw === undefined ? null : normalize(raw);
+    if (raw !== undefined && !loaded) await kv.set(`data.unreadable.${Date.now()}`, raw);
+    data = migrateIds(loaded ?? blank());
+    if (legacy || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
+  } catch { data = blank(); }
+  return { kind: "ready" };
+}
+
+/** Decrypts with the PIN. False when it's wrong. */
+export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> {
+  const r = await vaultOpen(pin, sealed);
+  if (!r) return false;
+  vaultKey = r.k;
+  data = migrateIds(normalize(r.value) ?? blank());
+  listeners.forEach((l) => l());
+  return true;
+}
+
+export const vault = {
+  hasPin: () => vaultKey !== null,
+  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length); },
+  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength"); },
+  pinLength: async () => (await kv.get<number>("pinLength").catch(() => undefined)) ?? 4,
+  /** Re-checks the current PIN without changing anything. */
+  async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },
+};
+
 export const useData = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => data);
 export const getData = () => data;
 export const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
@@ -159,7 +220,18 @@ export const actions = {
   setSummary: (week: string, text: string) => commit({ ...data, summaries: { ...data.summaries, [week]: text } }),
 
   /** Replace everything, used when an account's saved copy is newer than this phone's. */
-  replaceAll(next: AppData) { commit({ ...blank(), ...next, settings: { ...blank().settings, ...next.settings }, summaries: next.summaries ?? {} }); },
+  /** Applies rows that arrived from the account. Never marked as local changes, so they don't bounce back. */
+  applyRemote(next: AppData) { commit(next, "remote"); },
+
+  /** Restores a backup file. Everything in it is validated first; returns false if it isn't a backup. */
+  importJson(text: string): boolean {
+    try {
+      const d = normalize(JSON.parse(text));
+      if (!d || !d.settings.onboarded) return false;
+      commit(migrateIds(d));
+      return true;
+    } catch { return false; }
+  },
 
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
     commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
@@ -248,7 +320,11 @@ export const actions = {
   },
 
   exportJson: () => JSON.stringify(data, null, 2),
-  resetAll() { commit(blank()); },
+  async resetAll() {
+    vaultKey = null;
+    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
+    commit(blank());
+  },
 };
 
 import type { SlipRequest, WeeklyRequest } from "@detox/schema";
