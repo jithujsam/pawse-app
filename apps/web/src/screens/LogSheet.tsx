@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
-import { CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
+import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
@@ -119,10 +119,8 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
             <i className="before" style={{ width: `${ageBefore}%` }} />
             <motion.i className="added" initial={{ width: 0 }} animate={{ width: `${Math.max(0.6, ageAfter - ageBefore)}%` }} transition={{ ...spring.calm, delay: 0.35 }} style={{ left: `${ageBefore}%` }} />
           </div>
-          {result.absorbed > 0 && <span className="small">{shrugged
-            ? `${result.streakBefore} clean days made ${name} strong. This one was absorbed, but the cushion is thinner now.`
-            : `${name}'s strength from good days took ${Math.round(result.absorbed * 10) / 10} months of it.`}</span>}
-          {result.binge && <span className="small"><b>Binge day.</b> Part of today is now a permanent scar: {name}'s life expectancy went down.</span>}
+          {result.absorbed > 0 && <span className="small">{absorbedLine(data.settings.tone, name, result.streakBefore, result.absorbed, shrugged)}</span>}
+          {result.binge && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
           {!shrugged && result.effectLine && <span>{result.effectLine}</span>}
           <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
         </motion.div>

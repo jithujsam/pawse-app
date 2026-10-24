@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine } from "../copy";
+import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
@@ -63,7 +63,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
-    : lonely ? `There you are! ${companion.name} is glad you're back. No catching up needed: just today.`
+    : lonely ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? say("strike", personality, tone)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
@@ -157,7 +157,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
         </div>
       </motion.section>
 
-      {age >= 90 && <motion.div className="banner danger" role="alert" variants={rise}>{dyingBanner(companion.name, age)}</motion.div>}
+      {age >= 90 && <motion.div className="banner danger" role="alert" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
       <AnimatePresence initial={false}>
         {showPlan && plan && (

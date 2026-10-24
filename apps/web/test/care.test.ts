@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { careNote, recoveryLine, say, type Event } from "../src/voice";
+import { absorbedLine, bingeLine, dyingBanner, quietBanner, welcomeBackLine } from "../src/copy";
 import { blank, normalize } from "../src/persist";
 import { toRemote, merge, type Pulled } from "../src/syncmap";
 import { treatsLeft } from "../src/store";
@@ -19,6 +20,14 @@ describe("companion voice", () => {
       expect(line).not.toMatch(SHAME);
       expect(line).not.toContain("{d}");
     }
+  });
+  it("slip-card, banner and welcome-back lines exist in all three tones, differ by tone, and never shame", () => {
+    const lines = (t: Tone) => [dyingBanner(t, "Miso", 92), welcomeBackLine(t, "Miso"), absorbedLine(t, "Miso", 40, 4, true), absorbedLine(t, "Miso", 40, 2.5, false), bingeLine(t, "Miso"), quietBanner(t, "Miso")];
+    const [g, h, b] = TONES.map(lines);
+    for (const set of [g, h, b]) for (const l of set) { expect(l).not.toMatch(SHAME); expect(l.length).toBeGreaterThan(10); }
+    for (let i = 0; i < h.length; i++) { expect(g[i]).not.toBe(h[i]); expect(b[i]).not.toBe(h[i]); }
+    expect(absorbedLine("honest", "Miso", 40, 2.5, false)).toContain("2.5 months");
+    expect(dyingBanner("brutal", "Miso", 92.4)).toContain("92 of 100");
   });
   it("the shrug-off names the streak that earned it", () => {
     for (const p of PERS) for (const t of TONES) expect(say("shrug", p, t, 63)).toContain("63");
