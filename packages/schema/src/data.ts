@@ -20,11 +20,13 @@ export const FieldSchema = z.object({
 
 export const CompanionSchema = z.object({
   id,
-  species: z.enum(["dog", "cat", "rabbit"]),
+  species: z.enum(["dog", "cat", "rabbit", "fox", "owl", "panda"]),
   name: z.string().min(1).max(20),
   bornOn: day,
   diedOn: day.nullable(),
   finalAge: z.number().min(0).max(100).nullable(),
+  coat: z.string().regex(/^[a-z_]{1,20}$/).optional(),
+  personality: z.enum(["playful", "calm", "sassy", "wise"]).optional(),
 });
 
 export const HabitSchema = z.object({
@@ -71,6 +73,10 @@ export const SettingsSchema = z.object({
   coachSeen: z.boolean(),
   celebrated: z.array(z.number().int()).max(50),
   autoLock: z.enum(["immediately", "1m", "5m", "never"]),
+  wear: z.enum(["bandana", "bow", "flowers", "scarf", "glasses", "crown"]).nullable(),
+  treatsGiven: z.number().int().min(0).max(100_000),
+  fedOn: day.nullable(),
+  careNotes: z.boolean(),
 }).partial();
 
 export const AppDataSchema = z.object({

@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
-  baselineMonths, computeSeverity, simulate, stageForAge,
-  type DayInput, type DayState,
+  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, simulate, STAGE_LABEL, stageForAge,
+  type DayInput, type DayState, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
@@ -10,7 +10,7 @@ import { buildFields, countTriggers, pickedLabels, type Intake } from "./questio
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
-import type { AppData, Baseline, Companion, Entry, Habit, Species, Tone } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
 const uid = uuid;
@@ -176,6 +176,12 @@ export function bestStreak(d: AppData, habitId: string): number {
   return best;
 }
 
+/** Treats in the jar: one per clean day ever, minus those already given. */
+export function treatsLeft(d: AppData, habitId: string): number {
+  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
+  return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - d.settings.treatsGiven);
+}
+
 export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => {
   const end = addDays(weekStartDay, 6);
   const es = d.entries.filter((e) => e.habitId === habitId && e.day >= weekStartDay && e.day <= end);
@@ -196,15 +202,38 @@ export interface Deduction {
   nthToday: number;
   weekSlips: number;
   died: boolean;
+  /** Months the hidden reserve soaked up today; the companion didn't age by these. */
+  absorbed: number;
+  /** Today is now a binge day (3+ slips): part of it is a permanent scar. */
+  binge: boolean;
+  /** Clean days in a row before this slip. */
+  streakBefore: number;
+}
+
+const STAGE_FLOOR: Partial<Record<Stage, Stage>> = { young: "baby", adult: "young", middle: "adult", old: "middle", frail: "old" };
+const STAGE_MIN: Record<Stage, number> = { baby: 0, young: 10, adult: 30, middle: 50, old: 70, frail: 80, dead: 100 };
+
+/** The way back: clean days to undo today's damage, to reach the previous stage, and life expectancy. */
+export function recoveryPlan(v: CompanionView, day = today()): { undoToday: number; stageBack: { days: number; label: string } | null; lifeExpectancy: number } | null {
+  const cur = v.current;
+  if (!cur) return null;
+  const todayState = v.states.find((s) => s.day === day);
+  const prev = STAGE_FLOOR[cur.stage];
+  const days = prev ? cleanDaysToAge(cur, STAGE_MIN[cur.stage] - 0.01) : null;
+  return {
+    undoToday: cleanDaysToUndo(todayState?.damageMonths ?? 0),
+    stageBack: prev && days !== null && days > 0 ? { days, label: STAGE_LABEL[prev] } : null,
+    lifeExpectancy: Math.round(100 - floorAge(cur)),
+  };
 }
 
 export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null }) {
+  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null }) {
     const companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
       id: uid(), name: o.intake.what.trim() || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
       companionId, unit: o.intake.measure, fields: buildFields(o.intake),
@@ -274,6 +303,7 @@ export const actions = {
     const before = viewCompanion(data, companion.id, day);
     const effects = effectsFor(habit.cls, Math.min(100, before.age + months / 12));
     const tone = data.settings.tone;
+    const streakBefore = cleanStreak(data, habitId);
     const entry: Entry = {
       id: uid(), habitId, companionId: companion.id, day, time, values, amount, months, severity, effects,
       explanation: slipLine(tone, companion.name, months, nth), source: "baseline", aiAdjustPct: null, createdAt: Date.now(),
@@ -293,8 +323,10 @@ export const actions = {
     }
     commit(next);
     const ws = weekStats(next, habitId, weekStart(day));
+    const st = v.states.find((s) => s.day === day);
     return {
       entry, line: entry.explanation, nthToday: nth, weekSlips: ws.slips, died,
+      absorbed: st?.absorbedMonths ?? 0, binge: st?.binge ?? false, streakBefore,
       effectLine: effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" "),
     };
   },
@@ -313,12 +345,30 @@ export const actions = {
   celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
   resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
 
+  /** Feeding: true if the companion ate. It refuses on a day with a slip, and eats once a day. */
+  feed(habitId: string): "ate" | "full" | "strike" {
+    const t = today();
+    if (data.entries.some((e) => e.habitId === habitId && e.day === t)) return "strike";
+    if (data.settings.fedOn === t) return "full";
+    commit({ ...data, settings: { ...data.settings, fedOn: t } });
+    return "ate";
+  },
+  /** Gives one treat from the jar (one is earned per clean day). */
+  giveTreat(habitId: string): "ate" | "empty" | "strike" {
+    if (data.entries.some((e) => e.habitId === habitId && e.day === today())) return "strike";
+    if (treatsLeft(data, habitId) <= 0) return "empty";
+    commit({ ...data, settings: { ...data.settings, treatsGiven: data.settings.treatsGiven + 1 } });
+    return "ate";
+  },
+  setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "personality">) =>
+    commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
+
   renameCompanion: (id: string, name: string) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) }),
 
-  adopt(habitId: string, name: string, species: Species) {
+  adopt(habitId: string, name: string, species: Species, personality?: Personality) {
     const habit = data.habits.find((h) => h.id === habitId)!;
-    const companion: Companion = { id: uid(), species, name: name.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: uid(), species, personality, name: name.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     commit({
       ...data,
       companions: [...data.companions, companion],

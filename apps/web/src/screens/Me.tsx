@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
-import { CompanionArt } from "../Companion";
+import { CompanionArt, LiveCompanion } from "../Companion";
+import { ACCESSORIES, COATS, PERSONALITIES } from "../pets";
+import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { daysBetween, fmtDay, today } from "../dates";
 import { haptic } from "../haptics";
 import { cancelDaily, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, useActiveView, useData, vault } from "../store";
+import { actions, bestStreak, cleanStreak, useActiveView, useData, vault } from "../store";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
-import { Button, Icon, Segmented, Switch } from "../ui/Controls";
+import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
@@ -47,10 +49,10 @@ export function Me() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>Me</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><CompanionArt species={companion.species} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+        <span className="profile-art"><CompanionArt species={companion.species} coat={companion.coat} accessory={settings.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
-          <span className="muted small">{SPECIES_LABEL[companion.species]} · {STAGE_LABEL[view.stage]} · day {together}</span>
+          <span className="muted small">{SPECIES_LABEL[companion.species]} · {PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label} · {STAGE_LABEL[view.stage]} · day {together}</span>
           <span className="small">Watching: {habit.name}</span>
         </span>
         <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
@@ -97,7 +99,7 @@ export function Me() {
       <SubPage open={page === "data"} title="Your data" onClose={close}><DataPage /></SubPage>
       <SubPage open={page === "feel"} title="Feel" onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title="About and help" onClose={close}><AboutPage /></SubPage>
-      <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} name={companion.name} habit={habit} />
+      <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />
     </motion.main>
   );
 }
@@ -106,8 +108,11 @@ function PetPage() {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
+  const habit = view.habit ?? data.habits[0];
+  const { settings } = data;
   const [name, setName] = useState(companion.name);
   const hall = data.companions.filter((c) => c.diedOn);
+  const best = Math.max(bestStreak(data, habit.id), cleanStreak(data, habit.id));
   const save = () => {
     const n = name.trim();
     if (!n || n === companion.name) { setName(companion.name); return; }
@@ -117,7 +122,7 @@ function PetPage() {
   };
   return (<>
     <section className="card stack">
-      <div className="pet-stage"><CompanionArt species={companion.species} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
+      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={settings.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
       <div className="stats">
         <div className="stat item"><span className="muted small">Age</span><b className="v">{Math.round(view.age)}</b></div>
         <div className="stat item"><span className="muted small">Born</span><b>{fmtDay(companion.bornOn)}</b></div>
@@ -127,6 +132,40 @@ function PetPage() {
       <label className="field"><span className="field-label">Name</span>
         <input className="input" autoComplete="off" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={save} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
+      <div className="field"><span className="field-label">Coat</span>
+        <div className="chips" role="radiogroup" aria-label="Coat">
+          {COATS[companion.species].map((c) => <Chip key={c.id} pressed={(companion.coat ?? COATS[companion.species][0].id) === c.id} onClick={() => actions.setCompanionLook(companion.id, { coat: c.id, personality: companion.personality })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
+        </div>
+      </div>
+      <div className="field"><span className="field-label">Personality</span>
+        <div className="choice-grid" role="radiogroup" aria-label="Personality">
+          {PERSONALITIES.map((p) => (
+            <motion.button key={p.id} role="radio" aria-checked={(companion.personality ?? "playful") === p.id} className="choice" whileTap={{ scale: 0.97 }}
+              onClick={() => { haptic.select(); actions.setCompanionLook(companion.id, { coat: companion.coat, personality: p.id }); toast(say("petted", p.id, settings.tone), { ms: 2500 }); }}>
+              <b>{p.label}</b><div className="small muted">{p.blurb}</div>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </section>
+    <section className="card stack">
+      <div className="row"><h2>Wardrobe</h2><span className="muted small">Best streak {best} {best === 1 ? "day" : "days"}</span></div>
+      <div className="wardrobe">
+        <motion.button className="ward" data-on={!settings.wear} whileTap={{ scale: 0.94 }} onClick={() => { haptic.select(); actions.setSettings({ wear: null }); }}><b>None</b></motion.button>
+        {ACCESSORIES.map((a) => {
+          const open = best >= a.days;
+          return (
+            <motion.button key={a.id} className="ward" data-on={settings.wear === a.id} disabled={!open} whileTap={open ? { scale: 0.94 } : undefined}
+              onClick={() => { haptic.select(); actions.setSettings({ wear: a.id }); }}>
+              <b>{a.label}</b><span className="small muted">{open ? "Unlocked" : `${a.days} clean days`}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+      <p className="muted small">Each one unlocks with a clean streak, and stays yours.</p>
+    </section>
+    <section className="card stack">
+      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint={settings.remindersOn ? "A thank-you after clean days, and a note when it won't eat" : "Needs reminders to be on"} />
     </section>
     <section className="card stack">
       <h2>Hall of Companions</h2>
@@ -134,7 +173,7 @@ function PetPage() {
         <div className="hall">
           {hall.map((c) => (
             <div className="item hall-item" key={c.id}>
-              <CompanionArt species={c.species} stage="frail" mood="dying" age={100} size={96} />
+              <CompanionArt species={c.species} coat={c.coat} stage="frail" mood="dying" age={100} size={96} />
               <b>{c.name}</b><span className="muted small">{data.entries.filter((e) => e.companionId === c.id).length} slips</span>
             </div>
           ))}

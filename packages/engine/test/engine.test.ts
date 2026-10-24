@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAiAdjustment, baselineMonths, computeSeverity, repeatMultiplier, simulate, stageForAge } from "../src";
+import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, repeatMultiplier, simulate, stageForAge } from "../src";
 import { pattern } from "../src/simulate";
 
 const firstDay = (states: ReturnType<typeof simulate>, age: number) => states.findIndex((s) => s.visibleAge >= age) + 1;
@@ -65,9 +65,57 @@ describe("pacing", () => {
     expect(Math.max(...light.map((x) => x.visibleAge))).toBeLessThan(50);
   });
   it("healing never cuts below the scar floor", () => {
-    const days = [...pattern(10, () => 3, 1.5), ...pattern(400, () => 0, 1).map((d) => ({ ...d }))];
+    const days = [...pattern(10, () => 2, 1.5), ...pattern(400, () => 0, 1)];
     const s = simulate(days);
     const last = s[s.length - 1];
     expect(last.netMonths).toBeCloseTo(last.lifetimeDamage * 0.2, 5);
+  });
+  it("binge days (3+ slips) add a permanent scar of 25% of their damage", () => {
+    const s = simulate([...pattern(10, () => 3, 1.5), ...pattern(400, () => 0, 1)]);
+    const last = s[s.length - 1];
+    expect(last.netMonths).toBeCloseTo(last.lifetimeDamage * 0.45, 5);
+    expect(100 - floorAge(last)).toBeLessThan(100 - last.lifetimeDamage * 0.2 / 12);
+  });
+});
+
+describe("hidden reserve", () => {
+  const slipAfter = (clean: number, slips: number) => simulate([...pattern(1, () => 1, 1), ...pattern(clean, () => 0, 1), ...pattern(1, () => slips, 1)]);
+  it("a brand-new companion has no reserve: the first slip ages it", () => {
+    const s = simulate(pattern(1, () => 1, 1));
+    expect(s[0].absorbedMonths).toBe(0);
+    expect(s[0].netMonths).toBe(4);
+  });
+  it("after about two clean months, a one-off slip is absorbed and age does not move", () => {
+    const s = slipAfter(65, 1);
+    const before = s[s.length - 2], after = s[s.length - 1];
+    expect(before.reserveMonths).toBeGreaterThanOrEqual(4);
+    expect(after.absorbedMonths).toBe(4);
+    expect(after.visibleAge).toBeCloseTo(before.visibleAge, 9);
+  });
+  it("the reserve caps at 12 months and soaks at most 6 a day, so a binge still lands", () => {
+    const s = slipAfter(200, 3);
+    expect(s[s.length - 2].reserveMonths).toBe(12);
+    const last = s[s.length - 1];
+    expect(last.absorbedMonths).toBe(6);
+    expect(last.damageMonths).toBeCloseTo(4 + 5 + 6 - 6, 9);
+  });
+  it("a short clean break builds little reserve", () => {
+    const s = slipAfter(7, 1);
+    expect(s[s.length - 1].absorbedMonths).toBeLessThanOrEqual(1);
+    expect(s[s.length - 1].damageMonths).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("recovery plan", () => {
+  it("one base slip takes 3 clean days to undo", () => {
+    expect(cleanDaysToUndo(4)).toBe(3);
+    expect(cleanDaysToUndo(0)).toBe(0);
+  });
+  it("counts clean days to reach a target age, or null when the scar floor is above it", () => {
+    const s = simulate(pattern(30, () => 1, 1.0));
+    const last = s[s.length - 1]; // 120 months net, floor 24
+    expect(cleanDaysToAge(last, 5)).toBe(40); // 120 -> 60 months at 1.5/day
+    expect(cleanDaysToAge(last, last.visibleAge)).toBe(0);
+    expect(cleanDaysToAge(last, 1)).toBeNull();
   });
 });

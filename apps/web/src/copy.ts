@@ -29,11 +29,11 @@ const STATUS: Record<Tone, Record<Stage, string>> = {
   },
   honest: {
     baby: "{n} is a puppy again.", young: "{n} is in good shape.", adult: "{n} is fine, for now.",
-    middle: "{n} is getting heavy.", old: "{n} is old before the time.", frail: "{n} is close to the edge.", dead: "{n} is gone.",
+    middle: "{n} is slowing down.", old: "{n} is tired, and old before the time.", frail: "{n} is weak. A clean week would help a lot.", dead: "{n} is gone.",
   },
   brutal: {
     baby: "{n} has no idea yet.", young: "{n} still trusts you.", adult: "{n} is carrying it.",
-    middle: "{n} is wearing it on the face.", old: "{n} coughs now. You hear it.", frail: "{n} can barely lift a head.", dead: "{n} is dead.",
+    middle: "{n} is wearing it on the face.", old: "{n} is old before the time. That's the slips.", frail: "{n} is running out of life. Stop now.", dead: "{n} is dead.",
   },
 };
 export const statusLine = (tone: Tone, name: string, stage: Stage) => STATUS[tone][stage].replace("{n}", name);
@@ -73,9 +73,9 @@ export const PROFESSIONAL_NOTE =
   "If this habit is affecting your health, talk to a doctor or counselor before changing it suddenly. Stopping alcohol abruptly can be dangerous.";
 
 export const EFFECT_LABEL: Record<string, string> = {
-  dull_coat: "His coat looks duller.", heavier: "He looks heavier.", labored_breathing: "He is breathing hard.",
-  cough: "He coughs now.", thin: "He looks thin.", glassy_eyes: "His eyes are glassy.", trembling: "He is trembling.",
-  tired_eyes: "His eyes look tired.", slumped: "He is slumped over.", anxious: "He looks anxious.", worn_down: "He looks worn down.",
+  dull_coat: "The coat looks a little duller.", heavier: "Moving a bit slower.", labored_breathing: "Breathing a bit harder.",
+  cough: "A small cough today.", thin: "Not much appetite.", glassy_eyes: "Eyes a little glassy.", trembling: "A bit shaky.",
+  tired_eyes: "Eyes look tired.", slumped: "Sitting low today.", anxious: "Looking anxious.", worn_down: "Looking worn down.",
 };
 
 const EFFECTS: Record<string, [string[], string[]]> = {

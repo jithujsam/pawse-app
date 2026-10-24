@@ -170,7 +170,13 @@ async function cycle(uid: string) {
     const rows = byTable.get(t);
     if (!rows?.length) continue;
     for (let i = 0; i < rows.length; i += 500) {
-      const { error } = await supabase!.from(t).upsert(rows.slice(i, i + 500), { onConflict: CONFLICT[t] });
+      let batch = rows.slice(i, i + 500);
+      let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
+      // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
+      if (error && t === "companions" && /coat|personality/i.test(error.message)) {
+        batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
+        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+      }
       if (error) throw new Error(`${t}: ${error.message}`);
     }
   }

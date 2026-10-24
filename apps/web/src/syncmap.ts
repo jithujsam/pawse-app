@@ -54,7 +54,7 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
   const base = { user_id: userId, client_updated_at: t };
   switch (l.kind) {
     case "s": return [{ table: "profiles", row: { id: userId, settings: portableSettings(l.row), client_updated_at: t, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone?.slice(0, 64) ?? null } }];
-    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, deleted_at: null } }];
+    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, personality: l.row.personality ?? null, deleted_at: null } }];
     case "h": return [{ table: "habits", row: { ...base, id: l.row.id, companion_id: l.row.companionId, name: l.row.name, class: l.row.cls, class_weight: l.row.classWeight, unit: l.row.unit, fields: l.row.fields, position: l.position, deleted_at: null } }];
     case "e": return [
       { table: "entries", row: { ...base, id: l.row.id, habit_id: l.row.habitId, companion_id: l.row.companionId, occurred_on: l.row.day, occurred_at: l.row.time, values: stripPhotos(l.row.values), amount: l.row.amount, client_created_at: l.row.createdAt, deleted_at: null } },
@@ -105,7 +105,8 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     const key = `c:${r.id}`;
     if (!wins(key, r)) continue;
     if (r.deleted_at) { companions = companions.filter((c) => c.id !== r.id); continue; }
-    companions = upsert(companions, { id: String(r.id), species: r.species as Companion["species"], name: String(r.name), bornOn: String(r.born_on), diedOn: (r.died_on as string) ?? null, finalAge: num(r.final_age) });
+    companions = upsert(companions, { id: String(r.id), species: r.species as Companion["species"], name: String(r.name), bornOn: String(r.born_on), diedOn: (r.died_on as string) ?? null, finalAge: num(r.final_age),
+      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}) });
   }
   const sortedHabits = [...p.habits].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0));
   for (const r of sortedHabits) {

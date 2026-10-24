@@ -15,7 +15,8 @@ window.addEventListener("pagehide", () => { void flush(); });
 listenForAuthLinks();
 
 const root = createRoot(document.getElementById("root")!);
-void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));
+if (import.meta.env.DEV && location.hash === "#gallery") void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />));
+else void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));
 
 // Offline support for the installed web app. The Android app already ships its files.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && "serviceWorker" in navigator) {

@@ -102,18 +102,24 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
   );
 
   if (result) {
-    const ageAfter = Math.min(100, ageBefore + (result.entry.months / 1200) * 100);
+    const felt = Math.max(0, result.entry.months - result.absorbed);
+    const ageAfter = Math.min(100, ageBefore + (felt / 1200) * 100);
+    const shrugged = result.absorbed > 0 && felt < 0.05;
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
         <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : "yesterday"}{time ? ` at ${time}` : ""}</motion.p>
         <motion.div className="deduction" variants={rise}>
-          <span>That cost {name}</span>
-          <b className="neg">−<AnimatedNumber value={result.entry.months} from={0} decimals={1} /> months</b>
+          <span>{shrugged ? `${name} shrugged it off` : "That cost " + name}</span>
+          <b className={shrugged ? "" : "neg"}>−<AnimatedNumber value={felt} from={0} decimals={1} /> months</b>
           <div className="delta-bar" aria-hidden>
             <i className="before" style={{ width: `${ageBefore}%` }} />
             <motion.i className="added" initial={{ width: 0 }} animate={{ width: `${Math.max(0.6, ageAfter - ageBefore)}%` }} transition={{ ...spring.calm, delay: 0.35 }} style={{ left: `${ageBefore}%` }} />
           </div>
-          {result.effectLine && <span>{result.effectLine}</span>}
+          {result.absorbed > 0 && <span className="small">{shrugged
+            ? `${result.streakBefore} clean days made ${name} strong. This one was absorbed, but the cushion is thinner now.`
+            : `${name}'s strength from good days took ${Math.round(result.absorbed * 10) / 10} months of it.`}</span>}
+          {result.binge && <span className="small"><b>Binge day.</b> Part of today is now a permanent scar: {name}'s life expectancy went down.</span>}
+          {!shrugged && result.effectLine && <span>{result.effectLine}</span>}
           <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
         </motion.div>
         <AnimatePresence mode="wait">

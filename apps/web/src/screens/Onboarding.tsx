@@ -9,17 +9,11 @@ import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
 import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
 import { actions } from "../store";
+import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
+import { say } from "../voice";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
-import type { Baseline, Measure, Species, Tone } from "../types";
+import type { Baseline, Measure, Personality, Species, Tone } from "../types";
 
-const SPECIES: { id: Species; label: string; blurb: string }[] = [
-  { id: "dog", label: "Dog", blurb: "Loyal, waits by the door" },
-  { id: "cat", label: "Cat", blurb: "Quiet, notices everything" },
-  { id: "rabbit", label: "Rabbit", blurb: "Gentle, a little shy" },
-];
-const NAMES: Record<Species, string[]> = {
-  dog: ["Biscuit", "Mochi", "Pepper", "Bean"], cat: ["Miso", "Luna", "Pixel", "Olive"], rabbit: ["Clover", "Pip", "Hazel", "Nimbus"],
-};
 const MEASURES: { id: Measure; label: string; hint: string }[] = [
   { id: "money", label: "Money spent", hint: "How much each time" },
   { id: "count", label: "How many", hint: "A count each time" },
@@ -40,14 +34,14 @@ const STORY = [
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
   step: number; species: Species; companionName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
-  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string;
+  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; personality: Personality;
 }
 const initial: Draft = {
   step: 1, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
-  baseline: null, triggers: [], tone: "honest", reminder: "20:00",
+  baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", personality: "playful",
 };
 const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, step: Math.max(1, d.step) }; } catch { return initial; } };
-const LAST = 9;
+const LAST = 10;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
@@ -68,7 +62,7 @@ export function Onboarding() {
   };
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -91,9 +85,9 @@ export function Onboarding() {
               <motion.div className="species-grid" variants={rise} role="radiogroup" aria-label="Species">
                 {SPECIES.map((s) => (
                   <motion.button key={s.id} role="radio" aria-checked={d.species === s.id} className="species-card" data-on={d.species === s.id}
-                    whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); up({ species: s.id }); }}>
+                    whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); up({ species: s.id, coat: "" }); }}>
                     <motion.div animate={d.species === s.id ? { y: [0, -10, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
-                      <CompanionArt species={s.id} stage="baby" mood={d.species === s.id ? "happy" : "idle"} age={2} size={92} />
+                      <CompanionArt species={s.id} stage="baby" mood={d.species === s.id ? "happy" : "idle"} age={2} size={84} />
                     </motion.div>
                     <b>{s.label}</b><span className="muted small">{s.blurb}</span>
                   </motion.button>
@@ -102,9 +96,11 @@ export function Onboarding() {
               <motion.div variants={rise}><Button onClick={() => go(2)}>Continue</Button></motion.div>
             </>)}
 
-            {d.step === 2 && <NameStep d={d} up={up} onNext={() => go(3)} />}
+            {d.step === 2 && <LookStep d={d} up={up} onNext={() => go(3)} />}
 
-            {d.step === 3 && (<>
+            {d.step === 3 && <NameStep d={d} up={up} onNext={() => go(4)} />}
+
+            {d.step === 4 && (<>
               <motion.h1 variants={rise}>What would you like to let go of?</motion.h1>
               <motion.p className="muted" variants={rise}>Say it in your own words, or pick one. This stays between you and {name}.</motion.p>
               <motion.div className="chips" variants={rise}>
@@ -117,10 +113,10 @@ export function Onboarding() {
                 {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{CRISIS_MESSAGE}</motion.div>}
                 {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>This app can't track eating less, calories or weight, and it won't. If food and eating feel hard right now, a doctor or counselor can really help. You can pick something else to watch, like money spent on orders.</motion.div>}
               </AnimatePresence>
-              <motion.div variants={rise}><Button disabled={!d.what.trim() || crisis || restriction} onClick={() => go(4)}>Continue</Button></motion.div>
+              <motion.div variants={rise}><Button disabled={!d.what.trim() || crisis || restriction} onClick={() => go(5)}>Continue</Button></motion.div>
             </>)}
 
-            {d.step === 4 && (<>
+            {d.step === 5 && (<>
               <motion.h1 variants={rise}>How does it show up?</motion.h1>
               <motion.p className="muted" variants={rise}>This shapes the ten-second check-in after a slip.</motion.p>
               <motion.div className="choice-grid" variants={rise} role="radiogroup" aria-label="What to track">
@@ -136,22 +132,22 @@ export function Onboarding() {
                 {BASELINES.map((b) => <Chip key={b.id} pressed={d.baseline === b.id} onClick={() => up({ baseline: b.id })}>{b.label}</Chip>)}
               </motion.div>
               <motion.p className="muted small" variants={rise}>No judgement. It helps your report show how far you've come.</motion.p>
-              <motion.div variants={rise}><Button onClick={() => go(5)}>Continue</Button></motion.div>
+              <motion.div variants={rise}><Button onClick={() => go(6)}>Continue</Button></motion.div>
             </>)}
 
-            {d.step === 5 && (<>
+            {d.step === 6 && (<>
               <motion.h1 variants={rise}>What tends to set it off?</motion.h1>
               <motion.p className="muted" variants={rise}>Pick any that fit. After a slip you'll tap the one that was true, so your report can show what really sets it off.</motion.p>
               <motion.div className="chips" role="group" aria-label="Triggers" variants={rise}>
                 {MOODS.map((t) => <Chip key={t.id} pressed={d.triggers.includes(t.id)} onClick={() => up({ triggers: d.triggers.includes(t.id) ? d.triggers.filter((x) => x !== t.id) : [...d.triggers, t.id] })}>{t.chip}</Chip>)}
               </motion.div>
-              <motion.div variants={rise}><Button onClick={() => go(6)}>{d.triggers.length ? "Continue" : "Skip for now"}</Button></motion.div>
+              <motion.div variants={rise}><Button onClick={() => go(7)}>{d.triggers.length ? "Continue" : "Skip for now"}</Button></motion.div>
             </>)}
 
-            {d.step === 6 && (<>
+            {d.step === 7 && (<>
               <motion.h1 variants={rise}>How should {name} talk to you?</motion.h1>
               <motion.div className="preview" variants={rise}>
-                <CompanionArt species={d.species} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
+                <CompanionArt species={d.species} coat={d.coat} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
                 <AnimatePresence mode="wait">
                   <motion.p key={d.tone} className="speech" initial={{ opacity: 0, scale: 0.92, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring.bouncy}>
                     {tonePreview(d.tone, name)}
@@ -167,10 +163,10 @@ export function Onboarding() {
                 ))}
               </motion.div>
               <motion.p className="muted small" variants={rise}>Every tone is respectful. It describes what happened, never who you are. Change it any time.</motion.p>
-              <motion.div variants={rise}><Button onClick={() => go(7)}>Continue</Button></motion.div>
+              <motion.div variants={rise}><Button onClick={() => go(8)}>Continue</Button></motion.div>
             </>)}
 
-            {d.step === 7 && (<>
+            {d.step === 8 && (<>
               <motion.div className="bell" variants={rise} animate={{ rotate: [0, -14, 12, -8, 6, 0] }} transition={{ duration: 1, delay: 0.4 }}>{Icon.bell}</motion.div>
               <motion.h1 variants={rise}>A daily nudge</motion.h1>
               <motion.p className="muted" variants={rise}>One quiet reminder to check in, in {name}'s voice. Never more than two a day.</motion.p>
@@ -181,22 +177,22 @@ export function Onboarding() {
                 <input className="input" autoComplete="off" type="time" value={d.reminder} onChange={(e) => up({ reminder: e.target.value })} />
               </motion.label>
               <motion.div className="stack tight" variants={rise}>
-                <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(8); }}>Turn on reminders</Button>
-                <Button variant="text" onClick={() => go(8)}>Not now</Button>
+                <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(9); }}>Turn on reminders</Button>
+                <Button variant="text" onClick={() => go(9)}>Not now</Button>
               </motion.div>
             </>)}
 
-            {d.step === 8 && (<>
+            {d.step === 9 && (<>
               <motion.h1 variants={rise}>One last thing</motion.h1>
               <motion.div className="card stack" variants={rise}>
                 <p>{DISCLAIMER}</p>
                 <p className="muted small">Age and body effects are illustrative estimates. They are not a health prediction.</p>
               </motion.div>
               <motion.div variants={rise}><Switch checked={adult} onChange={setAdult} label="I'm 18 or older" hint="And I understand this is not medical advice." /></motion.div>
-              <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(9)}>Meet {name}</Button></motion.div>
+              <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(10)}>Meet {name}</Button></motion.div>
             </>)}
 
-            {d.step === 9 && <Hatch species={d.species} name={name} tone={d.tone} onDone={finish} />}
+            {d.step === 10 && <Hatch species={d.species} coat={d.coat} name={name} tone={d.tone} onDone={finish} />}
           </motion.div>
         </motion.div>
       </AnimatePresence>
@@ -230,6 +226,37 @@ export function Story({ species, onStart }: { species: Species; onStart: () => v
   );
 }
 
+function LookStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void; onNext: () => void }) {
+  const coat = d.coat || COATS[d.species][0].id;
+  const [line, setLine] = useState(() => say("petted", d.personality, d.tone));
+  return (<>
+    <motion.h1 variants={rise}>Make them yours</motion.h1>
+    <motion.div className="preview" variants={rise}>
+      <LiveCompanion species={d.species} coat={coat} personality={d.personality} stage="baby" mood="happy" age={2} size={120} onReact={(r) => setLine(say(r, d.personality, d.tone))} />
+      <AnimatePresence mode="wait">
+        <motion.p key={line} className="speech" initial={{ opacity: 0, scale: 0.92, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring.bouncy}>{line}</motion.p>
+      </AnimatePresence>
+    </motion.div>
+    <motion.div className="field" variants={rise}><span className="field-label">Coat</span>
+      <div className="chips" role="radiogroup" aria-label="Coat">
+        {COATS[d.species].map((c) => <Chip key={c.id} pressed={coat === c.id} onClick={() => up({ coat: c.id })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
+      </div>
+    </motion.div>
+    <motion.div className="field" variants={rise}><span className="field-label">Personality</span>
+      <div className="choice-grid" role="radiogroup" aria-label="Personality">
+        {PERSONALITIES.map((p) => (
+          <motion.button key={p.id} role="radio" aria-checked={d.personality === p.id} className="choice" whileTap={{ scale: 0.97 }}
+            onClick={() => { haptic.select(); up({ personality: p.id }); setLine(say("petted", p.id, d.tone)); }}>
+            <b>{p.label}</b><div className="small muted">{p.blurb}</div>
+          </motion.button>
+        ))}
+      </div>
+    </motion.div>
+    <motion.p className="muted small" variants={rise}>Tap or stroke them to say hello. Personality changes how they talk and play.</motion.p>
+    <motion.div variants={rise}><Button onClick={onNext}>Continue</Button></motion.div>
+  </>);
+}
+
 function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void; onNext: () => void }) {
   const [gesture, setGesture] = useState<Gesture>("none");
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -242,7 +269,7 @@ function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
   const shown = d.companionName.trim();
   return (<>
     <motion.div className="name-hero" variants={rise}>
-      <LiveCompanion species={d.species} stage="baby" mood={shown ? "happy" : "waiting"} age={2} size={180} gesture={gesture} />
+      <LiveCompanion species={d.species} coat={d.coat} personality={d.personality} stage="baby" mood={shown ? "happy" : "waiting"} age={2} size={180} gesture={gesture} />
       <AnimatePresence>{shown && <motion.span className="name-tag" initial={{ opacity: 0, y: 8, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={spring.bouncy}>{shown}</motion.span>}</AnimatePresence>
     </motion.div>
     <motion.h1 variants={rise}>What will you call them?</motion.h1>
@@ -255,7 +282,7 @@ function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
   </>);
 }
 
-function Hatch({ species, name, tone, onDone }: { species: Species; name: string; tone: Tone; onDone: () => void }) {
+function Hatch({ species, coat, name, tone, onDone }: { species: Species; coat?: string; name: string; tone: Tone; onDone: () => void }) {
   const [phase, setPhase] = useState<"egg" | "crack" | "born">("egg");
   useEffect(() => {
     const a = setTimeout(() => { setPhase("crack"); haptic.tap(); }, 1300);
@@ -279,7 +306,7 @@ function Hatch({ species, name, tone, onDone }: { species: Species; name: string
           ) : (
             <motion.div key="pet" initial={{ scale: 0.3, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} transition={spring.bouncy}>
               <Burst burst={1} kind="spark" count={12} />
-              <LiveCompanion species={species} stage="baby" mood="happy" age={0} size={220} />
+              <LiveCompanion species={species} coat={coat} stage="baby" mood="happy" gesture="hop" age={0} size={220} />
             </motion.div>
           )}
         </AnimatePresence>

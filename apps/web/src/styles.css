@@ -124,6 +124,11 @@ p { text-wrap: pretty; }
 .subpage-top h2 { font-size: 24px; }
 .subpage-body.screen { padding-top: 12px; }
 .pet-stage { display: grid; place-items: center; }
+.coat-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.wardrobe { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 8px; }
+.ward { border: 2px solid transparent; border-radius: var(--radius-sm); background: var(--raised); color: var(--text); padding: 12px 8px; display: grid; gap: 2px; place-items: center; text-align: center; cursor: pointer; }
+.ward[data-on="true"] { border-color: var(--accent); background: var(--soft); }
+.ward:disabled { opacity: .5; cursor: default; }
 .profile-card { border: 0; width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; color: var(--text); background: linear-gradient(165deg, var(--hero-a), var(--hero-b)); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); cursor: pointer; }
 .profile-art { width: 84px; display: grid; place-items: center; flex: none; }
 .profile-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
@@ -264,6 +269,27 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .agebar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--pet), color-mix(in srgb, var(--pet) 70%, var(--negative))); border-radius: 999px; }
 .agebar.danger > i { background: var(--negative); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .65; } }
+.pet-stage-live { position: relative; display: grid; place-items: center; width: 100%; }
+.bowl { position: absolute; right: 4%; bottom: 4px; overflow: visible; }
+.bowl-eating .kibble { animation: eat-bowl 1.8s ease-in forwards; }
+.bowl-untouched { filter: saturate(.7); }
+@keyframes eat-bowl { to { opacity: 0; transform: translateY(4px); } }
+.care-row { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.care-btn { border: 0; border-radius: 18px; background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--text); min-height: 64px; display: grid; place-items: center; align-content: center; gap: 3px; cursor: pointer; font-weight: 600; -webkit-touch-callout: none; user-select: none; touch-action: none; }
+.care-btn .small { font-size: 12px; }
+.care-ico { position: relative; display: grid; color: var(--accent); }
+.care-ico .ico { width: 22px; height: 22px; }
+.care-badge { position: absolute; top: -6px; right: -12px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--positive); color: #fff; font: 700 11px/18px var(--font); font-style: normal; text-align: center; }
+.care-btn[data-state="strike"] { background: var(--negative-soft); }
+.care-btn[data-state="strike"] .care-ico { color: var(--negative); }
+.care-btn[data-state="done"] .care-ico { color: var(--positive); }
+.care-btn[data-state="listening"] { background: var(--accent); color: var(--on-accent); }
+.care-btn[data-state="listening"] .care-ico { color: var(--on-accent); animation: pulse 1s ease-in-out infinite; }
+.care-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.agebar { position: relative; }
+.agebar-cap { position: absolute; top: 0; bottom: 0; right: 0; background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--negative) 40%, transparent) 0 3px, transparent 3px 6px); border-left: 2px solid var(--negative); }
+.plan p { font-weight: 550; }
+.unlock { background: var(--soft); border-radius: 14px; padding: 8px 14px; font-size: 14px; }
 .agetext { width: 100%; display: flex; justify-content: space-between; font-size: 14px; }
 .ripple { position: absolute; inset: 0; border-radius: inherit; background: var(--negative); z-index: 2; pointer-events: none; }
 .banner { background: var(--raised); border-radius: var(--radius-sm); padding: 12px 16px; font-weight: 600; overflow: hidden; }
@@ -300,15 +326,13 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 /* ---------- companion ---------- */
 .live-pet { position: relative; cursor: pointer; border-radius: 50%; outline-offset: 6px; touch-action: manipulation; }
 .pet { color: var(--text); overflow: visible; display: block; }
-.pet .fur { transition: fill 1.2s ease; }
-.pet .fur-stroke { transition: stroke 1.2s ease; }
-.pet .grey { transition: opacity 1.2s ease; }
-.pet .pupils { transition: transform .35s var(--ease); }
-.pet .pet-ears { transition: transform .3s var(--ease); }
-.pet .head-drop { transition: transform 1s var(--ease); }
+.pet .lid { transition: height .12s ease; }
+.pet .pet-ears, .pet .pet-head, .pet .pet-jump, .pet .ear, .pet .wing { transform-box: view-box; }
 .pet .pet-scale { transition: transform 1.2s var(--ease); }
 .pet .blush { animation: fadein .4s ease both; }
 .pet .yawn { transform-box: fill-box; transform-origin: center; animation: yawn 1.4s ease-in-out both; }
+.pet .talking { transform-box: fill-box; transform-origin: center; animation: talk .22s ease-in-out infinite alternate; }
+.pet .beak-low { animation: fadein .2s ease both; }
 .pet .zzz text { animation: zzz 3s ease-in-out infinite; font-family: var(--display); font-weight: 800; }
 .pet .zzz text:nth-child(2) { animation-delay: 1.2s; }
 @keyframes yawn { 0% { transform: scale(.2, .1); } 30%, 70% { transform: scale(1, 1); } 100% { transform: scale(.2, .1); } }
@@ -321,28 +345,48 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .burst i.heart::before, .burst i.heart::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: inherit; }
 .burst i.heart::before { left: -7px; } .burst i.heart::after { top: -7px; }
 
-/* companion motion: meaning only */
+/* companion motion: breathing, tail and ears always; gestures layered on top */
 .pet-body { transform-box: fill-box; transform-origin: 50% 100%; animation: breathe 3.6s ease-in-out infinite; }
-.pet-tail { animation: wag 1.6s ease-in-out infinite; transform-box: view-box; }
-.pet-happy .pet-tail, .pet-petted .pet-tail { animation: wag .4s ease-in-out infinite; }
-.pet-happy .pet-body { animation: hop 1s ease-in-out 3, breathe 3.6s ease-in-out infinite 3s; }
-.pet-petted .pet-body { animation: wiggle .6s ease-in-out 2, breathe 3.6s ease-in-out infinite 1.2s; }
-.pet-baby .pet-tail { animation-duration: .5s; }
-.pet-hurt .pet-body { animation: flinch .5s ease-out 1, breathe 3.6s ease-in-out infinite .5s; }
-.pet-hurt .pet-tail, .pet-sick .pet-tail, .pet-dying .pet-tail { animation: none; }
-.pet-sick .pet-body { animation: breathe 5s ease-in-out infinite; }
-.pet-sick .pet-head { animation: cough 4s ease-in-out infinite; }
-.pet-dying .pet-body { animation: breathe 7s ease-in-out infinite; }
-.pet-waiting .pet-head { animation: tilt 5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-.pet-eyes { animation: blink 5s infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes breathe { 50% { transform: scaleY(1.018); } }
+.pet-tail { animation: wag 1.8s ease-in-out infinite; transform-box: view-box; }
+.sp-owl .pet-tail { animation: none; }
+.sp-rabbit .pet-tail, .sp-panda .pet-tail { animation: wiggle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.pet-baby .pet-tail { animation-duration: .6s; }
+.m-happy .pet-tail, .g-petted .pet-tail, .g-treat .pet-tail, .g-eat .pet-tail { animation-duration: .4s; }
+.m-sad .pet-tail, .m-hurt .pet-tail, .m-sick .pet-tail, .m-dying .pet-tail, .g-refuse .pet-tail, .g-nap .pet-tail { animation: none; }
+.m-sick .pet-body { animation-duration: 5s; }
+.m-dying .pet-body, .g-nap .pet-body { animation-duration: 6.5s; }
+.m-sad .pet-head { transform: translateY(4px) rotate(-3deg); transition: transform .6s var(--ease); }
+.m-hurt .pet-jump { animation: flinch .5s ease-out 1; }
+.m-waiting .pet-head { animation: tilt 5s ease-in-out infinite; }
+.g-hop .pet-jump, .g-treat .pet-jump { animation: hop .45s ease-out 2; }
+.g-tilt .pet-head { animation: tilt-once 1.4s ease-in-out 1; }
+.g-perk .ear-l { animation: twitch-l .45s ease-in-out 2; }
+.g-perk .ear-r { animation: twitch-r .45s ease-in-out 2; }
+.g-petted .pet-head { animation: nuzzle .6s ease-in-out 2; }
+.g-giggle .pet-jump { animation: wiggle .25s ease-in-out 4; transform-origin: 120px 210px; }
+.g-dizzy .pet-head { animation: dizzy .7s ease-in-out 2; }
+.g-eat .pet-head { animation: chomp .5s ease-in-out infinite; }
+.g-refuse .pet-head { transform: translateX(14px) rotate(9deg); transition: transform .4s var(--ease); }
+.g-talk .pet-head { animation: nuzzle .5s ease-in-out infinite; }
+.g-nap .pet-head { transform: translateY(6px) rotate(-5deg); transition: transform .8s var(--ease); }
+.sp-owl.m-happy .wing-l, .sp-owl.g-hop .wing-l, .sp-owl.g-treat .wing-l { animation: flap-l .3s ease-in-out 4; transform-origin: 78px 120px; }
+.sp-owl.m-happy .wing-r, .sp-owl.g-hop .wing-r, .sp-owl.g-treat .wing-r { animation: flap-r .3s ease-in-out 4; transform-origin: 162px 120px; }
+.ear-l { transform-origin: 96px 66px; } .ear-r { transform-origin: 144px 66px; }
+@keyframes breathe { 50% { transform: scaleY(1.02); } }
 @keyframes wag { 50% { transform: rotate(16deg); } }
-@keyframes hop { 50% { transform: translateY(-10px); } }
+@keyframes hop { 40% { transform: translateY(-16px); } 100% { transform: translateY(0); } }
 @keyframes wiggle { 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
 @keyframes flinch { 20% { transform: translateX(-6px) scale(.96); } 50% { transform: translateX(4px); } }
-@keyframes cough { 0%, 86%, 100% { transform: translateY(0); } 90% { transform: translateY(5px); } 94% { transform: translateY(0); } 97% { transform: translateY(4px); } }
-@keyframes tilt { 0%, 70%, 100% { rotate: 0deg; } 80%, 90% { rotate: 5deg; } }
-@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes tilt { 0%, 70%, 100% { rotate: 0deg; } 80%, 90% { rotate: 6deg; } }
+@keyframes tilt-once { 30%, 70% { rotate: -9deg; } }
+@keyframes twitch-l { 50% { transform: rotate(-12deg); } }
+@keyframes twitch-r { 50% { transform: rotate(12deg); } }
+@keyframes nuzzle { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+@keyframes dizzy { 25% { transform: rotate(-12deg) translateX(-4px); } 75% { transform: rotate(12deg) translateX(4px); } }
+@keyframes chomp { 50% { transform: translateY(6px); } }
+@keyframes flap-l { 50% { transform: rotate(18deg); } }
+@keyframes flap-r { 50% { transform: rotate(-18deg); } }
+@keyframes talk { from { transform: scaleY(.35); } to { transform: scaleY(1.1); } }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- celebration & coach ---------- */

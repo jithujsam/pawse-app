@@ -6,8 +6,10 @@ import { addDays, daysBetween } from "../dates";
 import { haptic } from "../haptics";
 import { actions, useData, type CompanionView } from "../store";
 import { Button, Chip } from "../ui/Controls";
+import { SPECIES } from "../pets";
 import type { Species } from "../types";
 
+const BABY: Record<Species, string> = { dog: "puppy", cat: "kitten", rabbit: "bunny", fox: "kit", owl: "owlet", panda: "cub" };
 const slow = (delay: number) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.2, delay, ease: [0.22, 0.8, 0.3, 1] as const } });
 
 export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => void }) {
@@ -27,7 +29,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
       <motion.h1 {...slow(0.2)}>{companion.name}</motion.h1>
       {data.settings.deathScene && (
         <motion.div className="memorial-art" initial={{ opacity: 1, filter: "grayscale(0)" }} animate={{ opacity: 0.75, filter: "grayscale(0.7)" }} transition={{ duration: 3, ease: "easeOut" }}>
-          <CompanionArt species={companion.species} stage="frail" mood="dying" age={100} size={220} />
+          <CompanionArt species={companion.species} coat={companion.coat} stage="frail" mood="dying" age={100} size={220} />
         </motion.div>
       )}
       <motion.p {...slow(1.2)}>{deathLine(tone, companion.name)}</motion.p>
@@ -42,10 +44,10 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
         <h2>Start again</h2>
         <p className="muted small">The new life begins at age 0. Your history stays in your reports, and {companion.name} stays in the Hall of Companions.</p>
         <div className="chips">
-          {(["dog", "cat", "rabbit"] as Species[]).map((s) => <Chip key={s} pressed={species === s} onClick={() => setSpecies(s)}>{s[0].toUpperCase() + s.slice(1)}</Chip>)}
+          {SPECIES.map((s) => <Chip key={s.id} pressed={species === s.id} onClick={() => setSpecies(s.id)}>{s.label}</Chip>)}
         </div>
         <label className="field"><span className="field-label">New name</span><input className="input" autoComplete="off" value={name} maxLength={20} placeholder="Biscuit" onChange={(e) => setName(e.target.value)} /></label>
-        <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species); actions.resetCelebrations(); onDone(); }}>Adopt a new {species === "dog" ? "puppy" : species === "cat" ? "kitten" : "bunny"}</Button>
+        <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(); onDone(); }}>Adopt a new {BABY[species]}</Button>
       </motion.section>
     </main>
   );

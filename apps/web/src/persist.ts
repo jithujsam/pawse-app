@@ -11,8 +11,9 @@ export const uuid = (): string => {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const defaultSettings = (): Settings => ({
-  tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, tint: "ocean", goal: "",
+  tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, goal: "",
   baseline: null, haptics: true, remindersOn: false, coachSeen: false, celebrated: [], autoLock: "1m",
+  wear: null, treatsGiven: 0, fedOn: null, careNotes: true,
 });
 
 export const blank = (): AppData => ({

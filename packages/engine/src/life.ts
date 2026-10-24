@@ -1,4 +1,7 @@
-import { CLEAN_DAY_HEAL_MONTHS, LIFE_BUDGET_MONTHS, SCAR_FLOOR_RATIO } from "./constants";
+import {
+  BINGE_SCAR_RATIO, BINGE_SLIPS, CLEAN_DAY_HEAL_MONTHS, LIFE_BUDGET_MONTHS, RESERVE_GAIN_MONTHS,
+  RESERVE_MAX_ABSORB_PER_DAY, RESERVE_MAX_MONTHS, SCAR_FLOOR_RATIO,
+} from "./constants";
 import { stageForAge, type Stage } from "./stage";
 
 /** One calendar day for one companion. Days with no slips and clean=true heal. */
@@ -19,6 +22,14 @@ export interface DayState {
   lifetimeDamage: number;
   visibleAge: number;
   stage: Stage;
+  /** Hidden reserve left at the end of the day. Never shown as a number. */
+  reserveMonths: number;
+  /** Damage the reserve soaked up today (did not age the companion). */
+  absorbedMonths: number;
+  /** Permanent damage healing can never remove: the scar floor plus binge scars. */
+  floorMonths: number;
+  /** True on a day with BINGE_SLIPS or more slips. */
+  binge: boolean;
 }
 
 export function ageFromMonths(netMonths: number): number {
@@ -32,24 +43,54 @@ export function ageFromMonths(netMonths: number): number {
 export function simulate(days: DayInput[]): DayState[] {
   let net = 0;
   let lifetime = 0;
+  let reserve = 0;
+  let bingeScar = 0;
   const out: DayState[] = [];
   for (const d of days) {
-    const damage = d.damage.reduce((a, b) => a + b, 0);
+    const raw = d.damage.reduce((a, b) => a + b, 0);
+    // A healthy companion's reserve takes the first hit, up to a daily cap.
+    const absorbed = Math.min(reserve, raw, RESERVE_MAX_ABSORB_PER_DAY);
+    reserve -= absorbed;
+    const damage = raw - absorbed;
+    const binge = d.damage.length >= BINGE_SLIPS;
     lifetime += damage;
     net += damage;
+    if (binge) bingeScar += damage * BINGE_SCAR_RATIO;
+    const floor = Math.min(net, lifetime * SCAR_FLOOR_RATIO + bingeScar);
     let healed = 0;
     if (d.damage.length === 0 && d.clean) {
-      const floor = lifetime * SCAR_FLOOR_RATIO;
       healed = Math.max(0, Math.min(CLEAN_DAY_HEAL_MONTHS, net - floor));
       net -= healed;
+      // Healing with nothing left to heal slowly builds the hidden reserve.
+      if (healed < CLEAN_DAY_HEAL_MONTHS) reserve = Math.min(RESERVE_MAX_MONTHS, reserve + RESERVE_GAIN_MONTHS);
     }
     const visibleAge = ageFromMonths(net);
     out.push({
       day: d.day, damageMonths: damage, healedMonths: healed, netMonths: net,
       lifetimeDamage: lifetime, visibleAge, stage: stageForAge(visibleAge),
+      reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: lifetime * SCAR_FLOOR_RATIO + bingeScar, binge,
     });
   }
   return out;
+}
+
+/** The best visible age healing can ever bring back: 100 minus this is the companion's life expectancy. */
+export const floorAge = (s: DayState): number => ageFromMonths(s.floorMonths);
+
+/**
+ * Clean days in a row needed to bring visible age down to `targetAge`.
+ * Null when the scar floor sits above the target (that much can't come back).
+ */
+export function cleanDaysToAge(s: DayState, targetAge: number): number | null {
+  const targetMonths = (Math.max(0, targetAge) / 100) * LIFE_BUDGET_MONTHS;
+  if (s.floorMonths > targetMonths + 1e-9) return null;
+  const toHeal = s.netMonths - targetMonths;
+  return toHeal <= 0 ? 0 : Math.ceil(toHeal / CLEAN_DAY_HEAL_MONTHS - 1e-9);
+}
+
+/** Clean days needed to undo what a single day's damage did (bounded by the floor). */
+export function cleanDaysToUndo(months: number): number {
+  return months <= 0 ? 0 : Math.ceil(months / CLEAN_DAY_HEAL_MONTHS - 1e-9);
 }
 
 /** Days until a target age at the recent pace; null if the pace is flat or improving. */

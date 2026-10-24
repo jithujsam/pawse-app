@@ -1,7 +1,10 @@
 import type { HabitClass } from "@detox/engine";
 
 export type Tone = "gentle" | "honest" | "brutal";
-export type Species = "dog" | "cat" | "rabbit";
+export type Species = "dog" | "cat" | "rabbit" | "fox" | "owl" | "panda";
+export type Personality = "playful" | "calm" | "sassy" | "wise";
+/** Things to wear, each unlocked by a clean-streak milestone. */
+export type Accessory = "bandana" | "bow" | "flowers" | "scarf" | "glasses" | "crown";
 export type FieldType = "text" | "number" | "money" | "yesno" | "photo" | "choice" | "multi" | "scale";
 
 /** One tappable answer. A trigger option counts toward severity, like a yes to a trigger question. */
@@ -29,6 +32,9 @@ export interface Companion {
   bornOn: string;
   diedOn: string | null;
   finalAge: number | null;
+  /** Coat colour id for the species (see COATS). Older companions have none and get the first coat. */
+  coat?: string;
+  personality?: Personality;
 }
 
 export interface Habit {
@@ -71,7 +77,8 @@ export interface Settings {
   currency: string;
   deathScene: boolean;
   onboarded: boolean;
-  tint: Tint;
+  /** Legacy colour choice, no longer used. */
+  tint?: Tint;
   /** What the user said they want to let go of, in their own words. */
   goal: string;
   /** How often it happened before they started, as they described it. */
@@ -85,6 +92,14 @@ export interface Settings {
   celebrated: number[];
   /** How long the app may sit in the background before the PIN is asked again. */
   autoLock: AutoLock;
+  /** What the companion is wearing, if anything. */
+  wear: Accessory | null;
+  /** Treats handed out so far. Treats earned = clean days; the difference is what's in the jar. */
+  treatsGiven: number;
+  /** The last day the companion ate (YYYY-MM-DD). */
+  fedOn: string | null;
+  /** Care notifications in the companion's voice (thank-yous, hunger strikes). */
+  careNotes: boolean;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";

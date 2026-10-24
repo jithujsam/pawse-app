@@ -109,6 +109,22 @@ scar_floor     = 20% of lifetime damage
 
 So some damage stays. That is intentional: it makes history matter. It is also an open question (section 17), because it could feel punishing.
 
+**Hidden reserve (v2, "extra lives"):**
+
+```
+reserve grows  0.2 months per clean day, only once healing has nothing left to heal
+reserve cap    12 months (about three ordinary slips)
+absorb         a slip's damage comes out of the reserve first, at most 6 months per day
+```
+
+A companion that has been well for about two months shrugs off a one-off slip: visible age does not move, and the app says so ("It's been 63 days. One slip doesn't undo that."). The reserve is never shown as a number. A brand-new companion has none, and a binge still lands because of the daily cap.
+
+**Binge scar (v2):** a day with 3 or more slips adds 25% of that day's damage to the scar floor, permanently. The companion does not die from it; its **life expectancy** (100 minus the floor age) drops, and that is shown.
+
+**Recovery plan (v2):** after a slip the app shows how many clean days in a row undo it (damage / 1.5, rounded up) and how many bring the companion back to its previous stage. If the scar floor sits above a target, the app says that part can't come back rather than promising it.
+
+**Appetite (v2, presentation only):** on a day with a slip the companion refuses food ("Not hungry. Not until you stop."); it eats again after a clean day. This is behaviour and copy, not engine math.
+
 **Rough pacing targets (to be tuned in playtests):**
 
 | Pattern | Roughly reaches stage | Time |

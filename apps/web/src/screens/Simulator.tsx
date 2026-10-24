@@ -13,17 +13,22 @@ import type { Habit, Species } from "../types";
  * It never reads or writes the person's logs.
  */
 
-type Pattern = "light" | "daily" | "heavy" | "random";
+type Pattern = "light" | "daily" | "heavy" | "random" | "recover";
 const PATTERNS: { value: Pattern; label: string; hint: string }[] = [
   { value: "light", label: "Light", hint: "2 slips a week" },
   { value: "daily", label: "Daily", hint: "1 slip a day" },
   { value: "heavy", label: "Heavy", hint: "3 slips a day" },
   { value: "random", label: "Mixed", hint: "Good and bad days" },
+  { value: "recover", label: "Recover", hint: "A rough week, two clean months, then a one-off slip and a binge" },
 ];
 const SPEEDS = [{ value: "2000", label: "2s" }, { value: "1000", label: "1s" }, { value: "400", label: "Fast" }, { value: "100", label: "Max" }];
 
 /** Slips for simulated day i. Light, daily and heavy match the PRD 5.3 pacing table. */
 function dayFor(p: Pattern, i: number, weight: number, rnd: () => number): number[] {
+  if (p === "recover") {
+    const n = i < 7 ? 2 : i === 70 ? 1 : i === 90 ? 3 : 0;
+    return Array.from({ length: n }, (_, k) => baselineMonths(1, k + 1));
+  }
   const n = p === "light" ? (i % 7 === 2 || i % 7 === 5 ? 1 : 0) : p === "daily" ? 1 : p === "heavy" ? 3 : [0, 0, 0, 1, 1, 2, 3][Math.floor(rnd() * 7)];
   const severity = p === "heavy" ? 1.5 : p === "random" ? computeSeverity({ classWeight: weight, triggers: Math.floor(rnd() * 3) }) : 1;
   return Array.from({ length: n }, (_, k) => baselineMonths(severity, k + 1));
@@ -34,7 +39,7 @@ function seeded(seed: number) {
   return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
 }
 
-export function Simulator({ open, onClose, species, name, habit }: { open: boolean; onClose: () => void; species: Species; name: string; habit: Habit }) {
+export function Simulator({ open, onClose, species, coat, name, habit }: { open: boolean; onClose: () => void; species: Species; coat?: string; name: string; habit: Habit }) {
   const [pattern, setPattern] = useState<Pattern>("heavy");
   const [speed, setSpeed] = useState("2000");
   const [days, setDays] = useState<DayInput[]>([]);
@@ -86,13 +91,14 @@ export function Simulator({ open, onClose, species, name, habit }: { open: boole
             <section className={`hero sim-hero${age >= 80 ? " hero-danger" : ""}`}>
               <div className="hero-name"><h2>{name}</h2><span className="stage-tag">{STAGE_LABEL[cur?.stage ?? "baby"]}</span></div>
               <motion.div animate={{ opacity: dead ? 0.55 : 1, filter: dead ? "grayscale(0.8)" : "grayscale(0)" }} transition={{ duration: 1.2 }}>
-                <LiveCompanion species={species} stage={cur?.stage === "dead" ? "frail" : cur?.stage ?? "baby"} mood={mood} age={age} size={170} interactive={false} />
+                <LiveCompanion species={species} coat={coat} stage={cur?.stage === "dead" ? "frail" : cur?.stage ?? "baby"} mood={mood} age={age} size={170} interactive={false} />
               </motion.div>
               <AnimatePresence mode="wait">
                 <motion.p key={days.length} className="speech" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                   {!today ? `Day 0. ${name} is brand new.`
                     : dead ? `${name} died on day ${days.length}.`
-                      : today.damage.length ? `Day ${days.length}: ${today.damage.length} ${today.damage.length === 1 ? "slip" : "slips"}, −${(cur.damageMonths).toFixed(1)} months`
+                      : today.damage.length && cur.absorbedMonths > 0 && cur.damageMonths < 0.05 ? `Day ${days.length}: a slip, but ${name} shrugged it off. Good days built a cushion.`
+                      : today.damage.length ? `Day ${days.length}: ${today.damage.length} ${today.damage.length === 1 ? "slip" : "slips"}, −${(cur.damageMonths).toFixed(1)} months${cur.binge ? ". Binge: part of it scars for good" : ""}${cur.absorbedMonths > 0 ? ` (${cur.absorbedMonths.toFixed(1)} absorbed)` : ""}`
                         : cur.healedMonths > 0 ? `Day ${days.length}: clean, healed ${cur.healedMonths.toFixed(1)} months` : `Day ${days.length}: clean, but scars don't heal`}
                 </motion.p>
               </AnimatePresence>
@@ -130,7 +136,7 @@ export function Simulator({ open, onClose, species, name, habit }: { open: boole
                   {recent.map((s) => (
                     <motion.div key={s.day} layout className="item sim-row" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
                       <span>Day {s.day}</span>
-                      <span className={s.damageMonths ? "neg" : "muted"}>{s.damageMonths ? `−${s.damageMonths.toFixed(1)} mo` : s.healedMonths ? `+${s.healedMonths.toFixed(1)} mo` : "clean"}</span>
+                      <span className={s.damageMonths ? "neg" : "muted"}>{s.damageMonths ? `−${s.damageMonths.toFixed(1)} mo` : s.absorbedMonths ? "shrugged off" : s.healedMonths ? `+${s.healedMonths.toFixed(1)} mo` : "clean"}</span>
                       <b>{s.visibleAge.toFixed(1)}</b>
                     </motion.div>
                   ))}
