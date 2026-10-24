@@ -67,7 +67,18 @@ export interface Settings {
   tint: Tint;
   /** What the user said they want to let go of, in their own words. */
   goal: string;
+  /** How often it happened before they started, as they described it. */
+  baseline: Baseline | null;
+  haptics: boolean;
+  /** The person agreed to a daily check-in reminder. */
+  remindersOn: boolean;
+  /** First-run tips on Home have been shown. */
+  coachSeen: boolean;
+  /** Clean-streak milestones already celebrated, so each fires once per streak. */
+  celebrated: number[];
 }
+
+export type Baseline = "many_daily" | "daily" | "few_weekly" | "weekly";
 
 export interface AppData {
   v: 1;

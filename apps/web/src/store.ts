@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
   baselineMonths, computeSeverity, simulate, stageForAge,
   type DayInput, type DayState,
@@ -7,14 +7,14 @@ import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, type Intake } from "./questions";
-import type { AppData, Companion, Entry, Habit, Species, Tint, Tone } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Species, Tint, Tone } from "./types";
 
 const KEY = "detox-companion/v1";
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 const blank = (): AppData => ({
   v: 1,
-  settings: { tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, tint: "ocean", goal: "" },
+  settings: { tone: "honest", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false, tint: "ocean", goal: "", baseline: null, haptics: true, remindersOn: false, coachSeen: false, celebrated: [] },
   companions: [], habits: [], entries: [], cleanDays: [], summaries: {}, updatedAt: 0,
 });
 
@@ -76,6 +76,13 @@ export const activeCompanion = (d: AppData): Companion | undefined => {
   return habit ? d.companions.find((c) => c.id === habit.companionId) : undefined;
 };
 
+/** The active companion's view, recomputed only when the data changes. */
+export function useActiveView(): CompanionView | undefined {
+  const d = useData();
+  const day = today();
+  return useMemo(() => { const c = activeCompanion(d); return c ? viewCompanion(d, c.id, day) : undefined; }, [d, day]);
+}
+
 export function median(xs: number[]): number | undefined {
   if (!xs.length) return undefined;
   const s = [...xs].sort((a, b) => a - b); const m = s.length >> 1;
@@ -120,7 +127,7 @@ export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; tint: Tint }) {
+  finishOnboarding(o: { species: Species; companionName: string; intake: Intake; tone: Tone; reminder: string; tint: Tint; baseline: Baseline | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
@@ -129,7 +136,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, tint: o.tint, goal: o.intake.what.trim(), onboarded: true },
+      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, tint: o.tint, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
       companions: [companion], habits: [habit],
     });
   },
@@ -180,6 +187,7 @@ export const actions = {
       ...data,
       entries: [...data.entries, entry],
       cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
+      settings: { ...data.settings, celebrated: [] },
     };
     let died = false;
     const v = viewCompanion(next, companion.id);
@@ -204,6 +212,11 @@ export const actions = {
   },
 
   deleteEntry: (id: string) => commit({ ...data, entries: data.entries.filter((e) => e.id !== id) }),
+  /** Puts back an entry removed by mistake (undo). */
+  restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
+  unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
+  celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
+  resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
 
   adopt(habitId: string, name: string, species: Species) {
     const habit = data.habits.find((h) => h.id === habitId)!;
