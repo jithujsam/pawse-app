@@ -8,7 +8,7 @@ export const EFFECT_VOCAB = [
 export type EffectTag = (typeof EFFECT_VOCAB)[number];
 
 /** Words an explanation or summary must never contain: medical claims and insults. */
-const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless)\b/i;
+const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*)\b/i;
 export const isSafeText = (t: string) => !BANNED.test(t);
 
 export const AiSlipResult = z.object({

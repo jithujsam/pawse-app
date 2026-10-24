@@ -24,7 +24,7 @@ const json = (req: Request, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
 const EFFECTS = ["dull_coat", "heavier", "labored_breathing", "cough", "thin", "glassy_eyes", "trembling", "tired_eyes", "slumped", "anxious", "worn_down"] as const;
-const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless)\b/i;
+const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*)\b/i;
 const safe = (t: string) => !BANNED.test(t);
 const text = (n: number) => z.string().max(n).transform((s) => s.replace(/[\u0000-\u001f\u007f]/g, " ").trim());
 const tone = z.enum(["gentle", "honest", "brutal"]);

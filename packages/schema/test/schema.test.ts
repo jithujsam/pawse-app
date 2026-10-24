@@ -10,6 +10,8 @@ describe("AI slip result", () => {
     ["explanation too long", { ...ok, explanation: "x".repeat(141) }],
     ["medical claim", { ...ok, explanation: "This will give you cancer." }],
     ["insult", { ...ok, explanation: "You are pathetic." }],
+    ["weight talk", { ...ok, explanation: "Spending more may lead to weight gain for Biscuit." }],
+    ["calorie talk", { ...ok, explanation: "That order had a lot of calories." }],
     ["extra field", { ...ok, extra: 1 }],
   ])("rejects: %s", (_n, v) => expect(AiSlipResult.safeParse(v).success).toBe(false));
 });
