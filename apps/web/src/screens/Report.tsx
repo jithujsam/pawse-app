@@ -6,7 +6,7 @@ import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { pickedLabels } from "../questions";
 import { verdict } from "../copy";
-import { addDays, daysBetween, fmtDay, parse, today, weekStart } from "../dates";
+import { addDays, daysBetween, fmtDay, fmtHour, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { actions, cleanStreak, median, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
@@ -17,7 +17,6 @@ const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
 
-const fmtHour = (h: number) => `${h % 12 || 12}${h < 12 ? "am" : "pm"}`;
 
 function SavingsGoal({ saved, goal, currency }: { saved: number; goal: { label: string; target: number } | null; currency: string }) {
   const [editing, setEditing] = useState(false);
@@ -181,7 +180,7 @@ export function Report() {
         <div className="row"><h2>When it happens</h2>{risk !== null && <span className="muted small">Peak around {fmtHour(risk)}</span>}</div>
         {timed < 3 ? <p className="muted">A map of your risky hours appears after a few slips.</p> : (
           <div className="heat" role="img" aria-label={`Slips by weekday and time of day. ${risk !== null ? `Most often around ${fmtHour(risk)}.` : ""}`}>
-            <span />{["12a", "4a", "8a", "12p", "4p", "8p"].map((l) => <span key={l} className="heat-h">{l}</span>)}
+            <span />{["12 AM", "4 AM", "8 AM", "12 PM", "4 PM", "8 PM"].map((l) => <span key={l} className="heat-h">{l}</span>)}
             {grid.map((row, d) => [
               <span key={`d${d}`} className="heat-d">{["M", "T", "W", "T", "F", "S", "S"][d]}</span>,
               ...row.map((n, b) => <motion.i key={`${d}-${b}`} className="heat-cell" style={{ ["--a" as string]: n / gridMax }} data-n={n}

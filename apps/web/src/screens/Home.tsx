@@ -133,7 +133,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
       </motion.header>
 
       <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={`${companion.name}, age ${Math.round(age)}`} variants={rise}>
-        <div className="motes" aria-hidden><i /><i /><i /><i /></div>
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>

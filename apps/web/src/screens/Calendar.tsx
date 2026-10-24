@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { daysBetween, fmtDay, fmtMonth, iso, parse, pad, today } from "../dates";
+import { daysBetween, fmtDay, fmtMonth, fmtTime, iso, parse, pad, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
@@ -112,7 +112,7 @@ export function CalendarSections() {
                     })()}
                     {e.explanation && <span className="small">{e.explanation}</span>}
                     {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Photo attached to this slip" src={String(e.values[f.id])} className="entry-photo" width={640} height={480} loading="lazy" decoding="async" />)}
-                    {e.time && <span className="muted small">{e.time}</span>}
+                    {e.time && <span className="muted small">{fmtTime(e.time)}</span>}
                   </motion.div>
                 ))}
               </AnimatePresence>

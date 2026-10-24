@@ -11,18 +11,18 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <title>Companion</title>
+    <title>Pawse</title>
     <style>
       html, body { margin: 0; height: 100%; background: #f2f4f7; }
       @media (prefers-color-scheme: dark) { html, body { background: #0f1012; } }
       .splash { height: 100%; display: grid; place-items: center; }
-      .splash i { width: 56px; height: 56px; border-radius: 50%; background: #c98a4b; opacity: .85; animation: s 1.6s ease-in-out infinite; }
+      .splash img { width: 88px; height: 88px; border-radius: 24px; animation: s 1.6s ease-in-out infinite; }
       @keyframes s { 50% { transform: scale(.82); opacity: .5; } }
-      @media (prefers-reduced-motion: reduce) { .splash i { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .splash img { animation: none; } }
     </style>
   </head>
   <body>
-    <div id="root"><div class="splash" aria-label="Loading"><i></i></div></div>
+    <div id="root"><div class="splash" aria-label="Loading"><img src="./icon-192.png" alt="" width="88" height="88" /></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

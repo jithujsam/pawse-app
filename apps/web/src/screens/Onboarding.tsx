@@ -9,6 +9,8 @@ import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
 import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
 import { actions } from "../store";
+import { TimePicker } from "../ui/TimePicker";
+import { fmtTime } from "../dates";
 import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
 import { say } from "../voice";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
@@ -26,9 +28,9 @@ const BASELINES: { id: Baseline; label: string }[] = [
 ];
 const REMINDERS = [{ t: "09:00", label: "Morning" }, { t: "13:00", label: "Midday" }, { t: "20:00", label: "Evening" }, { t: "22:00", label: "Late" }];
 const STORY = [
-  { title: "Your habits, with a face", body: "A small companion lives here. How they look is how things are going." },
-  { title: "Slips age them. Clean days heal.", body: "Every number is explained. Nothing is hidden, and nothing is hopeless." },
-  { title: "Private, honest, yours", body: "It stays on this phone unless you choose to back it up. It never shares, and it never lectures." },
+  { title: "Meet a friend who's rooting for you", body: "A little pet lives here. Good days keep them healthy and happy, and they notice every one." },
+  { title: "Every slip has a way back", body: "You'll see what a slip cost, and exactly how many clean days win it back. Nothing is hopeless." },
+  { title: "Private, kind, yours", body: "Your progress is yours alone. No lectures, no judgement, just a pet that's glad you're here." },
 ];
 
 const DRAFT = "companion/onboarding-draft";
@@ -171,11 +173,11 @@ export function Onboarding() {
               <motion.h1 variants={rise}>A daily nudge</motion.h1>
               <motion.p className="muted" variants={rise}>One quiet reminder to check in, in {name}'s voice. Never more than two a day.</motion.p>
               <motion.div className="chips" variants={rise}>
-                {REMINDERS.map((r) => <Chip key={r.t} pressed={d.reminder === r.t} onClick={() => up({ reminder: r.t })}>{r.label} · {r.t}</Chip>)}
+                {REMINDERS.map((r) => <Chip key={r.t} pressed={d.reminder === r.t} onClick={() => up({ reminder: r.t })}>{r.label} · {fmtTime(r.t)}</Chip>)}
               </motion.div>
-              <motion.label className="field" variants={rise}><span className="field-label">Or pick a time</span>
-                <input className="input" autoComplete="off" type="time" value={d.reminder} onChange={(e) => up({ reminder: e.target.value })} />
-              </motion.label>
+              <motion.div className="field" variants={rise}><span className="field-label">Or pick a time</span>
+                <TimePicker label="Reminder time" value={d.reminder} onChange={(v) => up({ reminder: v })} />
+              </motion.div>
               <motion.div className="stack tight" variants={rise}>
                 <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(9); }}>Turn on reminders</Button>
                 <Button variant="text" onClick={() => go(9)}>Not now</Button>

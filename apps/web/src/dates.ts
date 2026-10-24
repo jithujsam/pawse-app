@@ -13,3 +13,13 @@ export const range = (from: string, to: string) => {
 export const weekStart = (s: string) => { const d = parse(s); const dow = (d.getDay() + 6) % 7; return addDays(s, -dow); };
 export const fmtDay = (s: string) => parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 export const fmtMonth = (s: string) => parse(s).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+/** "20:05" -> "8:05 PM". Times are stored as 24-hour HH:MM and always shown on a 12-hour clock. */
+export function fmtTime(hhmm: string | null | undefined): string {
+  if (!hhmm) return "";
+  const [h, m] = hhmm.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm;
+  return `${h % 12 || 12}${m ? `:${pad(m)}` : ""} ${h < 12 ? "AM" : "PM"}`;
+}
+/** 22 -> "10 PM" */
+export const fmtHour = (h: number) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;

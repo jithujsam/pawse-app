@@ -5,20 +5,20 @@ const ordinal = (n: number) => (n === 1 ? "first" : n === 2 ? "second" : n === 3
 const mo = (m: number) => { const r = Math.round(m * 10) / 10; return `${r} ${r === 1 ? "month" : "months"}`; };
 
 export const TONES: { id: Tone; label: string; sample: string }[] = [
-  { id: "gentle", label: "Gentle", sample: "Biscuit is a little tired today. Tomorrow is a fresh start." },
-  { id: "honest", label: "Honest", sample: "That was the third order today. Biscuit lost 4 months." },
-  { id: "brutal", label: "Brutal", sample: "Look at him. You did that. Again." },
+  { id: "gentle", label: "Gentle", sample: "Biscuit is a little tired today. Tomorrow is a fresh start, and you're not alone in it." },
+  { id: "honest", label: "Honest", sample: "That was the third slip today. Biscuit lost 4 months. A clean day starts healing it." },
+  { id: "brutal", label: "Direct", sample: "That was slip three today. Biscuit felt it. Tonight can still go well." },
 ];
 
 export function slipLine(tone: Tone, name: string, months: number, nth: number): string {
   if (tone === "gentle") return `${name} is a little tired today. Tomorrow is a fresh start.`;
-  if (tone === "brutal") return nth > 1 ? `Look at ${name}. You did that. Again.` : `${name} paid for that. You know it.`;
-  return `That was the ${ordinal(nth)} slip today. ${name} lost ${mo(months)}.`;
+  if (tone === "brutal") return nth > 1 ? `Slip ${nth} today: ${name} lost ${mo(months)}. Stop here and tonight still counts.` : `That cost ${name} ${mo(months)}. You can turn today around.`;
+  return `That was the ${ordinal(nth)} slip today. ${name} lost ${mo(months)}. Clean days win it back.`;
 }
 
 export function cleanLine(tone: Tone, name: string, streak: number): string {
   if (tone === "gentle") return `${name} wags once, slowly. A good day.`;
-  if (tone === "brutal") return streak > 1 ? `${streak} clean days. ${name} is noticing.` : `One clean day. That is all it is, so far.`;
+  if (tone === "brutal") return streak > 1 ? `${streak} clean days. ${name} is noticing, and so should you.` : `One clean day. That's how every streak starts.`;
   return streak > 1 ? `${streak} clean days in a row. ${name} is healing.` : `Clean today. ${name} gets to rest.`;
 }
 
@@ -32,26 +32,26 @@ const STATUS: Record<Tone, Record<Stage, string>> = {
     middle: "{n} is slowing down.", old: "{n} is tired, and old before the time.", frail: "{n} is weak. A clean week would help a lot.", dead: "{n} is gone.",
   },
   brutal: {
-    baby: "{n} has no idea yet.", young: "{n} still trusts you.", adult: "{n} is carrying it.",
-    middle: "{n} is wearing it on the face.", old: "{n} is old before the time. That's the slips.", frail: "{n} is running out of life. Stop now.", dead: "{n} is dead.",
+    baby: "{n} is brand new and full of life.", young: "{n} is strong. Keep it that way.", adult: "{n} is doing fine. Stay steady.",
+    middle: "{n} is showing some wear. Clean days will help.", old: "{n} has aged early. A clean stretch would turn it around.", frail: "{n} is weak right now. Start a clean streak today.", dead: "{n} is gone.",
   },
 };
 export const statusLine = (tone: Tone, name: string, stage: Stage) => STATUS[tone][stage].replace("{n}", name);
 
 export function waitingLine(tone: Tone, name: string): string {
   if (tone === "gentle") return `${name} is waiting for you. No pressure.`;
-  if (tone === "brutal") return `${name} is waiting. Say what happened today.`;
+  if (tone === "brutal") return `${name} is waiting to hear how today went.`;
   return `${name} is waiting for today's check-in.`;
 }
 
 export function deathLine(tone: Tone, name: string): string {
   if (tone === "gentle") return `${name} has gone to sleep. You gave them a life, and tomorrow can still be different.`;
-  if (tone === "brutal") return `${name} is gone. Your next one doesn't have to go the same way.`;
+  if (tone === "brutal") return `${name} is gone. The next one can have a longer life, starting today.`;
   return `${name} has died. The next one starts today, and what you do next decides how it goes.`;
 }
 
 export function dyingBanner(name: string, age: number): string {
-  return `${name} is at ${Math.round(age)} of 100. A few more slips will be the end.`;
+  return `${name} is at ${Math.round(age)} of 100 and needs you now. A few clean days in a row will help a lot.`;
 }
 
 export function verdict(tone: Tone, slips: number, prev: number): string {
@@ -60,7 +60,7 @@ export function verdict(tone: Tone, slips: number, prev: number): string {
   if (prev === 0) return `${slips} ${slips === 1 ? "slip" : "slips"} this week against none last week.`;
   if (slips < prev) return `Down from ${prev} to ${slips}. That is progress, and it is real.`;
   if (slips === prev) return `Level with last week at ${slips}. Nothing moved.`;
-  return tone === "brutal" ? `Up from ${prev} to ${slips}. It is getting worse.` : `Up from ${prev} to ${slips} slips.`;
+  return tone === "brutal" ? `Up from ${prev} to ${slips}. Next week can be better: start with today.` : `Up from ${prev} to ${slips} slips. A fresh week is a fresh start.`;
 }
 
 export const DISCLAIMER =
@@ -95,7 +95,7 @@ const part = (h: number) => (h < 5 ? "night" : h < 12 ? "morning" : h < 17 ? "af
 export function greeting(tone: Tone, hour: number): string {
   const p = part(hour);
   if (tone === "gentle") return p === "night" ? "Still up? Go easy tonight" : `Good ${p}`;
-  if (tone === "brutal") return p === "night" ? "Late night. Be straight with yourself" : `${p[0].toUpperCase()}${p.slice(1)}. Be honest today`;
+  if (tone === "brutal") return p === "night" ? "Late night. Choose well" : `Good ${p}. Let's make it count`;
   return p === "night" ? "It's late" : `Good ${p}`;
 }
 
@@ -103,7 +103,7 @@ export const MILESTONES = [3, 7, 14, 30, 60, 100] as const;
 
 export function milestoneLine(tone: Tone, name: string, days: number): { title: string; body: string } {
   if (tone === "gentle") return { title: `${days} gentle days`, body: `${name} is resting easier. You did that, one day at a time.` };
-  if (tone === "brutal") return { title: `${days} days clean`, body: `${name} noticed. Don't make this the high point.` };
+  if (tone === "brutal") return { title: `${days} days clean`, body: `${name} noticed, and it shows. Keep going.` };
   return { title: `${days} clean days in a row`, body: `${name} is healing. Every clean day takes a little damage back.` };
 }
 
@@ -111,30 +111,30 @@ export function milestoneLine(tone: Tone, name: string, days: number): { title: 
 export function tonePreview(tone: Tone, name: string): string {
   const n = name.trim() || "Biscuit";
   if (tone === "gentle") return `${n} is a little tired today. Tomorrow is a fresh start.`;
-  if (tone === "brutal") return `Look at ${n}. You did that. Again.`;
-  return `That was the third slip today. ${n} lost 4 months.`;
+  if (tone === "brutal") return `That was slip three today. ${n} felt it. Tonight can still go well.`;
+  return `That was the third slip today. ${n} lost 4 months. A clean day starts healing it.`;
 }
 
 export function hatchLine(tone: Tone, name: string): string {
   if (tone === "gentle") return `${name} is here, and glad to meet you.`;
-  if (tone === "brutal") return `${name} is here. What happens next is on you.`;
+  if (tone === "brutal") return `${name} is here. Let's give them a long, good life.`;
   return `${name} is here. Brand new, age 0.`;
 }
 
 export function slipKicker(tone: Tone, name: string): string {
   if (tone === "gentle") return `Thank you for being honest. ${name} still loves you.`;
-  if (tone === "brutal") return `Logged. ${name} felt that one.`;
-  return `Logged honestly. That is how this works.`;
+  if (tone === "brutal") return `Logged. Owning it is the first step back.`;
+  return `Logged honestly. That's how change starts.`;
 }
 
 export function cleanToast(tone: Tone, name: string): string {
   if (tone === "gentle") return `A good day. ${name} is resting.`;
-  if (tone === "brutal") return `Clean. One day. Keep going.`;
+  if (tone === "brutal") return `Clean day. That's real progress.`;
   return `Clean day logged. ${name} heals a little.`;
 }
 
 export function reminderLine(tone: Tone, name: string): { title: string; body: string } {
   if (tone === "gentle") return { title: `${name} is thinking of you`, body: "Whenever you're ready, a quick check-in." };
-  if (tone === "brutal") return { title: `${name} is waiting`, body: "Say what happened today. Ten seconds." };
+  if (tone === "brutal") return { title: `${name} is waiting`, body: "How did today go? Ten seconds." };
   return { title: `Check in with ${name}`, body: "Slipped or clean? It takes ten seconds." };
 }

@@ -5,7 +5,9 @@ import { CompanionArt, LiveCompanion } from "../Companion";
 import { ACCESSORIES, COATS, PERSONALITIES } from "../pets";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
-import { daysBetween, fmtDay, today } from "../dates";
+import { daysBetween, fmtDay, fmtTime, today } from "../dates";
+import { TimePicker } from "../ui/TimePicker";
+import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
@@ -68,7 +70,7 @@ export function Me() {
       <motion.div variants={rise}>
         <Group title="Tracking">
           <Row icon={Icon.list} label="Check-in questions" value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
-          <Row icon={Icon.bell} label="Reminders" value={settings.remindersOn ? settings.reminder : "Off"} onClick={() => setPage("reminders")} />
+          <Row icon={Icon.bell} label="Reminders" value={settings.remindersOn ? fmtTime(settings.reminder) : "Off"} onClick={() => setPage("reminders")} />
         </Group>
       </motion.div>
       <motion.div variants={rise}>
@@ -80,7 +82,7 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title="App">
-          <Row icon={Icon.phone} label="Feel" value={settings.haptics ? "Haptics on" : "Haptics off"} onClick={() => setPage("feel")} />
+          <Row icon={Icon.phone} label="Feel and region"  value={placeName()} onClick={() => setPage("feel")} />
           <Row icon={Icon.info} label="About and help" value={APP_VERSION.name} onClick={() => setPage("about")} />
         </Group>
       </motion.div>
@@ -97,7 +99,7 @@ export function Me() {
       <SubPage open={page === "security"} title="App lock" onClose={close}><SecurityCard /></SubPage>
       {configured && <SubPage open={page === "account"} title="Account and backup" onClose={close}><section className="card stack"><Account /></section></SubPage>}
       <SubPage open={page === "data"} title="Your data" onClose={close}><DataPage /></SubPage>
-      <SubPage open={page === "feel"} title="Feel" onClose={close}><FeelPage /></SubPage>
+      <SubPage open={page === "feel"} title="Feel and region" onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title="About and help" onClose={close}><AboutPage /></SubPage>
       <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />
     </motion.main>
@@ -210,12 +212,12 @@ function RemindersPage() {
   }
   return (
     <section className="card stack">
-      <Switch checked={settings.remindersOn} onChange={toggle} label="Daily check-in reminder" hint={settings.remindersOn ? `Every day at ${settings.reminder}` : "Off"} />
+      <Switch checked={settings.remindersOn} onChange={toggle} label="Daily check-in reminder" hint={settings.remindersOn ? `Every day at ${fmtTime(settings.reminder)}` : "Off"} />
       <AnimatePresence>{settings.remindersOn && (
-        <motion.label className="field" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+        <motion.div className="field" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
           <span className="field-label">Time</span>
-          <input className="input" autoComplete="off" type="time" value={settings.reminder} onChange={(e) => void setTime(e.target.value)} />
-        </motion.label>
+          <TimePicker label="Reminder time" value={settings.reminder} onChange={(v) => void setTime(v)} />
+        </motion.div>
       )}</AnimatePresence>
       <p className="muted small">One quiet nudge a day, in {companion.name}'s voice.</p>
       <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label="Risky-hour heads-up" hint="Once your pattern is clear, a note half an hour before your usual slip time" />
@@ -275,7 +277,7 @@ function DataPage() {
     const text = actions.exportJson();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    a.download = `companion-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `pawse-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast("Your data was saved as a file", { kind: "good" });
@@ -291,7 +293,7 @@ function DataPage() {
           if (!f) return;
           if (f.size > 50_000_000) { toast("That file is too big to be a backup", { kind: "bad" }); return; }
           const ok = actions.importJson(await f.text());
-          toast(ok ? "Backup restored" : "That file isn't a Companion backup", { kind: ok ? "good" : "bad" });
+          toast(ok ? "Backup restored" : "That file isn't a Pawse backup", { kind: ok ? "good" : "bad" });
         }} /></label>
       </div>
     </section>
@@ -315,7 +317,9 @@ function FeelPage() {
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
       <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
-      <label className="field"><span className="field-label">Currency label</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
+      <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
+      <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
+        {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>
     </section>
   );
 }

@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
 import { CRISIS_MESSAGE, EFFECT_LABEL, slipKicker } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
-import { addDays, today } from "../dates";
+import { addDays, fmtTime, today } from "../dates";
+import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { actions, slipRequest, useData, type Deduction } from "../store";
@@ -107,7 +108,7 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
     const shrugged = result.absorbed > 0 && felt < 0.05;
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
-        <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : "yesterday"}{time ? ` at ${time}` : ""}</motion.p>
+        <motion.p className="muted small" variants={rise}>Logged · {day === today() ? "today" : "yesterday"}{time ? ` at ${fmtTime(time)}` : ""}</motion.p>
         <motion.div className="deduction" variants={rise}>
           <span>{shrugged ? `${name} shrugged it off` : "That cost " + name}</span>
           <b className={shrugged ? "" : "neg"}>−<AnimatedNumber value={felt} from={0} decimals={1} /> months</b>
@@ -140,8 +141,9 @@ function LogBody({ habit, name, age, onClose, onSaved }: Props) {
       <motion.div className="chips" role="group" aria-label="Day" variants={rise}>
         <Chip pressed={day === today()} onClick={() => setDay(today())}>Today</Chip>
         <Chip pressed={day === addDays(today(), -1)} onClick={() => setDay(addDays(today(), -1))}>Yesterday</Chip>
-        <input className="input time" type="time" aria-label="Time (optional)" value={time} onChange={(e) => setTime(e.target.value)} />
+        <Chip pressed={!!time} onClick={() => { const n = new Date(); setTime(time ? "" : `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes() - (n.getMinutes() % 5)).padStart(2, "0")}`); }}>{time ? fmtTime(time) : "Add time"}</Chip>
       </motion.div>
+      {time && <motion.div variants={rise}><TimePicker label="Time of the slip" value={time} onChange={setTime} /></motion.div>}
       {habit.fields.map((f) => (
         <motion.div className="field" key={f.id} variants={rise}
           animate={missing.some((m) => m.id === f.id) && shake ? { x: [0, -8, 8, -5, 5, 0] } : undefined} transition={{ duration: 0.4 }}>

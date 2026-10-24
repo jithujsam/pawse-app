@@ -10,6 +10,7 @@ import { buildFields, countTriggers, pickedLabels, type Intake } from "./questio
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
+import { localCurrency } from "./region";
 import type { AppData, Baseline, Companion, Entry, Habit, Personality, Species, Tone, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
@@ -257,7 +258,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
+      settings: { ...data.settings, currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true },
       companions: [companion], habits: [habit],
     });
   },
