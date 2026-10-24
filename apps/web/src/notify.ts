@@ -41,3 +41,10 @@ export async function requestReminders(time: string, tone: Tone, name: string): 
     return false;
   }
 }
+
+/** Tapping the reminder brings the person straight to today's check-in. */
+export function onReminderTap(fn: () => void): () => void {
+  if (!native) return () => undefined;
+  const h = LocalNotifications.addListener("localNotificationActionPerformed", () => fn());
+  return () => { void h.then((x) => x.remove()); };
+}

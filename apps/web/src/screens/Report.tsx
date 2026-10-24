@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { projectDaysToAge } from "@detox/engine";
 import { aiWeekly } from "../ai";
@@ -61,6 +61,15 @@ export function Report() {
     setBusy(false);
     if (text) actions.setSummary(ws, text); else setFailed(true);
   }
+
+  // Write the week's summary on its own once there's something to say; at most every six hours.
+  useEffect(() => {
+    if (!session || summary || busy || cur.slips + prev.slips === 0) return;
+    const k = `companion/auto-summary/${ws}`;
+    try { if (Date.now() - Number(localStorage.getItem(k) ?? 0) < 6 * 3600_000) return; localStorage.setItem(k, String(Date.now())); } catch { return; }
+    void write();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, ws]);
 
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 

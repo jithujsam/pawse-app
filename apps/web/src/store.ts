@@ -121,10 +121,12 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today()): 
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
+  // Bucket once so the fold is linear in days + entries, not days x entries.
+  const damage = new Map<string, number[]>();
+  for (const e of d.entries) if (e.companionId === companionId) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
+  const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    day,
-    damage: d.entries.filter((e) => e.companionId === companionId && e.day === day).map((e) => e.months),
-    clean: !!habit && d.cleanDays.some((c) => c.habitId === habit.id && c.day === day),
+    day, damage: damage.get(day) ?? [], clean: clean.has(day),
   }));
   const states = simulate(inputs);
   const current = states[states.length - 1];
@@ -152,9 +154,11 @@ export function median(xs: number[]): number | undefined {
 
 export function cleanStreak(d: AppData, habitId: string): number {
   let n = 0;
+  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
+  const cleans = new Set(d.cleanDays.filter((c) => c.habitId === habitId).map((c) => c.day));
   for (let day = today(); ; day = addDays(day, -1)) {
-    const slipped = d.entries.some((e) => e.habitId === habitId && e.day === day);
-    const clean = d.cleanDays.some((c) => c.habitId === habitId && c.day === day);
+    const slipped = slips.has(day);
+    const clean = cleans.has(day);
     if (slipped) break;
     if (clean) n++; else if (day !== today()) break;
     if (n > 3650) break;

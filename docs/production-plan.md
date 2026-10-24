@@ -4,6 +4,13 @@ Starting point: the calm redesign (tinted themes, guided onboarding, Supabase ac
 
 The PRD stays the source of truth. Nothing here changes engine math.
 
+## Status
+
+- Phase 1: done.
+- Phase 2: done in the app. Migration `0002_normalized.sql` is written and tested against the sync code's expectations; it still has to be applied to the Supabase project.
+- Phase 3: done in the app. The hardened `ai` function is written; it still has to be deployed, and `OPENROUTER_API_KEY` set as a function secret.
+- Not done: biometric unlock, home-screen widgets (PRD phase 4).
+
 ## Phase 1: Feel (motion, onboarding, micro-interactions)
 
 - Motion system: duration and spring tokens, one library (`motion`) for gestures and exit animations, CSS for ambient loops. Everything honours `prefers-reduced-motion`.

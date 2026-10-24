@@ -1,18 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { startSync } from "./sync";
+import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
 import { useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
 import { slide, spring } from "./motion";
-import { Onboarding } from "./screens/Onboarding";
 import { Home } from "./screens/Home";
-import { CalendarScreen } from "./screens/Calendar";
-import { Report } from "./screens/Report";
-import { You } from "./screens/You";
-import { Memorial } from "./screens/Memorial";
+
+// Only Home ships in the first bundle; the rest load on first visit.
+const Onboarding = lazy(() => import("./screens/Onboarding").then((m) => ({ default: m.Onboarding })));
+const CalendarScreen = lazy(() => import("./screens/Calendar").then((m) => ({ default: m.CalendarScreen })));
+const Report = lazy(() => import("./screens/Report").then((m) => ({ default: m.Report })));
+const You = lazy(() => import("./screens/You").then((m) => ({ default: m.You })));
+const Memorial = lazy(() => import("./screens/Memorial").then((m) => ({ default: m.Memorial })));
+const prefetch = () => { void import("./screens/Calendar"); void import("./screens/Report"); void import("./screens/You"); };
 import { ToastHost } from "./ui/Toast";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 
@@ -73,6 +77,8 @@ function Shell() {
   const uid = session?.user.id;
   useEffect(() => { if (uid) void startSync(uid); }, [uid]);
 
+  useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
+
   const go = (t: Tab) => {
     if (t === tab) return;
     dir.current = TABS.indexOf(t) > TABS.indexOf(tab) ? 1 : -1;
@@ -80,10 +86,12 @@ function Shell() {
     setTab(t);
   };
 
-  if (!data.settings.onboarded) return <div className="app"><Onboarding /></div>;
+  useEffect(() => { if (data.settings.onboarded) { const t = setTimeout(prefetch, 1500); return () => clearTimeout(t); } }, [data.settings.onboarded]);
+
+  if (!data.settings.onboarded) return <div className="app"><Suspense fallback={<Loading />}><Onboarding /></Suspense></div>;
 
   if (view?.dead && memorialSeen !== view.companion.id) {
-    return <div className="app"><Memorial view={view} onDone={() => setMemorialSeen(view.companion.id)} /></div>;
+    return <div className="app"><Suspense fallback={<Loading />}><Memorial view={view} onDone={() => setMemorialSeen(view.companion.id)} /></Suspense></div>;
   }
 
   return (
@@ -91,10 +99,12 @@ function Shell() {
       <div className="stage">
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
-            {tab === "home" && <Home onNavigate={go} />}
-            {tab === "calendar" && <CalendarScreen />}
-            {tab === "report" && <Report />}
-            {tab === "you" && <You />}
+            <Suspense fallback={<Loading />}>
+              {tab === "home" && <Home onNavigate={go} />}
+              {tab === "calendar" && <CalendarScreen />}
+              {tab === "report" && <Report />}
+              {tab === "you" && <You />}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -109,4 +119,8 @@ function Shell() {
       </nav>
     </div>
   );
+}
+
+function Loading() {
+  return <main className="screen center-screen" aria-busy="true"><div className="shimmer-line short" /></main>;
 }

@@ -83,7 +83,7 @@ export function You() {
 
       <motion.section className="card stack" variants={rise}>
         <h2>Voice</h2>
-        <Segmented label="Tone" value={settings.tone} onChange={(t) => actions.setTone(t)} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
+        <Segmented label="Tone" value={settings.tone} onChange={(t) => { actions.setTone(t); if (settings.remindersOn) void scheduleDaily(settings.reminder, t, companion.name); }} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
         <AnimatePresence mode="wait"><motion.p key={settings.tone} className="muted small" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>“{tonePreview(settings.tone, companion.name)}”</motion.p></AnimatePresence>
         <h2>Colours</h2>
         <div className="tintrow" role="radiogroup" aria-label="Colour">

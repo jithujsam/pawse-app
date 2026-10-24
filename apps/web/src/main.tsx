@@ -4,6 +4,7 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/nunito";
 import "./styles.css";
 import { App } from "./App";
+import { Capacitor } from "@capacitor/core";
 import { boot, flush } from "./store";
 
 // Save straight away when the app is hidden or closed, so nothing is lost if the OS kills it.
@@ -12,3 +13,8 @@ window.addEventListener("pagehide", () => { void flush(); });
 
 const root = createRoot(document.getElementById("root")!);
 void boot().then((b) => root.render(<StrictMode><App boot={b} /></StrictMode>));
+
+// Offline support for the installed web app. The Android app already ships its files.
+if (import.meta.env.PROD && !Capacitor.isNativePlatform() && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => { void navigator.serviceWorker.register("./sw.js").catch(() => undefined); });
+}
