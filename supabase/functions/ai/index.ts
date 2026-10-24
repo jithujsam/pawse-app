@@ -109,14 +109,15 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json(req, { ok: false, error: "method" }, 405);
   if (Number(req.headers.get("content-length") ?? "0") > 6000) return json(req, { ok: false, error: "too_large" }, 413);
 
-  const key = Deno.env.get("OPENROUTER_API_KEY");
-  if (!key) return json(req, { ok: false, error: "not_configured" });
-
+  // Who is calling comes first: nothing else is answered for an unknown caller.
   const url = Deno.env.get("SUPABASE_URL")!;
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer /i, "");
-  const { data: u } = await admin.auth.getUser(token);
+  const { data: u } = token ? await admin.auth.getUser(token) : { data: null };
   if (!u?.user) return json(req, { ok: false, error: "unauthorized" }, 401);
+
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) return json(req, { ok: false, error: "not_configured" });
 
   let raw: unknown;
   try { const t = await req.text(); if (t.length > 6000) return json(req, { ok: false, error: "too_large" }, 413); raw = JSON.parse(t); }

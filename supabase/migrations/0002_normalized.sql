@@ -216,12 +216,4 @@ create table public.ai_cache (
 alter table public.ai_cache enable row level security; -- no policies: only the edge function touches it
 create index ai_cache_created on public.ai_cache (created_at);
 
--- ---------- retire the old blob table if nobody used it ----------
-
-do $$
-begin
-  if (select count(*) from public.app_state) = 0 then
-    drop table public.app_state;
-  end if;
-end;
-$$;
+-- The old app_state table from 0001 is left in place (empty, RLS on); drop it by hand once nothing references it.
