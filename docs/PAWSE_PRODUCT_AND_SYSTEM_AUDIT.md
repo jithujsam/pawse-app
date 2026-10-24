@@ -24,6 +24,8 @@ This is a read-only audit. No application code, configuration, schema, dependenc
 4. **Verified design: missing data is treated as behaviour.** After 2 days with nothing logged, each further day costs 1.5 months ("loneliness"). Healing requires an explicit clean tap. A year of silence from day 1 takes the pet to age ≈45 (simulation run below). "Money kept" counts unlogged days as money saved. And clean days can be marked retroactively on *any* past day, while slips can only be logged for today or yesterday. The system can't tell "didn't do it" from "didn't report it" (sections 7 and 8).
 5. **Verified: no monetisation exists.** There's no payment, subscription, entitlement, paywall or pricing code anywhere. Distribution is a sideloaded APK on GitHub, with no app store. The ₹99/month direction is entirely unbuilt (section 13).
 
+**Live project check (see the Addendum):** the deployed AI function contains a hard-coded OpenRouter API key, so it should be rotated. Leaked-password protection is off. Migrations 0002/0003 are live but missing from the migration history. Only about 5 test accounts exist.
+
 **Safe checks run (section 14):** I couldn't run `pnpm test`, `pnpm typecheck` or `pnpm lint` because `node_modules` isn't installed and installing was out of scope. I copied the pure engine to the scratchpad and ran it with Node 22's type stripping. It reproduces `docs/tuning.md` exactly. I verified the APK hash. The live end-to-end test (`apps/web/test/e2e-live.cjs`) creates real accounts on the live project, so I deliberately didn't run it.
 
 ---
@@ -762,6 +764,30 @@ These are questions only, not recommendations made on your behalf.
 10. **Measurement.** Which outcome metric (PRD §13) to instrument, and how, given "no trackers" is a stated promise.
 
 ---
+
+### Addendum: live Supabase project check (read-only, 2026-10-24)
+
+Done at the owner's request, using metadata queries and advisors only. No writes. User data rows weren't read, only counts.
+
+| Check | Result | Label |
+|---|---|---|
+| Project | One project; its ref matches the fallback hard-coded in `src/supabase.ts`. Postgres 17, region ap-southeast-2, created 2026-10-24 | Verified |
+| Migration history | Only **1** recorded migration (`init_app_state_and_ai_usage`, i.e. 0001). Yet every table, policy, trigger and constraint from **0002 and 0003 exists** (6 species, coat, personality, urges, journal). So 0002/0003 were applied outside the migration system, and the history doesn't reflect the schema. This resolves U1 | Verified |
+| RLS | Enabled on all 12 public tables. Policies match the repo exactly (own-row `USING`, parent-ownership `WITH CHECK`). `ai_cache` and `ai_usage` have RLS with no policies (service role only, as designed) | Verified (policy text); behaviour not exercised |
+| Grants | `anon` still holds full table privileges on `ai_cache`, `ai_usage` and `app_state`. RLS (no anon policy) is the only barrier, which holds, but the "revoke from anon" in 0002 didn't cover these 0001 tables | Verified |
+| Triggers | `touch_row` triggers present on all 9 synced tables | Verified |
+| Functions | `bump_ai_usage` is service-role only ✔. `delete_my_account` is authenticated ✔ (intended; advisor WARN is expected). Extra `public.rls_auto_enable()` is SECURITY DEFINER and executable by anon/authenticated. It isn't in the repo. It's an **event-trigger** function (`ensure_rls` on `ddl_command_end`) that auto-enables RLS on new public tables. Event-trigger functions can't be invoked through RPC, so exposure is low. Inferred to be a platform or dashboard setting | Verified (definition); exposure Inferred low |
+| Edge function `ai` | Version 12, ACTIVE, `verify_jwt: true` ✔. Deployed source matches the repo **except `DEPLOY_KEY` holds a real OpenRouter API key** in plaintext. That confirms **B19 at critical severity**: anyone with dashboard/function-source access, or this audit transcript, can see it. The value is deliberately not reproduced here. **The key should be revoked and rotated in OpenRouter**, kept only in the `OPENROUTER_API_KEY` secret, and the constant emptied in the deployed copy | Verified |
+| Whether `OPENROUTER_API_KEY` secret is set | Can't be listed with the available read-only tools | Unknown |
+| Auth | Security advisor: **leaked-password protection is disabled**, contrary to `supabase/README.md` step 3. 5 auth users, all email-confirmed | Verified |
+| Usage scale | 5 users, 4 profiles, 3 companions, 3 habits, 1 entry, 1 clean day, 1 urge, 0 journal rows; `ai_cache` holds 4 slip and 3 weekly results, all created 2026-10-24. Inferred: test/developer accounts only, no real user base yet | Verified counts; Inferred meaning |
+| Performance advisor | Only `ai_cache_created` index unused (INFO) | Verified |
+
+Updates to earlier sections:
+- **U1** is resolved (schema live, history out of sync).
+- **U3** is partly resolved (function live; key hard-coded).
+- **U4** is partly resolved (verify_jwt on; leaked-password protection off; email confirmation appears to be in use).
+- **B19** moves from "pattern" to **confirmed, critical**.
 
 ### Appendix A: what was inspected
 
