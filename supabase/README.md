@@ -6,9 +6,9 @@ The app works fully offline without any of this. An account adds backup, sync ac
 2. Apply the migrations in order: `migrations/0001_init.sql`, then `migrations/0002_normalized.sql`.
 3. Authentication: leave email sign-in on and turn on leaked-password protection. Under Authentication → URL Configuration, add `app.detoxcompanion://auth-callback` to Redirect URLs, so confirmation and password-reset emails open the Android app (PKCE code exchange in `src/deeplink.ts`). Add your web address too if you host the web build.
 4. Deploy `functions/ai` (`supabase functions deploy ai`) with JWT verification ON.
-5. Secrets (Dashboard, Edge Functions, Secrets): `OPENAI_API_KEY` (uses OpenAI directly, model `gpt-4.1-mini`, with `store: false`) or `OPENROUTER_API_KEY` (used when there's no OpenAI key). Optional: `OPENAI_MODEL`, `AI_MODELS` (comma-separated OpenRouter model ids, tried in order), `AI_DAILY_LIMIT` (default 80 calls a day per person), `ALLOWED_ORIGINS` (comma-separated, added to the built-in app and localhost origins).
+5. Secrets (Dashboard, Edge Functions, Secrets): `OPENROUTER_API_KEY` (required). Optional: `AI_MODELS` (comma-separated OpenRouter model ids, tried in order), `AI_DAILY_LIMIT` (default 80 calls a day per person), `ALLOWED_ORIGINS` (comma-separated, added to the built-in app and localhost origins).
 
-The provider key lives only in that secret. It must never be put in the app, in `.env`, or in git. Paste it straight from the provider's copy button: the function strips invisible characters, but it can't repair a typo. On a failed call the function logs the provider's error code and the key's length, never the key.
+The OpenRouter key lives only in that secret. It must never be put in the app, in `.env`, or in git.
 
 ## Data model
 
