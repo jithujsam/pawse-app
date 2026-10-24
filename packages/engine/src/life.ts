@@ -36,6 +36,17 @@ export interface DayState {
   neglectMonths: number;
 }
 
+/**
+ * Optional rules for one companion's fold. With neither set, the fold is exactly the PRD 5.3 engine.
+ * - ceilingMonths: net damage never goes above this, so visible age stops short of 100 (no death) and
+ *   recovery starts with the first clean day instead of first paying off damage past the end of life.
+ * - scars: false turns off the permanent scar floor and binge scars, so full recovery is always possible.
+ */
+export interface SimOptions { ceilingMonths?: number; scars?: boolean }
+
+/** The continuity rules: the companion can get very frail but never dies, and every month can heal back. */
+export const CONTINUITY: SimOptions = { ceilingMonths: LIFE_BUDGET_MONTHS * 0.99, scars: false };
+
 export function ageFromMonths(netMonths: number): number {
   return Math.min(100, Math.max(0, (netMonths / LIFE_BUDGET_MONTHS) * 100));
 }
@@ -44,7 +55,9 @@ export function ageFromMonths(netMonths: number): number {
  * Pure fold over the history. Visible age is always recomputable from the entries,
  * clean days and deductions, so any cache is disposable.
  */
-export function simulate(days: DayInput[]): DayState[] {
+export function simulate(days: DayInput[], opts: SimOptions = {}): DayState[] {
+  const ceiling = opts.ceilingMonths ?? Infinity;
+  const scars = opts.scars ?? true;
   let net = 0;
   let lifetime = 0;
   let reserve = 0;
@@ -61,9 +74,10 @@ export function simulate(days: DayInput[]): DayState[] {
     const damage = raw - absorbed;
     const binge = d.damage.length >= BINGE_SLIPS;
     lifetime += damage;
-    net += damage;
-    if (binge) bingeScar += damage * BINGE_SCAR_RATIO;
-    const floor = Math.min(net, lifetime * SCAR_FLOOR_RATIO + bingeScar);
+    net = Math.min(ceiling, net + damage);
+    if (binge && scars) bingeScar += damage * BINGE_SCAR_RATIO;
+    const scarMonths = scars ? lifetime * SCAR_FLOOR_RATIO + bingeScar : 0;
+    const floor = Math.min(net, scarMonths);
     let healed = 0;
     if (d.damage.length === 0 && d.clean) {
       healed = Math.max(0, Math.min(CLEAN_DAY_HEAL_MONTHS, net - floor));
@@ -75,7 +89,7 @@ export function simulate(days: DayInput[]): DayState[] {
     out.push({
       day: d.day, damageMonths: damage, healedMonths: healed, netMonths: net,
       lifetimeDamage: lifetime, visibleAge, stage: stageForAge(visibleAge),
-      reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: lifetime * SCAR_FLOOR_RATIO + bingeScar, binge, neglectMonths: neglect,
+      reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: scarMonths, binge, neglectMonths: neglect,
     });
   }
   return out;

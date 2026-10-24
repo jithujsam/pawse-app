@@ -196,6 +196,11 @@ async function cycle(uid: string) {
         batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
         ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
       }
+      // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
+      if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
+        batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
+        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+      }
       if (error) throw new Error(`${t}: ${error.message}`);
     }
   }

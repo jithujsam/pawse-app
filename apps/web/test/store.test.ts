@@ -28,9 +28,10 @@ describe("AI polish on a slip", () => {
     expect(getData().entries[0]).toMatchObject({ months: 5.2, aiAdjustPct: 30, source: "ai" });
   });
 
-  it("never lets the AI's nudge be what kills the companion", () => {
+  it("never lets the AI's nudge be what kills the companion (classic rules, where death exists)", () => {
     // 50 old slips of 23.8 months = 1190 net; today's 8-month slip leaves it alive at 1198 of 1200.
     load([...Array.from({ length: 50 }, (_, i) => entry(`old${i}`, addDays(t0, -50 + i), 23.8)), entry("e1", t0, 8)]);
+    actions.setSettings({ petLife: "classic" });
     expect(viewCompanion(getData(), C).stage).not.toBe("dead");
     expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
     expect(getData().companions[0].diedOn).toBeNull();
