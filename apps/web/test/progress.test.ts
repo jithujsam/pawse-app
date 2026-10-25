@@ -188,11 +188,11 @@ describe("streaks", () => {
     const d = data({ cleanDays: [met(A, "2026-03-17")], urges: [urge(A, "2026-03-18"), urge(A, "2026-03-19"), urge(A, "2026-03-19")] });
     expect(st(d).current).toBe(3);
     const withSlip = data({ entries: [slip(A, "2026-03-19")], urges: [urge(A, "2026-03-19")] });
-    expect(st(withSlip)).toEqual({ current: 0, best: 0, lastSlip: "2026-03-19" });
+    expect(st(withSlip)).toEqual({ current: 0, best: 0, lastSlip: "2026-03-19", runStart: null });
   });
   it("a slip resets the current streak but never the best streak", () => {
     const d = data({ cleanDays: ["2026-03-10", "2026-03-11", "2026-03-12", "2026-03-14"].map((x) => met(A, x)), entries: [slip(A, "2026-03-13")] });
-    expect(st(d)).toEqual({ current: 1, best: 3, lastSlip: "2026-03-13" });
+    expect(st(d)).toEqual({ current: 1, best: 3, lastSlip: "2026-03-13", runStart: "2026-03-14" });
   });
   it("today not yet checked in keeps yesterday's streak; a slip today ends it", () => {
     const d = data({ cleanDays: [met(A, "2026-03-18"), met(A, "2026-03-19")] });
@@ -207,7 +207,7 @@ describe("streaks", () => {
   it("handles a long history (more than ten years) without a cap", () => {
     const d = data({ bornOn: "2015-01-01", cleanDays: days("2015-01-01", 4100).map((x) => met(A, x)) });
     const end = shiftDays("2015-01-01", 4099);
-    expect(st(d, end)).toEqual({ current: 4100, best: 4100, lastSlip: null });
+    expect(st(d, end)).toEqual({ current: 4100, best: 4100, lastSlip: null, runStart: "2015-01-01" });
   });
 });
 

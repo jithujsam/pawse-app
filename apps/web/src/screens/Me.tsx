@@ -6,14 +6,14 @@ import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
 import { has3D, pet3dStatus } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
-import { daysBetween, fmtDay, fmtTime, today, uses12h } from "../dates";
+import { fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
 import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
-import { trackSummary } from "../progress";
+import { daysTogether, trackSummary } from "../progress";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
@@ -44,7 +44,7 @@ export function Me() {
   const [sim, setSim] = useState(false);
   const { session } = useSession();
   const sync = useSyncStatus();
-  const together = Math.max(1, daysBetween(companion.bornOn, today()) + 1);
+  const together = daysTogether(companion.bornOn, today());
   const close = () => setPage(null);
   const [showProf] = useState(() => {
     try { const show = ["alcohol", "smoking"].includes(habit.cls) && !localStorage.getItem("detox-prof-note"); if (show) localStorage.setItem("detox-prof-note", "1"); return show; } catch { return false; }

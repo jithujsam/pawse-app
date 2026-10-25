@@ -1,9 +1,9 @@
 import { motion } from "motion/react";
 import { MILESTONES } from "../copy";
-import { daysBetween, today } from "../dates";
+import { today } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { useActiveView, useData } from "../store";
-import { milestoneProgress, trackSummary } from "../progress";
+import { daysTogether, milestoneProgress, trackSummary } from "../progress";
 import { stats } from "../health";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { CalendarSections } from "./Calendar";
@@ -14,7 +14,7 @@ export function Journey() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const together = Math.max(1, daysBetween(companion.bornOn, today()) + 1);
+  const together = daysTogether(companion.bornOn, today());
   const progress = trackSummary(data, habit.id, today());
   const cleanTotal = progress.metDays;
   const best = progress.best;

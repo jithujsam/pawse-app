@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { daysBetween, fmtDay, fmtMonth, fmtTime, iso, parse, pad, today } from "../dates";
+import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
-import { trackIndex } from "../progress";
+import { countDays, dayControls, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
@@ -17,33 +17,29 @@ export function CalendarSections() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const [cursor, setCursor] = useState(() => today().slice(0, 7) + "-01");
+  // The month shown, as YYYY-MM.
+  const [cursor, setCursor] = useState(() => monthOf(today()));
   const [sel, setSel] = useState(today());
   const dir = useRef(1);
-  const first = parse(cursor);
-  const lead = (first.getDay() + 6) % 7;
-  const dim = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  const cells = Array.from({ length: lead + dim }, (_, i) => (i < lead ? null : `${first.getFullYear()}-${pad(first.getMonth() + 1)}-${pad(i - lead + 1)}`));
+  const { lead, days: monthDays } = monthGrid(cursor);
+  const cells: (string | null)[] = [...Array<null>(lead).fill(null), ...monthDays];
   const t0 = today();
+  const thisMonth = monthOf(t0);
 
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
 
-  const monthDays = cells.filter(Boolean) as string[];
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
   const dayEntries = data.entries.filter((e) => e.habitId === habit.id && e.day === sel);
   const monthShift = (n: number) => {
     dir.current = n; haptic.select();
-    const d = parse(cursor); d.setMonth(d.getMonth() + n); setCursor(iso(new Date(d.getFullYear(), d.getMonth(), 1)));
+    setCursor(shiftMonth(cursor, n));
   };
-  // Any past day can be corrected both ways: marked clean, or given the slip that really happened.
-  const canLog = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0 && !companion.diedOn;
+  // Any past day can be corrected both ways: marked goal met, or given the slip that really happened.
+  // What each day shows and allows comes from the shared rules (progress.ts dayControls).
+  const ctl = dayControls(data, habit.id, sel, t0);
   const [logging, setLogging] = useState(false);
-  const inLife = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0;
-  const canClean = inLife && dayEntries.length === 0 && status(sel) !== "met";
-  const canRest = inLife && (status(sel) === "unrecorded" || status(sel) === "urge" || status(sel) === "rest") && dayEntries.length === 0 && !data.cleanDays.some((c) => c.habitId === habit.id && c.day === sel);
-  const resting = trackIndex(data, habit.id, t0).rest.has(sel);
   const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
-  const count = (k: string) => monthDays.filter((d) => status(d) === k).length;
+  const month = countDays(trackIndex(data, habit.id, t0), `${cursor}-01`, monthDays[monthDays.length - 1]);
 
   const W = 320, H = 56;
   const max = Math.max(10, ...spark);
@@ -63,15 +59,15 @@ export function CalendarSections() {
       <motion.section className="card stack cal" variants={rise}>
         <div className="row">
           <button className="icon-btn" aria-label="Previous month" onClick={() => monthShift(-1)}>{Icon.chevL}</button>
-          <AnimatePresence mode="wait" initial={false}><motion.h2 key={cursor} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>{fmtMonth(cursor)}</motion.h2></AnimatePresence>
-          <button className="icon-btn" aria-label="Next month" onClick={() => monthShift(1)} disabled={cursor >= t0.slice(0, 7) + "-01"}>{Icon.chevR}</button>
+          <AnimatePresence mode="wait" initial={false}><motion.h2 key={cursor} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>{fmtMonth(`${cursor}-01`)}</motion.h2></AnimatePresence>
+          <button className="icon-btn" aria-label="Next month" onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
         </div>
         <div className="grid7" aria-hidden>{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={cursor} className="grid7" custom={dir.current}
             initial={{ opacity: 0, x: dir.current * 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir.current * -30 }} transition={spring.soft}
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
-            onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < t0.slice(0, 7) + "-01") monthShift(1); }}>
+            onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (
               <motion.button key={d} className="day" data-s={status(d)} data-today={d === t0} disabled={d > t0}
                 onClick={() => { haptic.select(); setSel(d); }} aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`} aria-pressed={sel === d}
@@ -83,11 +79,10 @@ export function CalendarSections() {
           </motion.div>
         </AnimatePresence>
         <div className="legend">
-          <span><i style={{ background: "var(--positive)" }} />{STATUS_LABEL.met} · {count("met")}</span>
-          <span><i data-s="urge" />{STATUS_LABEL.urge} · {count("urge")}</span>
-          <span><i style={{ background: "var(--negative)" }} />{STATUS_LABEL.lapse} · {count("lapse")}</span>
-          <span><i data-s="rest" />{STATUS_LABEL.rest} · {count("rest")}</span>
-          {count("paused") > 0 && <span><i data-s="rest" />{STATUS_LABEL.paused} · {count("paused")}</span>}
+          <span><i style={{ background: "var(--positive)" }} />{STATUS_LABEL.met} · {month.met}</span>
+          <span><i data-s="urge" />{STATUS_LABEL.urge} · {month.urge}</span>
+          <span><i style={{ background: "var(--negative)" }} />{STATUS_LABEL.lapse} · {month.lapse}</span>
+          <span><i data-s="rest" />{STATUS_LABEL.rest} · {month.rest + month.paused}</span>
           <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
         <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
@@ -97,8 +92,8 @@ export function CalendarSections() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{status(sel) === "met" ? "Goal met. A good day." : status(sel) === "rest" ? "You chose not to track this day. It counts neither way." : status(sel) === "paused" ? "Tracking was paused. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : status(sel) === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
-            {dayUrges.length > 0 && <p className="small">{dayUrges.filter((u) => u.outcome === "rode_it_out").length} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
+            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? "Goal met. A good day." : ctl.status === "rest" ? "You chose not to track this day. It counts neither way." : ctl.status === "paused" ? "Not tracking: this track was paused. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : ctl.status === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
+            {dayUrges.length > 0 && <p className="small">{ctl.managedUrges} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
@@ -120,10 +115,10 @@ export function CalendarSections() {
                 ))}
               </AnimatePresence>
             </div>
-            {canClean && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
-            {status(sel) === "met" && inLife && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove “goal met”</Button>}
-            {canRest && <Button variant="text" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !resting); }}>{resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
-            {canLog && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
+            {ctl.canMarkMet && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
+            {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove “goal met”</Button>}
+            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
+            {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
           </motion.div>
         </AnimatePresence>
       </motion.section>

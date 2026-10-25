@@ -1,7 +1,7 @@
 import { cleanDaysToAge, cleanDaysToUndo, floorAge, STAGE_LABEL } from "@detox/engine";
-import { addDays, daysBetween, today } from "./dates";
+import { addDays, today } from "./dates";
 import { cleanStreak, recoveryPlan, silentDays, type CompanionView } from "./store";
-import { milestoneProgress, trackSummary } from "./progress";
+import { dayStatus, daysTogether, milestoneProgress, trackSummary } from "./progress";
 import { MILESTONES } from "./copy";
 import type { AppData, Species, Tone } from "./types";
 
@@ -25,7 +25,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const habit = v.habit!;
   const name = v.companion.name;
   const t0 = today();
-  const slipped = d.entries.some((e) => e.habitId === habit.id && e.day === t0);
+  const slipped = dayStatus(d, habit.id, t0, t0) === "lapse";
   const streak = cleanStreak(d, habit.id);
   const silent = silentDays(d, habit.id);
   const reserve = v.current?.reserveMonths ?? 0;
@@ -164,7 +164,8 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
   let run: { from: string; to: string; healed: number; n: number } | null = null;
   const flush = () => { if (run) items.push({ day: run.to, kind: "clean", text: `${run.n} clean ${run.n === 1 ? "day" : "days"}${run.healed > 0 ? `, ${Math.round(run.healed * 10) / 10} months of life back` : ""}`, months: run.healed }); run = null; };
   for (const s of v.states) {
-    const slips = d.entries.filter((e) => e.habitId === habit.id && e.day === s.day);
+    // This companion's own slips: after a same-day adoption, the earlier companion's slips stay in its own story.
+    const slips = d.entries.filter((e) => e.companionId === v.companion.id && e.day === s.day);
     if (slips.length) {
       flush();
       if (s.damageMonths < 0.05 && s.absorbedMonths > 0) items.push({ day: s.day, kind: "shrug", text: `A slip, but ${name} was strong enough to shrug it off` });
@@ -188,7 +189,7 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
 export function stats(d: AppData, v: CompanionView) {
   const habit = v.habit!;
   const t0 = today();
-  const together = Math.max(1, daysBetween(v.companion.bornOn, t0) + 1);
+  const together = daysTogether(v.companion.bornOn, t0);
   const p = trackSummary(d, habit.id, t0);
   const lost = v.states.reduce((a, s) => a + s.damageMonths, 0);
   const healed = v.states.reduce((a, s) => a + s.healedMonths, 0);
