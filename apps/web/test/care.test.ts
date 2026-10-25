@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { careNote, recoveryLine, say, type Event } from "../src/voice";
-import { absorbedLine, bingeLine, dyingBanner, quietBanner, welcomeBackLine } from "../src/copy";
+import { absorbedLine, bingeLine, dyingBanner, greeting, quietBanner, welcomeBackLine } from "../src/copy";
 import { blank, normalize } from "../src/persist";
 import { toRemote, merge, type Pulled } from "../src/syncmap";
 import { treatsLeft } from "../src/store";
@@ -115,5 +115,15 @@ describe("urges, journal and risky hours", () => {
     expect(riskyHour({ ...sample(), entries: [at(22, 1), at(23, 2), at(22, 3), at(9, 4)] }, "h1")).toBeNull();
     expect(riskyHour({ ...sample(), entries: [at(22, 1), at(23, 2), at(22, 3), at(9, 4), at(21, 5), at(14, 6)] }, "h1")).toBe(22);
     expect(riskyHour({ ...sample(), entries: [1, 5, 9, 13, 17, 21].map((h, i) => at(h, i)) }, "h1")).toBeNull();
+  });
+});
+
+describe("greeting", () => {
+  it("uses the person's name in every tone and time of day, and reads cleanly without one", () => {
+    for (const tone of TONES) for (const h of [8, 14, 19, 2]) {
+      expect(greeting(tone, h, "Jo")).toContain("Jo");
+      expect(greeting(tone, h, "  ")).not.toMatch(/,\s*[.?]|,\s*$/);
+      expect(greeting(tone, h)).toBe(greeting(tone, h, ""));
+    }
   });
 });

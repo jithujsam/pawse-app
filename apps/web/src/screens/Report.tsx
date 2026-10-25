@@ -7,10 +7,10 @@ import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
 import { addDays, fmtHour, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
-import { actions, BASELINE_PER_WEEK, cleanStreak, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon } from "../ui/Controls";
-import { Observations, WeeklyReview } from "./WeeklyReview";
+import { CheckIn, Observations } from "./WeeklyReview";
 import type { Baseline } from "../types";
 
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -59,6 +59,9 @@ export function Report() {
   const cur = weekStats(data, habit.id, ws);
   const cleanIn = (from: string) => data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= from && c.day <= addDays(from, 6)).length;
   const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
+  // Days with anything recorded (a slip, goal met or an urge), so a quiet week shows up as one.
+  const checkedIn = (from: string) => new Set([...data.entries, ...data.cleanDays, ...data.urges].filter((x) => x.habitId === habit.id && x.day >= from && x.day <= addDays(from, 6)).map((x) => x.day)).size;
+  const inThis = checkedIn(ws), inPrev = checkedIn(addDays(ws, -7));
   const prev = weekStats(data, habit.id, addDays(ws, -7));
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
   const maxW = Math.max(1, ...weeks);
@@ -116,7 +119,7 @@ export function Report() {
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>Insights</motion.h1>
-      <WeeklyReview />
+      <CheckIn />
       <motion.section className="card stack" variants={rise}>
         <h2>This week and last</h2>
         <p>{verdict(tone, cur.slips, prev.slips)}</p>
@@ -126,7 +129,7 @@ export function Report() {
           <div className="stat"><div className="muted small">Goal-met days</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
           {money
             ? <div className="stat"><div className="muted small">Spent</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
-            : <div className="stat"><div className="muted small">Good-day streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">Right now</span></div>}
+            : <div className="stat"><div className="muted small">Days checked in</div><div className="v"><AnimatedNumber value={inThis} from={0} /></div><Delta cur={inThis} prev={inPrev} good="up" /></div>}
         </div>
         <p className="muted small">Arrows compare with last week.</p>
       </motion.section>

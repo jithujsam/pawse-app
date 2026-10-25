@@ -163,7 +163,7 @@ function Shell() {
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<Loading />}>
-              {tab === "home" && <Home onNavigate={go} />}
+              {tab === "home" && <Home />}
               {tab === "calendar" && <Journey />}
               {tab === "insights" && <Report />}
               {tab === "you" && <Me />}

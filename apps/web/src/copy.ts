@@ -128,11 +128,13 @@ export const effectsFor = (cls: string, age: number) => (EFFECTS[cls] ?? EFFECTS
 
 const part = (h: number) => (h < 5 ? "night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 22 ? "evening" : "night");
 
-export function greeting(tone: Tone, hour: number): string {
+export function greeting(tone: Tone, hour: number, name = ""): string {
   const p = part(hour);
-  if (tone === "gentle") return p === "night" ? "Still up? Go easy tonight" : `Good ${p}`;
-  if (tone === "brutal") return p === "night" ? "Late night. Choose well" : `Good ${p}. Let's make it count`;
-  return p === "night" ? "It's late" : `Good ${p}`;
+  const n = name.trim();
+  const to = n ? `, ${n}` : "";
+  if (tone === "gentle") return p === "night" ? `Still up${to}? Go easy tonight` : `Good ${p}${to}`;
+  if (tone === "brutal") return p === "night" ? `Late night${to}. Choose well` : `Good ${p}${to}. Let's make it count`;
+  return p === "night" ? `It's late${to}` : `Good ${p}${to}`;
 }
 
 export const MILESTONES = [3, 7, 14, 30, 60, 100] as const;

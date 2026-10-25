@@ -86,6 +86,7 @@ export const JournalSchema = z.object({ day, mood: z.number().int().min(1).max(5
 
 export const SettingsSchema = z.object({
   tone: z.enum(["gentle", "honest", "brutal"]),
+  userName: short(30),
   reminder: z.string().regex(/^\d{2}:\d{2}$/),
   currency: z.string().max(4),
   deathScene: z.boolean(),

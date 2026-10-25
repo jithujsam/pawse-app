@@ -46,9 +46,8 @@ export function Reflect() {
   }
 
   return (
-    <section className="card stack reflect" aria-label="Reflect">
-      <div className="row"><h2>Reflect</h2>{existing && !open && <span className="muted small">Done today</span>}</div>
-      <p className="muted small">How was today, honestly?</p>
+    <div className="stack reflect">
+      <div className="row"><p className="muted small">How was today, honestly?</p>{existing && !open && <span className="muted small">Done today</span>}</div>
       <div className="moods" role="radiogroup" aria-label="Today's mood">
         {MOODS.map((m) => (
           <motion.button key={m.n} role="radio" aria-checked={mood === m.n} aria-label={m.l} className="mood" data-on={mood === m.n}
@@ -79,6 +78,6 @@ export function Reflect() {
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }

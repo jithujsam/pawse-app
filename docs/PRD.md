@@ -205,6 +205,8 @@ The companion fills roughly the top 55 percent of the screen. Everything else is
 
 Tabs: **Home**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
 
+Each number and action has one home. Home keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
+
 States the companion must express:
 
 - **Waiting** (no check-in yet today): looks at the door or the user, ears up.

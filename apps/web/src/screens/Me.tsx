@@ -210,9 +210,14 @@ function PetPage() {
 function VoicePage() {
   const { settings } = useData();
   const { companion } = useActiveView()!;
+  const [name, setName] = useState(settings.userName ?? "");
+  const saveName = () => { const n = name.trim().slice(0, 30); setName(n); if (n !== (settings.userName ?? "")) actions.setSettings({ userName: n }); };
   return (
     <section className="card stack">
       <p className="muted">How {companion.name} talks to you, everywhere in the app and in reminders.</p>
+      <label className="field"><span className="field-label">What {companion.name} calls you</span>
+        <input className="input" autoComplete="given-name" value={name} placeholder="Your first name (optional)" maxLength={30} onChange={(e) => setName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
+      </label>
       <Segmented label="Tone" value={settings.tone} onChange={(t) => { actions.setTone(t); if (settings.remindersOn) void scheduleDaily(settings.reminder, t, companion.name); }} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
       <AnimatePresence mode="wait"><motion.p key={settings.tone} className="bubble" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>“{tonePreview(settings.tone, companion.name)}”</motion.p></AnimatePresence>
       <p className="muted small">Every tone is respectful. It describes what happened, never who you are.</p>

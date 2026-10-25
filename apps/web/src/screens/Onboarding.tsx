@@ -37,12 +37,12 @@ const STORY = [
 
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
-  step: number; species: Species; companionName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
+  step: number; species: Species; companionName: string; userName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
   baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; personality: Personality;
   plan: RecoveryPlan;
 }
 const initial: Draft = {
-  step: 1, species: "dog", companionName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
+  step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
   baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", personality: "playful",
   plan: emptyPlan(),
 };
@@ -70,7 +70,7 @@ export function Onboarding() {
   };
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -308,6 +308,9 @@ function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
     <motion.div className="chips" variants={rise}>
       {NAMES[d.species].map((n) => <Chip key={n} pressed={d.companionName === n} onClick={() => typed(n)}>{n}</Chip>)}
     </motion.div>
+    <motion.label className="field" variants={rise}><span className="field-label">What should {shown || "they"} call you? <span className="muted">Optional</span></span>
+      <input className="input" autoComplete="given-name" value={d.userName} placeholder="Your first name" maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") onNext(); }} />
+    </motion.label>
     <motion.div variants={rise}><Button onClick={onNext}>Continue</Button></motion.div>
   </>);
 }
