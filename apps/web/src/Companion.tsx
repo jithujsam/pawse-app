@@ -25,13 +25,14 @@ const STAGE_SCALE: Record<Stage, number> = { baby: 0.76, young: 0.88, adult: 1, 
 /** Grey creeps into the face with age, softly: the companion should always still look like itself. */
 const STAGE_GREY: Record<Stage, number> = { baby: 0, young: 0, adult: 0, middle: 0.35, old: 0.6, frail: 0.75, dead: 0.75 };
 
-export function moodFor(stage: Stage, opts: { checkedToday: boolean; slippedToday: boolean; justLogged?: "slip" | "clean" | null; age: number }): Mood {
+/** notTracking: today is paused or not tracked, so the pet isn't waiting for anything. */
+export function moodFor(stage: Stage, opts: { checkedToday: boolean; slippedToday: boolean; justLogged?: "slip" | "clean" | null; age: number; notTracking?: boolean }): Mood {
   if (opts.justLogged === "slip") return "hurt";
   if (opts.justLogged === "clean") return "happy";
   if (opts.age >= 90) return "dying";
   if (opts.slippedToday) return "sad";
   if (stage === "old" || stage === "frail") return "sick";
-  if (!opts.checkedToday) return "waiting";
+  if (!opts.checkedToday) return opts.notTracking ? "idle" : "waiting";
   return "happy";
 }
 

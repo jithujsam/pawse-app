@@ -52,8 +52,8 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
       ) : (
         <motion.section className="pet-grid" aria-label="Recovery tracks" variants={rise}>
           {tracks.map(({ habit, view, status, paused }) => {
-            const checked = status === "met" || status === "lapse";
-            const mood = paused ? "idle" : moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age });
+            const checked = status === "met" || status === "lapse" || status === "urge";
+            const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
             const day = status === "unrecorded" ? "Not checked in" : STATUS_LABEL[status];
             const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? `Paused · ${day}` : "Paused") : `${STAGE_LABEL[view.stage]} · ${day}`;

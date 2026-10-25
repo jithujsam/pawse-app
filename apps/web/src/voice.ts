@@ -116,12 +116,17 @@ export function say(event: Event, personality: Personality | undefined, tone: To
 }
 
 /** The next step back to health, in tone. Numbers come from the engine. */
+/**
+ * The way back after a slip. Each goal-met day heals the same amount whether or not the days are in a row
+ * (gaps are neutral), so no tone says "in a row" or implies a reset.
+ */
 export function recoveryLine(tone: Tone, name: string, undo: number, stage: { days: number; label: string } | null): string {
   const d = (n: number) => `${n} good ${n === 1 ? "day" : "days"}`;
-  const back = stage ? ` ${d(stage.days)} in a row and ${name} is ${stage.label.toLowerCase()} again.` : "";
-  if (tone === "gentle") return `${d(undo)} undoes today.${back}`;
-  if (tone === "brutal") return `That costs ${d(undo)} to undo.${back} No shortcuts.`;
-  return `${d(undo)} in a row undoes today.${back}`;
+  const undoes = (n: number) => (n === 1 ? "undoes" : "undo");
+  const back = stage ? ` ${d(stage.days)} and ${name} is ${stage.label.toLowerCase()} again.` : "";
+  if (tone === "gentle") return `${d(undo)} ${undoes(undo)} today, whenever they come.${back}`;
+  if (tone === "brutal") return `${d(undo)} ${undoes(undo)} today.${back} Start with today.`;
+  return `${d(undo)} with your goal met ${undoes(undo)} today.${back}`;
 }
 
 /** Notifications in the companion's voice. Title is the pet's name; body speaks in first person. */

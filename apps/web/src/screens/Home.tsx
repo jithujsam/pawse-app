@@ -63,8 +63,10 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const weekFocus = track.weekFocus.find((w) => w.week === weekStart(t0))?.text;
   const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
   const reasons = (myPlan?.reasons ?? []).slice(0, 3);
-  const lonely = !checked && progress.quiet >= 3;
-  const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
+  // Any record today is a check-in (an urge too); a paused or not-tracked day isn't waiting for one.
+  const checkedIn = checked || progress.today === "urge";
+  const lonely = !checkedIn && !resting && progress.quiet >= 3;
+  const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
   const streak = progress.current;
   const age = view.age;
   const danger = age >= 80;
@@ -76,10 +78,11 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
-    : trackPaused && !checked ? pausedLine(tone, companion.name)
+    : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
     : lonely ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
-      : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
+      : progress.today === "rest" ? restLine(tone)
+      : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
 
   const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
@@ -190,7 +193,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
           <motion.section key="plan" className="card stack plan" aria-label="The way back" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
             <h2>The way back</h2>
             <p>{recoveryLine(tone, companion.name, plan.undoToday, plan.stageBack)}</p>
-            {plan.stageBack && <div className="progress" aria-hidden><motion.i initial={{ width: 0 }} animate={{ width: `${Math.max(4, Math.min(100, (streak / plan.stageBack.days) * 100))}%` }} transition={spring.calm} /></div>}
           </motion.section>
         )}
       </AnimatePresence>

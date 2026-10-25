@@ -7,7 +7,9 @@ import { trackSummary } from "../src/progress";
 import { trackLessons, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst, lapseHeadline, progressKept, afterSlipLine } from "../src/recovery";
 import { pauseHint, pausedLine, pauseToast, resumeHint, resumeToast, pauseRefused } from "../src/copy";
 import type { Tone } from "../src/types";
-import { defaultTrackState, focusedTrackId, trackState } from "../src/tracks";
+import { defaultTrackState, focusedTrackId, needsTrackContext, trackState } from "../src/tracks";
+import { moodFor } from "../src/Companion";
+import { recoveryLine } from "../src/voice";
 import type { AppData, RecoveryPlan } from "../src/types";
 
 /**
@@ -194,6 +196,7 @@ describe("tones: every line exists in all three, and none shames", () => {
   const lines = (t: Tone) => [
     urgePauseLine(t), urgeActedLine(t), urgeActedNote(t), urgeManagedLine(t, "Biscuit"), lapseHeadline(t, "Biscuit"), progressKept(t, 3, 2), afterSlipLine(t, "Biscuit"),
     pauseHint(t), pausedLine(t, "Biscuit"), pauseToast(t, "Biscuit"), resumeHint(t), resumeToast(t), pauseRefused(t),
+    recoveryLine(t, "Biscuit", 3, { days: 12, label: "Young" }),
   ];
   it("has three different versions of each line", () => {
     const [g, h, b] = tones.map(lines);
@@ -204,5 +207,49 @@ describe("tones: every line exists in all three, and none shames", () => {
   });
   it("only a logged slip is called a slip after acting on an urge", () => {
     for (const t of tones) expect(urgeActedNote(t)).toMatch(/log/i);
+  });
+});
+
+describe("after a slip: calm, accurate, and progress kept", () => {
+  it("the way back never claims days must be in a row or that there are no shortcuts", () => {
+    for (const t of ["gentle", "honest", "brutal"] as Tone[]) {
+      const l = recoveryLine(t, "Miso", 2, { days: 9, label: "Adult" });
+      expect(l).not.toMatch(/in a row|no shortcuts/i);
+      expect(l).toContain("2 good days");
+    }
+  });
+
+  it("a slip on one track keeps days of care, best streak and milestones, and touches no other track", () => {
+    const d = twoTracks();
+    d.cleanDays = [1, 2, 3, 4].map((n) => ({ habitId: "ha", day: addDays(t0, -n) }));
+    d.urges = [{ id: "u1", habitId: "ha", day: addDays(t0, -6), time: null, strength: 3, outcome: "rode_it_out", createdAt: 1 }];
+    load(d);
+    const before = trackSummary(getData(), "ha", t0);
+    const otherBefore = trackSummary(getData(), "hb", t0);
+    const ageB = viewCompanion(getData(), "cb").age;
+    expect(actions.logSlip("ha", {}, t0, null)).not.toBeNull();
+    const after = trackSummary(getData(), "ha", t0);
+    expect([after.care, after.best, after.metDays]).toEqual([before.care, before.best, before.metDays]);
+    expect([after.current, after.slips]).toEqual([0, 1]);
+    expect(trackSummary(getData(), "hb", t0)).toEqual(otherBefore);
+    expect(viewCompanion(getData(), "cb").age).toBe(ageB);
+    expect(viewCompanion(getData(), "ca").age).toBeGreaterThan(viewCompanion(d, "ca").age);
+  });
+});
+
+describe("the pet reflects its own track", () => {
+  it("isn't 'waiting' on a paused or not-tracked day, and an urge today counts as a check-in", () => {
+    expect(moodFor("adult", { checkedToday: false, slippedToday: false, age: 30, notTracking: true })).toBe("idle");
+    expect(moodFor("adult", { checkedToday: false, slippedToday: false, age: 30 })).toBe("waiting");
+    expect(moodFor("adult", { checkedToday: true, slippedToday: false, age: 30 })).toBe("happy");
+  });
+
+  it("says which track a screen shows when there is more than one, or it's paused", () => {
+    load();
+    expect(needsTrackContext(getData(), "ha")).toBe(true);
+    actions.archiveTrack("hb");
+    expect(needsTrackContext(getData(), "ha")).toBe(false);
+    actions.pauseTrack("ha");
+    expect(needsTrackContext(getData(), "ha")).toBe(true);
   });
 });
