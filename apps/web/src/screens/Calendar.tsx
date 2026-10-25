@@ -4,7 +4,6 @@ import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
-import { trackState } from "../tracks";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { countDays, dayControls, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
@@ -18,7 +17,6 @@ export function CalendarSections() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const track = trackState(data, habit.id);
   // The month shown, as YYYY-MM.
   const [cursor, setCursor] = useState(() => monthOf(today()));
   const [sel, setSel] = useState(today());

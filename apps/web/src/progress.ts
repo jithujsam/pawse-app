@@ -150,7 +150,7 @@ export function trackIndex(d: AppData, habitId: string, today: string): TrackInd
   if (hit) return hit;
   const slips = new Map<string, number>(), managed = new Map<string, number>(), met = new Set<string>(), checkedIn = new Set<string>();
   const state = trackState(d, habitId);
-  // A track id that doesn't exist (removed on another phone) starts today, so it has no past to count.
+  // A track id with no habit (removed, or never existed) has no start date of its own: it starts today.
   let start = d.habits.some((h) => h.id === habitId) ? state.startedOn : today;
   for (const e of d.entries) if (e.habitId === habitId) { slips.set(e.day, (slips.get(e.day) ?? 0) + 1); checkedIn.add(e.day); if (e.day < start) start = e.day; }
   for (const c of d.cleanDays) if (c.habitId === habitId) { met.add(c.day); checkedIn.add(c.day); if (c.day < start) start = c.day; }
@@ -416,11 +416,14 @@ export function petDayInputs(d: AppData, companionId: string, upTo: string, toda
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
   if (last < companion.bornOn) return [];
   // The track this companion belongs to: the habit pointing at it now, or (for one that has passed) the habit its slips were logged under.
-  const habit = d.habits.find((h) => h.id === companion.trackId) ?? d.habits.find((h) => h.companionId === companionId)
-    ?? d.habits.find((h) => d.entries.some((e) => e.companionId === companionId && e.habitId === h.id));
+  // The track this companion belongs to: its recorded owner (companion.trackId), else the habit pointing at it now,
+  // else (for one that has passed) the habit its slips were logged under.
+  const habit = (companion.trackId ? d.habits.find((h) => h.id === companion.trackId) : undefined)
+    ?? d.habits.find((h) => h.companionId === companionId) ?? d.habits.find((h) => d.entries.some((e) => e.companionId === companionId && e.habitId === h.id));
+  const owner = companion.trackId ?? habit?.id;
   const damage = new Map<string, number[]>();
-  // A slip filed under another track can never age this companion, even if it names it.
-  for (const e of d.entries) if (e.companionId === companionId && (!habit || e.habitId === habit.id)) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
+  // Only this companion's slips on its own track: a slip filed under another track can never age it.
+  for (const e of d.entries) if (e.companionId === companionId && (!owner || e.habitId === owner)) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
   const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
   const idx = habit ? trackIndex(d, habit.id, today) : null;
   const out: DayInput[] = [];

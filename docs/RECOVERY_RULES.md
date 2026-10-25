@@ -17,7 +17,7 @@ How Pawse counts recovery. This is the definitive spec for `apps/web/src/progres
 
 Records are **slips** (`entries`), **goal-met marks** (`cleanDays`) and **urges** (`urges`). Each carries the local calendar day it was logged on, as a `YYYY-MM-DD` key.
 
-A track's **start** is its start date (`track.startedOn`) or its first record, whichever is earlier. A new track's start date is its pet's birth. For data from before tracks had their own state, the migration set it to the current companion's birth or the first record, whichever is earlier. A new companion after adoption therefore doesn't erase the track's history, and a track can start on any day of a month.
+A track's **start** is its start date (`track.startedOn`) or its first record, whichever is earlier. A new track's start date is its pet's birth. For data from before tracks had their own state, it was set on migration to the current companion's birth or the first record, whichever is earlier. That way a new companion after adoption doesn't erase the track's history, and a track can start on any day of a month.
 
 ## 2. Check-ins and slips
 
@@ -74,8 +74,8 @@ The regression test compares both versions over 500 random histories. Streaks go
 ## 5. Not tracking: rest days and pauses
 
 - **Rest day:** one chosen day per track (`track.restDays`). It can only be set on a day with nothing recorded and no pause, and the store refuses it on a day with a slip, a goal-met mark or a managed urge. Logging a slip or marking goal met on a rest day clears it.
-  - **Rest days from before tracks were separate** (the shared `settings.restDays`) applied to every track. The migration copies them into every track's own list, so clearing one on a track leaves the other tracks unchanged.
-- **Pause:** `{ from, to }` per track (`track.pauses`). Days from `from` up to, but not including, `to` are paused, and `to: null` means still paused.
+  - **Rest days from before tracks were separate** (the old shared `settings.restDays`) applied to every track. The migration copies them into every track's own list, so clearing one on a track leaves the other tracks unchanged.
+- **Pause:** `{ from, to }` per track (`track.pauses`; `track.status` is `paused` while one is open). Days from `from` up to, but not including, `to` are paused, and `to: null` means still paused.
   - One pause can be open at a time.
   - Pausing again on the day a pause ended rejoins it.
   - A pause can't start inside or before an earlier one, so history is never rewritten.
@@ -145,11 +145,11 @@ The regression test compares both versions over 500 random histories. Streaks go
 
 These are recorded here rather than decided:
 
-1. **Plan, goal and reasons are shared across tracks** (PRD §7.1, "still shared across tracks for now"). The weekly review's goal line therefore uses the one shared goal for every track. Per-track goals need a product decision and a data change.
+1. **Plan, goal and reasons are per track** (resolved by the multi-track architecture, `docs/MULTI_TRACK_ARCHITECTURE.md`). The weekly review's goal line uses the track's own goal.
 2. **Rest days.** PRD §7.1 (Pets tab commit) listed "not tracking today" days as shared across tracks. The owner approved per-track rest days on 2026-10-25, and that is what's implemented, with the old shared days still applying to every track. The PRD now says per-track. The owner should confirm.
-3. **Archiving a track.** The data layer has `archiveTrack` and `unarchiveTrack` (`docs/MULTI_TRACK_ARCHITECTURE.md`); an archived track is read-only and keeps its history.
+3. **Archiving a track.** The data layer has it (`archiveTrack` / `unarchiveTrack`; `habits.status` and `archived_at`): an archived track is read-only, keeps its history and pet, leaves the Pets grid and can come back. There is no archive control in the UI yet.
 4. **No pause control in the UI yet.** `pauseTrack` and `resumeTrack` exist and are tested, but nothing in the app calls them.
 5. **Reminders during a pause.** Notifications still follow the track opened last, paused or not.
 6. **An urge acted on with no slip logged** shows as "Not recorded" on the calendar while counting as a check-in. Whether it deserves its own label is a copy decision.
 7. **Tones.** The day-state labels are one neutral wording, not three tones. That matches the existing labels, but differs from the `CLAUDE.md` rule.
-8. **Mixed app versions on one account.** Per-track state is synced in `habits.track` (migration 0006), which older versions leave alone. See `docs/MULTI_TRACK_ARCHITECTURE.md` §4.3 for what older versions can and can't see.
+8. **Mixed app versions on one account.** Resolved: per-track state lives on each habit (`habits.track`, migration 0006), not in the account's settings, so an older app saving its settings can't drop it. See `docs/MULTI_TRACK_ARCHITECTURE.md` §5.

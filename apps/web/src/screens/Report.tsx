@@ -57,8 +57,8 @@ export function Report() {
   const { companion } = view;
   const habit = view.habit!;
   const { tone, currency } = data.settings;
-  const track = trackState(data, habit.id);
-  const { baseline } = track;
+  const state = trackState(data, habit.id);
+  const { baseline } = state;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
   const idx = trackIndex(data, habit.id, today());
@@ -120,7 +120,7 @@ export function Report() {
   // Only checked-in days count: a day with nothing logged is unknown, never money kept.
   const kept = moneyKept(data, habit.id, companion.bornOn);
   const saved = kept ? kept.saved : null;
-  const goal = track.savingsGoal;
+  const goal = state.savingsGoal;
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">

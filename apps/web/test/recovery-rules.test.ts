@@ -28,19 +28,23 @@ const met = (habitId: string, day: string): CleanDay => ({ habitId, day });
 const urge = (habitId: string, day: string, outcome: Urge["outcome"] = "rode_it_out"): Urge => ({ id: `u${++n}`, habitId, day, time: "20:00", strength: 3, outcome, createdAt: n });
 
 /**
- * Two tracks. Per-track state is given the way it was stored before tracks had their own (restDays, trackRest,
- * pauses, celebrated, celebratedBy on settings), and the data goes through the real v1 -> v2 migration.
+ * Two tracks. Per-track state (rest days, pauses, celebrations) is given the way it was stored before tracks had
+ * their own (keys on settings), and goes through the real v1 -> v2 migration onto each track, so every rule
+ * below is also checked on migrated data.
  */
-function data(p: { entries?: Entry[]; cleanDays?: CleanDay[]; urges?: Urge[]; bornOn?: string; settings?: LegacyTrackSettings & Partial<AppData["settings"]> } = {}): AppData {
+type Fixture = { entries?: Entry[]; cleanDays?: CleanDay[]; urges?: Urge[]; bornOn?: string; settings?: Partial<AppData["settings"]> & LegacyTrackSettings };
+const data = (p: Fixture = {}): AppData => normalize(rawV1(p))!;
+/** The same two tracks as saved before tracks had their own state (local data v1). */
+function rawV1(p: Fixture = {}) {
   const d = blank();
   const bornOn = p.bornOn ?? "2026-03-01";
-  return normalize({
+  return ({
     ...d, v: 1, summaries: {},
     settings: { ...d.settings, onboarded: true, ...p.settings },
     companions: [A, B].map((h) => ({ id: `c-${h}`, species: "dog" as const, name: h, bornOn, diedOn: null, finalAge: null })),
     habits: [A, B].map((h) => ({ id: h, name: h, cls: "food_spending" as const, classWeight: 0.7, companionId: `c-${h}`, unit: "money" as const, fields })),
     entries: p.entries ?? [], cleanDays: p.cleanDays ?? [], urges: p.urges ?? [],
-  })!;
+  });
 }
 const days = (from: string, count: number) => Array.from({ length: count }, (_, i) => shiftDays(from, i));
 const t = () => today();
@@ -406,10 +410,12 @@ describe("10. edge cases", () => {
     expect(trackSummary(removed, B, T0)).toEqual(before);
   });
   it("migration: data saved before per-track settings loads with the old shared rest days and celebrations intact", () => {
-    // data() runs the real v1 -> v2 migration on the old shared settings.
-    const loaded = data({ cleanDays: [met(A, "2026-03-18")], settings: { restDays: ["2026-03-19"], celebrated: [3] } });
+    const old = rawV1({ cleanDays: [met(A, "2026-03-18")], settings: { restDays: ["2026-03-19"], celebrated: [3] } });
+    const loaded = normalize(JSON.parse(JSON.stringify(old)))!;
+    // The shared rest day becomes each track's own; the one milestone list belonged to the first track.
+    expect([trackState(loaded, A).restDays, trackState(loaded, B).restDays]).toEqual([["2026-03-19"], ["2026-03-19"]]);
     expect([dayStatus(loaded, A, "2026-03-19", T0), dayStatus(loaded, B, "2026-03-19", T0)]).toEqual(["rest", "rest"]);
-    // Old celebrations belong to the first track, the one the app showed.
     expect([trackState(loaded, A).celebrated, trackState(loaded, B).celebrated]).toEqual([[3], []]);
+    expect(["restDays", "celebrated", "trackRest", "pauses", "celebratedBy"].filter((k) => k in loaded.settings)).toEqual([]);
   });
 });

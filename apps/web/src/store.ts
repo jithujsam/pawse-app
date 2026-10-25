@@ -149,8 +149,9 @@ export const QUIET_DAYS_AGE = false;
 export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
-  // Only this companion's own track ages or heals it. Missed check-ins never cost life unless the quiet-days rule is
-  // switched back on, and even then rest and paused days, days with any record, today and days after a death are never "missed".
+  // Missed check-ins never cost life unless the quiet-days rule is switched back on, and even then rest and
+  // paused days, days with any record, today and days after a death are never "missed". petDayInputs counts only
+  // this companion's slips on its own track, so a slip filed under another track can never age it.
   const inputs: DayInput[] = petDayInputs(d, companionId, upTo, today(), QUIET_DAYS_AGE ? d.settings.neglectFrom : null);
   // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
   // A companion that already died stays as it was.

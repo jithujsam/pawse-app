@@ -1,6 +1,6 @@
 # Multi-track architecture
 
-Status: implemented on `claude/pawse-multi-track-architecture-exg1hh`, merged with `main` (Pets grid and the `progress.ts` rules layer). Local data v2, server migration 0006 (not yet applied to production). Updated 2026-10-25.
+Status: implemented and merged with `main` (Pets grid and the `progress.ts` rules layer, including the 2026-10-25 recovery-rules commit). Local data v2, server migration 0006 (not yet applied to production). Updated 2026-10-25.
 
 This is the data layer for several independent recovery tracks per person. It sits under PRD §5.1 ("one companion per tracked addiction, each with its own life") and PRD §20. The counting rules (day states, streaks, pauses, milestones) are in `docs/RECOVERY_RULES.md`; this document says where the data lives, how it moves, and how old data and old app versions are handled. It adds no recovery rules.
 
@@ -44,7 +44,7 @@ Person (Settings, journal)
 ```
 
 - The only writable recovery state is the events plus `TrackState`. Writes go through `actions.*` in `store.ts`, and every per-track write goes through one helper (`withTrack`).
-- **Reads are scoped by track.** `progress.ts` (`trackIndex`) reads one track's events, rest days, pauses and start date. `viewCompanion` counts a slip only if it belongs to the companion **and** to the companion's track, so a mis-filed slip can never age another track's pet.
+- **Reads are scoped by track.** `progress.ts` (`trackIndex`) reads one track's events, rest days, pauses and start date. `petDayInputs` (used by `viewCompanion`) counts a slip only if it belongs to the companion **and** to the companion's track (`companion.trackId`), so a mis-filed slip can never age another track's pet.
 - `tracks.ts` holds the pure helpers: `trackState` (complete state with defaults), `getTrack` / `listTracks`, `focusedTrackId`, `canRecord`, `checkTracks` (cross-track references), `repairTracks` (fills what older data lacks without inventing history) and `trackFromLegacy` (old settings → one track's state).
 - **Start date.** `startedOn` is stored. For existing data it is set by the rule in `RECOVERY_RULES.md`: the current pet's birth or the first record, whichever is earlier. `progress.ts` starts a track at `startedOn` or its first record if that is earlier.
 
