@@ -47,6 +47,9 @@ curl -s "https://raw.githubusercontent.com/jithujsam/pawse-releases/main/latest.
 Note the published `name` and `code`. The new version must have a higher `code` and a new `name`. Also check that `apk/Pawse-<new name>.apk` doesn't exist yet.
 
 ### 2. Build the signed release APK (from the gate commit, clean tree)
+**Easiest: build on GitHub.** Actions → **Android APK** → Run workflow → `release`, on `main`. It runs lint, typecheck and tests, builds, then checks the package, version, embedded web version, debuggable flag and the release certificate, and fails if any of them is wrong. The run's artifact holds the APK plus `BUILD-INFO.txt` (version, commit, build type, certificate, SHA-256, test results). It needs the signing secrets described in `apps/web/android/keystore/README.md`. Without them the release build refuses to run. Every PR and push to `main` also produces a **debug** test APK (`app.detoxcompanion.test`, "Pawse Test"), which installs next to the real app and never replaces it or its data. Debug APKs are never published.
+
+**Or build locally:**
 ```
 cd pawse-app && git checkout main && git pull && git status   # must be clean, at the gate commit
 # apps/web/version.json: { "name": "<new name>", "code": <published code + 1 or more> }, committed to main

@@ -34,6 +34,11 @@ android {
         }
     }
     buildTypes {
+        // Test builds get their own app id and name ("Pawse Test"), so they install next to the real app
+        // (which is signed with the release key) instead of replacing it, and its data is never touched.
+        debug {
+            applicationIdSuffix ".test"
+        }
         release {
             if (signingFile.exists()) signingConfig signingConfigs.release
             minifyEnabled false

@@ -1,0 +1,151 @@
+# Builds the Pawse Android APK on GitHub's servers and attaches it, with its build info, to the run.
+#
+# - Every pull request and every push to main: lint, typecheck, tests, web build, debug (test) APK.
+# - Actions → "Android APK" → Run workflow: choose debug or release.
+#   A release build needs the existing signing key in the repository secrets (see
+#   apps/web/android/keystore/README.md). It refuses to run without them and checks the certificate,
+#   so it can never sign with any other key. Nothing here publishes to pawse-releases: that stays a
+#   reviewed PR (docs/RELEASING.md).
+name: Android APK
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: "debug (test app, installs next to the real one) or release (signed with the release key)"
+        type: choice
+        options: [debug, release]
+        default: debug
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BUILD_TYPE: ${{ inputs.build_type || 'debug' }}
+  # The release certificate (apps/web/android/keystore/README.md). A release build signed with anything else fails.
+  RELEASE_CERT_SHA256: 8081688b71ff39e76203abadb59c51c15783ec53680d948c9fc7341134d8257b
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      # Caches Gradle and its downloaded dependencies between runs.
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint, typecheck and test
+        run: |
+          set -o pipefail
+          pnpm lint
+          pnpm typecheck
+          pnpm test 2>&1 | tee test-output.txt
+          grep -E "Tests +[0-9]+ passed" test-output.txt | sed -E 's/.*Tests +//' > test-summary.txt
+
+      - name: Build the web app
+        run: pnpm --filter web build
+
+      - name: Sync the Android project
+        working-directory: apps/web
+        run: npx cap sync android
+
+      - name: Put the release key in place
+        if: env.BUILD_TYPE == 'release'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Release signing secrets are missing (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD). Not building an unsigned or differently signed release."
+            exit 1
+          fi
+          cd apps/web/android/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > companion-release.jks
+          printf 'storeFile=../keystore/companion-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > release.properties
+
+      - name: Build the APK and run the Android unit tests
+        working-directory: apps/web/android
+        run: |
+          task=$([ "$BUILD_TYPE" = release ] && echo assembleRelease || echo assembleDebug)
+          ./gradlew --no-daemon "$task" testDebugUnitTest
+
+      - name: Remove the release key
+        if: always()
+        run: rm -f apps/web/android/keystore/companion-release.jks apps/web/android/keystore/release.properties
+
+      - name: Verify the APK
+        id: verify
+        run: |
+          set -euo pipefail
+          name=$(node -p "require('./apps/web/version.json').name")
+          code=$(node -p "require('./apps/web/version.json').code")
+          src=$(ls apps/web/android/app/build/outputs/apk/$BUILD_TYPE/*.apk)
+          bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          [ "$BUILD_TYPE" = release ] && id=app.detoxcompanion || id=app.detoxcompanion.test
+
+          badging=$("$bt/aapt2" dump badging "$src")
+          echo "$badging" | head -1
+          echo "$badging" | head -1 | grep -q "name='$id' versionCode='$code' versionName='$name'" \
+            || { echo "::error::Package or version doesn't match version.json ($id $code $name)"; exit 1; }
+          debuggable=$(echo "$badging" | grep -c application-debuggable || true)
+          if [ "$BUILD_TYPE" = release ] && [ "$debuggable" != 0 ]; then echo "::error::Release APK is debuggable"; exit 1; fi
+
+          web=$(unzip -p "$src" 'assets/public/assets/*.js' | grep -o 'name:"[0-9.]*",code:[0-9]*' | sort -u)
+          [ "$web" = "name:\"$name\",code:$code" ] \
+            || { echo "::error::The web bundle inside the APK reports $web, not $name / $code"; exit 1; }
+
+          "$bt/apksigner" verify --verbose --print-certs "$src" | tee signature.txt
+          cert=$(grep -m1 "Signer #1 certificate SHA-256 digest" signature.txt | awk '{print $NF}')
+          if [ "$BUILD_TYPE" = release ] && [ "$cert" != "$RELEASE_CERT_SHA256" ]; then
+            echo "::error::Signed with certificate $cert, not the release key"; exit 1
+          fi
+
+          out="Pawse-$name-$code-$BUILD_TYPE-${GITHUB_SHA::7}.apk"
+          mkdir -p out && cp "$src" "out/$out"
+          sha=$(sha256sum "out/$out" | cut -d' ' -f1)
+          {
+            echo "File: $out"
+            echo "App: $id"
+            echo "Version: $name (code $code)"
+            echo "Build type: $BUILD_TYPE$([ "$BUILD_TYPE" = debug ] && echo ' (test only, never publish)')"
+            echo "Commit: $GITHUB_SHA"
+            echo "Built: $(date -u +%Y-%m-%dT%H:%M:%SZ) by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "Signing certificate SHA-256: $cert"
+            echo "Debuggable: $([ "$debuggable" = 0 ] && echo no || echo yes)"
+            echo "SHA-256: $sha"
+            echo "Size: $(stat -c %s "out/$out") bytes"
+            echo "Tests (schema, engine, web): $(paste -sd ' ' test-summary.txt); Android unit tests passed"
+          } | tee out/BUILD-INFO.txt
+          echo "artifact=${out%.apk}" >> "$GITHUB_OUTPUT"
+          cat out/BUILD-INFO.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.verify.outputs.artifact }}
+          path: out/
+          retention-days: 30
+          if-no-files-found: error

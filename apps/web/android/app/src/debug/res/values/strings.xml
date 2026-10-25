@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Debug (test) builds only: a different name so the test app and the real app are easy to tell apart. -->
+<resources>
+    <string name="app_name">Pawse Test</string>
+    <string name="title_activity_main">Pawse Test</string>
+</resources>
