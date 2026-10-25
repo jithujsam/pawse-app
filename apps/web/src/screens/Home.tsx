@@ -188,7 +188,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
       </AnimatePresence>
 
       <motion.section className="checkin" aria-label="Today's check-in" variants={rise}>
-        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : resting ? "Not tracking" : "Not recorded yet"}</span></div>
+        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : resting ? "Not tracking" : "Not checked in yet"}</span></div>
         <div className="actions">
           <Button variant="secondary" className="slip-btn" onClick={() => setSheet(true)}>I slipped</Button>
           <motion.button className="btn clean-btn" data-done={cleanToday} onClick={clean} aria-pressed={cleanToday} disabled={slippedToday}
@@ -221,7 +221,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
           ? <div className="card stat"><div className="muted small">Spent this week</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(week.spend)} /></div></div>
           : <div className="card stat"><div className="muted small">Goal-met days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
         <button className="card stat link-card" onClick={() => onNavigate("insights")}>
-          <span className="muted small">Your patterns, in words</span>
+          <span className="muted small">See your patterns</span>
           <span className="link-row"><b>Insights</b>{Icon.chevR}</span>
         </button>
       </motion.section>
@@ -269,5 +269,5 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
 function UnlockNote({ days }: { days: number }) {
   const a = ACCESSORIES.find((x) => x.days === days);
   if (!a) return null;
-  return <p className="unlock"><b>New:</b> {a.label}. Put it on in Me → Your companion.</p>;
+  return <p className="unlock"><b>New:</b> {a.label}. Put it on in You → your companion.</p>;
 }

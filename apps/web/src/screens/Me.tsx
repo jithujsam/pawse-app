@@ -52,13 +52,13 @@ export function Me() {
 
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>Me</motion.h1>
+      <motion.h1 variants={rise}>You</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
         <span className="profile-art"><CompanionArt species={companion.species} coat={companion.coat} accessory={settings.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
           <span className="muted small">{SPECIES_LABEL[companion.species]} · {PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label} · {STAGE_LABEL[view.stage]} · day {together}</span>
-          <span className="small">Watching: {habit.name}</span>
+          <span className="small">Tracking: {habit.name}</span>
         </span>
         <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
       </motion.button>
@@ -66,7 +66,7 @@ export function Me() {
 
       <motion.div variants={rise}>
         <Group title="Plan and voice">
-          <Row icon={Icon.flag} label="Goal, reasons and what helps" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
+          <Row icon={Icon.flag} label="Your plan" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
           <Row icon={Icon.chat} label="Voice" value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
         </Group>
       </motion.div>

@@ -10,7 +10,7 @@ import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
 
-/** The month grid, the age curve and the selected day. Lives inside Journey. */
+/** The month grid, the selected day and the age curve. The top of the Calendar tab. */
 export function CalendarSections() {
   const data = useData();
   const view = useActiveView()!;
@@ -59,17 +59,6 @@ export function CalendarSections() {
 
   return (
     <>
-      <motion.section className="card stack" aria-label="Age this month" variants={rise}>
-        <div className="row"><span className="muted small">{companion.name}'s age this month</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
-        {spark.length > 1
-          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Visible age over the month">
-              <defs><linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--chart)" stopOpacity=".25" /><stop offset="1" stopColor="var(--chart)" stopOpacity="0" /></linearGradient></defs>
-              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="url(#sparkfill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
-              <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
-            </svg>
-          : <p className="muted small">{spark.length === 1 ? `The curve starts drawing from ${companion.name}'s second day.` : "No age history for this month yet."}</p>}
-      </motion.section>
-
       <motion.section className="card stack cal" variants={rise}>
         <div className="row">
           <button className="icon-btn" aria-label="Previous month" onClick={() => monthShift(-1)}>{Icon.chevL}</button>
@@ -102,7 +91,7 @@ export function CalendarSections() {
         <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
       </motion.section>
 
-      <motion.section className="stack" aria-label={`Details for ${fmtDay(sel)}`} variants={rise}>
+      <motion.section className="card stack" aria-label={`Details for ${fmtDay(sel)}`} variants={rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
@@ -136,6 +125,17 @@ export function CalendarSections() {
           </motion.div>
         </AnimatePresence>
       </motion.section>
+      <motion.section className="card stack" aria-label="Age this month" variants={rise}>
+        <div className="row"><span className="muted small">{companion.name}'s age this month</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
+        {spark.length > 1
+          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Visible age over the month">
+              <defs><linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--chart)" stopOpacity=".25" /><stop offset="1" stopColor="var(--chart)" stopOpacity="0" /></linearGradient></defs>
+              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="url(#sparkfill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
+              <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
+            </svg>
+          : <p className="muted small">{spark.length === 1 ? `The curve starts drawing from ${companion.name}'s second day.` : "No age history for this month yet."}</p>}
+      </motion.section>
+
       <LogSheet open={logging} day={sel} habit={habit} name={companion.name} age={view.age} onClose={() => setLogging(false)} onSaved={() => haptic.heavy()} />
     </>
   );

@@ -32,7 +32,7 @@ export function WeeklyReview() {
 
   return (
     <motion.section className="card stack" aria-label="Weekly review" variants={rise}>
-      <div className="row"><h2>Weekly review</h2><span className="muted small">from {fmtDay(week)}</span></div>
+      <div className="row"><h2>Weekly review</h2><span className="muted small">Week of {fmtDay(week)}</span></div>
       <Segmented label="Which week" value={which} onChange={setWhich} options={[{ value: "last", label: "Last week" }, { value: "this", label: "This week so far" }]} />
       <p>{r.goalLine}</p>
       {r.lastFocus && <p className="small">Your focus for this week was: <b>{r.lastFocus}</b></p>}
@@ -45,11 +45,11 @@ export function WeeklyReview() {
       {r.strategies.length > 0 && <p className="small">What you used: {r.strategies.map((s) => `${strategy(s.id).title.toLowerCase()} (${s.managed} of ${s.total} managed)`).join(", ")}.</p>}
       {r.difficult.length > 0 && <p className="small">What came up most: {r.difficult.map(([l, n]) => `${l.toLowerCase()} (${n})`).join(", ")}.</p>}
       <div className="field">
-        <span className="field-label">{r.focus ? "Your focus for the week ahead" : "Pick one small adjustment for the week ahead"}</span>
+        <span className="field-label">{r.focus ? "Your focus for next week" : "Pick one small change for next week"}</span>
         {r.focus && <p><b>{r.focus}</b></p>}
         <div className="chips" role="radiogroup" aria-label="Ideas">{ideas.map((x) => <Chip key={x} pressed={r.focus === x} onClick={() => pick(x)}>{x}</Chip>)}</div>
         <div className="inline-add">
-          <input className="input" autoComplete="off" maxLength={160} value={own} placeholder="Or your own" aria-label="Your own adjustment" onChange={(e) => setOwn(e.target.value)} />
+          <input className="input" autoComplete="off" maxLength={160} value={own} placeholder="Or your own" aria-label="Your own change" onChange={(e) => setOwn(e.target.value)} />
           <Button variant="secondary" disabled={!own.trim() || crisis} onClick={() => pick(own)}>Save</Button>
         </div>
         {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}

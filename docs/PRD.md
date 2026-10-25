@@ -199,9 +199,11 @@ The companion fills roughly the top 55 percent of the screen. Everything else is
 |  This week: 9 slips, Rs 2,340  |
 |  Clean streak: 0 days          |
 +--------------------------------+
-| Home | Calendar | Report | You |
+| Home |Calendar| + |Insights|You|
 +--------------------------------+
 ```
+
+Tabs: **Home**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
 
 States the companion must express:
 

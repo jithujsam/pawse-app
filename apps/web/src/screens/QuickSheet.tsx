@@ -23,7 +23,7 @@ export function QuickSheet({ open, onClose, onPick }: { open: boolean; onClose: 
     { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `Pick a way through it. ${ridden} managed so far.` : "Pick a way through it, with your companion.", tone: "calm", wide: true },
     { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },
     { id: "slip", icon: Icon.slip, title: "I slipped", hint: "Ten seconds. Honest is enough.", tone: "bad" },
-    { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? "Today counts neither way" : slipped || clean ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: slipped || clean || resting },
+    { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? "Today counts neither way" : slipped || clean ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: slipped || clean || resting, wide: true },
   ];
   return (
     <Sheet open={open} onClose={onClose} label="Log or check in">
