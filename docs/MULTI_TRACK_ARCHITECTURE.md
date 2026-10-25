@@ -142,17 +142,21 @@ A server without 0006 keeps working: when an upsert fails on the new columns, sy
 - **R5 Merge with the Pets grid branch.** The edits to `Home.tsx` here are mechanical: `data.settings.{restDays, plan, weekFocus, celebrated, wear, petLife}` become `track.*` from `useActiveTrack()`, and `petLife` is unchanged. Re-apply them on the redesigned screen if it conflicts.
 - **R6 Hard delete.** On the phone, delete is final apart from the returned undo snapshot. The server keeps soft-deleted rows until the account is deleted.
 
-## 7. Open decisions (need approval, for the next prompt)
+## 7. Decisions (approved by the owner, 2026-10-25)
 
-- **D1 Pet rules per track or per person.** `petLife` (continuity / classic) and `deathScene` stay person-level for now. Per-track would allow classic on one behaviour and continuity on another, but it is a safety-relevant choice.
-- **D2 Journal scope.** The daily reflection stays person-level. Should it be taggable to a track?
-- **D3 Reminders and notifications.** There is one daily reminder and one risky-hour nudge, both for the focused track. Should each track have its own reminder, and how should they be capped so a person with five tracks isn't nagged five times? (PRD §19.8 caps reminders at two when check-ins stop.)
-- **D4 Paused tracks and streaks.** Pausing doesn't change streak maths: a paused day is an unrecorded day, so a "goal met in a row" streak ends at a pause, as it would at any gap. Should a pause bridge a streak instead? That is a recovery rule and is left unchanged.
-- **D5 Empty state.** What the app shows when every track is archived (currently prevented).
-- **D6 Track limit.** The schema allows 50 tracks. Should the product cap active tracks lower for wellbeing reasons?
-- **D7 Shared "household" companion** (PRD §8 P2). Not built; the ownership model above (companion → one track) would need a join for it.
-- **D8 Cross-track insights.** All insights are per track. Any combined view (for example "days with any slip") is a product decision.
-- **D9 Onboarding a second track.** `createTrack` exists, but the flow (which questions, a plan per track) is UI work for the next prompt.
+Each was approved as currently implemented. Changing any of them later is a product decision, not a refactor.
+
+| | Decision | Approved behaviour |
+|---|---|---|
+| D1 | Pet rules | `petLife` (continuity / classic) and `deathScene` are person-level and apply to every track. Classic can't be switched on while it would end any track's companion. |
+| D2 | Journal | The daily reflection is person-level, not tied to a track. |
+| D3 | Reminders | One daily reminder and one risky-hour nudge, for the focused track only. No per-track reminders. |
+| D4 | Pauses and streaks | A paused day is an unrecorded day: a "goal met in a row" streak ends at a pause, as at any gap. No streak bridging. |
+| D5 | Empty state | Archiving or deleting the last non-archived track stays refused, so there is always one open track. |
+| D6 | Track limit | No product cap below the schema's 50 tracks. |
+| D7 | Household companion | Not built. One companion belongs to exactly one track. |
+| D8 | Cross-track insights | None. Every insight is per track. |
+| D9 | Adding a second track | `createTrack` is the data path. The flow and screens belong to the next UI prompt and must use it. |
 
 ## 8. Where the code is
 
