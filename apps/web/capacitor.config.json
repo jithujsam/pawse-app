@@ -2,5 +2,8 @@
   "appId": "app.detoxcompanion",
   "appName": "Pawse",
   "webDir": "dist",
-  "android": { "allowMixedContent": false }
+  "android": {
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "force"
+  }
 }

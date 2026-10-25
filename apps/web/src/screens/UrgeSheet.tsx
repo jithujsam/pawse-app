@@ -5,7 +5,6 @@ import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { MOODS } from "../questions";
 import { frictionIdeas, REPLACEMENTS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
 import { trackSummary } from "../progress";
 import { today } from "../dates";
@@ -51,7 +50,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [helped, setHelped] = useState<StrategyId | null>(null);
   const managed = trackSummary(data, habit.id, today()).managedUrges;
   const crisis = hasCrisisLanguage(trigger);
-  const situations = [...MOODS.map((m) => m.label), ...(plan?.situations ?? [])];
+  const situations = plan?.situations ?? [];
 
   function end(outcome: "rode_it_out" | "slipped") {
     if (crisis) return;
@@ -90,10 +89,10 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-what">What's going on? (optional)</span>
-        <div className="chips" role="group" aria-labelledby="urge-what">
+        {situations.length > 0 && <div className="chips" role="group" aria-labelledby="urge-what">
           {situations.map((l) => <Chip key={l} pressed={trigger === l} onClick={() => { haptic.select(); setTrigger(trigger === l ? "" : l); }}>{l}</Chip>)}
-        </div>
-        <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="Or in your own words" aria-label="What's going on, in your own words" onChange={(e) => setTrigger(e.target.value)} />
+        </div>}
+        <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="In your own words" aria-label="What's going on, in your own words" onChange={(e) => setTrigger(e.target.value)} />
         {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       </motion.div>
       {plan?.reasons.length ? <motion.p className="small" variants={rise}>You said this matters because of: <b>{plan.reasons.slice(0, 3).join(", ")}</b>.</motion.p> : null}

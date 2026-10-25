@@ -5,7 +5,7 @@ import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { rise } from "../motion";
-import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES, strategy, trackLessons } from "../recovery";
+import { GOALS, STRATEGIES, strategy, trackLessons } from "../recovery";
 import { fmtDay } from "../dates";
 import { actions, emptyPlan, useData } from "../store";
 import { trackState } from "../tracks";
@@ -17,7 +17,7 @@ import type { RecoveryPlan } from "../types";
 export const planHasCrisis = (p: RecoveryPlan) =>
   [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName].some(hasCrisisLanguage);
 
-/** Suggestion chips plus the person's own entries, with a field to add one. Picking toggles. */
+/** The person's own entries as chips (tap to remove), with a field to add one. `options` is for any suggestions a caller wants to offer; none by default. */
 function ChipList({ label, options, value, onChange, max, placeholder }: { label: string; options: string[]; value: string[]; onChange: (v: string[]) => void; max: number; placeholder: string }) {
   const [own, setOwn] = useState("");
   const all = [...options, ...value.filter((v) => !options.includes(v))];
@@ -56,21 +56,18 @@ export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; o
 export function WhySection({ plan, set, situations = true }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; situations?: boolean }) {
   return (<>
     <div className="field"><span className="field-label">What are you aiming for?</span><GoalPicker value={plan.goal} onChange={(goal) => set({ goal })} /></div>
-    <ChipList label="Why it matters to you" options={REASONS} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder="In your own words" />
-    {situations && <ChipList label="Situations that tend to be hard" options={SITUATIONS} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder="Another situation" />}
+    <ChipList label="Why it matters to you" options={[]} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder="Type one and tap Add" />
+    {situations && <ChipList label="Situations that tend to be hard" options={[]} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder="Type one and tap Add" />}
   </>);
 }
 
 /** A first step and what helps. Onboarding step two of the plan. */
-export function HelpSection({ plan, set, cls }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; cls: HabitClass }) {
+export function HelpSection({ plan, set }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; cls?: HabitClass }) {
   const toggle = (id: RecoveryPlan["strategies"][number]) => { haptic.select(); set({ strategies: plan.strategies.includes(id) ? plan.strategies.filter((s) => s !== id) : [...plan.strategies, id] }); };
   return (<>
     <div className="field">
       <span className="field-label">One small first step</span>
-      <div className="chips" role="radiogroup" aria-label="Suggested first steps">
-        {FIRST_STEPS[cls].map((s) => <Chip key={s} pressed={plan.firstStep === s} onClick={() => set({ firstStep: plan.firstStep === s ? "" : s })}>{s}</Chip>)}
-      </div>
-      <input className="input" autoComplete="off" maxLength={140} value={plan.firstStep} placeholder="Or write your own" aria-label="First step in your own words" onChange={(e) => set({ firstStep: e.target.value })} />
+      <input className="input" autoComplete="off" maxLength={140} value={plan.firstStep} aria-label="First step in your own words" onChange={(e) => set({ firstStep: e.target.value })} />
     </div>
     <div className="field">
       <span className="field-label">When an urge hits, what would you like to try first?</span>

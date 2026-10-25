@@ -7,7 +7,7 @@ import { addDays, iso, today, weekStart } from "./dates";
 import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
-import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
+import { buildFields, countTriggers, pickedLabels, starterFields, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, trackState, type Track } from "./tracks";
@@ -364,7 +364,7 @@ export const actions = {
     const habitId = uid();
     const habit: Habit = {
       id: habitId, name: o.intake.what.trim().slice(0, 60) || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
-      companionId, unit: o.intake.measure, fields: buildFields(o.intake),
+      companionId, unit: o.intake.measure, fields: starterFields(o.intake),
       track: { ...defaultTrackState(today(), Date.now()), baseline: o.baseline, plan: o.plan ? cleanPlan(o.plan) : null },
     };
     commit({
@@ -421,8 +421,8 @@ export const actions = {
   refreshQuestions(habitId: string) {
     const h = data.habits.find((x) => x.id === habitId);
     if (!h) return;
-    const triggers = h.fields.find((f) => f.id === "mood")?.options?.map((o) => o.id) ?? [];
-    commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: buildFields({ what: trackState(data, x.id).description || x.name, measure: x.unit, cls: x.cls, triggers }) } : x)) });
+    const amountLabel = h.fields.find((f) => f.amount)?.label;
+    commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: starterFields({ what: trackState(data, x.id).description || x.name, measure: x.unit, amountLabel, cls: x.cls, triggers: [] }) } : x)) });
   },
 
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
@@ -578,8 +578,8 @@ export const actions = {
    * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
    * phone. Returns its habit id, or null at the 50-track limit.
    */
-  addTrack(o: { what: string; cls: HabitClass; measure: Measure; species: Species; name: string }): string | null {
-    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, species: o.species, companionName: o.name, focus: true });
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string }): string | null {
+    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, focus: true });
   },
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
@@ -599,7 +599,7 @@ export const actions = {
    * 50-track limit is reached. Nothing about any other track changes.
    */
   createTrack(o: {
-    name: string; description?: string; cls: HabitClass; unit: Measure; triggers?: string[]; fields?: Habit["fields"];
+    name: string; description?: string; cls: HabitClass; unit: Measure; amountLabel?: string; triggers?: string[]; fields?: Habit["fields"];
     species: Species; companionName: string; coat?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean;
   }): string | null {
     const name = o.name.trim().slice(0, 60);
@@ -608,7 +608,7 @@ export const actions = {
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim().slice(0, 20) || "Biscuit", bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
     const habit: Habit = {
       id: habitId, name, cls: o.cls, classWeight: weightFor(o.cls), companionId, unit: o.unit,
-      fields: o.fields ?? buildFields({ what: name, measure: o.unit, cls: o.cls, triggers: o.triggers ?? [] }),
+      fields: o.fields ?? starterFields({ what: name, measure: o.unit, amountLabel: o.amountLabel, cls: o.cls, triggers: o.triggers ?? [] }),
       track: { ...defaultTrackState(today(), Date.now()), description: (o.description ?? "").trim().slice(0, 280), baseline: o.baseline ?? null, plan: o.plan ? cleanPlan(o.plan) : null },
     };
     commit({
@@ -681,13 +681,13 @@ export const actions = {
   },
 
   /**
-   * Deletes a track and everything it owns. Only an archived track, and only when `confirmName` matches its
-   * name (ignoring case and outer spaces). A companion another track still points at is never removed.
+   * Deletes a track and everything it owns, archived or not, and only when `confirmName` matches its
+   * name (ignoring case and outer spaces). The screen asks first and offers undo. A companion another track still points at is never removed.
    * Returns what was removed so restoreTrack can undo it, or null if refused.
    */
   deleteTrack(habitId: string, confirmName: string): TrackBackup | null {
     const habit = data.habits.find((h) => h.id === habitId);
-    if (!habit || trackState(data, habitId).status !== "archived") return null;
+    if (!habit) return null;
     if (confirmName.trim().toLowerCase() !== habit.name.trim().toLowerCase()) return null;
     const usedElsewhere = new Set(data.habits.filter((h) => h.id !== habitId).map((h) => h.companionId));
     const companionIds = new Set(data.companions.filter((c) => (c.trackId === habitId || (!c.trackId && c.id === habit.companionId)) && !usedElsewhere.has(c.id)).map((c) => c.id));

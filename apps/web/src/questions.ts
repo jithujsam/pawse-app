@@ -4,26 +4,11 @@ import type { Field, Measure } from "./types";
 export interface Intake {
   what: string;
   measure: Measure;
+  /** What the person wants to count each time, in their own words ("cigarettes", "minutes", "₹ spent"). */
+  amountLabel?: string;
   triggers: string[];
   cls: HabitClass;
 }
-
-/** How a habit is measured at each slip. Shared by onboarding and adding a recovery track. */
-export const MEASURES: { id: Measure; label: string; hint: string }[] = [
-  { id: "money", label: "Money spent", hint: "How much each time" },
-  { id: "count", label: "How many", hint: "A count each time" },
-  { id: "minutes", label: "Time spent", hint: "Minutes each time" },
-  { id: "none", label: "Just that it happened", hint: "No numbers" },
-];
-
-export const SUGGESTIONS: { label: string; cls: HabitClass; measure: Measure }[] = [
-  { label: "Ordering food I didn't plan", cls: "food_spending", measure: "money" },
-  { label: "Impulse shopping", cls: "impulse_buying", measure: "money" },
-  { label: "Doomscrolling", cls: "doomscrolling", measure: "minutes" },
-  { label: "Smoking or vaping", cls: "smoking", measure: "count" },
-  { label: "Drinking", cls: "alcohol", measure: "count" },
-  { label: "Betting or gambling", cls: "custom", measure: "money" },
-];
 
 /**
  * What tends to come before a slip. Chosen in onboarding; becomes the "What was going on?" question.
@@ -56,6 +41,15 @@ export function inferClass(text: string): HabitClass {
 
 export function inferMeasure(cls: HabitClass): Measure {
   return ({ food_spending: "money", impulse_buying: "money", doomscrolling: "minutes", smoking: "count", alcohol: "count", custom: "none" } as const)[cls];
+}
+
+/** How an amount in the person's own words is used: money, minutes or a plain count. Nothing typed means no amount. */
+export function inferMeasureFromLabel(label: string): Measure {
+  const t = label.trim();
+  if (!t) return "none";
+  if (/spen[dt]|cost|price|money|paid|pay\b|bill|[₹$€£]|\brs\b|rupee|dollar|euro|pound/i.test(t)) return "money";
+  if (/min|hour|\bhrs?\b|second|time/i.test(t)) return "minutes";
+  return "count";
 }
 
 /** This product never tracks eating less, calories or weight. */
@@ -105,6 +99,19 @@ export function buildFields(intake: Intake): Field[] {
   fields.push({ id: "where", label: "Where were you?", type: "choice", required: false, options: [opt("home", "Home"), opt("work", "Work or college"), opt("out", "Out"), opt("moving", "On the move")] });
   fields.push({ id: "who", label: "Who were you with?", type: "choice", required: false, trigger: true, options: [opt("alone", "Alone", true), opt("partner", "Partner or family"), opt("friends", "Friends"), opt("others", "Other people")] });
   fields.push({ id: "after", label: "How do you feel now?", type: "choice", required: false, options: [opt("better", "Better"), opt("same", "About the same"), opt("worse", "Worse"), opt("regret", "I regret it")] });
+  fields.push({ id: "photo", label: "Photo (optional)", type: "photo", required: false });
+  return fields;
+}
+
+/**
+ * The check-in for a new track: only what the person asked for. An amount they named in their own words
+ * (optional), a free note and an optional photo. Anything more they add themselves under Your plan, Questions.
+ */
+export function starterFields(intake: Intake): Field[] {
+  const label = (intake.amountLabel ?? "").trim().slice(0, 40);
+  const fields: Field[] = [];
+  if (label && intake.measure !== "none") fields.push({ id: "amount", label, type: intake.measure === "money" ? "money" : "number", required: true, amount: true });
+  fields.push({ id: "note", label: "Notes (optional)", type: "text", required: false });
   fields.push({ id: "photo", label: "Photo (optional)", type: "photo", required: false });
   return fields;
 }
