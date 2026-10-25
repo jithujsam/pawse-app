@@ -588,6 +588,14 @@ These override the sections they name. Reasons and sources: `docs/PAWSE_RECOVERY
 6. **Rewards (§7.9, milestones).** Milestones and unlocks count cumulative days of care (goal met or urge managed) and never reset on a slip.
 7. **Weekly report (§7.4).** Adds a deterministic weekly review with one adjustment for the week ahead. Observations need at least five records, show counts, and never claim causes.
 8. **Notifications (§12).** At most two neutral reminders when check-ins stop; no post-slip guilt notification.
+9. **Recovery rules (2026-10-25, §5.3, §7.1, §7.3, §7.9).** One shared calculation layer (`apps/web/src/progress.ts`) decides every recovery number per track; the full rules are in `docs/RECOVERY_RULES.md` and pinned by `apps/web/test/recovery-rules.test.ts`. In short:
+   - **Slips.** Only a slip the person logs is a slip. An urge they acted on is a check-in, and the slip sheet is offered but never saved for them.
+   - **Day states.** A day is a slip, goal met, urge managed, not tracking (a rest day or a pause) or not recorded. A record always wins. A goal-met mark under a slip is kept as history and comes back if the slip is deleted.
+   - **Streaks.** Goal-met and urge-managed days add one. Only a slip ends a streak. Not-recorded and not-tracking days are neutral: they're skipped, neither adding nor breaking. Existing streaks can only stay the same or go up under this rule.
+   - **Missed check-ins.** A past day with no record that isn't a rest or paused day. It is unknown, never a failure. Missed-day damage (§5.3 v3) stays off, and even if switched back on, rest days, paused days and days with any record never count.
+   - **Pauses.** Each track can be paused and resumed. Paused days are "Not tracking" and never change records, streaks, the check-in rate or the pet.
+   - **Dates.** Records keep the local day they were made on. Day arithmetic ignores daylight saving. Weeks start on Monday, calendar months have their real length, and a recovery month runs to the same day next month, clamped to the month end.
+   - **The pet.** Only the track's own companion's slips age it, and only that track's goal-met days heal it.
 
 ## 20. Multi-track amendment (2026-10-25)
 

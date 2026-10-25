@@ -3,8 +3,8 @@ import {
   baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, simulate, STAGE_LABEL, stageForAge,
   type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
-import { addDays, daysBetween, range, today, weekStart } from "./dates";
-import { quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
+import { addDays, iso, today, weekStart } from "./dates";
+import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
@@ -149,19 +149,9 @@ export const QUIET_DAYS_AGE = false;
 export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
-  const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
-  // Bucket once so the fold is linear in days + entries, not days x entries.
-  const damage = new Map<string, number[]>();
-  // Only this companion's own track: a slip filed under another track can never age it.
-  const owner = companion.trackId ?? habit?.id;
-  for (const e of d.entries) if (e.companionId === companionId && (!owner || e.habitId === owner)) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
-  const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
-  const from = QUIET_DAYS_AGE ? d.settings.neglectFrom : null;
-  // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
-  const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    // A goal-met mark under a slip is kept as history, but the slip wins: the day isn't clean.
-    day, damage: damage.get(day) ?? [], clean: clean.has(day) && !damage.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
-  }));
+  // Only this companion's own track ages or heals it. Missed check-ins never cost life unless the quiet-days rule is
+  // switched back on, and even then rest and paused days, days with any record, today and days after a death are never "missed".
+  const inputs: DayInput[] = petDayInputs(d, companionId, upTo, today(), QUIET_DAYS_AGE ? d.settings.neglectFrom : null);
   // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
   // A companion that already died stays as it was.
   const continuity = d.settings.petLife !== "classic" && !companion.diedOn && !opts.ignoreNoDeath;
@@ -228,8 +218,7 @@ export function riskyHour(d: AppData, habitId: string): number | null {
 export function slipHour(e: Entry): number | null {
   if (e.time) return Number(e.time.slice(0, 2));
   const at = new Date(e.createdAt);
-  const local = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
-  return local === e.day ? at.getHours() : null;
+  return iso(at) === e.day ? at.getHours() : null;
 }
 
 /** Treats in the jar: one per clean day ever, minus those already given. */
@@ -241,14 +230,8 @@ export function treatsLeft(d: AppData, habitId: string): number {
 /** Unrecorded days in a row up to yesterday. A rest or paused day, or anything recorded, ends the count. */
 export const silentDays = (d: AppData, habitId: string, t0 = today()) => quietDays(trackIndex(d, habitId, t0));
 
-/** Days from `from` to today with a check-in (a slip or a clean mark). Days with nothing logged are unknown, not clean. */
-export function checkedInDays(d: AppData, habitId: string, from: string): string[] {
-  const t = today();
-  const days = new Set<string>();
-  for (const e of d.entries) if (e.habitId === habitId && e.day >= from && e.day <= t) days.add(e.day);
-  for (const c of d.cleanDays) if (c.habitId === habitId && c.day >= from && c.day <= t) days.add(c.day);
-  return [...days];
-}
+/** Days from `from` to today with a known outcome (a slip or a goal-met mark). Days with nothing logged are unknown, not clean. */
+export const checkedInDays = (d: AppData, habitId: string, from: string): string[] => outcomeDays(trackIndex(d, habitId, today()), from);
 
 export const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, daily: 7, few_weekly: 3, weekly: 1 };
 
@@ -475,7 +458,8 @@ export const actions = {
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
     if (!canRecord(data, habitId)) return false;
-    if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day))) return false;
+    if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day)
+      || data.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out"))) return false;
     commit(withTrack(data, habitId, (s) => { const rest = s.restDays.filter((x) => x !== day); return { ...s, restDays: on ? [...rest, day].sort().slice(-4000) : rest }; }));
     return true;
   },

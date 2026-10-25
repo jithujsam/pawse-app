@@ -7,6 +7,8 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { MOODS } from "../questions";
 import { frictionIdeas, REPLACEMENTS, strategyOrder, urgeManagedLine } from "../recovery";
+import { trackSummary } from "../progress";
+import { today } from "../dates";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
 import { Burst, Button, Chip } from "../ui/Controls";
@@ -42,7 +44,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [current, setCurrent] = useState<StrategyId>(order[0].id);
   const [trigger, setTrigger] = useState("");
   const [win, setWin] = useState("");
-  const managed = data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length;
+  const managed = trackSummary(data, habit.id, today()).managedUrges;
   const crisis = hasCrisisLanguage(trigger);
 
   function end(outcome: "rode_it_out" | "slipped") {

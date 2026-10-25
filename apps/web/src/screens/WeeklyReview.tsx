@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, fmtDay, today, weekStart } from "../dates";
+import { weekdayOf } from "../progress";
 import { haptic } from "../haptics";
 import { rise } from "../motion";
 import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults, weekReview } from "../recovery";
@@ -22,7 +23,7 @@ export function WeeklyReview() {
   const habit = view.habit!;
   const ws = weekStart(today());
   // Early in a week, last week is the one worth reviewing.
-  const [which, setWhich] = useState<"last" | "this">(() => (new Date().getDay() === 0 || new Date().getDay() >= 5 ? "this" : "last"));
+  const [which, setWhich] = useState<"last" | "this">(() => { const dow = weekdayOf(today()); return dow === 0 || dow >= 5 ? "this" : "last"; });
   const week = which === "this" ? ws : addDays(ws, -7);
   const r = weekReview(data, habit, week);
   const ideas = adjustmentIdeas(r, habit, trackState(data, habit.id).description || habit.name);
@@ -30,7 +31,9 @@ export function WeeklyReview() {
   const crisis = hasCrisisLanguage(own);
   const focusWeek = addDays(week, 7);
   const pick = (t: string) => { if (hasCrisisLanguage(t)) return; actions.setWeekFocus(focusWeek, t, habit.id); haptic.success(); toast("Saved for the week ahead", { kind: "good" }); setOwn(""); };
-  const order = ["met", "urge", "lapse", "paused", "rest", "unrecorded"] as const;
+  const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
+  // Rest and paused days are both "Not tracking".
+  const shown = { ...r.counts, rest: r.counts.rest + r.counts.paused };
 
   return (
     <div className="stack">
@@ -42,8 +45,8 @@ export function WeeklyReview() {
       <p>{r.goalLine}</p>
       {r.lastFocus && <p className="small">Your focus for this week was: <b>{r.lastFocus}</b></p>}
       <dl className="review-days" aria-label="Days">
-        {order.filter((k) => r.counts[k] > 0).map((k) => (
-          <div className="row" key={k}><dt><i className="dot" data-s={k} aria-hidden />{STATUS_LABEL[k]}</dt><dd><b>{r.counts[k]}</b> {r.counts[k] === 1 ? "day" : "days"}</dd></div>
+        {order.filter((k) => shown[k] > 0).map((k) => (
+          <div className="row" key={k}><dt><i className="dot" data-s={k} aria-hidden />{STATUS_LABEL[k]}</dt><dd><b>{shown[k]}</b> {shown[k] === 1 ? "day" : "days"}</dd></div>
         ))}
       </dl>
       {r.urges.total > 0 && <p className="small">{r.urges.managed} of {r.urges.total} {r.urges.total === 1 ? "urge" : "urges"} managed.</p>}
