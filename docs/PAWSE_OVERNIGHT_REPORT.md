@@ -25,7 +25,7 @@ Labels: **Verified** = checked by a command or query in this session. **Blocked*
 | Repo | Commit | Change |
 |---|---|---|
 | pawse-app | `c91e466` | `apps/web/version.json` → `{ "name": "3.0.0", "code": 8 }` (above published code 7). Web bundle verified to embed `name:"3.0.0",code:8` |
-| pawse-app | (this commit) | This report section |
+| pawse-app | `f8720af` + this commit | This report section. Draft PR [jithujsam/pawse-app#16](https://github.com/jithujsam/pawse-app/pull/16) |
 | pawse-releases | `fb1d567` (fast-forward from `claude/pawse-audit-6h0t1a`) + `e6d6c33` | `RELEASE_STATUS.md` refreshed with today's verified state. **`apk/`, `latest.json` and `README.md` unchanged** |
 
 No code regressions were found, so no application code changed.
