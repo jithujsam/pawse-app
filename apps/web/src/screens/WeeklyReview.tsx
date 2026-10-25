@@ -24,13 +24,13 @@ export function WeeklyReview() {
   // Early in a week, last week is the one worth reviewing.
   const [which, setWhich] = useState<"last" | "this">(() => (new Date().getDay() === 0 || new Date().getDay() >= 5 ? "this" : "last"));
   const week = which === "this" ? ws : addDays(ws, -7);
-  const r = weekReview(data, habit, view.companion.bornOn, week);
+  const r = weekReview(data, habit, week);
   const ideas = adjustmentIdeas(r, habit, trackState(data, habit.id).description || habit.name);
   const [own, setOwn] = useState("");
   const crisis = hasCrisisLanguage(own);
   const focusWeek = addDays(week, 7);
   const pick = (t: string) => { if (hasCrisisLanguage(t)) return; actions.setWeekFocus(focusWeek, t, habit.id); haptic.success(); toast("Saved for the week ahead", { kind: "good" }); setOwn(""); };
-  const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
+  const order = ["met", "urge", "lapse", "paused", "rest", "unrecorded"] as const;
 
   return (
     <div className="stack">

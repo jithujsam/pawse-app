@@ -8,6 +8,14 @@ export interface Intake {
   cls: HabitClass;
 }
 
+/** How a habit is measured at each slip. Shared by onboarding and adding a recovery track. */
+export const MEASURES: { id: Measure; label: string; hint: string }[] = [
+  { id: "money", label: "Money spent", hint: "How much each time" },
+  { id: "count", label: "How many", hint: "A count each time" },
+  { id: "minutes", label: "Time spent", hint: "Minutes each time" },
+  { id: "none", label: "Just that it happened", hint: "No numbers" },
+];
+
 export const SUGGESTIONS: { label: string; cls: HabitClass; measure: Measure }[] = [
   { label: "Ordering food I didn't plan", cls: "food_spending", measure: "money" },
   { label: "Impulse shopping", cls: "impulse_buying", measure: "money" },

@@ -199,13 +199,15 @@ The companion fills roughly the top 55 percent of the screen. Everything else is
 |  This week: 9 slips, Rs 2,340  |
 |  Clean streak: 0 days          |
 +--------------------------------+
-| Home |Calendar| + |Insights|You|
+| Pets |Calendar| + |Insights|You|
 +--------------------------------+
 ```
 
-Tabs: **Home**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
+Tabs: **Pets**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
 
-Each number and action has one home. Home keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
+Each number and action has one home. The open recovery track (the screen sketched above, reached from Pets) keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
+
+**Pets and recovery tracks.** A recovery track is one habit with its own companion (5.1): its own entries, clean days, urges, age and history. The Pets tab is a two-column grid with one card per track (the pet, its name, the habit in the person's words, and its stage and today's check-in status) plus an "Add a recovery track" card; with no tracks it shows an empty state with the same action. Tapping a card opens that track's screen, with "All pets" to go back; Calendar, Insights and You show the open track. Which track is open is remembered per phone and never synced. Adding a track asks what to change, how it shows up and which pet, reusing the onboarding suggestions and safety checks. The grid shows active and paused tracks; archived ones are read-only and left out. Each track has its own plan and goal, starting pace, "not tracking today" days, pauses, milestones, accessory and weekly AI summary (§20). Deliberately shared across tracks: the voice, reminders, pet rules and reflections. Reminders follow the track opened last.
 
 States the companion must express:
 
@@ -592,6 +594,7 @@ These override the sections they name. Reasons and sources: `docs/PAWSE_RECOVERY
 This overrides §5.1's "v1" note and §9 where they conflict. Design, schema, migration and risks: `docs/MULTI_TRACK_ARCHITECTURE.md`.
 
 1. **Tracks.** A person can keep several independent recovery tracks, one per behaviour. Each track is a `habits` row and owns its companion (and past companions), slips, goal-met days, urges, weekly summaries, plan, starting pace, rest days, weekly focus, milestones and accessory. Progress is always recomputed from one track's own events, never stored, and never mixed across tracks.
-2. **Lifecycle.** Tracks can be created, edited, paused, resumed, archived, restored and deleted. Pausing stops new records for the paused days and counts them as "not tracking" (§19.2); it does not change progress. Delete needs an archived track and the name typed back, and can be undone in the session.
-3. **Person-level.** Tone, reminders, currency, pet rules (§19.1), the death-scene choice and the daily journal stay with the person. These stay person-level (approved 2026-10-25, architecture doc §7).
-4. **Approved defaults (2026-10-25).** One daily reminder and one risky-hour nudge, for the focused track. A pause ends a goal-met streak like any gap. There is always at least one open track. No cap below 50 tracks. No shared companion and no combined cross-track insights.
+2. **Lifecycle.** Tracks can be created, edited, paused, resumed, archived, restored and deleted. Paused days count neither way, and records made during a pause are kept; pausing doesn't change progress. An archived track is read-only and leaves the Pets grid. Delete needs an archived track and the name typed back, and can be undone in the session.
+3. **Person-level.** Tone, reminders, currency, pet rules (§19.1), the death-scene choice and the daily journal stay with the person (approved 2026-10-25, architecture doc §9). Which track is open is remembered per phone and never synced.
+4. **Approved defaults (2026-10-25).** One daily reminder and one risky-hour nudge, for the open track. There is always at least one open track. No cap below 50 tracks. No shared companion and no combined cross-track insights.
+5. **Pauses and streaks.** Counted as in `docs/RECOVERY_RULES.md`: paused days count neither way and never break a streak. This supersedes the earlier "a pause ends a streak" default; owner confirmation pending (architecture doc §9).

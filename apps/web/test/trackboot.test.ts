@@ -44,4 +44,24 @@ describe("opening the new version on a phone with data from before tracks", () =
     expect(getData().habits[0].track).toEqual(d.habits[0].track);
     expect(store.get("data.v1-backup")).toBe("first");
   });
+
+  it("keeps the original when it had to leave rows out, or can't read the data at all", async () => {
+    store.clear();
+    const damaged = { ...structuredClone(saved), entries: [...saved.entries, { id: "broken", months: "lots" }] };
+    store.set("data", structuredClone(damaged));
+    await boot();
+    expect(getData().entries.map((e) => e.id)).toEqual([E]);
+    const kept = [...store.keys()].filter((k) => k.startsWith("data.unreadable."));
+    expect(kept).toHaveLength(1);
+    expect(store.get(kept[0])).toEqual(damaged);
+
+    // Data from a newer version isn't half-read: it's kept untouched, and nothing is saved over it until it's copied.
+    store.clear();
+    const newer = { ...structuredClone(saved), v: 3, somethingNew: true };
+    store.set("data", structuredClone(newer));
+    await boot();
+    expect(getData().habits).toEqual([]);
+    expect([...store.entries()].filter(([k]) => k.startsWith("data.unreadable.")).map(([, v]) => v)).toEqual([newer]);
+    expect(store.get("data")).toEqual(newer);
+  });
 });

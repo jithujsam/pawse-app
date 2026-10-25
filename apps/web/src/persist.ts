@@ -2,8 +2,8 @@ import {
   CleanDaySchema, CompanionSchema, EntrySchema, HabitSchema, JournalSchema, LegacySettingsSchema, parseAppData, parseAppDataV1, SettingsSchema,
   TrackHabitSchema, UrgeSchema,
 } from "@detox/schema";
-import { defaultTrackState, inferStartedOn, repairTracks } from "./tracks";
-import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, TrackState, Urge } from "./types";
+import { inferStartedOn, PER_TRACK_KEYS, repairTracks, trackFromLegacy, type LegacyTrackSettings } from "./tracks";
+import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, Urge } from "./types";
 
 export const uuid = (): string => {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -18,16 +18,15 @@ export const defaultSettings = (): Settings => ({
   tone: "honest", userName: "", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false,
   haptics: true, remindersOn: false, coachSeen: false, autoLock: "1m",
   careNotes: true, riskNudge: true, neglectFrom: null, pet3d: true, theme: "system", accent: "pet",
-  petLife: "continuity", focusTrackId: null,
+  petLife: "continuity", activeHabit: null,
 });
 
 export const blank = (): AppData => ({
   v: 2, settings: defaultSettings(), companions: [], habits: [], entries: [], cleanDays: [], urges: [], journal: [], summaries: {}, updatedAt: 0,
 });
 
-/** Settings that sat in the person's settings while there was one habit (v1), and now belong to a track. */
-export const PER_TRACK_KEYS = ["goal", "baseline", "plan", "restDays", "weekFocus", "celebrated", "wear", "treatsGiven", "fedOn", "savingsGoal"] as const;
-type LegacySettings = Partial<Settings> & Partial<Pick<TrackState, Exclude<(typeof PER_TRACK_KEYS)[number], "goal">>> & { goal?: string };
+export { PER_TRACK_KEYS } from "./tracks";
+type LegacySettings = Partial<Settings> & LegacyTrackSettings;
 
 /** The v2 shape before the track repairs in normalize(): habits may lack a state, companions an owner. */
 type Loose = Omit<AppData, "settings"> & { settings: Partial<Settings> };
@@ -63,42 +62,47 @@ function salvage(raw: unknown): V1 | Loose | null {
 }
 
 /**
- * v1 -> v2. The one habit the app showed (habits[0]) takes every per-track setting that used to be global;
- * any other habit starts with defaults, so nothing is counted twice. Flat weekly summaries move under it.
- * Every row keeps its id. Start dates come from each track's own companions and events.
+ * v1 -> v2: per-track settings move from the person's settings onto each habit (see trackFromLegacy), flat weekly
+ * summaries move under the first habit (the only one they could have been written for), and the old keys leave
+ * settings. Every row keeps its id. Start dates come from each track's own companions and events.
  */
 export function upgradeV1(v1: V1): Loose {
-  const { goal, baseline, plan, restDays, weekFocus, celebrated, wear, treatsGiven, fedOn, savingsGoal, ...person } = v1.settings;
+  const person = Object.fromEntries(Object.entries(v1.settings).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k))) as Partial<Settings>;
   const base: Loose = { ...v1, v: 2, settings: person, summaries: {} };
-  const habits = v1.habits.map((h, i): Habit => {
-    const fresh = defaultTrackState(inferStartedOn(base as AppData, h));
-    if (i > 0) return { ...h, track: fresh };
-    const description = goal?.trim() && goal.trim() !== h.name.trim() ? goal.trim() : "";
-    return {
-      ...h,
-      track: {
-        ...fresh, description, baseline: baseline ?? null, plan: plan ?? null, restDays: restDays ?? [], weekFocus: weekFocus ?? [],
-        celebrated: celebrated ?? [], wear: wear ?? null, treatsGiven: treatsGiven ?? 0, fedOn: fedOn ?? null, savingsGoal: savingsGoal ?? null,
-      },
-    };
-  });
+  const habits = v1.habits.map((h, i): Habit => ({ ...h, track: trackFromLegacy(v1.settings, h, i, inferStartedOn(base as AppData, h)) }));
   const primary = habits[0];
   return { ...base, habits, summaries: primary && Object.keys(v1.summaries).length ? { [primary.id]: v1.summaries } : {} };
 }
 
-/** Validates anything read from storage or a file, migrates v1 data, and fills in settings added since it was saved. */
-export function normalize(raw: unknown): AppData | null {
+/** What normalize() had to leave out: rows that failed validation, and rows whose parent row is missing. */
+export interface LoadReport { invalid: number; orphaned: number }
+
+const count = (x: unknown) => (Array.isArray(x) ? x.length : 0);
+
+/**
+ * Validates anything read from storage, a backup file or a restore, migrates v1 data, and fills in settings added
+ * since it was saved. The report says how many rows were left out, so callers can keep the original instead of
+ * losing it silently (store.boot keeps it in IndexedDB; importJson refuses the file). Null when it isn't app data,
+ * including data from a newer version this one doesn't understand.
+ */
+export function normalizeWithReport(raw: unknown): { data: AppData; report: LoadReport } | null {
   const v = raw && typeof raw === "object" ? (raw as { v?: unknown }).v : undefined;
   const parsed = v === 1 ? (parseAppDataV1(raw) as V1 | null) : v === 2 ? (parseAppData(raw) as Loose | null) : null;
   const loose = parsed ?? salvage(raw);
   if (!loose) return null;
+  const r = raw as Record<string, unknown>;
+  const invalid = parsed ? 0 : (["companions", "habits", "entries", "cleanDays", "urges", "journal"] as const)
+    .reduce((n, k) => n + count(r[k]) - count((loose as unknown as Record<string, unknown>)[k]), 0)
+    + (!parsed && r.settings !== undefined && !(v === 1 ? LegacySettingsSchema : SettingsSchema).safeParse(r.settings).success ? 1 : 0);
   const up = loose.v === 1 ? upgradeV1(loose as V1) : (loose as Loose);
-  const d = repairTracks({ ...up, settings: { ...defaultSettings(), ...up.settings } } as AppData);
-  // Drop rows whose parents are gone.
+  // v2 settings keep unknown keys from newer versions, but never the old per-track ones: tracks own those now.
+  const person = Object.fromEntries(Object.entries(up.settings).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k)));
+  const d = repairTracks({ ...up, settings: { ...defaultSettings(), ...person } } as AppData);
+  // Rows whose parents are gone can't be shown or synced; they're left out and counted.
   const companions = new Set(d.companions.map((c) => c.id));
   const habits = d.habits.filter((h) => companions.has(h.companionId));
   const habitIds = new Set(habits.map((h) => h.id));
-  return {
+  const out: AppData = {
     ...d,
     habits,
     entries: d.entries.filter((e) => habitIds.has(e.habitId) && companions.has(e.companionId)),
@@ -107,7 +111,12 @@ export function normalize(raw: unknown): AppData | null {
     journal: d.journal ?? [],
     summaries: Object.fromEntries(Object.entries(d.summaries).filter(([id]) => habitIds.has(id))),
   };
+  const orphaned = d.habits.length - out.habits.length + d.entries.length - out.entries.length + d.cleanDays.length - out.cleanDays.length
+    + (d.urges ?? []).length - out.urges.length + Object.keys(d.summaries).length - Object.keys(out.summaries).length;
+  return { data: out, report: { invalid, orphaned } };
 }
+
+export const normalize = (raw: unknown): AppData | null => normalizeWithReport(raw)?.data ?? null;
 
 /** Earlier versions used short random ids. Sync needs UUIDs, so remap once, keeping every reference intact. */
 export function migrateIds(d: AppData): AppData {
@@ -117,7 +126,7 @@ export function migrateIds(d: AppData): AppData {
   if (!map.size && d.habits.every((h) => UUID.test(h.id)) && d.entries.every((e) => UUID.test(e.id))) return d;
   return {
     ...d,
-    settings: d.settings.focusTrackId ? { ...d.settings, focusTrackId: fix(d.settings.focusTrackId) } : d.settings,
+    settings: d.settings.activeHabit ? { ...d.settings, activeHabit: fix(d.settings.activeHabit) } : d.settings,
     companions,
     habits: d.habits.map((h) => ({ ...h, id: fix(h.id), companionId: fix(h.companionId) })),
     entries: d.entries.map((e) => ({ ...e, id: fix(e.id), habitId: fix(e.habitId), companionId: fix(e.companionId) })),

@@ -23,6 +23,14 @@ select pg_temp.check('older apps can still insert habits without the new columns
 select pg_temp.check('unknown status is rejected', pg_temp.rejected($q$update habits set status = 'deleted' where id = 'd0000000-0000-4000-8000-0000000006aa'$q$));
 select pg_temp.check('a track state that is not an object is rejected', pg_temp.rejected($q$update habits set track = '[1]' where id = 'd0000000-0000-4000-8000-0000000006aa'$q$));
 select pg_temp.check('an over-long description is rejected', pg_temp.rejected($q$update habits set description = repeat('x', 281) where id = 'd0000000-0000-4000-8000-0000000006aa'$q$));
+-- An app from before tracks re-saves the habit it shows. PostgREST's upsert only sets the columns it is sent,
+-- so the track columns survive.
+insert into habits (id,user_id,companion_id,name,class,class_weight,unit,fields,position,client_updated_at)
+  values ('d0000000-0000-4000-8000-0000000006aa','aaaaaaaa-0000-4000-8000-00000000000a','c0000000-0000-4000-8000-0000000006aa','Orders (renamed)','food_spending',0.7,'money','[]',0,3)
+  on conflict (id) do update set name = excluded.name, class = excluded.class, class_weight = excluded.class_weight, unit = excluded.unit,
+    fields = excluded.fields, position = excluded.position, client_updated_at = excluded.client_updated_at;
+select pg_temp.check('an older app saving a habit keeps its track state', (select name = 'Orders (renamed)' and status = 'paused' and description = 'Late night'
+  and track->'pauses'->0->>'from' = '2026-10-20' and started_on = '2026-10-01' from habits where id = 'd0000000-0000-4000-8000-0000000006aa'));
 update habits set status = 'archived', archived_at = '2026-10-25', client_updated_at = 5 where id = 'd0000000-0000-4000-8000-0000000006ab';
 select pg_temp.check('a track can be archived', (select status = 'archived' from habits where id = 'd0000000-0000-4000-8000-0000000006ab'));
 

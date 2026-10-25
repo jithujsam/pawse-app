@@ -51,8 +51,13 @@ describe("tracks (stored data v2)", () => {
     expect(AppDataV1Schema.safeParse(v1).success).toBe(true);
   });
 
-  it("drops per-track keys from v2 settings", () => {
-    const v2 = { ...base, v: 2, habits: [], settings: { tone: "gentle", plan: null, restDays: [], focusTrackId: "h1" } };
-    expect(parseAppData(v2)?.settings).toEqual({ tone: "gentle", focusTrackId: "h1" });
+  it("keeps settings and track keys it doesn't know, so a newer app's fields survive a save", () => {
+    // The app removes the old per-track keys itself after parsing (persist.normalizeWithReport).
+    const v2 = { ...base, v: 2, habits: [{ ...habit, track: { ...state, fromNewerApp: 1 } }], settings: { tone: "gentle", activeHabit: "h1", fromNewerApp: true } };
+    const parsed = parseAppData(v2)!;
+    expect(parsed.settings).toEqual({ tone: "gentle", activeHabit: "h1", fromNewerApp: true });
+    expect(parsed.habits[0].track).toMatchObject({ fromNewerApp: 1 });
+    // Known keys are still validated.
+    expect(parseAppData({ ...v2, settings: { tone: "shouty" } })).toBeNull();
   });
 });

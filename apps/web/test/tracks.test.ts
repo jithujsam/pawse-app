@@ -71,19 +71,25 @@ describe("migrating data saved before tracks (v1 -> v2)", () => {
     expect(d.settings.tone).toBe("gentle");
   });
 
-  it("gives the habit the app showed every per-track setting, and the others defaults", () => {
+  it("gives every track what it showed before: shared settings copied, first-habit-only ones on the first", () => {
     const d = normalize(v1())!;
     expect(trackState(d, "h1")).toMatchObject({
       description: "Late-night orders", baseline: "daily", plan, restDays: [addDays(t0, -3)], weekFocus: [{ week: "2026-10-19", text: "Cook on Sunday" }],
       celebrated: [3, 7], wear: "bow", treatsGiven: 2, fedOn: addDays(t0, -1), savingsGoal: { label: "Bike", target: 9000 }, status: "active", pauses: [],
     });
-    expect(trackState(d, "h2")).toMatchObject({ description: "", baseline: null, plan: null, restDays: [], celebrated: [], wear: null, treatsGiven: 0, status: "active" });
+    // The shared settings were shown on every track, so the second gets a copy; the goal text and the milestone
+    // list belonged to the first habit only.
+    expect(trackState(d, "h2")).toMatchObject({
+      description: "", baseline: "daily", plan, restDays: [addDays(t0, -3)], weekFocus: [{ week: "2026-10-19", text: "Cook on Sunday" }],
+      celebrated: [], wear: "bow", treatsGiven: 2, fedOn: addDays(t0, -1), savingsGoal: { label: "Bike", target: 9000 }, status: "active",
+    });
     for (const k of PER_TRACK_KEYS) expect(k in d.settings).toBe(false);
   });
 
   it("dates each track from its own history and gives every companion its owner", () => {
     const d = normalize(v1())!;
-    expect(trackState(d, "h1").startedOn).toBe(addDays(t0, -90)); // its first pet, which died
+    // RECOVERY_RULES: the current pet's birth or the first record, whichever is earlier.
+    expect(trackState(d, "h1").startedOn).toBe(addDays(t0, -60)); // a slip from its earlier pet's life
     expect(trackState(d, "h2").startedOn).toBe(addDays(t0, -7)); // a goal-met day before its pet's birthday
     expect(Object.fromEntries(d.companions.map((c) => [c.id, c.trackId]))).toEqual({ old: "h1", c1: "h1", c2: "h2" });
   });
@@ -109,12 +115,12 @@ describe("migrating data saved before tracks (v1 -> v2)", () => {
   });
 
   it("remaps track references along with short ids", () => {
-    const d = migrateIds({ ...normalize(v1())!, settings: { ...normalize(v1())!.settings, focusTrackId: "h2" } });
+    const d = migrateIds({ ...normalize(v1())!, settings: { ...normalize(v1())!.settings, activeHabit: "h2" } });
     const h1 = d.habits[0].id, h2 = d.habits[1].id;
     expect(h1).toMatch(/^[0-9a-f-]{36}$/);
     expect(d.companions.find((c) => c.name === "Biscuit")!.trackId).toBe(h1);
     expect(Object.keys(d.summaries)).toEqual([h1]);
-    expect(d.settings.focusTrackId).toBe(h2);
+    expect(d.settings.activeHabit).toBe(h2);
     expect(checkTracks(d)).toEqual([]);
   });
 });
@@ -153,7 +159,7 @@ describe("tracks never affect each other", () => {
   it("the single-pet screens follow the focused track", () => {
     load(twoTracks());
     expect(activeCompanion(getData())!.id).toBe("ca");
-    actions.focusTrack("hb");
+    actions.selectTrack("hb");
     expect(activeCompanion(getData())!.id).toBe("cb");
     actions.savePlan(plan); // no track given: the focused one
     expect(trackState(getData(), "hb").plan).toEqual(plan);
@@ -184,20 +190,21 @@ describe("track lifecycle", () => {
     expect(actions.updateTrack("ha", { name: " " })).toBe(false);
   });
 
-  it("pausing refuses new records for paused days, keeps earlier days editable, and changes no progress", () => {
+  it("pausing changes no progress, never refuses or hides a record, and leaves other tracks alone", () => {
     load({ ...twoTracks(), entries: [entry("e1", "ha", "ca", addDays(t0, -3))] });
     const before = viewCompanion(getData(), "ca").age;
     expect(actions.pauseTrack("ha")).toBe(true);
     expect(viewCompanion(getData(), "ca").age).toBe(before);
-    expect(actions.pauseTrack("ha")).toBe(false);
-    expect(actions.logSlip("ha", {}, t0)).toBeNull();
-    expect(actions.markClean("ha", t0)).toBe(false);
-    expect(actions.recordUrge("ha", 3, "rode_it_out")).toBeNull();
-    expect(actions.setRest("ha", t0, true)).toBe(false);
-    expect(actions.markClean("ha", addDays(t0, -1))).toBe(true); // before the pause
-    expect(actions.logSlip("hb", {}, t0)).not.toBeNull(); // the other track is untouched
-    expect(dayStatus(getData(), "ha", t0)).toBe("rest");
+    expect(actions.pauseTrack("ha")).toBe(false); // already paused
     expect(trackState(getData(), "ha").status).toBe("paused");
+    expect(dayStatus(getData(), "ha", t0)).toBe("paused");
+    // Records still win over a pause (docs/RECOVERY_RULES.md): something that happened is never lost.
+    expect(actions.recordUrge("ha", 3, "rode_it_out")).not.toBeNull();
+    expect(dayStatus(getData(), "ha", t0)).toBe("urge");
+    expect(actions.logSlip("ha", {}, t0)).not.toBeNull();
+    expect(dayStatus(getData(), "ha", t0)).toBe("lapse");
+    expect(dayStatus(getData(), "hb", t0)).toBe("unrecorded");
+    expect(trackState(getData(), "hb")).toMatchObject({ status: "active", pauses: [] });
   });
 
   it("resuming the same day leaves no pause behind; a real pause stays in the history", () => {
@@ -217,6 +224,11 @@ describe("track lifecycle", () => {
     expect(trackState(getData(), "ha")).toMatchObject({ status: "archived", archivedOn: t0, pauses: [] });
     expect(actions.archiveTrack("hb")).toBe(false); // the last one
     expect(actions.logSlip("ha", {}, addDays(t0, -5))).toBeNull();
+    expect(actions.markClean("ha", addDays(t0, -5))).toBe(false);
+    expect(actions.recordUrge("ha", 3, "rode_it_out")).toBeNull();
+    expect(actions.pauseTrack("ha")).toBe(false);
+    actions.selectTrack("ha"); // even when chosen, an archived track isn't the one the screens open
+    expect(focusedTrackId(getData())).toBe("hb");
     expect(focusedTrackId(getData())).toBe("hb");
     expect(listTracks(getData(), ["active"]).map((t) => t.id)).toEqual(["hb"]);
     expect(actions.unarchiveTrack("ha")).toBe(true);
@@ -313,5 +325,80 @@ describe("person-level pet rules across tracks", () => {
     expect(focusedTrackId(d)).toBe("ha");
     expect(canAllowPassingAway(d)).toBe(false);
     expect(canAllowPassingAway(twoTracks())).toBe(true);
+  });
+});
+
+describe("track selection is this phone's alone", () => {
+  it("is never sent to the account and never taken from it", () => {
+    load(twoTracks());
+    actions.selectTrack("hb");
+    expect(getData().settings.activeHabit).toBe("hb");
+    expect(toRemote("s", getData(), "u", 1)[0].row.settings).not.toHaveProperty("activeHabit");
+    const back = merge(getData(), { profiles: [{ id: "u", settings: { tone: "gentle", activeHabit: "ha" }, client_updated_at: 9 }], companions: [], habits: [], entries: [], deductions: [], clean_days: [], weekly_reports: [] }, {}).data;
+    expect([back.settings.activeHabit, back.settings.tone]).toEqual(["hb", "gentle"]);
+  });
+  it("survives a restart, and falls back safely when its track is archived, deleted or never existed", () => {
+    load(twoTracks());
+    actions.selectTrack("hb");
+    expect(normalize(JSON.parse(JSON.stringify(getData())))!.settings.activeHabit).toBe("hb");
+    expect(focusedTrackId({ ...getData(), settings: { ...getData().settings, activeHabit: "gone" } })).toBe("ha");
+    const noB = { ...getData(), habits: getData().habits.filter((h) => h.id !== "hb") };
+    expect(focusedTrackId(noB)).toBe("ha");
+    expect(activeCompanion(noB)!.id).toBe("ca");
+  });
+});
+
+describe("missing and deleted tracks", () => {
+  it("a track deleted on another phone disappears here without touching the others or crashing the screens' selectors", async () => {
+    const { trackSummary } = await import("../src/progress");
+    load({ ...twoTracks(), entries: [entry("a1", "ha", "ca", t0), entry("b1", "hb", "cb", t0)] });
+    actions.selectTrack("hb");
+    const pulled: Pulled = { profiles: [], companions: [{ id: "cb", deleted_at: "x", client_updated_at: 9 }], habits: [{ id: "hb", deleted_at: "x", client_updated_at: 9 }],
+      entries: [{ id: "b1", deleted_at: "x", client_updated_at: 9 }], deductions: [], clean_days: [], weekly_reports: [] };
+    const d = merge(getData(), pulled, {}).data;
+    expect(d.habits.map((h) => h.id)).toEqual(["ha"]);
+    expect(d.entries.map((e) => e.id)).toEqual(["a1"]);
+    expect(focusedTrackId(d)).toBe("ha");
+    expect(listTracks(d).map((t) => t.id)).toEqual(["ha"]);
+    expect(trackSummary(d, "ha", t0).slips).toBe(1);
+  });
+  it("a track whose pet is missing is reported, kept out of the grid's list, and never crashes the focus", () => {
+    const d = { ...twoTracks(), companions: twoTracks().companions.filter((c) => c.id !== "cb") };
+    expect(checkTracks(d)).toContainEqual({ kind: "missing_companion", habitId: "hb" });
+    expect(listTracks(d).find((t) => t.id === "hb")!.companion).toBeUndefined();
+    expect(activeCompanion({ ...d, settings: { ...d.settings, activeHabit: "hb" } })).toBeUndefined();
+  });
+});
+
+describe("backups, imports and data this version can't fully read", () => {
+  it("restores a backup from before tracks, and its own exports round-trip", () => {
+    expect(actions.importJson(JSON.stringify(v1()))).toBe(true);
+    expect(trackState(getData(), getData().habits[0].id).plan).toEqual(plan);
+    const exported = actions.exportJson();
+    expect(JSON.parse(exported).v).toBe(2);
+    expect(actions.importJson(exported)).toBe(true);
+    expect(JSON.parse(actions.exportJson())).toEqual({ ...JSON.parse(exported), updatedAt: expect.any(Number) });
+  });
+  it("refuses a backup from a newer version instead of half-reading it", () => {
+    const before = getData();
+    expect(actions.importJson(JSON.stringify({ ...JSON.parse(actions.exportJson()), v: 3 }))).toBe(false);
+    expect(getData()).toBe(before);
+  });
+  it("counts every row it had to leave out, so nothing is dropped silently", async () => {
+    const { normalizeWithReport } = await import("../src/persist");
+    const raw = v1() as Record<string, unknown[]>;
+    expect(normalizeWithReport(raw)!.report).toEqual({ invalid: 0, orphaned: 0 });
+    const damaged = { ...raw, entries: [...raw.entries, { id: "bad" }], urges: [...raw.urges, { id: "u9", habitId: "nope", day: t0, time: null, strength: 3, outcome: "slipped", createdAt: 1 }] };
+    expect(normalizeWithReport(damaged)!.report).toEqual({ invalid: 1, orphaned: 1 });
+    expect(normalizeWithReport({ v: 3 })).toBeNull();
+  });
+  it("keeps fields from a newer version in settings and track state when it loads and saves", () => {
+    const d = twoTracks();
+    const future = { ...d, settings: { ...d.settings, futurePref: 1 }, habits: [{ ...d.habits[0], track: { ...d.habits[0].track!, futureTrackField: "x" } }, d.habits[1]] };
+    const back = normalize(JSON.parse(JSON.stringify(future)))!;
+    expect((back.settings as unknown as Record<string, unknown>).futurePref).toBe(1);
+    expect((back.habits[0].track as unknown as Record<string, unknown>).futureTrackField).toBe("x");
+    expect(toRemote("h:ha", back, "u", 1)[0].row.track).toMatchObject({ futureTrackField: "x" });
+    expect(toRemote("s", back, "u", 1)[0].row.settings).toMatchObject({ futurePref: 1 });
   });
 });

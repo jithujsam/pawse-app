@@ -12,9 +12,9 @@ import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, bestStreak, canAllowPassingAway, cleanStreak, useActiveView, useData, vault } from "../store";
+import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
+import { trackSummary } from "../progress";
 import { companionsOf, trackState } from "../tracks";
-import { careDays } from "../recovery";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
@@ -123,8 +123,7 @@ function PetPage() {
   const track = trackState(data, habit.id);
   const [name, setName] = useState(companion.name);
   const hall = companionsOf(data, habit.id).filter((c) => c.diedOn);
-  const best = Math.max(bestStreak(data, habit.id), cleanStreak(data, habit.id));
-  const care = careDays(data, habit.id);
+  const { best, care } = trackSummary(data, habit.id, today());
   // Classic rules can only be switched on if the history wouldn't already mean death under them.
   const classicDead = settings.petLife !== "classic" && !canAllowPassingAway(data);
   const save = () => {

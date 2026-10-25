@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { HabitClass } from "@detox/engine";
 import { CompanionArt, LiveCompanion, type Gesture } from "../Companion";
-import { CRISIS_MESSAGE, DISCLAIMER, hatchLine, TONES, tonePreview } from "../copy";
+import { CRISIS_MESSAGE, DISCLAIMER, hatchLine, TONES, tonePreview, RESTRICTION_NOTE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
-import { inferClass, inferMeasure, isRestrictionRelated, MOODS, SUGGESTIONS } from "../questions";
+import { inferClass, inferMeasure, isRestrictionRelated, MEASURES, MOODS, SUGGESTIONS } from "../questions";
 import { actions, emptyPlan } from "../store";
 import { HelpSection, planHasCrisis, WhySection } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
@@ -18,12 +18,6 @@ import { say } from "../voice";
 import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
 import type { Baseline, Measure, Personality, RecoveryPlan, Species, Tone } from "../types";
 
-const MEASURES: { id: Measure; label: string; hint: string }[] = [
-  { id: "money", label: "Money spent", hint: "How much each time" },
-  { id: "count", label: "How many", hint: "A count each time" },
-  { id: "minutes", label: "Time spent", hint: "Minutes each time" },
-  { id: "none", label: "Just that it happened", hint: "No numbers" },
-];
 const BASELINES: { id: Baseline; label: string }[] = [
   { id: "many_daily", label: "Several times a day" }, { id: "daily", label: "About once a day" },
   { id: "few_weekly", label: "A few times a week" }, { id: "weekly", label: "Once a week or less" },
@@ -119,7 +113,7 @@ export function Onboarding() {
               </motion.label>
               <AnimatePresence>
                 {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{CRISIS_MESSAGE}</motion.div>}
-                {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>This app can't track eating less, calories or weight, and it won't. If food and eating feel hard right now, a doctor or counselor can really help. You can pick something else to watch, like money spent on orders.</motion.div>}
+                {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{RESTRICTION_NOTE}</motion.div>}
               </AnimatePresence>
               <motion.div variants={rise}><Button disabled={!d.what.trim() || crisis || restriction} onClick={() => go(5)}>Continue</Button></motion.div>
             </>)}

@@ -7,6 +7,7 @@ import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
+import { trackIndex } from "../progress";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
@@ -42,7 +43,7 @@ export function CalendarSections() {
   const inLife = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0;
   const canClean = inLife && dayEntries.length === 0 && status(sel) !== "met";
   const canRest = inLife && (status(sel) === "unrecorded" || status(sel) === "urge" || status(sel) === "rest") && dayEntries.length === 0 && !data.cleanDays.some((c) => c.habitId === habit.id && c.day === sel);
-  const resting = track.restDays.includes(sel);
+  const resting = trackIndex(data, habit.id, t0).rest.has(sel);
   const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
   const count = (k: string) => monthDays.filter((d) => status(d) === k).length;
 
@@ -88,6 +89,7 @@ export function CalendarSections() {
           <span><i data-s="urge" />{STATUS_LABEL.urge} · {count("urge")}</span>
           <span><i style={{ background: "var(--negative)" }} />{STATUS_LABEL.lapse} · {count("lapse")}</span>
           <span><i data-s="rest" />{STATUS_LABEL.rest} · {count("rest")}</span>
+          {count("paused") > 0 && <span><i data-s="rest" />{STATUS_LABEL.paused} · {count("paused")}</span>}
           <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
         <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
@@ -97,7 +99,7 @@ export function CalendarSections() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{status(sel) === "met" ? "Goal met. A good day." : status(sel) === "rest" ? "You chose not to track this day. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : status(sel) === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
+            {dayEntries.length === 0 && <p className="muted">{status(sel) === "met" ? "Goal met. A good day." : status(sel) === "rest" ? "You chose not to track this day. It counts neither way." : status(sel) === "paused" ? "Tracking was paused. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : status(sel) === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
             {dayUrges.length > 0 && <p className="small">{dayUrges.filter((u) => u.outcome === "rode_it_out").length} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>

@@ -4,12 +4,13 @@ import {
   type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
+import { quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
-import { blank, migrateIds, normalize, uuid } from "./persist";
-import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, isPausedOn, trackState, type Track } from "./tracks";
+import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
+import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, trackState, type Track } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
 import type { AppData, Baseline, Companion, Entry, Habit, Measure, Personality, RecoveryPlan, Species, StrategyId, Tone, TrackState, Urge } from "./types";
@@ -80,8 +81,11 @@ export async function boot(): Promise<Boot> {
     let raw = await kv.get<unknown>("data");
     let legacy = false;
     if (raw === undefined) { const s = localStorage.getItem(LEGACY_KEY); if (s) { raw = JSON.parse(s); legacy = true; } }
-    const loaded = raw === undefined ? null : normalize(raw);
-    if (raw !== undefined && !loaded) await kv.set(`data.unreadable.${Date.now()}`, raw);
+    const result = raw === undefined ? null : normalizeWithReport(raw);
+    const loaded = result?.data ?? null;
+    // Never lose data silently: anything this version can't read (damaged, or from a newer version), or had to
+    // leave rows out of, is kept as it was before the cleaned copy is saved over it.
+    if (raw !== undefined && (!result || result.report.invalid + result.report.orphaned > 0)) await kv.set(`data.unreadable.${Date.now()}`, raw);
     // Saved before tracks: keep the old copy once, so the move to tracks can be undone by hand.
     const v1 = loaded !== null && (raw as { v?: unknown }).v === 1;
     if (v1 && (await kv.get("data.v1-backup")) === undefined) await kv.set("data.v1-backup", raw);
@@ -97,7 +101,10 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   const r = await vaultOpen(pin, sealed);
   if (!r) return false;
   vaultKey = r.k;
-  data = migrateIds(normalize(r.value) ?? blank());
+  const result = normalizeWithReport(r.value);
+  // As in boot, but the kept copy stays encrypted: it is the sealed blob, not the opened data.
+  if (!result || result.report.invalid + result.report.orphaned > 0) await kv.set(`data.enc.unreadable.${Date.now()}`, sealed).catch(() => undefined);
+  data = migrateIds(result?.data ?? blank());
   if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
   listeners.forEach((l) => l());
   return true;
@@ -152,7 +159,8 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
   const from = QUIET_DAYS_AGE ? d.settings.neglectFrom : null;
   // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
+    // A goal-met mark under a slip is kept as history, but the slip wins: the day isn't clean.
+    day, damage: damage.get(day) ?? [], clean: clean.has(day) && !damage.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
   // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
   // A companion that already died stays as it was.
@@ -201,28 +209,11 @@ export function median(xs: number[]): number | undefined {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-export function cleanStreak(d: AppData, habitId: string): number {
-  let n = 0;
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  const cleans = new Set(d.cleanDays.filter((c) => c.habitId === habitId).map((c) => c.day));
-  for (let day = today(); ; day = addDays(day, -1)) {
-    const slipped = slips.has(day);
-    const clean = cleans.has(day);
-    if (slipped) break;
-    if (clean) n++; else if (day !== today()) break;
-    if (n > 3650) break;
-  }
-  return n;
-}
+/** Good days (goal met or an urge managed) since the last slip. Unrecorded, rest and paused days don't break it. */
+export const cleanStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).current;
 
-/** The longest run of clean days with no slip in between, ever. */
-export function bestStreak(d: AppData, habitId: string): number {
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  const days = [...new Set(d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).map((c) => c.day))].sort();
-  let best = 0, run = 0, prev = "";
-  for (const day of days) { run = prev && addDays(prev, 1) === day ? run + 1 : 1; best = Math.max(best, run); prev = day; }
-  return best;
-}
+/** The longest streak ever, by the same rule as cleanStreak. */
+export const bestStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).best;
 
 /** The hour slips most often happen, once there's a clear pattern (at least 5 timed slips, 30% within an hour of the peak). */
 export function riskyHour(d: AppData, habitId: string): number | null {
@@ -247,14 +238,8 @@ export function treatsLeft(d: AppData, habitId: string): number {
   return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - trackState(d, habitId).treatsGiven);
 }
 
-/** Days since the last check-in (slip or clean day), counting from yesterday. 0 if today or yesterday is logged. */
-export function silentDays(d: AppData, habitId: string, bornOn: string): number {
-  const t = today();
-  let last = bornOn;
-  for (const e of d.entries) if (e.habitId === habitId && e.day > last) last = e.day;
-  for (const c of d.cleanDays) if (c.habitId === habitId && c.day > last) last = c.day;
-  return Math.max(0, daysBetween(last, t) - 1);
-}
+/** Unrecorded days in a row up to yesterday. A rest or paused day, or anything recorded, ends the count. */
+export const silentDays = (d: AppData, habitId: string, t0 = today()) => quietDays(trackIndex(d, habitId, t0));
 
 /** Days from `from` to today with a check-in (a slip or a clean mark). Days with nothing logged are unknown, not clean. */
 export function checkedInDays(d: AppData, habitId: string, from: string): string[] {
@@ -374,7 +359,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, onboarded: true, focusTrackId: habitId },
+      settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, onboarded: true, activeHabit: habitId },
       companions: [{ ...companion, trackId: habitId }], habits: [habit],
     });
   },
@@ -408,7 +393,11 @@ export const actions = {
   /** Applies rows that arrived from the account. Never marked as local changes, so they don't bounce back. */
   applyRemote(next: AppData) { commit(next, "remote"); },
 
-  /** Restores a backup file. Everything in it is validated first; returns false if it isn't a backup. */
+  /**
+   * Restores a backup file. Everything in it is validated and v1 backups are migrated; returns false if it isn't a
+   * backup this version can read (including one from a newer version). Rows it can't use are left out; the file
+   * itself is untouched, so nothing in it is lost.
+   */
   importJson(text: string): boolean {
     try {
       const d = normalize(JSON.parse(text));
@@ -429,9 +418,9 @@ export const actions = {
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
     commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
 
-  /** Null when the track can't take a record for that day (paused then, or archived). */
+  /** Null when the track can't take a record: it is archived (read-only) or gone. A pause never refuses one. */
   logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
-    if (!canRecord(data, habitId, day)) return null;
+    if (!canRecord(data, habitId)) return null;
     const habit = data.habits.find((h) => h.id === habitId)!;
     const companion = data.companions.find((c) => c.id === habit.companionId)!;
     const amountField = habit.fields.find((f) => f.amount);
@@ -452,12 +441,9 @@ export const actions = {
       id: uid(), habitId, companionId: companion.id, day, time, values, amount, months, severity, effects,
       explanation: slipLine(tone, companion.name, months, nth), source: "baseline", aiAdjustPct: null, createdAt: Date.now(),
     };
-    // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
-    let next: AppData = withoutRest({
-      ...data,
-      entries: [...data.entries, entry],
-      cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
-    }, habitId, day);
+    // A goal-met mark on this day stays as history: the slip wins while it exists, and deleting the slip brings
+    // the goal-met day back. Milestones count days of care, which a slip doesn't take away, so they aren't reset.
+    let next: AppData = withoutRest({ ...data, entries: [...data.entries, entry] }, habitId, day);
     let died = false;
     const v = viewCompanion(next, companion.id);
     const deadState = v.states.find((s) => s.stage === "dead");
@@ -476,7 +462,7 @@ export const actions = {
   },
 
   markClean(habitId: string, day = today()) {
-    if (!canRecord(data, habitId, day)) return false;
+    if (!canRecord(data, habitId)) return false;
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
     commit(withoutRest({ ...data, cleanDays: [...data.cleanDays, { habitId, day }] }, habitId, day));
@@ -488,7 +474,7 @@ export const actions = {
    * can't be a rest day: what was recorded wins. Rest days never count as progress or as a lapse.
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
-    if (!canRecord(data, habitId, day)) return false;
+    if (!canRecord(data, habitId)) return false;
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day))) return false;
     commit(withTrack(data, habitId, (s) => { const rest = s.restDays.filter((x) => x !== day); return { ...s, restDays: on ? [...rest, day].sort().slice(-4000) : rest }; }));
     return true;
@@ -531,7 +517,9 @@ export const actions = {
   /** Puts back an entry removed by mistake (undo). */
   restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
-  celebrate: (n: number, habitId?: string) => { const id = focused(habitId); if (data.habits.some((h) => h.id === id)) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [...s.celebrated, n] }))); },
+  /** Records which milestones a track has celebrated. */
+  setCelebrated: (habitId: string, seen: number[]) => { if (data.habits.some((h) => h.id === habitId)) commit(withTrack(data, habitId, (s) => ({ ...s, celebrated: seen }))); },
+  /** A new companion on a track celebrates its milestones afresh, once each. */
   resetCelebrations: (habitId?: string) => { const id = focused(habitId); if (trackState(data, id).celebrated.length) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [] }))); },
   /** Per-track settings that need no checks of their own (what the pet wears, the savings goal, milestones seen...). */
   setTrackSettings(habitId: string, patch: Partial<Pick<TrackState, "wear" | "savingsGoal" | "celebrated" | "baseline" | "treatsGiven" | "fedOn">>) {
@@ -540,7 +528,7 @@ export const actions = {
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
   recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}): Urge | null {
-    if (!canRecord(data, habitId, today())) return null;
+    if (!canRecord(data, habitId)) return null;
     const now = new Date();
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -565,6 +553,23 @@ export const actions = {
 
   renameCompanion: (id: string, name: string) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) }),
+
+  /**
+   * Opens a recovery track on this phone. It is device-only UI state (settings.activeHabit): never synced and
+   * never recovery data. Unknown ids are ignored.
+   */
+  selectTrack(habitId: string) {
+    if (data.settings.activeHabit === habitId || !data.habits.some((h) => h.id === habitId)) return;
+    commit({ ...data, settings: { ...data.settings, activeHabit: habitId } });
+  },
+
+  /**
+   * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
+   * phone. Returns its habit id, or null at the 50-track limit.
+   */
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; species: Species; name: string }): string | null {
+    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, species: o.species, companionName: o.name, focus: true });
+  },
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
     const habit = data.habits.find((h) => h.id === habitId)!;
@@ -597,7 +602,7 @@ export const actions = {
     };
     commit({
       ...data, companions: [...data.companions, companion], habits: [...data.habits, habit],
-      settings: o.focus ? { ...data.settings, focusTrackId: habitId } : data.settings,
+      settings: o.focus ? { ...data.settings, activeHabit: habitId } : data.settings,
     });
     return habitId;
   },
@@ -624,25 +629,24 @@ export const actions = {
   },
 
   /**
-   * Pauses an active track from today. While paused nothing new can be recorded for paused days; earlier days
-   * stay editable. Progress is not frozen or changed: paused days count as "not tracking". False if not active.
+   * Pauses a track from a day on (today by default), by the rules in docs/RECOVERY_RULES.md (withPause): paused
+   * days count neither way, records still win and are never refused, and past pauses are never rewritten.
+   * False if nothing changed (already paused, archived, unknown, or a start inside an earlier pause).
    */
-  pauseTrack(habitId: string): boolean {
+  pauseTrack(habitId: string, from = today()): boolean {
     const s = trackState(data, habitId);
-    if (!data.habits.some((h) => h.id === habitId) || s.status !== "active") return false;
-    commit(withTrack(data, habitId, (x) => ({ ...x, status: "paused", pauses: [...x.pauses, { from: today(), to: null }].slice(-500) })));
+    if (!data.habits.some((h) => h.id === habitId) || s.status === "archived") return false;
+    const pauses = withPause(s.pauses, from);
+    if (pauses === s.pauses) return false;
+    commit(withTrack(data, habitId, (x) => ({ ...x, status: "paused", pauses: pauses.slice(-500) })));
     return true;
   },
 
-  /** Resumes a paused track from today. A pause started and ended the same day leaves no trace. */
-  resumeTrack(habitId: string): boolean {
+  /** Resumes a paused track: `on` (today by default) is the first day tracked again. A pause ended the day it began is dropped. */
+  resumeTrack(habitId: string, on = today()): boolean {
     const s = trackState(data, habitId);
-    if (s.status !== "paused") return false;
-    const t = today();
-    commit(withTrack(data, habitId, (x) => ({
-      ...x, status: "active",
-      pauses: x.pauses.map((p) => (p.to === null ? { ...p, to: t } : p)).filter((p) => p.to !== p.from),
-    })));
+    if (s.status !== "paused" || !s.pauses.some((p) => p.to === null)) return false;
+    commit(withTrack(data, habitId, (x) => ({ ...x, status: "active", pauses: withResume(x.pauses, on) })));
     return true;
   },
 
@@ -655,10 +659,7 @@ export const actions = {
     if (!data.habits.some((h) => h.id === habitId) || s.status === "archived") return false;
     if (!data.habits.some((h) => h.id !== habitId && trackState(data, h.id).status !== "archived")) return false;
     const t = today();
-    commit(withTrack(data, habitId, (x) => ({
-      ...x, status: "archived", archivedOn: t,
-      pauses: x.pauses.map((p) => (p.to === null ? { ...p, to: t } : p)).filter((p) => p.to !== p.from),
-    })));
+    commit(withTrack(data, habitId, (x) => ({ ...x, status: "archived", archivedOn: t, pauses: withResume(x.pauses, t) })));
     return true;
   },
 
@@ -696,7 +697,7 @@ export const actions = {
       cleanDays: data.cleanDays.filter((c) => c.habitId !== habitId),
       urges: data.urges.filter((u) => u.habitId !== habitId),
       summaries,
-      settings: data.settings.focusTrackId === habitId ? { ...data.settings, focusTrackId: null } : data.settings,
+      settings: data.settings.activeHabit === habitId ? { ...data.settings, activeHabit: null } : data.settings,
     });
     return backup;
   },
@@ -716,11 +717,6 @@ export const actions = {
       summaries: Object.keys(b.summaries).length ? { ...data.summaries, [b.habit.id]: b.summaries } : data.summaries,
     });
     return true;
-  },
-
-  /** Which track the single-pet screens show on this phone. Never changes recovery data. */
-  focusTrack(habitId: string) {
-    if (data.habits.some((h) => h.id === habitId) && data.settings.focusTrackId !== habitId) commit({ ...data, settings: { ...data.settings, focusTrackId: habitId } });
   },
 
   exportJson: () => JSON.stringify(data, null, 2),

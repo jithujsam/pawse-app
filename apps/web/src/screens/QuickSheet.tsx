@@ -1,8 +1,8 @@
 import { motion } from "motion/react";
 import { rise, spring, stagger } from "../motion";
 import { requestQuick, type QuickAction } from "../quick";
-import { cleanStreak, useActiveView, useData } from "../store";
-import { trackState } from "../tracks";
+import { useActiveView, useData } from "../store";
+import { trackSummary } from "../progress";
 import { today } from "../dates";
 import { Icon } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
@@ -14,12 +14,13 @@ export function QuickSheet({ open, onClose, onPick }: { open: boolean; onClose: 
   if (!view?.habit) return null;
   const habit = view.habit;
   const t0 = today();
-  const slipped = data.entries.some((e) => e.habitId === habit.id && e.day === t0);
-  const clean = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
-  const streak = cleanStreak(data, habit.id);
+  const progress = trackSummary(data, habit.id, t0);
+  const slipped = progress.today === "lapse";
+  const clean = progress.today === "met";
+  const streak = progress.current;
   const pick = (a: QuickAction) => { requestQuick(a); onPick(); };
   const ridden = data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length;
-  const resting = trackState(data, habit.id).restDays.includes(t0);
+  const resting = progress.resting;
   const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean; wide?: boolean }[] = [
     { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `Pick a way through it. ${ridden} managed so far.` : "Pick a way through it, with your companion.", tone: "calm", wide: true },
     { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },

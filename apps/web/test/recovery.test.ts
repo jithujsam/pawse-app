@@ -141,7 +141,7 @@ describe("weekly review", () => {
   const ws = weekStart(t0);
   it("counts recorded days, keeps unrecorded and rest days separate, and never calls silence progress", () => {
     load({}, { plan: { goal: "stop", reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] } });
-    const r = weekReview(getData(), getData().habits[0], addDays(t0, -90), ws);
+    const r = weekReview(getData(), getData().habits[0], ws);
     expect(r.counts.met + r.counts.urge + r.counts.lapse).toBe(0);
     expect(r.goalLine).toMatch(/Nothing recorded yet this week/);
   });
@@ -152,8 +152,8 @@ describe("weekly review", () => {
       cleanDays: [{ habitId: H, day: addDays(last, 3) }, { habitId: H, day: addDays(last, 4) }],
       urges: [urge("u1", addDays(last, 5), "rode_it_out", { strategy: "breathe", trigger: "Stressed" })],
     }, { restDays: [addDays(last, 6)], weekFocus: [{ week: ws, text: "Plan dinner" }], plan: { goal: "stop", reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] } });
-    const r = weekReview(getData(), getData().habits[0], addDays(t0, -90), last);
-    expect(r.counts).toEqual({ lapse: 3, met: 2, urge: 1, rest: 1, unrecorded: 0 });
+    const r = weekReview(getData(), getData().habits[0], last);
+    expect(r.counts).toEqual({ lapse: 3, met: 2, urge: 1, paused: 0, rest: 1, unrecorded: 0 });
     expect(r.goalLine).toBe("3 of 6 recorded days without a slip.");
     expect(r.urges).toEqual({ managed: 1, total: 1 });
     expect(r.difficult[0]).toEqual(["Stressed", 2]);

@@ -1,45 +1,52 @@
 # Multi-track architecture
 
-Status: implemented (local data v2, server migration 0006). Written 2026-10-25 before the code, then updated to match it. It sits under PRD §5.1 ("one companion per tracked addiction, each with its own life") and §8 P0 ("create, edit and delete addictions"). It adds no recovery rules. The open decisions at the end are for the next prompt.
+Status: implemented on `claude/pawse-multi-track-architecture-exg1hh`, merged with `main` (Pets grid and the `progress.ts` rules layer). Local data v2, server migration 0006 (not yet applied to production). Updated 2026-10-25.
 
-The Pets grid (the main screen redesign) is being built in a parallel session. This document covers only the data layer and the store API the grid can use. It does not change any layout.
+This is the data layer for several independent recovery tracks per person. It sits under PRD §5.1 ("one companion per tracked addiction, each with its own life") and PRD §20. The counting rules (day states, streaks, pauses, milestones) are in `docs/RECOVERY_RULES.md`; this document says where the data lives, how it moves, and how old data and old app versions are handled. It adds no recovery rules.
 
 ## 1. What a track is
 
-A **track** is one behaviour a person wants to change. It owns:
+A **track** is one behaviour a person wants to change. A track *is* a `habits` row: nothing was renamed, so sync, row level security and old backups keep working. It owns:
 
 | Part | Where it lives | Notes |
 |---|---|---|
-| Identity: name, class, class weight, unit, check-in questions | `Habit` row (`habits` table) | Unchanged. A track *is* a habit row; nothing is renamed, so sync, RLS and old backups keep working. |
-| Description, start date, status, pause history, archive date | `Habit.track` (`TrackState`) | New. |
-| Per-track settings: starting pace (baseline), recovery plan (with the goal: stop / cut down / understand), rest days, weekly focus, celebrated milestones, accessory worn, treats given, last fed, savings goal | `Habit.track` | Moved here from global `Settings`. These were global only because there was one habit. |
-| Its pet (current companion) | `Habit.companionId` → `Companion` | Unchanged. A companion now also records which track it belongs to (`Companion.trackId`). |
-| Past pets (Hall of Companions) | `Companion` rows with `trackId` = this track and `diedOn` set | Rebirth (`adopt`) keeps the old companion and points the track at a new one, as before. |
-| Event history: slips (+ deductions), goal-met days, urges | `entries`, `cleanDays`, `urges`, all keyed by `habitId` | Unchanged shape. |
-| Weekly AI summaries | `summaries[trackId][weekStart]` | Was keyed by week only and pushed against `habits[0]`. |
-| Progress: visible age, stage, streaks, care days, money kept | Never stored | Always recomputed from the event history of that track (PRD §9 rule). |
+| Name, class, class weight, unit, check-in questions | `Habit` | Unchanged. |
+| Description, start date, status, pause history, archive date | `Habit.track` (`TrackState`) | |
+| Plan (with the goal: stop / cut down / understand), starting pace, rest days, weekly focus, milestones celebrated, accessory, treats given, last fed, savings goal | `Habit.track` | Per track. These were global settings while there was one habit. |
+| Its pet | `Habit.companionId` → `Companion` | |
+| Past pets (Hall of Companions) | `Companion` with `trackId` = this track and `diedOn` set | `adopt` keeps the old companion and points the track at a new one. |
+| Events: slips (+ deductions), goal-met days, urges | `entries`, `cleanDays`, `urges`, keyed by `habitId` | |
+| Weekly AI summaries | `summaries[trackId][weekStart]` | |
+| Progress: age, stage, streaks, days of care, milestones reached, check-in rate, money kept | Never stored | Recomputed from that track's own events (`progress.ts`, `viewCompanion`). |
 
-The **person** (global `Settings`) keeps only what is about them or this phone: tone, name, reminder time, currency, death-scene preference, pet rules (`petLife`), haptics, theme, accent, 3D, auto-lock, reminders, risk nudge, care notes, coach seen, onboarded, `neglectFrom`. The daily journal (mood + one line) also stays person-level: it describes the person's day, not one behaviour. See open decision D2.
+### Per person, per track, per phone
 
-`Settings.focusTrackId` (new, device-only, never synced) says which track the single-pet screens show. It is UI state, not recovery state.
+| Scope | What | Why |
+|---|---|---|
+| **Per track** (`Habit.track`, synced in `habits.track`) | Everything in the table above | Each behaviour has its own plan, pace, history and pet. |
+| **Per person** (`Settings`, synced in `profiles.settings`) | Tone, name, reminder time, currency, pet rules (`petLife`), death-scene choice, care notes, risky-hour nudge, `neglectFrom` | Deliberately shared (approved D1, D3): one voice and one set of pet rules. Classic pet rules can't be turned on while they would end **any** track's pet. |
+| **Per person, not settings** | The daily journal (mood + one line) | Deliberately shared (D2): it describes the person's day. |
+| **Per phone** (`Settings`, never synced) | `activeHabit` (the open track), haptics, theme, 3D, auto-lock, reminders on, coach seen | `activeHabit` is UI state, not recovery data: it is in `DEVICE_ONLY`, never pushed, and a pulled profile can't change it. |
 
-## 2. Data ownership and the single source of truth
+Reminders and the risky-hour nudge follow the open track (D3).
+
+## 2. Ownership and the single source of truth
 
 ```
 Person (Settings, journal)
  └── Track = Habit row + TrackState            ← owns everything below
       ├── current Companion  (habit.companionId, companion.trackId = track)
       ├── past Companions    (companion.trackId = track, diedOn set)
-      ├── entries            (entry.habitId = track, entry.companionId ∈ track's companions)
+      ├── entries            (entry.habitId = track)
       ├── cleanDays          (cleanDay.habitId = track)
       ├── urges              (urge.habitId = track)
       └── summaries[track]
 ```
 
-- The only writable copy of recovery state is the event history (entries, clean days, urges) plus `TrackState`. Everything else is derived.
-- Every read that computes progress is scoped by track id. `viewCompanion` now filters slips by **both** the companion and the companion's track, so a companion id that somehow ended up on another track's slip can never age the wrong pet.
-- Writes go through `actions.*` in `apps/web/src/store.ts`. Pure track helpers (selectors, state defaults, pause checks, the integrity check) live in `apps/web/src/tracks.ts` and do no I/O.
-- `checkTracks(d)` reports any cross-track reference (a slip whose companion belongs to another track, a companion claimed by two tracks, a track pointing at a missing companion). `normalize` repairs what it safely can on load and never drops a valid event.
+- The only writable recovery state is the events plus `TrackState`. Writes go through `actions.*` in `store.ts`, and every per-track write goes through one helper (`withTrack`).
+- **Reads are scoped by track.** `progress.ts` (`trackIndex`) reads one track's events, rest days, pauses and start date. `viewCompanion` counts a slip only if it belongs to the companion **and** to the companion's track, so a mis-filed slip can never age another track's pet.
+- `tracks.ts` holds the pure helpers: `trackState` (complete state with defaults), `getTrack` / `listTracks`, `focusedTrackId`, `canRecord`, `checkTracks` (cross-track references), `repairTracks` (fills what older data lacks without inventing history) and `trackFromLegacy` (old settings → one track's state).
+- **Start date.** `startedOn` is stored. For existing data it is set by the rule in `RECOVERY_RULES.md`: the current pet's birth or the first record, whichever is earlier. `progress.ts` starts a track at `startedOn` or its first record if that is earlier.
 
 ## 3. Schema
 
@@ -47,15 +54,15 @@ Person (Settings, journal)
 
 ```ts
 type TrackStatus = "active" | "paused" | "archived";
-interface Pause { from: string; to: string | null }   // to = null: still paused. Days are YYYY-MM-DD.
+interface Pause { from: string; to: string | null }   // from..to (to excluded); to = null: still paused
 
 interface TrackState {
-  description: string;            // ≤ 280, the person's own words
-  startedOn: string;              // day the track began
-  status: TrackStatus;
-  pauses: Pause[];                // full history, oldest first; at most one open
+  description: string;            // ≤ 280
+  startedOn: string;
+  status: TrackStatus;            // "paused" exactly when a pause is open; repaired on load
+  pauses: Pause[];
   archivedOn: string | null;
-  createdAt: number;              // ms, for stable ordering
+  createdAt: number;
   baseline: Baseline | null;
   plan: RecoveryPlan | null;      // plan.goal is the track's goal
   restDays: string[];
@@ -66,109 +73,117 @@ interface TrackState {
   fedOn: string | null;
   savingsGoal: SavingsGoal | null;
 }
-
-interface Habit { ...unchanged; track?: TrackState }    // always filled on load; optional only for in-memory callers
-interface Companion { ...unchanged; trackId?: string }   // filled on load
+interface Habit { ...; track?: TrackState }        // always filled on load
+interface Companion { ...; trackId?: string }      // always filled on load when an owner can be found
+interface Settings { ...person and phone keys...; activeHabit: string | null }
 interface AppData { v: 2; ...; summaries: Record<trackId, Record<weekStart, string>> }
 ```
 
-`Habit.track` is optional in the type so that code (and tests) that build a habit by hand keep working; `trackState(d, id)` always returns a complete state with defaults. The loader always writes a full `track`, so stored data is complete.
-
-Zod schemas in `packages/schema/src/data.ts`: `TrackStateSchema`, `AppDataSchema` (v2), and `AppDataV1Schema` (the old shape, used only to read and migrate old data).
+Zod schemas (`packages/schema/src/data.ts`): `TrackStateSchema`, `AppDataSchema` (v2), `AppDataV1Schema` and `LegacySettingsSchema` (old shapes, read only to migrate). `SettingsSchema` and `TrackStateSchema` keep unknown keys (`passthrough`), so a field written by a newer app version survives this one loading and saving it (§6).
 
 ### Server (Supabase), migration `0006_tracks.sql`, additive only
 
 | Table | Change |
 |---|---|
-| `habits` | `description text` (≤ 280), `started_on date`, `status text` (`active` / `paused` / `archived`, default `active`), `track jsonb` (the per-track settings and pause history, object, < 16 KB). `archived_at` already exists and is now written. |
-| `companions` | `habit_id uuid null` (the owning track). No foreign key: companions are pushed before habits, and a companion is created before its track points at it. RLS already restricts rows to the owner. |
-| `profiles.settings` | No schema change. New phones stop writing per-track keys as the source of truth (see §4.3 for the compatibility copy). |
-| `weekly_reports` | No change. It was already keyed by `(habit_id, week_start)`; the app now writes the right habit instead of `habits[0]`. |
+| `habits` | `description text` (≤ 280, default `''`), `started_on date`, `status text` (`active` / `paused` / `archived`, default `active`), `track jsonb` (object, < 16 KB). `archived_at` already existed and is now written. |
+| `companions` | `habit_id uuid` (the owning track), indexed. No foreign key: companions are pushed before habits, and a pet exists before its track points at it. |
+| `profiles.settings` | No change. It carries a copy of the first track's settings under the old keys for older apps (§5). |
+| `weekly_reports` | No change (already keyed by `habit_id, week_start`); the app now writes each track's own. |
 
-Delete stays soft (`deleted_at`) so deletions reach other phones; the existing cascade on account deletion is untouched.
+Row level security is unchanged and covers the new columns: every policy is per row and per `user_id`, and `supabase/tests/tracks.sql` checks that another person can neither read nor change a track or a pet's owner. `companions.habit_id` isn't checked against the habit's owner (there is no foreign key); a wrong value only affects the writer's own rows.
 
-## 4. Migration strategy
+## 4. Migration
 
-### 4.1 Local v1 → v2 (runs on load, on unlock and on backup import)
+### 4.1 On the phone, v1 → v2 (load, unlock, backup import, and a server profile with no track rows yet)
 
-1. Parse with the v1 schema (or salvage row by row, as today).
-2. Pick the **primary track**: `habits[0]`, the one the app showed. It inherits every per-track setting that used to be global: `baseline`, `plan`, `restDays`, `weekFocus`, `celebrated`, `wear`, `treatsGiven`, `fedOn`, `savingsGoal`, and `settings.goal` as its description when that differs from its name.
-3. Any other habits (possible only through sync from another phone) get default per-track settings. Nothing is copied to them, so nothing is counted twice.
-4. `startedOn` = the earliest of: the bornOn of every companion the track has had, and the first day of any of its events. Nothing is backdated past the data.
-5. `status = "active"`, no pauses, `archivedOn = null`.
-6. Every companion gets `trackId`: the habit whose `companionId` is it, otherwise the habit of the slips that reference it. A companion with neither is kept as is (it was already shown in the Hall).
-7. Flat `summaries` move to `summaries[primaryTrack.id]`.
-8. The per-track keys are removed from `settings`. Before the first v2 write, the raw v1 copy is kept once in IndexedDB as `data.v1-backup` (not when a PIN protects the data, since that copy would be readable).
+Two v1 shapes exist and both are handled: single-track data (released apps: 2.1.0 and the 3.0.0 test build), and the interim multi-track shape on `main` (per-habit `trackRest`, `pauses` and `celebratedBy` maps next to shared keys; never shipped in a build). `trackFromLegacy` gives each track what it showed before:
 
-The migration is pure (`migrateV1(raw) → AppData`), idempotent (v2 input passes through), and tested for the "nothing lost" property: every entry, clean day, urge, journal entry, companion and summary survives with the same ids.
+| Old key | Becomes |
+|---|---|
+| `plan`, `baseline`, `weekFocus`, `wear`, `treatsGiven`, `fedOn`, `savingsGoal` | Copied to every track (they were shown on every track). |
+| `restDays` (shared) + `trackRest[id]` | That track's `restDays` (shared ones applied to every track). |
+| `pauses[id]` | That track's `pauses`; `status = paused` if one is open. |
+| `celebratedBy[id]`, else `celebrated` for the first habit only | That track's `celebrated`. |
+| `goal` (the first habit's own words) | The first track's `description`, if it differs from the name. |
+| Flat `summaries` | `summaries[firstHabit]`. |
+| `activeHabit` | Kept as is (already device-only). |
+
+Then `startedOn` is set (§2), every companion gets its owner (`trackId`: the habit pointing at it, else the habit of its slips), and the old keys leave `settings`. Every row keeps its id. On first load the original v1 data is kept once as `data.v1-backup` (not when PIN-locked, where that copy would be readable). The migration is pure, idempotent, and tested for "nothing lost": every row, id, pet, setting and streak survives. `main`'s rule tests (`progress.test.ts`) now run on migrated data.
 
 ### 4.2 Server
 
-`0006_tracks.sql` only adds nullable columns or columns with defaults. Old rows read as active tracks with empty per-track settings. When a phone with new code first syncs, its migrated tracks are pushed with their `track` column filled.
+`0006_tracks.sql` only adds columns. Existing rows read as active tracks; a phone with this version fills `track` on its next push. Until 0006 is applied, sync retries habits and companions without the new columns (as it did for 0003 and 0005), and track state stays on the phone that set it.
 
-A server without 0006 keeps working: when an upsert fails on the new columns, sync retries without them (the same pattern as 0003 and 0005). Track state then stays only on that phone until the migration runs.
+### 4.3 Never losing data silently
 
-### 4.3 Mixed app versions
+- `normalizeWithReport` counts rows it had to leave out (invalid, or orphaned because their parent is missing). If it left out anything, or can't read the data at all (damaged, or `v` from a newer version), `boot` keeps the original under `data.unreadable.<time>` before anything is saved over it. On a PIN-locked phone the sealed blob is kept instead (`data.enc.unreadable.<time>`), so nothing readable is written.
+- A backup from a newer version is refused, not half-read. A backup with damaged rows imports the good rows; the file itself is untouched.
+- From the server, a malformed track state is rejected by the schema and the phone's state stands. Unknown keys are kept.
 
-- **New phone, old phone, same account.** The new phone also writes the **primary track's** per-track settings into `profiles.settings` under the old keys, as a copy for old app versions to read. The copy is made only when pushing and is never read back as truth, so local data still has one source.
-- When a new phone pulls a profile that still has the old keys, it ignores them. Plan edits made on an old version therefore don't reach new versions (risk R2).
-- Old versions show only `habits[0]` and its pet. They don't know about pause or archive, so they can log to a paused track (risk R3).
+## 5. Older app versions on the same account
 
-### 4.4 Keeping the app working during the migration
+Released apps (2.1.0, and the 3.0.0 test build, which uses the same Supabase project) show only `habits[0]` and know nothing of tracks.
 
-- `activeCompanion` / `useActiveView` now follow the focused track (`focusTrackId`, else the first active track, else the first paused one, else the first archived one). With one track this is exactly `habits[0]`, so every current screen behaves as before.
-- Existing actions that had no track argument (`savePlan`, `addIfThen`, `setWeekFocus`, `celebrate`, `resetCelebrations`, `setSummary`) take an optional track id and default to the focused track.
-- The current screens change only where they read a per-track setting from `data.settings`; they now read `trackState(data, habit.id)` (or `useActiveTrack()`). No layout changes.
-- Three reads that would have mixed tracks once there are several are now scoped: the Pet page's Hall shows that track's past companions; Insights' "enough data" check counts that track's goal-met days; and turning on classic pet rules is refused if it would end **any** track's companion, not only the one on screen (the rules are person-level).
+- **Their profile saves can't wipe or override track state.** They save `profiles.settings` whole and drop keys they don't know. Track state doesn't live there; it lives in `habits.track`. Their habit saves never send the track columns, and an upsert only sets the columns it sends, so those survive. New phones ignore per-track keys in a pulled profile. Tested through the sync loop in `tracksync.test.ts`.
+- **They still find their settings.** New phones write the first track's settings into the profile under the old single-track keys. This copy is written only and never read back as truth. The one exception: a track that arrives with no state at all (a server without 0006, or a habit an older app created) is seeded from it with the same mapping as §4.1. The interim per-habit maps are not written: no released app reads them, and writing them would feed one track's rest days into another's seed.
+- **Limits:** a plan or rest-day edit made in an older app isn't picked up by new versions (R2). An older app can log to a paused or archived track, and that record counts for that track only (R3). A v2 backup can't be imported by an older app (R4).
 
-## 5. Lifecycle and safeguards
+## 6. Forward compatibility
+
+`SettingsSchema` and `TrackStateSchema` keep unknown keys, and `habits.track` is built from the whole state, so a field a newer app adds survives this version loading and editing it. That's the same failure older apps have with the profile, fixed for the future. Data with a newer `v` is never loaded or overwritten (§4.3).
+
+## 7. Lifecycle and safeguards
 
 | Action | Rule |
 |---|---|
-| `createTrack` | Makes a habit, its state and a new companion together. Name 1–60 characters, description ≤ 280. Limited by the existing schema cap (50 habits). |
-| `updateTrack` | Name, description, start date, baseline, plan. A start date can't be in the future or after the track's first recorded event, so no history falls outside the track. Class, unit and questions keep their existing actions (`updateHabitFields`, `refreshQuestions`). |
-| `pauseTrack` / `resumeTrack` | Opens and closes a pause interval. While a day is inside a pause, slips, goal-met marks, urges and rest days for that day are refused (the actions return `null` / `false`). Days before the pause can still be filled in. Paused days show as "Not tracking", which already changes nothing (PRD §19.2). Progress is not frozen or changed. |
-| `archiveTrack` / `unarchiveTrack` | Archive closes any open pause and makes the track read-only. Its history and pet stay and still count in lifetime totals. Unarchive makes it active again. |
-| `deleteTrack(id, confirmName)` | Allowed only for an **archived** track, and only when `confirmName` matches its name (case and outer spaces ignored). Removes the habit, its companions, slips, clean days, urges and summaries in one commit; sync turns each into a tombstone. Returns a `TrackBackup` that `restoreTrack` can put back (undo). |
-| Last track | Archiving or deleting the last non-archived track is refused, because the current screens assume one pet exists. The empty state belongs to the Pets grid prompt (D5). |
-| `focusTrack` | Device-only; never changes recovery data. |
+| `addTrack` (Pets grid) / `createTrack` | A habit, its state and a new pet, together. Name 1–60 characters, description ≤ 280, at most 50 tracks (the grid hides "Add" at 50). |
+| `updateTrack` | Name, description, start date, starting pace, plan. A start date can't be in the future or after the first record. |
+| `selectTrack` | Device-only; never changes recovery data. |
+| `pauseTrack(id, from)` / `resumeTrack(id, on)` | The rules in `RECOVERY_RULES.md` (`withPause` / `withResume`). Paused days count neither way. **Records are never refused or hidden during a pause.** Past pauses are never rewritten. |
+| `archiveTrack` / `unarchiveTrack` | Archive closes any open pause and makes the track read-only: `logSlip`, `markClean`, `recordUrge`, `setRest` and `pauseTrack` refuse. It leaves the Pets grid, and an archived track is never the one the screens open, even if selected. Refused for the last track that isn't archived. |
+| `deleteTrack(id, confirmName)` | Only an archived track, and only when its name is typed back (case and outer spaces ignored). Removes the habit, its pets, events and summaries in one commit; sync sends a soft delete for each. Returns a snapshot for `restoreTrack` (undo). A pet another track points at is never removed. |
+| Missing pieces | A track whose pet is missing is reported by `checkTracks` and skipped by the grid. An open track that disappears (deleted elsewhere) falls back to the next one. `normalize` leaves out events whose track is gone, counts them, and keeps the original (§4.3). |
 
-## 6. Risks
+## 8. Risks
 
-- **R1 Server not migrated.** Track state stays on one phone until `0006` is applied, so a second phone sees defaults. No data loss on the first phone.
-- **R2 Mixed versions.** Plan or rest-day edits made on an old app version aren't read by new versions.
-- **R3 Old versions ignore pause and archive.** They can log to a paused or archived track. The data stays valid and counts toward that track only.
-- **R4 Backups.** A v2 backup can't be imported by an older app version (it rejects `v: 2`). That's deliberate: importing it would silently lose the per-track settings.
-- **R5 Merge with the Pets grid branch.** The edits to `Home.tsx` here are mechanical: `data.settings.{restDays, plan, weekFocus, celebrated, wear, petLife}` become `track.*` from `useActiveTrack()`, and `petLife` is unchanged. Re-apply them on the redesigned screen if it conflicts.
-- **R6 Hard delete.** On the phone, delete is final apart from the returned undo snapshot. The server keeps soft-deleted rows until the account is deleted.
+- **R1 Server not migrated.** Until `0006` is applied, track state stays on the phone that set it, and a second phone sees the profile seed or defaults. No data is lost on the first phone.
+- **R2 Mixed versions.** Plan or rest-day edits made in an older app aren't read by new versions.
+- **R3 Older apps ignore pause and archive.** Their records stay valid and count for their track only.
+- **R4 Backups.** A v2 backup can't be imported by an older app (it rejects `v: 2`), deliberately.
+- **R5 Interim builds from `main`.** Never shipped. If one was used against the account, it reads the first track's rest days from the profile as shared, so it shows them on every track. Display only, in that build.
+- **R6 Hard delete.** On the phone, delete is final apart from the undo snapshot. The server keeps soft-deleted rows until the account is deleted.
+- **R7 Kept copies.** `data.unreadable.*` copies are kept until the person resets the app. There is no UI to see or restore them yet.
 
-## 7. Decisions (approved by the owner, 2026-10-25)
+## 9. Decisions
 
-Each was approved as currently implemented. Changing any of them later is a product decision, not a refactor.
+Approved by the owner on 2026-10-25 as then implemented:
 
-| | Decision | Approved behaviour |
+| | Decision | Behaviour |
 |---|---|---|
-| D1 | Pet rules | `petLife` (continuity / classic) and `deathScene` are person-level and apply to every track. Classic can't be switched on while it would end any track's companion. |
-| D2 | Journal | The daily reflection is person-level, not tied to a track. |
-| D3 | Reminders | One daily reminder and one risky-hour nudge, for the focused track only. No per-track reminders. |
-| D4 | Pauses and streaks | A paused day is an unrecorded day: a "goal met in a row" streak ends at a pause, as at any gap. No streak bridging. |
-| D5 | Empty state | Archiving or deleting the last non-archived track stays refused, so there is always one open track. |
-| D6 | Track limit | No product cap below the schema's 50 tracks. |
-| D7 | Household companion | Not built. One companion belongs to exactly one track. |
-| D8 | Cross-track insights | None. Every insight is per track. |
-| D9 | Adding a second track | `createTrack` is the data path. The flow and screens belong to the next UI prompt and must use it. |
+| D1 | Pet rules | Person-level, apply to every track; classic can't be turned on if it would end any track's pet. |
+| D2 | Journal | Person-level. |
+| D3 | Reminders | One daily reminder and one risky-hour nudge, for the open track. |
+| D5 | Last track | Archiving or deleting the last non-archived track is refused. |
+| D6 | Limit | 50 tracks. |
+| D7 | Shared pet | Not built; one pet belongs to one track. |
+| D8 | Insights | Per track only. |
+| D9 | Adding a track | Through `addTrack` / `createTrack`. The Pets grid's add sheet does this. |
 
-## 8. Where the code is
+**Superseded by the merged rules in `RECOVERY_RULES.md` (need the owner's confirmation):**
+
+- **D4 Pauses and streaks.** The earlier approval said a pause ends a streak. `main`'s rules, merged before this branch, say paused, rest and unrecorded days are skipped and never break a streak. This branch follows `main`.
+- **Records during a pause.** This branch first refused records on paused days. `main`'s rules say records always win over a pause. This branch now follows `main`, so a record is never lost.
+
+## 10. Where the code is
 
 | Piece | File |
 |---|---|
-| Types | `apps/web/src/types.ts` (`TrackState`, `TrackStatus`, `Pause`; `Habit.track`, `Companion.trackId`, `Settings.focusTrackId`) |
-| Schemas | `packages/schema/src/data.ts` (`TrackStateSchema`, `AppDataSchema` v2, `AppDataV1Schema`, `LegacySettingsSchema`) |
-| Selectors, defaults, pause check, integrity check, repair | `apps/web/src/tracks.ts` |
-| v1 → v2 migration | `apps/web/src/persist.ts` (`upgradeV1`, `normalize`, `migrateIds`) and `boot()` in `store.ts` (one-time `data.v1-backup`) |
-| Actions | `apps/web/src/store.ts` (`createTrack`, `updateTrack`, `pauseTrack`, `resumeTrack`, `archiveTrack`, `unarchiveTrack`, `deleteTrack`, `restoreTrack`, `focusTrack`, `setTrackSettings`, `useActiveTrack`) |
-| Sync mapping | `apps/web/src/syncmap.ts` (track columns, legacy profile copy, `w:<track>:<week>` keys), `apps/web/src/sync.ts` (fallback without 0006) |
-| Server | `supabase/migrations/0006_tracks.sql`, checks in `supabase/tests/tracks.sql` |
-| Tests | `apps/web/test/tracks.test.ts` (migration, isolation, lifecycle, sync mapping), `trackboot.test.ts` (on-device upgrade and v1 backup), `tracksync.test.ts` (through the sync loop, with and without 0006), `packages/schema/test/schema.test.ts` |
-
-For the Pets grid: `listTracks(data, ["active", "paused"])` gives each track with its companion and state; `viewCompanion(data, track.companion.id)` gives its age and stage; `actions.focusTrack(id)` makes the existing single-pet screens show that track.
+| Types | `apps/web/src/types.ts` |
+| Schemas | `packages/schema/src/data.ts` |
+| Track helpers, legacy mapping | `apps/web/src/tracks.ts` |
+| Counting rules | `apps/web/src/progress.ts` (reads track state) |
+| Migration, load report | `apps/web/src/persist.ts` (`upgradeV1`, `normalizeWithReport`, `migrateIds`); `boot` / `unlockWith` in `store.ts` |
+| Actions | `apps/web/src/store.ts` |
+| Sync | `apps/web/src/syncmap.ts` (`remoteTrack`, `legacyProfileCopy`, track columns), `apps/web/src/sync.ts` (fallback without 0006) |
+| Server | `supabase/migrations/0006_tracks.sql`, `supabase/tests/tracks.sql` |
+| Tests | `apps/web/test/tracks.test.ts`, `trackboot.test.ts`, `tracksync.test.ts`, `progress.test.ts`, `packages/schema/test/schema.test.ts` |

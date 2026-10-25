@@ -91,10 +91,18 @@ const baseline = z.enum(["many_daily", "daily", "few_weekly", "weekly"]);
 const savingsGoal = z.object({ label: z.string().min(1).max(40), target: z.number().min(1).max(100_000_000) });
 const weekFocus = z.array(z.object({ week: day, text: short(160) })).max(60);
 
-/** Settings that belong to the person or this phone. Per-track settings live in TrackStateSchema. */
+/** One pause: from the first paused day up to, not including, the day it ended (null while still paused). */
+export const PauseSchema = z.object({ from: day, to: day.nullable() });
+
+/**
+ * Settings that belong to the person or this phone. Per-track settings live in TrackStateSchema.
+ * Unknown keys are kept (passthrough): a field added by a newer app version survives being loaded and saved
+ * again by this one, instead of being dropped from the account's profile.
+ */
 export const SettingsSchema = z.object({
   tone: z.enum(["gentle", "honest", "brutal"]),
   userName: short(30),
+  activeHabit: z.string().max(64).nullable(),
   reminder: z.string().regex(/^\d{2}:\d{2}$/),
   currency: z.string().max(4),
   deathScene: z.boolean(),
@@ -111,10 +119,13 @@ export const SettingsSchema = z.object({
   theme: z.enum(["system", "light", "dark"]),
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
   petLife: z.enum(["continuity", "classic"]),
-  focusTrackId: id.nullable(),
-}).partial();
+}).partial().passthrough();
 
-/** Settings as stored before tracks (v1): one habit, so its settings sat here. Read only to migrate. */
+/**
+ * Settings as stored before tracks had their own state (v1). Read only to migrate. Two shapes exist:
+ * single-track data (per-track settings sat here directly) and the interim multi-track shape on main, which added
+ * per-habit maps (trackRest, pauses, celebratedBy) next to the still-shared ones.
+ */
 export const LegacySettingsSchema = SettingsSchema.extend({
   goal: z.string().max(60),
   baseline: baseline.nullable(),
@@ -126,12 +137,12 @@ export const LegacySettingsSchema = SettingsSchema.extend({
   plan: PlanSchema.nullable(),
   restDays: z.array(day).max(4000),
   weekFocus,
-}).partial();
+  trackRest: z.record(z.array(day).max(4000)),
+  pauses: z.record(z.array(PauseSchema).max(500)),
+  celebratedBy: z.record(z.array(z.number().int()).max(50)),
+}).partial().passthrough();
 
-/** One pause: from the first paused day to the day it ended (null while still paused). */
-export const PauseSchema = z.object({ from: day, to: day.nullable() });
-
-/** Everything that belongs to one recovery track rather than to the person. */
+/** Everything that belongs to one recovery track rather than to the person. Unknown keys are kept, as for settings. */
 export const TrackStateSchema = z.object({
   description: short(280),
   startedOn: day,
@@ -148,7 +159,7 @@ export const TrackStateSchema = z.object({
   treatsGiven: z.number().int().min(0).max(100_000),
   fedOn: day.nullable(),
   savingsGoal: savingsGoal.nullable(),
-});
+}).passthrough();
 
 export const TrackHabitSchema = HabitSchema.extend({ track: TrackStateSchema.optional() });
 

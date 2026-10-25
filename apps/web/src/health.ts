@@ -1,6 +1,8 @@
 import { cleanDaysToAge, cleanDaysToUndo, floorAge, STAGE_LABEL } from "@detox/engine";
 import { addDays, daysBetween, today } from "./dates";
-import { bestStreak, cleanStreak, recoveryPlan, silentDays, type CompanionView } from "./store";
+import { cleanStreak, recoveryPlan, silentDays, type CompanionView } from "./store";
+import { milestoneProgress, trackSummary } from "./progress";
+import { MILESTONES } from "./copy";
 import type { AppData, Species, Tone } from "./types";
 
 /**
@@ -25,7 +27,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const t0 = today();
   const slipped = d.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const streak = cleanStreak(d, habit.id);
-  const silent = silentDays(d, habit.id, v.companion.bornOn);
+  const silent = silentDays(d, habit.id);
   const reserve = v.current?.reserveMonths ?? 0;
   // Quiet days are missing data, not a slip, so they don't lower the heart.
   let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) + Math.min(10, reserve);
@@ -122,7 +124,7 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
   const slipped = d.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const week = d.entries.filter((e) => e.habitId === habit.id && e.day > addDays(t0, -7));
   const weekDamage = v.states.filter((x) => x.day > addDays(t0, -7)).reduce((a, x) => a + x.damageMonths, 0);
-  const silent = silentDays(d, habit.id, v.companion.bornOn);
+  const silent = silentDays(d, habit.id);
   const plan = recoveryPlan(v);
 
   if (slipped) {
@@ -177,8 +179,8 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
   }
   flush();
   for (const u of d.urges) if (u.habitId === habit.id && u.outcome === "rode_it_out") items.push({ day: u.day, kind: "urge", text: "Rode out an urge" });
-  const best = bestStreak(d, habit.id);
-  for (const m of [3, 7, 14, 30, 60, 100]) if (best >= m) items.push({ day: "", kind: "milestone", text: `Reached a ${m}-day streak` });
+  // The same milestones as everywhere else: days of care, which a slip never takes away.
+  for (const m of milestoneProgress(trackSummary(d, habit.id, today()).care, MILESTONES).reached) items.push({ day: "", kind: "milestone", text: `Reached ${m} days of care` });
   return items.filter((i) => i.day).sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : (a.kind === "born" ? 1 : 0) - (b.kind === "born" ? 1 : 0)))
     .concat(items.filter((i) => !i.day));
 }
@@ -187,18 +189,17 @@ export function stats(d: AppData, v: CompanionView) {
   const habit = v.habit!;
   const t0 = today();
   const together = Math.max(1, daysBetween(v.companion.bornOn, t0) + 1);
-  const slipDays = new Set(d.entries.filter((e) => e.habitId === habit.id).map((e) => e.day));
-  const cleanDays = d.cleanDays.filter((c) => c.habitId === habit.id && !slipDays.has(c.day)).length;
-  const logged = new Set([...slipDays, ...d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day)]).size;
+  const p = trackSummary(d, habit.id, t0);
   const lost = v.states.reduce((a, s) => a + s.damageMonths, 0);
   const healed = v.states.reduce((a, s) => a + s.healedMonths, 0);
   return {
-    together, cleanDays, slips: d.entries.filter((e) => e.habitId === habit.id).length,
-    checkInRate: Math.round((logged / together) * 100),
+    together, cleanDays: p.metDays, slips: p.slips,
+    // Recorded days out of days that could have been recorded: rest and paused days are left out.
+    checkInRate: p.checkInRate ?? 0,
     lost: Math.round(lost * 10) / 10, healed: Math.round(healed * 10) / 10,
     lifeExpectancy: v.current ? Math.round(100 - floorAge(v.current)) : 100,
-    best: Math.max(bestStreak(d, habit.id), cleanStreak(d, habit.id)),
-    urges: d.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length,
+    best: p.best,
+    urges: p.managedUrges,
     spent: Math.round(d.entries.filter((e) => e.habitId === habit.id).reduce((a, e) => a + (e.amount ?? 0), 0)),
     reflections: d.journal.length,
   };

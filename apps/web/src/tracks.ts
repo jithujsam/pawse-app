@@ -1,5 +1,7 @@
-import { today } from "./dates";
-import type { AppData, Companion, GoalKind, Habit, TrackState, TrackStatus } from "./types";
+// Not dates.ts: dates.ts reads progress.ts at load time and progress.ts reads this module, so importing dates here
+// would make a cycle that can fail on load. Only functions cross the progress <-> tracks link, which is safe.
+import { localDay, pausedOn } from "./progress";
+import type { Accessory, AppData, Baseline, Companion, GoalKind, Habit, Pause, RecoveryPlan, SavingsGoal, TrackState, TrackStatus, WeekFocus } from "./types";
 
 /**
  * Recovery tracks: one per behaviour the person wants to change. A track is a Habit row plus its TrackState,
@@ -8,10 +10,48 @@ import type { AppData, Companion, GoalKind, Habit, TrackState, TrackStatus } fro
  * See docs/MULTI_TRACK_ARCHITECTURE.md.
  */
 
+/** Today's local calendar day (the same value as dates.today()). */
+const today = () => localDay(new Date());
+
 export const defaultTrackState = (startedOn: string, createdAt = 0): TrackState => ({
   description: "", startedOn, status: "active", pauses: [], archivedOn: null, createdAt,
   baseline: null, plan: null, restDays: [], weekFocus: [], celebrated: [], wear: null, treatsGiven: 0, fedOn: null, savingsGoal: null,
 });
+
+/**
+ * Settings keys that held per-track state before tracks had their own (local data v1 and the account profile).
+ * Two shapes exist: single-track data, where they applied to the one habit, and the interim multi-track shape
+ * (trackRest, pauses and celebratedBy maps keyed by habit id, next to the still-shared ones).
+ */
+export const PER_TRACK_KEYS = ["goal", "baseline", "plan", "restDays", "weekFocus", "celebrated", "wear", "treatsGiven", "fedOn", "savingsGoal", "trackRest", "pauses", "celebratedBy"] as const;
+export interface LegacyTrackSettings {
+  goal?: string; baseline?: Baseline | null; plan?: RecoveryPlan | null; restDays?: string[]; weekFocus?: WeekFocus[]; celebrated?: number[];
+  wear?: Accessory | null; treatsGiven?: number; fedOn?: string | null; savingsGoal?: SavingsGoal | null;
+  trackRest?: Record<string, string[]>; pauses?: Record<string, Pause[]>; celebratedBy?: Record<string, number[]>;
+}
+
+/**
+ * One track's state from the old shared settings, so each track keeps showing exactly what it showed before:
+ * - Shared settings (plan, starting pace, weekly focus, accessory, treats, last fed, savings goal) were shown on
+ *   every track, so every track gets a copy. Shared rest days applied to every track, so each track gets them plus
+ *   its own. Pauses and celebrated milestones come from the per-habit maps; the one shared milestone list belonged
+ *   to the first habit. The old "goal" text was the first habit's own words, so only it gets it as a description.
+ * - Nothing is invented: a value that wasn't there stays at its default.
+ */
+export function trackFromLegacy(s: LegacyTrackSettings, habit: Habit, index: number, startedOn: string): TrackState {
+  const pauses = s.pauses?.[habit.id] ?? [];
+  const goal = index === 0 ? s.goal?.trim() ?? "" : "";
+  return {
+    ...defaultTrackState(startedOn),
+    description: goal && goal !== habit.name.trim() ? goal.slice(0, 280) : "",
+    status: pauses.some((p) => p.to === null) ? "paused" : "active",
+    pauses,
+    baseline: s.baseline ?? null, plan: s.plan ?? null, weekFocus: s.weekFocus ?? [],
+    restDays: [...new Set([...(s.restDays ?? []), ...(s.trackRest?.[habit.id] ?? [])])].sort().slice(-4000),
+    celebrated: s.celebratedBy?.[habit.id] ?? (index === 0 ? s.celebrated ?? [] : []),
+    wear: s.wear ?? null, treatsGiven: s.treatsGiven ?? 0, fedOn: s.fedOn ?? null, savingsGoal: s.savingsGoal ?? null,
+  };
+}
 
 /** The first day anything was recorded for a track, or null if nothing has been. */
 export function firstEventDay(d: AppData, habitId: string): string | null {
@@ -29,12 +69,12 @@ export const companionsOf = (d: AppData, habitId: string): Companion[] => {
   return d.companions.filter((c) => c.trackId === habitId || (!c.trackId && h?.companionId === c.id));
 };
 
-/** A start date for a track that has none: the earliest of its companions' births and its first event. */
+/**
+ * A start date for a track that has none (older data): its current companion's birth or its first record,
+ * whichever is earlier, the rule in docs/RECOVERY_RULES.md. Nothing is backdated past the track's own data.
+ */
 export function inferStartedOn(d: AppData, habit: Habit): string {
-  const days = [
-    ...d.companions.filter((c) => c.id === habit.companionId || c.trackId === habit.id || d.entries.some((e) => e.companionId === c.id && e.habitId === habit.id)).map((c) => c.bornOn),
-    firstEventDay(d, habit.id),
-  ].filter((x): x is string => !!x).sort();
+  const days = [d.companions.find((c) => c.id === habit.companionId)?.bornOn, firstEventDay(d, habit.id)].filter((x): x is string => !!x).sort();
   return days[0] ?? today();
 }
 
@@ -45,15 +85,16 @@ export function trackState(d: AppData, habitId: string): TrackState {
   return h.track ?? defaultTrackState(inferStartedOn(d, h));
 }
 
-/** A day inside a pause (from its first day, up to but not including the day it ended). */
-export const isPausedOn = (s: TrackState, day: string): boolean =>
-  s.pauses.some((p) => day >= p.from && (p.to === null || day < p.to));
+/** A day inside one of the track's pauses (from its first day, up to but not including the day it ended). */
+export const isPausedOn = (s: TrackState, day: string): boolean => pausedOn(s.pauses, day);
 
-/** Whether a slip, goal-met mark, urge or rest day may be recorded on this track for this day. */
-export function canRecord(d: AppData, habitId: string, day: string): boolean {
-  if (!d.habits.some((h) => h.id === habitId)) return false;
-  const s = trackState(d, habitId);
-  return s.status !== "archived" && !isPausedOn(s, day);
+/**
+ * Whether a slip, goal-met mark, urge or rest day may be recorded on this track. Only an archived (read-only)
+ * or missing track refuses. A pause never does: records always win over a pause (docs/RECOVERY_RULES.md), so
+ * something that happened is never lost because tracking was paused.
+ */
+export function canRecord(d: AppData, habitId: string): boolean {
+  return d.habits.some((h) => h.id === habitId) && trackState(d, habitId).status !== "archived";
 }
 
 export interface Track {
@@ -91,7 +132,7 @@ export function listTracks(d: AppData, statuses?: TrackStatus[]): Track[] {
  */
 export function focusedTrackId(d: AppData): string | undefined {
   const status = (h: Habit) => trackState(d, h.id).status;
-  const f = d.settings.focusTrackId && d.habits.find((h) => h.id === d.settings.focusTrackId);
+  const f = d.settings.activeHabit && d.habits.find((h) => h.id === d.settings.activeHabit);
   if (f && status(f) !== "archived") return f.id;
   return (d.habits.find((h) => status(h) === "active") ?? d.habits.find((h) => status(h) === "paused") ?? d.habits[0])?.id;
 }

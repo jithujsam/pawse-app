@@ -58,9 +58,6 @@ export interface Habit {
 /** A recovery track: one behaviour the person wants to change. The Habit row is the track; this is its state. */
 export type TrackStatus = "active" | "paused" | "archived";
 
-/** One pause: from the first paused day to the day it ended (null while still paused). */
-export interface Pause { from: string; to: string | null }
-
 export interface TrackState {
   /** What this is about, in the person's own words. */
   description: string;
@@ -154,6 +151,9 @@ export interface RecoveryPlan {
   ifThen: string[];
 }
 
+/** A stretch when a track was paused: from `from` up to, not including, `to` (still paused while to is null). */
+export interface Pause { from: string; to: string | null }
+
 /** The one adjustment picked in a weekly review, for the week that follows it. */
 export interface WeekFocus { week: string; text: string }
 
@@ -166,6 +166,11 @@ export interface Settings {
   tone: Tone;
   /** What the companion calls the person. Optional; empty means no name is used. */
   userName: string;
+  /**
+   * The recovery track (habit id) open on this phone. UI state only: device-only, never synced, never recovery
+   * data. Null, unknown or archived falls back (see focusedTrackId in tracks.ts).
+   */
+  activeHabit: string | null;
   reminder: string;
   currency: string;
   deathScene: boolean;
@@ -196,8 +201,6 @@ export interface Settings {
    * classic: the PRD rules, with death at 100, a permanent scar floor and binge scars.
    */
   petLife: "continuity" | "classic";
-  /** The track the single-pet screens show on this phone. UI state only: never synced, never recovery data. */
-  focusTrackId: string | null;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";

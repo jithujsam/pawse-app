@@ -1,6 +1,5 @@
-import { TrackStateSchema } from "@detox/schema";
-import { PER_TRACK_KEYS } from "./persist";
-import { trackState } from "./tracks";
+import { LegacySettingsSchema, TrackStateSchema } from "@detox/schema";
+import { defaultTrackState, PER_TRACK_KEYS, trackFromLegacy, trackState, type LegacyTrackSettings } from "./tracks";
 import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, TrackState, Urge } from "./types";
 
 /**
@@ -52,12 +51,14 @@ const isPhoto = (v: unknown) => typeof v === "string" && v.startsWith("data:");
 export const stripPhotos = (values: Entry["values"]) => Object.fromEntries(Object.entries(values).filter(([, v]) => !isPhoto(v)));
 
 /** Settings that belong to this phone rather than the person. */
-const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "remindersOn", "autoLock", "coachSeen", "pet3d", "theme", "focusTrackId"];
+const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "remindersOn", "autoLock", "coachSeen", "pet3d", "theme", "activeHabit"];
 export const portableSettings = (s: Settings) => Object.fromEntries(Object.entries(s).filter(([k]) => !DEVICE_ONLY.includes(k as keyof Settings)));
 
 /**
- * What app versions from before tracks read from the profile: the first track's settings under the old keys.
- * Written only, never read back as the truth (see docs/MULTI_TRACK_ARCHITECTURE.md §4.3).
+ * What app versions from before tracks read from the profile: the first track's settings under the old
+ * single-track keys (they only ever show habits[0]). Written only; read back solely to seed a track that arrives
+ * with no state of its own (see merge). The interim per-habit maps are deliberately not written: no released
+ * version reads them, and writing them would feed one track's rest days into another's seed.
  */
 export function legacyProfileCopy(d: AppData): Record<string, unknown> {
   const h = d.habits[0];
@@ -69,11 +70,11 @@ export function legacyProfileCopy(d: AppData): Record<string, unknown> {
   };
 }
 
-/** The per-track part of a track that goes in the habits row's `track` column. */
-const trackColumn = (t: TrackState) => ({
-  pauses: t.pauses, archivedOn: t.archivedOn, createdAt: t.createdAt, baseline: t.baseline, plan: t.plan, restDays: t.restDays, weekFocus: t.weekFocus,
-  celebrated: t.celebrated, wear: t.wear, treatsGiven: t.treatsGiven, fedOn: t.fedOn, savingsGoal: t.savingsGoal,
-});
+/**
+ * The habits row's `track` column: everything in the track's state except what has its own column. Keys this
+ * version doesn't know (from a newer app) go back up unchanged.
+ */
+const trackColumn = (t: TrackState) => { const { description: _d, startedOn: _s, status: _st, ...rest } = t; return rest; };
 /** Columns added by migration 0006. A server without them keeps syncing the rest. */
 export const TRACK_COLUMNS = { habits: ["description", "started_on", "status", "archived_at", "track"], companions: ["habit_id"] } as const;
 
@@ -131,29 +132,31 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const day = (v: unknown) => (typeof v === "string" && DAY.test(v.slice(0, 10)) ? v.slice(0, 10) : null);
 
 /**
- * A track's state from a habits row. Columns from migration 0006 win; anything missing keeps the local value,
- * or for a track this phone has never seen, the profile's old per-track keys (seed), or the defaults.
- * Undefined when the row says nothing about tracks and there's nothing local (normalize fills it on next load).
+ * A track's state from a habits row:
+ * - The `track` column and the 0006 columns (description, started_on, status, archived_at) win when present.
+ * - Anything the row doesn't carry keeps this phone's value. An older app's write never sends these columns, so
+ *   it can't clear them (an upsert only sets the columns it sends).
+ * - A track this phone has never seen, arriving without state (a server or app from before tracks), is built from
+ *   the profile's old per-track keys the same way the on-device migration does (trackFromLegacy), else defaults.
+ * - Nothing is coerced: a malformed value fails the schema and this phone's state stands. Keys this version
+ *   doesn't know are kept, so a newer app's fields survive.
+ * Undefined when there's nothing to go on; normalize fills it in on the next load.
  */
-function remoteTrack(r: R, local: TrackState | undefined, seed: Record<string, unknown> | undefined, bornOn: string | undefined): TrackState | undefined {
-  const t = r.track && typeof r.track === "object" ? (r.track as Record<string, unknown>) : undefined;
-  const src: Record<string, unknown> = t ?? seed ?? {};
-  if (!t && !seed && !local && r.status === undefined) return undefined;
-  const base = local ?? {
-    description: "", startedOn: day(r.started_on) ?? bornOn ?? day(r.created_at) ?? "", status: "active", pauses: [], archivedOn: null, createdAt: 0,
-    baseline: null, plan: null, restDays: [], weekFocus: [], celebrated: [], wear: null, treatsGiven: 0, fedOn: null, savingsGoal: null,
-  } as TrackState;
-  const pick = <K extends keyof TrackState>(k: K): unknown => (k in src ? src[k] : base[k]);
-  // Nothing is coerced: a malformed value fails the schema below and the local state stands.
-  const status = r.status === undefined || r.status === null ? base.status : r.status;
-  const next = {
-    description: typeof r.description === "string" ? r.description : (seed && !local && typeof seed.goal === "string" && seed.goal !== r.name ? seed.goal.slice(0, 280) : base.description),
-    startedOn: day(r.started_on) ?? base.startedOn, status,
-    pauses: pick("pauses"), archivedOn: status === "archived" ? (pick("archivedOn") ?? day(r.archived_at)) : null,
-    createdAt: pick("createdAt"), baseline: pick("baseline"), plan: pick("plan"), restDays: pick("restDays"), weekFocus: pick("weekFocus"),
-    celebrated: pick("celebrated"), wear: pick("wear"), treatsGiven: pick("treatsGiven"), fedOn: pick("fedOn"), savingsGoal: pick("savingsGoal"),
+function remoteTrack(r: R, h: Habit, local: TrackState | undefined, legacy: LegacyTrackSettings | undefined, bornOn: string | undefined): TrackState | undefined {
+  const t = r.track && typeof r.track === "object" && !Array.isArray(r.track) ? (r.track as Record<string, unknown>) : undefined;
+  const startedOn = day(r.started_on) ?? local?.startedOn ?? bornOn ?? day(r.created_at);
+  if (!t && !local && !legacy && r.status == null) return undefined;
+  if (!startedOn) return local;
+  const base: TrackState = local ?? (legacy ? trackFromLegacy(legacy, h, Number(r.position ?? 0) === 0 ? 0 : 1, startedOn) : defaultTrackState(startedOn));
+  const status = r.status == null ? base.status : r.status;
+  const next: Record<string, unknown> = {
+    ...base, ...(t ?? {}),
+    ...(typeof r.description === "string" ? { description: r.description } : {}),
+    startedOn: day(r.started_on) ?? base.startedOn,
+    status,
   };
-  // Server data is validated like anything else loaded: a bad track state never replaces a good one.
+  if (status !== "archived") next.archivedOn = null;
+  else if (next.archivedOn == null) next.archivedOn = day(r.archived_at);
   const ok = TrackStateSchema.safeParse(next);
   return ok.success ? (ok.data as TrackState) : local;
 }
@@ -170,7 +173,9 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
 
   // The profile's copy of per-track settings (for old app versions) is never read back, except to seed a track
   // that arrives from the server with no state of its own (a server or app from before tracks).
-  const profile = p.profiles.find((r) => r.settings && typeof r.settings === "object")?.settings as Record<string, unknown> | undefined;
+  const profileSettings = p.profiles.find((r) => r.settings && typeof r.settings === "object")?.settings;
+  const parsedLegacy = profileSettings ? LegacySettingsSchema.safeParse(profileSettings) : null;
+  const legacy = parsedLegacy?.success ? (parsedLegacy.data as LegacyTrackSettings) : undefined;
   const person = (x: Record<string, unknown>) => Object.fromEntries(Object.entries(x).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k)));
   for (const r of p.profiles) if (wins("s", r) && r.settings && typeof r.settings === "object") settings = { ...settings, ...(person(r.settings as Record<string, unknown>) as Partial<Settings>), ...Object.fromEntries(DEVICE_ONLY.map((k) => [k, settings[k]])) };
 
@@ -191,8 +196,9 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     if (r.deleted_at) { habits = habits.filter((h) => h.id !== r.id); continue; }
     const local = habits.find((h) => h.id === r.id)?.track;
     const bornOn = companions.find((c) => c.id === String(r.companion_id))?.bornOn;
-    const track = remoteTrack(r, local, !local && Number(r.position ?? 0) === 0 ? profile : undefined, bornOn);
-    habits = upsert(habits, { id: String(r.id), companionId: String(r.companion_id), name: String(r.name), cls: r.class as Habit["cls"], classWeight: Number(r.class_weight), unit: r.unit as Habit["unit"], fields: r.fields as Habit["fields"], ...(track ? { track } : {}) });
+    const row: Habit = { id: String(r.id), companionId: String(r.companion_id), name: String(r.name), cls: r.class as Habit["cls"], classWeight: Number(r.class_weight), unit: r.unit as Habit["unit"], fields: r.fields as Habit["fields"] };
+    const track = remoteTrack(r, row, local, legacy, bornOn);
+    habits = upsert(habits, { ...row, ...(track ? { track } : {}) });
   }
   const ded = new Map(p.deductions.map((x) => [String(x.entry_id), x]));
   for (const r of p.entries) {
