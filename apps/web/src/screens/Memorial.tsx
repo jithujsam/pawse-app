@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { CompanionArt } from "../Companion";
 import { deathLine } from "../copy";
-import { addDays, daysBetween } from "../dates";
+import { addDays } from "../dates";
+import { daysTogether } from "../progress";
 import { haptic } from "../haptics";
 import { actions, useData, type CompanionView } from "../store";
 import { Button, Chip } from "../ui/Controls";
@@ -18,7 +19,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<Species>(companion.species);
   const es = data.entries.filter((e) => e.companionId === companion.id);
-  const lived = daysBetween(companion.bornOn, companion.diedOn ?? companion.bornOn) + 1;
+  const lived = daysTogether(companion.bornOn, companion.diedOn ?? companion.bornOn);
   const spend = es.reduce((a, e) => a + (e.amount ?? 0), 0);
   const lastMonth = es.filter((e) => e.day > addDays(companion.diedOn ?? companion.bornOn, -30)).length;
   const tone = data.settings.tone;

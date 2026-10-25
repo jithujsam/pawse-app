@@ -1,3 +1,4 @@
+import type { DayInput } from "@detox/engine";
 import { trackState } from "./tracks";
 import type { AppData, Pause } from "./types";
 
@@ -42,6 +43,9 @@ export const isLeapYear = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 4
 /** Days in month m (1-12) of year y: 28 to 31. */
 export const daysInMonth = (y: number, m: number) => [31, isLeapYear(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 
+/** Day of the week, 0 = Sunday ... 6 = Saturday, from the day key alone (no time zone involved). */
+export const weekdayOf = (day: string) => (((dayNumber(day) + 4) % 7) + 7) % 7;
+
 /** Monday of the week containing day. Weeks run Monday to Sunday. */
 export const mondayOf = (day: string) => { const n = dayNumber(day); return fromDayNumber(n - (((n + 3) % 7) + 7) % 7); };
 
@@ -51,6 +55,10 @@ export const monthOf = (day: string) => day.slice(0, 7);
 export function daysOfMonth(month: string): string[] {
   const [y, m] = month.split("-").map(Number);
   return Array.from({ length: daysInMonth(y, m) }, (_, i) => `${month}-${pad2(i + 1)}`);
+}
+/** A Monday-first month grid: how many blank cells lead the first day, then every day of the month. */
+export function monthGrid(month: string): { lead: number; days: string[] } {
+  return { lead: (weekdayOf(`${month}-01`) + 6) % 7, days: daysOfMonth(month) };
 }
 /** The calendar month n months after (or before) a YYYY-MM month. */
 export function shiftMonth(month: string, n: number): string {
@@ -126,6 +134,8 @@ export interface TrackIndex {
   slips: Map<string, number>;
   met: Set<string>;
   managed: Map<string, number>;
+  /** Days with any record for this track: a slip, a goal-met mark, or an urge with any outcome. */
+  checkedIn: Set<string>;
   rest: Set<string>;
   pauses: Pause[];
 }
@@ -138,16 +148,19 @@ export function trackIndex(d: AppData, habitId: string, today: string): TrackInd
   let byKey = cache.get(d);
   const hit = byKey?.get(key);
   if (hit) return hit;
-  const slips = new Map<string, number>(), managed = new Map<string, number>(), met = new Set<string>();
+  const slips = new Map<string, number>(), managed = new Map<string, number>(), met = new Set<string>(), checkedIn = new Set<string>();
   const state = trackState(d, habitId);
-  let start = state.startedOn;
-  for (const e of d.entries) if (e.habitId === habitId) { slips.set(e.day, (slips.get(e.day) ?? 0) + 1); if (e.day < start) start = e.day; }
-  for (const c of d.cleanDays) if (c.habitId === habitId) { met.add(c.day); if (c.day < start) start = c.day; }
+  // A track id with no habit (removed, or never existed) has no start date of its own: it starts today.
+  let start = d.habits.some((h) => h.id === habitId) ? state.startedOn : today;
+  for (const e of d.entries) if (e.habitId === habitId) { slips.set(e.day, (slips.get(e.day) ?? 0) + 1); checkedIn.add(e.day); if (e.day < start) start = e.day; }
+  for (const c of d.cleanDays) if (c.habitId === habitId) { met.add(c.day); checkedIn.add(c.day); if (c.day < start) start = c.day; }
   for (const u of d.urges) if (u.habitId === habitId) {
+    // An urge acted on is a check-in, but not a slip: only a slip the person logs is a slip.
     if (u.outcome === "rode_it_out") managed.set(u.day, (managed.get(u.day) ?? 0) + 1);
+    checkedIn.add(u.day);
     if (u.day < start) start = u.day;
   }
-  const idx: TrackIndex = { habitId, start, today, slips, met, managed, rest: new Set(state.restDays), pauses: state.pauses };
+  const idx: TrackIndex = { habitId, start, today, slips, met, managed, checkedIn, rest: new Set(state.restDays), pauses: state.pauses };
   if (!byKey) { byKey = new Map(); cache.set(d, byKey); }
   byKey.set(key, idx);
   return idx;
@@ -183,14 +196,15 @@ export function countDays(idx: TrackIndex, from: string, to: string): Record<Pas
  * Streaks. Goal-met and urge-managed days add one. Only a slip ends a streak. Unrecorded, rest and paused days are
  * skipped: they neither add to a streak nor break it, because missing data is not a failure.
  */
-export function streaks(idx: TrackIndex): { current: number; best: number; lastSlip: string | null } {
-  let run = 0, best = 0, lastSlip: string | null = null;
+export function streaks(idx: TrackIndex): { current: number; best: number; lastSlip: string | null; runStart: string | null } {
+  let run = 0, best = 0, lastSlip: string | null = null, runStart: string | null = null;
   const a = dayNumber(idx.start), b = dayNumber(idx.today);
   for (let n = a; n <= b; n++) {
-    const s = statusOf(idx, fromDayNumber(n));
-    if (s === "lapse") { run = 0; lastSlip = fromDayNumber(n); } else if (s === "met" || s === "urge") best = Math.max(best, ++run);
+    const day = fromDayNumber(n);
+    const s = statusOf(idx, day);
+    if (s === "lapse") { run = 0; lastSlip = day; runStart = null; } else if (s === "met" || s === "urge") { if (!run) runStart = day; best = Math.max(best, ++run); }
   }
-  return { current: run, best, lastSlip };
+  return { current: run, best, lastSlip, runStart };
 }
 
 /**
@@ -204,17 +218,49 @@ export function careDayCount(idx: TrackIndex): number {
   return days.size;
 }
 
-/** Consecutive unrecorded days ending yesterday. Today isn't over yet, so it is never "missed". */
+/** Whether the track is not being tracked on a day: a rest day or a paused day. Neither success nor failure. */
+export const notTrackingOn = (idx: TrackIndex, day: string) => idx.rest.has(day) || pausedOn(idx.pauses, day);
+
+/**
+ * A missed check-in: a day that is over, on or after the start, with nothing recorded for the track, and not a
+ * rest or paused day. It is unknown, never a slip. Today is never missed.
+ */
+export const missedOn = (idx: TrackIndex, day: string) => day >= idx.start && day < idx.today && !idx.checkedIn.has(day) && !notTrackingOn(idx, day);
+
+/**
+ * Check-ins from `from` to `to` (inclusive, clipped to the start and today). A check-in is any record for the track
+ * that day. `possible` leaves out rest and paused days, unless something was recorded on them anyway.
+ */
+export function checkIns(idx: TrackIndex, from: string, to: string): { checkedIn: number; possible: number; missed: number } {
+  let checkedIn = 0, possible = 0, missed = 0;
+  const a = Math.max(dayNumber(from), dayNumber(idx.start)), b = Math.min(dayNumber(to), dayNumber(idx.today));
+  for (let n = a; n <= b; n++) {
+    const day = fromDayNumber(n);
+    if (idx.checkedIn.has(day)) { checkedIn++; possible++; } else if (!notTrackingOn(idx, day)) { possible++; if (day < idx.today) missed++; }
+  }
+  return { checkedIn, possible, missed };
+}
+
+/** Missed check-ins in a row ending yesterday. A check-in, a rest day or a paused day ends the count. */
 export function quietDays(idx: TrackIndex): number {
   let n = 0;
-  for (let day = shiftDays(idx.today, -1); day >= idx.start && statusOf(idx, day) === "unrecorded"; day = shiftDays(day, -1)) n++;
+  for (let day = shiftDays(idx.today, -1); missedOn(idx, day); day = shiftDays(day, -1)) n++;
   return n;
 }
 
-/** The last day anything was recorded (a slip, goal met or an urge managed), or null. */
+/** The last day anything was recorded for the track, up to today, or null. */
 export function lastRecorded(idx: TrackIndex): string | null {
-  const days = [...idx.slips.keys(), ...idx.met, ...idx.managed.keys()].filter((x) => x <= idx.today);
-  return days.length ? days.sort()[days.length - 1] : null;
+  let last: string | null = null;
+  for (const day of idx.checkedIn) if (day <= idx.today && (last === null || day > last)) last = day;
+  return last;
+}
+
+/**
+ * Days with a known outcome (a slip or a goal-met mark), from `from` to today. Money kept and slip pace use these:
+ * a day with only an urge, or nothing, could have had an unlogged slip, so it is never counted as money saved.
+ */
+export function outcomeDays(idx: TrackIndex, from: string): string[] {
+  return [...new Set([...idx.slips.keys(), ...idx.met])].filter((x) => x >= from && x <= idx.today);
 }
 
 // ---------- milestones ----------
@@ -265,9 +311,11 @@ export interface TrackSummary {
   /** Time since the track started, in calendar years, months and days. */
   tracked: Elapsed;
   nextAnniversary: { months: number; day: string; inDays: number };
-  /** Recorded days out of days that could have been recorded (rest and paused days left out), 0-100. Null before any. */
+  /** Days with a check-in (any record) since the start. */
+  checkedIn: number;
+  /** Checked-in days out of days that could have been checked in (rest and paused days left out), 0-100. Null before any. */
   checkInRate: number | null;
-  /** Past days with nothing recorded, not counting rest or paused days. Unknown, never a failure. */
+  /** Missed check-ins since the start: past days with nothing recorded, not rest or paused. Unknown, never a failure. */
   missed: number;
   quiet: number;
   lastRecorded: string | null;
@@ -276,13 +324,10 @@ export interface TrackSummary {
 export function trackSummary(d: AppData, habitId: string, today: string): TrackSummary {
   const idx = trackIndex(d, habitId, today);
   const s = streaks(idx);
-  const counts = countDays(idx, idx.start, today);
-  const yesterday = countDays(idx, idx.start, shiftDays(today, -1));
-  const recorded = counts.lapse + counts.met + counts.urge;
-  const possible = recorded + counts.unrecorded;
+  const c = checkIns(idx, idx.start, today);
   const status = statusOf(idx, today);
   return {
-    start: idx.start, today: status, paused: pausedOn(idx.pauses, today), resting: idx.rest.has(today),
+    start: idx.start, today: status, paused: pausedOn(idx.pauses, today), resting: idx.rest.has(today) && !pausedOn(idx.pauses, today),
     current: s.current, best: s.best, care: careDayCount(idx),
     metDays: [...idx.met].filter((x) => !idx.slips.has(x) && x <= today).length,
     managedUrges: [...idx.managed].filter(([x]) => x <= today).reduce((a, [, n]) => a + n, 0),
@@ -290,8 +335,8 @@ export function trackSummary(d: AppData, habitId: string, today: string): TrackS
     slipDays: [...idx.slips.keys()].filter((x) => x <= today).length,
     lastSlip: s.lastSlip, sinceSlip: s.lastSlip ? daysFrom(s.lastSlip, today) : null,
     daysTracked: Math.max(1, daysFrom(idx.start, today) + 1), tracked: elapsed(idx.start, today), nextAnniversary: nextAnniversary(idx.start, today),
-    checkInRate: possible ? Math.round((recorded / possible) * 100) : null,
-    missed: yesterday.unrecorded, quiet: quietDays(idx), lastRecorded: lastRecorded(idx),
+    checkedIn: c.checkedIn, checkInRate: c.possible ? Math.round((c.checkedIn / c.possible) * 100) : null,
+    missed: c.missed, quiet: quietDays(idx), lastRecorded: lastRecorded(idx),
   };
 }
 
@@ -312,4 +357,81 @@ export function withPause(pauses: Pause[], from: string): Pause[] {
 /** Ends the open pause on `on` (the first day tracked again). A pause ended on the day it began is dropped. */
 export function withResume(pauses: Pause[], on: string): Pause[] {
   return pauses.flatMap((p) => (p.to !== null ? [p] : on <= p.from ? [] : [{ ...p, to: on }]));
+}
+
+// ---------- what can be done on a day (Calendar, Home, the quick sheet) ----------
+
+export interface DayControls {
+  status: DayStatus;
+  /** Rest or paused: shown as "Not tracking". */
+  notTracking: boolean;
+  /** A rest day the person chose (as opposed to a pause). Only these can be switched back on the day itself. */
+  resting: boolean;
+  paused: boolean;
+  slips: number;
+  managedUrges: number;
+  /** Within the current companion's life and not in the future. */
+  inLife: boolean;
+  canMarkMet: boolean;
+  canUnmarkMet: boolean;
+  /** "I chose not to track this day" (or undo it): only on a day with nothing recorded and no pause. */
+  canRest: boolean;
+  canLogSlip: boolean;
+}
+
+/** The one set of rules for what a day shows and allows, so screens don't each work it out. */
+export function dayControls(d: AppData, habitId: string, day: string, today: string): DayControls {
+  const idx = trackIndex(d, habitId, today);
+  const habit = d.habits.find((h) => h.id === habitId);
+  const companion = d.companions.find((c) => c.id === habit?.companionId);
+  const status = statusOf(idx, day);
+  const paused = pausedOn(idx.pauses, day);
+  const resting = idx.rest.has(day) && !paused;
+  const slips = idx.slips.get(day) ?? 0;
+  const inLife = !!companion && day <= today && day >= companion.bornOn;
+  const recorded = slips > 0 || idx.met.has(day) || idx.managed.has(day);
+  return {
+    status, paused, resting, notTracking: (paused || idx.rest.has(day)) && !recorded, slips, managedUrges: idx.managed.get(day) ?? 0, inLife,
+    canMarkMet: inLife && slips === 0 && !idx.met.has(day),
+    canUnmarkMet: inLife && status === "met",
+    canRest: inLife && !recorded && !paused,
+    canLogSlip: inLife && !companion!.diedOn,
+  };
+}
+
+// ---------- the pet ----------
+
+/** Days a companion has been around, counting the day it was born: at least 1. */
+export const daysTogether = (bornOn: string, until: string) => Math.max(1, daysFrom(bornOn, until) + 1);
+
+/**
+ * The engine's day-by-day input for one companion, from its birth to `upTo`. Only this companion's slips age it,
+ * and only its own track's goal-met days (without a slip) heal it. `quietFrom` turns on the missed-day rule
+ * (PRD 5.3 v3, off by default since the 3.0 amendment): when on, only a missed check-in counts, so rest days,
+ * paused days, days with any record, today and days after a death never do.
+ */
+export function petDayInputs(d: AppData, companionId: string, upTo: string, today: string, quietFrom: string | null = null): DayInput[] {
+  const companion = d.companions.find((c) => c.id === companionId);
+  if (!companion) return [];
+  const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
+  if (last < companion.bornOn) return [];
+  // The track this companion belongs to: the habit pointing at it now, or (for one that has passed) the habit its slips were logged under.
+  // The track this companion belongs to: its recorded owner (companion.trackId), else the habit pointing at it now,
+  // else (for one that has passed) the habit its slips were logged under.
+  const habit = (companion.trackId ? d.habits.find((h) => h.id === companion.trackId) : undefined)
+    ?? d.habits.find((h) => h.companionId === companionId) ?? d.habits.find((h) => d.entries.some((e) => e.companionId === companionId && e.habitId === h.id));
+  const owner = companion.trackId ?? habit?.id;
+  const damage = new Map<string, number[]>();
+  // Only this companion's slips on its own track: a slip filed under another track can never age it.
+  for (const e of d.entries) if (e.companionId === companionId && (!owner || e.habitId === owner)) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
+  const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
+  const idx = habit ? trackIndex(d, habit.id, today) : null;
+  const out: DayInput[] = [];
+  for (let n = dayNumber(companion.bornOn), b = dayNumber(last); n <= b; n++) {
+    const day = fromDayNumber(n);
+    const missed = !!quietFrom && !!idx && !companion.diedOn && day >= quietFrom && missedOn(idx, day);
+    // A goal-met mark under a slip is kept as history, but the slip wins: the day isn't clean.
+    out.push({ day, damage: damage.get(day) ?? [], clean: clean.has(day) && !damage.has(day), missed });
+  }
+  return out;
 }
