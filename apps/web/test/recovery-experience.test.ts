@@ -4,7 +4,9 @@ import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import { planNotifications } from "../src/notify";
 import { trackSummary } from "../src/progress";
-import { trackLessons } from "../src/recovery";
+import { trackLessons, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst, lapseHeadline, progressKept, afterSlipLine } from "../src/recovery";
+import { pauseHint, pausedLine, pauseToast, resumeHint, resumeToast, pauseRefused } from "../src/copy";
+import type { Tone } from "../src/types";
 import { defaultTrackState, focusedTrackId, trackState } from "../src/tracks";
 import type { AppData, RecoveryPlan } from "../src/types";
 
@@ -154,5 +156,53 @@ describe("each track keeps its own plan", () => {
     expect(l.triggers).toEqual([["Bored", 5]]);
     expect(l.helped).toEqual([{ id: "breathe", managed: 4, total: 5 }]);
     expect(trackLessons(getData(), "hb").urges).toBe(1);
+  });
+});
+
+describe("the urge flow", () => {
+  it("acting on an urge is a check-in, never a slip, until the person logs one", () => {
+    load();
+    actions.recordUrge("ha", 4, "slipped", urgeDetails({ supported: false, strategy: "observe", trigger: "Bored", crisis: false }));
+    const p = trackSummary(getData(), "ha", t0);
+    expect([p.slips, p.today === "lapse", p.checkedIn > 0]).toEqual([0, false, true]);
+    expect(getData().entries).toHaveLength(0);
+    expect(viewCompanion(getData(), "ca").age).toBe(viewCompanion(twoTracks(), "ca").age);
+  });
+
+  it("a managed urge counts as a day of care on its own track only", () => {
+    load();
+    actions.recordUrge("ha", 3, "rode_it_out", urgeDetails({ supported: true, strategy: "breathe", trigger: "", crisis: false }));
+    expect([trackSummary(getData(), "ha", t0).care, trackSummary(getData(), "hb", t0).care]).toEqual([1, 0]);
+    expect(trackSummary(getData(), "ha", t0).today).toBe("urge");
+  });
+
+  it("credits a strategy only when the person went into support, and never keeps crisis text", () => {
+    expect(urgeDetails({ supported: false, strategy: "observe", trigger: "Bored", crisis: false })).toEqual({ strategy: null, trigger: "Bored" });
+    expect(urgeDetails({ supported: true, strategy: "move", trigger: "  ", crisis: false })).toEqual({ strategy: "move", trigger: null });
+    expect(urgeDetails({ supported: true, strategy: "move", trigger: "anything", crisis: true }).trigger).toBeNull();
+  });
+
+  it("what helped can go first in this track's plan without losing the rest", () => {
+    expect(withStrategyFirst(null, "breathe").strategies).toEqual(["breathe"]);
+    const plan = { goal: "stop" as const, reasons: ["Money"], situations: [], firstStep: "", strategies: ["friction", "breathe"] as const, supportName: "", ifThen: [] };
+    expect(withStrategyFirst({ ...plan, strategies: [...plan.strategies] }, "breathe")).toMatchObject({ strategies: ["breathe", "friction"], reasons: ["Money"] });
+  });
+});
+
+describe("tones: every line exists in all three, and none shames", () => {
+  const tones: Tone[] = ["gentle", "honest", "brutal"];
+  const lines = (t: Tone) => [
+    urgePauseLine(t), urgeActedLine(t), urgeActedNote(t), urgeManagedLine(t, "Biscuit"), lapseHeadline(t, "Biscuit"), progressKept(t, 3, 2), afterSlipLine(t, "Biscuit"),
+    pauseHint(t), pausedLine(t, "Biscuit"), pauseToast(t, "Biscuit"), resumeHint(t), resumeToast(t), pauseRefused(t),
+  ];
+  it("has three different versions of each line", () => {
+    const [g, h, b] = tones.map(lines);
+    g.forEach((x, i) => { expect(x).toBeTruthy(); expect(new Set([x, h[i], b[i]]).size).toBeGreaterThan(1); });
+  });
+  it("never uses shaming or punishing words, even when direct", () => {
+    for (const t of tones) for (const l of lines(t)) expect(l).not.toMatch(/\b(fail(ed|ure)?|weak|pathetic|ashamed|shame|disappoint\w*|lazy|excuse|guilt|pathetic|loser|clean)\b/i);
+  });
+  it("only a logged slip is called a slip after acting on an urge", () => {
+    for (const t of tones) expect(urgeActedNote(t)).toMatch(/log/i);
   });
 });

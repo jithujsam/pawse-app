@@ -9,9 +9,9 @@ import { checkIns, countDays, trackIndex, trackSummary, weekdayOf } from "../pro
 import { addDays, fmtHour, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
-import { trackState } from "../tracks";
+import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Button, Icon } from "../ui/Controls";
+import { Button, Icon, TrackContext } from "../ui/Controls";
 import { CheckIn, Observations } from "./WeeklyReview";
 import type { Baseline } from "../types";
 
@@ -125,6 +125,7 @@ export function Report() {
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>Insights</motion.h1>
+      {needsTrackContext(data, habit.id) && <motion.div variants={rise}><TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} /></motion.div>}
       <CheckIn />
       <motion.section className="card stack" variants={rise}>
         <h2>This week and last</h2>

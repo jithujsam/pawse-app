@@ -109,3 +109,8 @@ export const Icon = {
   sun: <svg viewBox="0 0 24 24" className="ico"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>,
   download: <svg viewBox="0 0 24 24" className="ico"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>,
 };
+
+/** Which track a screen is showing, where more than one could be meant. "Paused" is the approved track label. */
+export function TrackContext({ name, pet, paused }: { name: string; pet: string; paused?: boolean }) {
+  return <p className="track-context small"><span className="muted">Showing</span> <b>{name}</b> <span className="muted">· {pet}</span>{paused && <span className="tag">Paused</span>}</p>;
+}

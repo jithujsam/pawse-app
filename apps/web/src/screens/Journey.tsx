@@ -3,9 +3,11 @@ import { MILESTONES } from "../copy";
 import { today } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { useActiveView, useData } from "../store";
+import { needsTrackContext, trackState } from "../tracks";
 import { daysTogether, milestoneProgress, trackSummary } from "../progress";
 import { stats } from "../health";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
+import { TrackContext } from "../ui/Controls";
 import { CalendarSections } from "./Calendar";
 
 /** The Calendar tab: every day on the calendar, then milestones and how far you've come. Reflection lives in the check-in on Insights. */
@@ -26,6 +28,7 @@ export function Journey() {
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>Calendar</motion.h1>
+      {needsTrackContext(data, habit.id) && <motion.div variants={rise}><TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} /></motion.div>}
 
       <CalendarSections />
 

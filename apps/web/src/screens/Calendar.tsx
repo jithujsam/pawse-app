@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
+import { addDays, fmtDay, fmtMonth, fmtTime, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
@@ -10,6 +10,8 @@ import { countDays, dayControls, monthGrid, monthOf, shiftMonth, trackIndex } fr
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
+import { trackState } from "../tracks";
+import type { Pause } from "../types";
 
 /** The month grid, the selected day and the age curve. The top of the Calendar tab. */
 export function CalendarSections() {
@@ -17,6 +19,7 @@ export function CalendarSections() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
+  const track = trackState(data, habit.id);
   // The month shown, as YYYY-MM.
   const [cursor, setCursor] = useState(() => monthOf(today()));
   const [sel, setSel] = useState(today());
@@ -92,7 +95,7 @@ export function CalendarSections() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? "Goal met. A good day." : ctl.status === "rest" ? "You chose not to track this day. It counts neither way." : ctl.status === "paused" ? "Not tracking: this track was paused. It counts neither way." : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : ctl.status === "urge" ? "No slip recorded, and an urge managed." : "Nothing recorded."}</p>}
+            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? "Goal met. A good day." : ctl.status === "rest" ? "You chose not to track this day. It counts neither way." : ctl.status === "paused" ? pausedDayLine(track.pauses, sel) : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : ctl.status === "urge" ? "No slip recorded, and an urge managed." : dayUrges.length ? "An urge was noted. No slip was logged, so this isn't counted as one." : "Nothing recorded."}</p>}
             {dayUrges.length > 0 && <p className="small">{ctl.managedUrges} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>
@@ -136,4 +139,12 @@ export function CalendarSections() {
       <LogSheet open={logging} day={sel} habit={habit} name={companion.name} age={view.age} onClose={() => setLogging(false)} onSaved={() => haptic.heavy()} />
     </>
   );
+}
+
+/** The calendar line for a paused day, with the pause it belongs to. Paused days count neither way. */
+function pausedDayLine(pauses: Pause[], day: string): string {
+  const p = pauses.find((x) => day >= x.from && (x.to === null || day < x.to));
+  if (!p) return "Not tracking: this track was paused. It counts neither way.";
+  const span = p.to === null ? `paused since ${fmtDay(p.from)}` : `paused from ${fmtDay(p.from)} to ${fmtDay(addDays(p.to, -1))}`;
+  return `Not tracking: this track was ${span}. It counts neither way.`;
 }

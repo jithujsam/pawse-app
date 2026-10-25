@@ -198,3 +198,8 @@ export function repairTracks(d: AppData): AppData {
   });
   return changed ? { ...withOwners, habits } : d;
 }
+
+/** Whether a track screen should say which track it shows: when there is more than one open track, or this one is paused. */
+export function needsTrackContext(d: AppData, habitId: string): boolean {
+  return listTracks(d, ["active", "paused"]).length > 1 || trackState(d, habitId).status === "paused";
+}

@@ -4,7 +4,7 @@ import { careDayCount, countDays, statusOf, trackIndex, weekdayOf, type DayStatu
 import { pickedLabels } from "./questions";
 import { slipHour } from "./store";
 import { trackState } from "./tracks";
-import type { AppData, GoalKind, Habit, StrategyId, Tone } from "./types";
+import type { AppData, GoalKind, Habit, RecoveryPlan, StrategyId, Tone } from "./types";
 
 /**
  * The recovery layer: what each day was, what the person's own records show, and the weekly review.
@@ -278,10 +278,40 @@ export function urgeManagedLine(tone: Tone, name: string): string {
   return `That one passed without you acting on it. ${name} noticed.`;
 }
 
+/** After "I acted on it": honest, not shaming, and the slip is the person's call (see urgeActedNote). */
 export function urgeActedLine(tone: Tone): string {
-  if (tone === "gentle") return "That's okay. You noticed it, and that matters. Logging it helps you see what happened.";
-  if (tone === "brutal") return "Okay. Log it honestly and look at what came before it. That's how the next one goes differently.";
-  return "Okay. Noticing it was still useful. Log it, and see what came before it.";
+  if (tone === "gentle") return "Thank you for being honest. Noticing it still matters.";
+  if (tone === "brutal") return "Okay. It happened. What you do next matters more.";
+  return "Okay. Noticing it was still useful.";
+}
+
+/** Says plainly that nothing counts as a slip unless the person logs one. */
+export function urgeActedNote(tone: Tone): string {
+  if (tone === "gentle") return "The urge is saved. Logging a slip is up to you, and only a slip you log counts as one.";
+  if (tone === "brutal") return "The urge is saved. It's only a slip if you log it. Your call.";
+  return "The urge is saved. A slip only counts if you log one, and that's up to you.";
+}
+
+/** The pause before anything else: no instruction to fight, no promise about how long it lasts. */
+export function urgePauseLine(tone: Tone): string {
+  if (tone === "gentle") return "Good that you noticed. Take one slow breath. You don't have to act on it, and you don't have to do this alone.";
+  if (tone === "brutal") return "Stop for one breath. You don't have to act on it. Let's get you through it.";
+  return "Good that you noticed. One slow breath first. You don't have to act on it.";
+}
+
+/**
+ * What an urge record keeps. A strategy only when the person actually went into support (so "I already acted on
+ * it" from the first step doesn't credit a strategy nobody tried), and no trigger text that needs the crisis message.
+ */
+export function urgeDetails(o: { supported: boolean; strategy: StrategyId; trigger: string; crisis: boolean }): { strategy: StrategyId | null; trigger: string | null } {
+  const t = o.trigger.trim();
+  return { strategy: o.supported ? o.strategy : null, trigger: o.crisis || !t ? null : t.slice(0, 40) };
+}
+
+/** The plan with one strategy moved to the front of its preferred list (after it helped with an urge). */
+export function withStrategyFirst(plan: RecoveryPlan | null, id: StrategyId): RecoveryPlan {
+  const p = plan ?? { goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] };
+  return { ...p, strategies: [id, ...p.strategies.filter((x) => x !== id)] };
 }
 
 export function restLine(tone: Tone): string {
