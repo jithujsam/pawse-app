@@ -122,12 +122,11 @@ describe("3. goal-met days are recalculated when slips change", () => {
     actions.deleteEntry(y.id);
     expect(dayStatus(getData(), A, day, t())).toBe("met");
   });
-  it("editing a slip in place (AI adjustment, reflection) keeps the day a slip", () => {
+  it("editing a slip in place (a reflection) keeps the day a slip", () => {
     load();
     const day = addDays(t(), -1);
     actions.markClean(A, day);
     const e = actions.logSlip(A, {}, day).entry;
-    actions.applyAi(e.id, { months: 2, adjustPct: -10, effects: [], explanation: "x" });
     actions.reflectOnLapse(e.id, { before: "tired", adjust: "eat earlier" });
     expect(dayStatus(getData(), A, day, t())).toBe("lapse");
   });

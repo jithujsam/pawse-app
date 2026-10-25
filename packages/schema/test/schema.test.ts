@@ -4,6 +4,8 @@ import { AiSlipResult, AiWeeklyResult } from "../src";
 describe("AI slip result", () => {
   const ok = { ai_adjust_pct: 12, body_effects: ["dull_coat", "heavier"], explanation: "Third order today and well above your usual spend." };
   it("accepts a good result", () => expect(AiSlipResult.safeParse(ok).success).toBe(true));
+  it("accepts a sentence on its own: the AI is asked for nothing else", () => expect(AiSlipResult.safeParse({ explanation: ok.explanation }).success).toBe(true));
+  it("needs the sentence", () => expect(AiSlipResult.safeParse({ ai_adjust_pct: 5, body_effects: [] }).success).toBe(false));
   it.each([
     ["adjustment too large", { ...ok, ai_adjust_pct: 80 }],
     ["tag outside the vocabulary", { ...ok, body_effects: ["has_cancer"] }],

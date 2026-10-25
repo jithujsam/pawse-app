@@ -1,10 +1,12 @@
 // Edge function: the only place the OpenRouter key exists. Deploy with verify_jwt on.
 //   supabase secrets set OPENROUTER_API_KEY=...    (never commit it, never ship it in the app)
-// The app always keeps the deterministic baseline; anything this returns is optional polish.
-// Free text from the person is treated as data, validated, capped, and never logged.
+// The app always keeps the deterministic baseline; anything this returns is optional polish: one sentence, never a number.
+// It only answers a person who has switched AI writing on (consent.ts). Free text is treated as data, validated, capped,
+// and never logged; the app no longer sends notes at all, and `texts` from an older app is ignored.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
 import { cacheKey } from "./cache.ts";
+import { consentGiven } from "./consent.ts";
 
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
@@ -26,7 +28,6 @@ function cors(req: Request): Record<string, string> {
 const json = (req: Request, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
-const EFFECTS = ["dull_coat", "heavier", "labored_breathing", "cough", "thin", "glassy_eyes", "trembling", "tired_eyes", "slumped", "anxious", "worn_down"] as const;
 const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*)\b/i;
 const safe = (t: string) => !BANNED.test(t);
 const text = (n: number) => z.string().max(n).transform((s) => s.replace(/[\u0000-\u001f\u007f]/g, " ").trim());
@@ -45,11 +46,10 @@ const WeeklyReq = z.object({
 }).strict();
 const Req = z.discriminatedUnion("kind", [SlipReq, WeeklyReq]);
 
+// One sentence. Anything else the model adds (an adjustment, tags) is stripped, never passed on: the AI changes no number.
 const SlipOut = z.object({
-  ai_adjust_pct: z.number().min(-30).max(30),
-  body_effects: z.array(z.enum(EFFECTS)).max(3),
   explanation: z.string().trim().min(1).max(140).refine(safe),
-}).strict();
+});
 const WeeklyOut = z.object({
   summary: z.string().trim().min(20).max(700).refine(safe).refine((t) => /\d/.test(t)),
 }).strict();
@@ -75,10 +75,10 @@ type WeeklyR = z.infer<typeof WeeklyReq>;
 
 function prompt(r: SlipR | WeeklyR) {
   if (r.kind === "slip") return {
-    system: `${RULES}\nTone: ${TONES[r.tone]}\nTask: judge this single slip. Reply as {"ai_adjust_pct": number from -30 to 30, "body_effects": up to 3 tags chosen only from ${JSON.stringify(EFFECTS)}, "explanation": one sentence of at most 140 characters, in the requested tone, that cites at least one real fact from the data}.\nSet ai_adjust_pct above 0 when the slip is bigger or later or more repeated than this person's usual, below 0 when smaller. Pick effects that fit the habit class.`,
+    system: `${RULES}\nTone: ${TONES[r.tone]}\nTask: write one sentence about this single slip. Reply as {"explanation": one sentence of at most 140 characters, in the requested tone, that cites at least one real fact from the data}.\nYou only write words. Never decide, change or recompute a number: you may repeat a number from the data exactly as given.`,
     user: JSON.stringify({
       habit_class: r.habitClass, pet_name: r.companionName, amount: r.amount, unit: r.unit, persons_usual_amount: r.median,
-      triggers_present: r.triggers, notes_written_by_person: r.texts, slip_number_today: r.nthToday,
+      triggers_present: r.triggers, slip_number_today: r.nthToday,
       baseline_months_lost: r.baselineMonths, slips_in_last_7_days: r.last7Slips,
     }),
     max: 200,
@@ -109,6 +109,10 @@ Deno.serve(async (req) => {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer /i, "");
   const { data: u } = token ? await admin.auth.getUser(token) : { data: null };
   if (!u?.user) return json(req, { ok: false, error: "unauthorized" }, 401);
+
+  // Opt-in, checked before anything else: no consent means no saved answer served, no quota spent and nothing sent on.
+  const { data: profile } = await admin.from("profiles").select("settings").eq("id", u.user.id).maybeSingle();
+  if (!consentGiven(profile?.settings)) return json(req, { ok: false, error: "consent" });
 
   // Tolerate paste slips: a "Bearer " prefix, quotes, spaces, and invisible characters (zero-width spaces,
   // byte-order marks) that chat and notes apps add. A real key only has letters, digits, dashes and underscores.

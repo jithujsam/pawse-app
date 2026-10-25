@@ -13,6 +13,8 @@ import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persi
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, trackState, type Track } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
+import { planImport, total, withoutAdded, type AddedRows, type ImportPlan, type Refused } from "./backup";
+import { AMOUNT_MAX, isValidAmount } from "@detox/schema";
 import type { AppData, Baseline, Companion, Entry, Habit, Measure, Personality, RecoveryPlan, Species, StrategyId, Tone, TrackState, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
@@ -192,6 +194,16 @@ export function useActiveView(): CompanionView | undefined {
   const d = useData();
   const day = today();
   return useMemo(() => { const c = activeCompanion(d); return c ? viewCompanion(d, c.id, day) : undefined; }, [d, day]);
+}
+
+/** Why a slip's amount can't be saved, in words for the person, or null when it is fine (or empty). */
+export function amountProblem(habit: Habit, values: Entry["values"]): string | null {
+  const f = habit.fields.find((x) => x.amount);
+  const raw = f ? values[f.id] : undefined;
+  if (!f || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  if (isValidAmount(n)) return null;
+  return n < 0 ? "An amount can't be negative." : `Enter an amount up to ${AMOUNT_MAX.toLocaleString()}.`;
 }
 
 export function median(xs: number[]): number | undefined {
@@ -375,23 +387,12 @@ export const actions = {
   },
 
   /**
-   * Applies a validated AI result to an entry that was first saved with the baseline. Returns the months
-   * actually kept. The AI's nudge is dropped (the baseline stands) when it alone would decide whether the
-   * companion lives or dies: a life-or-death outcome always comes from the deterministic engine.
+   * Turns AI writing on or off (Your privacy choice, synced with the account). Off also forgets the AI sentences this phone
+   * kept. There is no action that lets the AI change a stored number: a slip's months come only from the engine.
    */
-  applyAi(entryId: string, r: { months: number; adjustPct: number; effects: string[]; explanation: string }): number | null {
-    const e = data.entries.find((x) => x.id === entryId);
-    if (!e) return null;
-    const c = data.companions.find((x) => x.id === e.companionId)!;
-    const withMonths = (months: number, adjustPct: number | null): AppData => ({
-      ...data,
-      entries: data.entries.map((x) => (x.id === entryId ? { ...x, months, aiAdjustPct: adjustPct, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
-    });
-    let next = withMonths(r.months, r.adjustPct);
-    const diesWithAi = viewCompanion(next, e.companionId).states.some((s) => s.stage === "dead");
-    if (diesWithAi !== (c.diedOn !== null)) next = withMonths(e.months, null);
-    commit(next);
-    return next.entries.find((x) => x.id === entryId)!.months;
+  setAiConsent(on: boolean) {
+    if (!on) { try { localStorage.removeItem(AI_CACHE_KEY); } catch { /* ignore */ } }
+    commit({ ...data, settings: { ...data.settings, aiConsent: on } });
   },
 
   setSummary: (week: string, text: string, habitId?: string) => {
@@ -404,18 +405,19 @@ export const actions = {
   applyRemote(next: AppData) { commit(next, "remote"); },
 
   /**
-   * Restores a backup file. Everything in it is validated and v1 backups are migrated; returns false if it isn't a
-   * backup this version can read (including one from a newer version). Rows it can't use are left out; the file
-   * itself is untouched, so nothing in it is lost.
+   * Adds what a backup file holds that isn't on this phone yet (backup.ts: planImport previews it). It never removes
+   * or changes a record already here, so nothing it does can be synced as a deletion. It plans again against the data
+   * as it is now, so anything that arrived since the preview is kept. Returns what was added, or why it was refused.
+   * (This replaced importJson, which replaced everything and turned every record missing from the file into a deletion
+   * on every device.)
    */
-  importJson(text: string): boolean {
-    try {
-      const d = normalize(JSON.parse(text));
-      if (!d || !d.settings.onboarded) return false;
-      commit(migrateIds(d));
-      return true;
-    } catch { return false; }
+  applyImport(text: string): ImportPlan | Refused {
+    const plan = planImport(text, data);
+    if (plan.ok && total(plan.add) > 0) commit(plan.next);
+    return plan;
   },
+  /** Takes an import back: removes exactly the rows it added. */
+  undoImport(added: AddedRows) { commit(withoutAdded(data, added)); },
 
   /** Swaps a habit's questions for the current recommended set, keeping its class and unit. */
   refreshQuestions(habitId: string) {
@@ -428,7 +430,11 @@ export const actions = {
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
     commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
 
-  /** Null when the track can't take a record: it is archived (read-only) or gone. A pause never refuses one. */
+  /**
+   * Null when the track can't take a record (it is archived, read-only or gone; a pause never refuses one), or when the
+   * amount is one the account can't store. An out-of-range amount used to be saved anyway: the server refused it on every
+   * sync and the loader dropped it on the next start. Screens check amountProblem() first, so they can say why.
+   */
   logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
     if (!canRecord(data, habitId)) return null;
     const habit = data.habits.find((h) => h.id === habitId)!;
@@ -436,6 +442,7 @@ export const actions = {
     const amountField = habit.fields.find((f) => f.amount);
     const raw = amountField ? Number(values[amountField.id]) : NaN;
     const amount = Number.isFinite(raw) && amountField ? raw : null;
+    if (amount !== null && !isValidAmount(amount)) return null;
     const since = addDays(day, -30);
     const med = median(data.entries.filter((e) => e.habitId === habitId && e.amount !== null && e.day >= since && e.day < day).map((e) => e.amount as number));
     const hour = time ? Number(time.slice(0, 2)) : day === today() ? new Date().getHours() : null;
@@ -734,17 +741,28 @@ export const actions = {
   /**
    * Wipes this phone's copy only. The account's copy is never touched: the commit is marked "reset",
    * so sync starts over and, while signed in, brings the account's history back.
+   * `keepLock`: the app-lock PIN survives the wipe, because the history that comes straight back from the account must
+   * not arrive unlocked. Leave it off when the person is leaving the account or has forgotten the PIN.
    */
-  async resetAll() {
-    vaultKey = null;
-    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY); } catch { /* ignore */ }
+  async resetAll(opts: { keepLock?: boolean } = {}) {
+    const lock = opts.keepLock && vaultKey ? { key: vaultKey, length: await vault.pinLength() } : null;
+    vaultKey = lock?.key ?? null;
+    try {
+      await kv.clear(); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY);
+      if (lock) await kv.set("pinLength", lock.length);
+    } catch { /* ignore */ }
     commit(blank(), "reset");
   },
 };
 
 import type { SlipRequest, WeeklyRequest } from "@detox/schema";
 
-/** What the AI is allowed to see about one slip: no photos, short notes only. */
+/**
+ * What the AI is allowed to see about one slip, and nothing more: the kind of habit, the amount against the person's
+ * usual, the situations they tapped (the yes/no triggers and the mood), and how many slips. NEVER the notes they typed,
+ * where or who they were with, the urge strength, photos, plan, reflections or journal (audit P0-2). `texts` stays in
+ * the request, always empty, because older servers (up to 3.1.0) require the field.
+ */
 export function slipRequest(entryId: string): SlipRequest | null {
   const e = data.entries.find((x) => x.id === entryId);
   const habit = e && data.habits.find((h) => h.id === e.habitId);
@@ -758,14 +776,9 @@ export function slipRequest(entryId: string): SlipRequest | null {
     amount: e.amount, unit: habit.unit, median: med ?? null,
     triggers: [
       ...habit.fields.filter((f) => f.type === "yesno" && f.trigger && e.values[f.id] === true).map((f) => f.label),
-      ...habit.fields.filter((f) => f.id === "mood" || f.id === "plan" || f.id === "who").flatMap((f) => pickedLabels(f, e.values[f.id])),
+      ...habit.fields.filter((f) => f.id === "mood").flatMap((f) => pickedLabels(f, e.values[f.id])),
     ].map((t) => t.slice(0, 60)).slice(0, 8),
-    texts: [
-      ...(habit.unit === "money" && e.amount !== null ? [`Spent ${data.settings.currency}${e.amount}`] : []),
-      ...habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean),
-      ...habit.fields.filter((f) => f.id === "what" || f.id === "where").flatMap((f) => pickedLabels(f, e.values[f.id]).map((l) => `${f.id === "where" ? "Where" : "What"}: ${l}`)),
-      ...(typeof e.values.urge === "string" && e.values.urge ? [`Urge strength: ${e.values.urge} of 5`] : []),
-    ].map((t) => t.slice(0, 80)).slice(0, 4),
+    texts: [],
     nthToday: data.entries.filter((x) => x.habitId === habit.id && x.day === e.day && x.createdAt <= e.createdAt).length || 1,
     baselineMonths: e.months, last7Slips: last7,
   };

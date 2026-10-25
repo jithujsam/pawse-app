@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { actions, activeCompanion, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
+import { baselineMonths } from "@detox/engine";
 import { dayStatus } from "../src/recovery";
 import { toRemote } from "../src/syncmap";
 import { blank } from "../src/persist";
@@ -22,23 +23,22 @@ function load(entries: Entry[]) {
     entries,
   });
 }
-const ai = (months: number, adjustPct: number) => ({ months, adjustPct, effects: [], explanation: "Biscuit felt that." });
-
-describe("AI polish on a slip", () => {
-  it("applies the AI's nudge in the ordinary case", () => {
-    load([entry("e1", t0, 4)]);
-    expect(actions.applyAi("e1", ai(5.2, 30))).toBe(5.2);
-    expect(getData().entries[0]).toMatchObject({ months: 5.2, aiAdjustPct: 30, source: "ai" });
+describe("AI has no say in the numbers", () => {
+  it("there is no action that applies an AI adjustment to a slip", () => {
+    expect("applyAi" in actions).toBe(false);
   });
 
-  it("never lets the AI's nudge be what kills the companion (classic rules, where death exists)", () => {
-    // 50 old slips of 23.8 months = 1190 net; today's 8-month slip leaves it alive at 1198 of 1200.
-    load([...Array.from({ length: 50 }, (_, i) => entry(`old${i}`, addDays(t0, -50 + i), 23.8)), entry("e1", t0, 8)]);
-    actions.setSettings({ petLife: "classic" });
-    expect(viewCompanion(getData(), C).stage).not.toBe("dead");
-    expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
-    expect(getData().companions[0].diedOn).toBeNull();
-    expect(getData().entries.find((e) => e.id === "e1")).toMatchObject({ months: 8, aiAdjustPct: null, explanation: "Biscuit felt that." });
+  it("a slip's months are the engine's, and it is recorded as the app's own", () => {
+    load([]);
+    const d = actions.logSlip(H, {}, t0)!;
+    expect(d.entry.months).toBe(baselineMonths(d.entry.severity, 1));
+    expect(d.entry).toMatchObject({ source: "baseline", aiAdjustPct: null });
+    expect(getData().entries[0]).toBe(d.entry);
+  });
+
+  it("slips saved by earlier versions with an AI adjustment are left exactly as they were", () => {
+    load([{ ...entry("old", t0, 5.2), source: "ai", aiAdjustPct: 30, explanation: "Written by an earlier AI." }]);
+    expect(getData().entries[0]).toMatchObject({ months: 5.2, source: "ai", aiAdjustPct: 30, explanation: "Written by an earlier AI." });
   });
 });
 

@@ -11,10 +11,15 @@ export type EffectTag = (typeof EFFECT_VOCAB)[number];
 const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*)\b/i;
 export const isSafeText = (t: string) => !BANNED.test(t);
 
+/**
+ * The AI writes one sentence. `ai_adjust_pct` and `body_effects` are what servers up to 3.1.0 also sent; they are still
+ * accepted (and checked) so an older server keeps working, but the app ignores them: the AI never changes a number
+ * or what the pet shows (PRD section 22).
+ */
 export const AiSlipResult = z.object({
-  ai_adjust_pct: z.number().min(-30).max(30),
-  body_effects: z.array(z.enum(EFFECT_VOCAB)).max(3),
   explanation: z.string().trim().min(1).max(140).refine(isSafeText, "unsafe wording"),
+  ai_adjust_pct: z.number().min(-30).max(30).optional(),
+  body_effects: z.array(z.enum(EFFECT_VOCAB)).max(3).optional(),
 }).strict();
 export type AiSlipResult = z.infer<typeof AiSlipResult>;
 

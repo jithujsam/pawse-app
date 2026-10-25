@@ -39,12 +39,13 @@ function SyncLine() {
   const text = s.state === "syncing" && (slow || !s.last) ? "Syncing…"
     : s.state === "offline" ? `Offline. ${s.pending ? `${s.pending} changes will sync when you're back.` : "Everything is saved on this phone."}`
       : s.state === "error" ? "Sync paused. It will retry on its own."
+        : s.rejected > 0 ? `${s.rejected} ${s.rejected === 1 ? "item couldn't" : "items couldn't"} be backed up. ${s.rejected === 1 ? "It is" : "They are"} still on this phone. Everything else is backed up.`
         : s.last ? `Backed up ${new Date(s.last).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}` : "Backed up";
   return (
-    <div className="sync-line" data-state={s.state === "syncing" && !slow && s.last ? "idle" : s.state}>
+    <div className="sync-line" data-state={s.state === "syncing" && !slow && s.last ? "idle" : s.state === "idle" && s.rejected > 0 ? "error" : s.state}>
       <motion.i animate={s.state === "syncing" && slow ? { rotate: 360 } : { rotate: 0 }} transition={s.state === "syncing" ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0 }} />
       <span className="small">{text}</span>
-      {s.state !== "syncing" && <button className="link small" onClick={() => void syncNow()}>Sync now</button>}
+      {s.state !== "syncing" && <button className="link small" onClick={() => void syncNow(true)}>{s.rejected > 0 ? "Try again" : "Sync now"}</button>}
     </div>
   );
 }

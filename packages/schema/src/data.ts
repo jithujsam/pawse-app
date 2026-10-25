@@ -2,6 +2,15 @@ import { z } from "zod";
 
 /** What the app keeps on the phone. Everything loaded from storage, a backup file or the server passes through here. */
 
+/**
+ * Limits the database enforces with CHECK constraints (supabase/migrations/0002_normalized.sql). A row outside them is
+ * refused by the server, so the app refuses to create one in the first place (audit P0-4).
+ */
+export const AMOUNT_MAX = 10_000_000;
+export const FIELDS_MAX = 20;
+/** Whether a slip's amount (money, count or minutes) is one the account can store. */
+export const isValidAmount = (n: number): boolean => Number.isFinite(n) && n >= 0 && n <= AMOUNT_MAX;
+
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const id = z.string().min(1).max(64);
 const habitClass = z.enum(["food_spending", "impulse_buying", "doomscrolling", "smoking", "alcohol", "custom"]);
@@ -37,7 +46,7 @@ export const HabitSchema = z.object({
   cls: habitClass,
   classWeight: z.number().min(0.1).max(3),
   companionId: id,
-  fields: z.array(FieldSchema).max(20),
+  fields: z.array(FieldSchema).max(FIELDS_MAX),
   unit,
 });
 
@@ -49,7 +58,7 @@ export const EntrySchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable(),
   /** Photos are data URLs and can be large; text answers are short. */
   values: z.record(z.union([z.string().max(2_000_000), z.boolean()])),
-  amount: z.number().min(0).max(10_000_000).nullable(),
+  amount: z.number().min(0).max(AMOUNT_MAX).nullable(),
   months: z.number().min(0).max(24),
   severity: z.number().min(0).max(3),
   effects: z.array(z.string().max(40)).max(6),
@@ -119,6 +128,8 @@ export const SettingsSchema = z.object({
   theme: z.enum(["system", "light", "dark"]),
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
   petLife: z.enum(["continuity", "classic"]),
+  /** The person agreed to send recovery details to the AI provider for written text. Off unless they turn it on. */
+  aiConsent: z.boolean(),
 }).partial().passthrough();
 
 /**

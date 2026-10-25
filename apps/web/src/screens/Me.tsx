@@ -12,7 +12,9 @@ import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
+import { actions, canAllowPassingAway, getData, useActiveView, useData, vault } from "../store";
+import { describeCounts, planImport, total, type ImportPlan } from "../backup";
+import { Sheet } from "../ui/Sheet";
 import { daysTogether, trackSummary } from "../progress";
 import { companionsOf, trackState } from "../tracks";
 import { PlanPage } from "./Plan";
@@ -22,9 +24,11 @@ import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
+import { AiConsent } from "./AiConsent";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
 import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE } from "../update";
+import { FIELDS_MAX } from "@detox/schema";
 import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -33,7 +37,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
 
-type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
+type Page = "plan" | "ai" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
 
 export function Me() {
   const data = useData();
@@ -80,7 +84,8 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title="Privacy">
-          {configured && <Row icon={Icon.cloud} label="Account and backup" value={session ? (sync.state === "error" ? "Needs attention" : "On") : "Off"} onClick={() => setPage("account")} />}
+          {configured && <Row icon={Icon.spark} label="AI writing" value={settings.aiConsent ? "On" : "Off"} onClick={() => setPage("ai")} />}
+          {configured && <Row icon={Icon.cloud} label="Account and backup" value={session ? (sync.state === "error" || sync.rejected > 0 ? "Needs attention" : "On") : "Off"} onClick={() => setPage("account")} />}
           <Row icon={Icon.lock} label="App lock" value={vault.hasPin() ? "On" : "Off"} onClick={() => setPage("security")} />
           <Row icon={Icon.data} label="Your data" onClick={() => setPage("data")} />
         </Group>
@@ -104,6 +109,7 @@ export function Me() {
       <SubPage open={page === "reminders"} title="Reminders" onClose={close}><RemindersPage /></SubPage>
       <SubPage open={page === "questions"} title="Check-in questions" onClose={close}><QuestionsPage /></SubPage>
       <SubPage open={page === "security"} title="App lock" onClose={close}><SecurityCard /></SubPage>
+      {configured && <SubPage open={page === "ai"} title="AI writing" onClose={close}><AiConsent /></SubPage>}
       {configured && <SubPage open={page === "account"} title="Account and backup" onClose={close}><section className="card stack"><Account /></section></SubPage>}
       <SubPage open={page === "data"} title="Your data" onClose={close}><DataPage /></SubPage>
       <SubPage open={page === "appearance"} title="Appearance" onClose={close}><AppearancePage /></SubPage>
@@ -260,7 +266,9 @@ function QuestionsPage() {
   const habit = useActiveView()!.habit ?? data.habits[0];
   const [editing, setEditing] = useState(false);
   const setField = (id: string, patch: Partial<Field>) => actions.updateHabitFields(habit.id, habit.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)));
-  const addField = () => { haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "New question", type: "choice", required: false, options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] }]); };
+  // The account stores at most FIELDS_MAX questions per track; one more would be refused on every sync.
+  const full = habit.fields.length >= FIELDS_MAX;
+  const addField = () => { if (full) return; haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "New question", type: "choice", required: false, options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] }]); };
   const rmField = (id: string) => {
     const before = habit.fields;
     actions.updateHabitFields(habit.id, habit.fields.filter((f) => f.id !== id));
@@ -292,7 +300,7 @@ function QuestionsPage() {
         </AnimatePresence>
       </motion.div>
       {editing && <div className="actions">
-        <Button variant="secondary" onClick={addField}>Add a question</Button>
+        <Button variant="secondary" onClick={addField} disabled={full}>{full ? `Up to ${FIELDS_MAX} questions` : "Add a question"}</Button>
         <Button variant="secondary" onClick={() => { const before = habit.fields; actions.refreshQuestions(habit.id); toast("Switched to the recommended questions", { action: { label: "Undo", run: () => actions.updateHabitFields(habit.id, before) } }); }}>Use recommended</Button>
       </div>}
     </section>
@@ -303,6 +311,24 @@ function DataPage() {
   const { companion } = useActiveView()!;
   const { session } = useSession();
   const [confirm, setConfirm] = useState(false);
+  // A backup file chosen but not yet applied: nothing changes until the person confirms what it would add.
+  const [preview, setPreview] = useState<{ text: string; plan: ImportPlan } | null>(null);
+  async function choose(f: File | undefined) {
+    if (!f) return;
+    if (f.size > 50_000_000) { toast("That file is too big to be a backup", { kind: "bad" }); return; }
+    const text = await f.text();
+    const plan = planImport(text, getData());
+    if (!plan.ok) { toast(plan.message, { kind: "bad", ms: 6000 }); return; }
+    setPreview({ text, plan });
+  }
+  function addFromBackup() {
+    if (!preview) return;
+    const r = actions.applyImport(preview.text);
+    setPreview(null);
+    if (!r.ok) { toast(r.message, { kind: "bad", ms: 6000 }); return; }
+    haptic.success();
+    toast(`Added ${total(r.add)} ${total(r.add) === 1 ? "record" : "records"} from the backup`, { kind: "good", ms: 8000, action: { label: "Undo", run: () => { actions.undoImport(r.added); toast("Took the backup's records back out"); } } });
+  }
   function exportData() {
     const text = actions.exportJson();
     const a = document.createElement("a");
@@ -315,18 +341,14 @@ function DataPage() {
   return (<>
     <section className="card stack">
       <h2>Backup file</h2>
-      <p className="muted small">A copy of everything on this phone, as a file you keep.</p>
+      <p className="muted small">A copy of everything on this phone, as a file you keep. The file isn't encrypted, so keep it somewhere private.</p>
       <div className="actions">
         <Button variant="secondary" onClick={exportData}>Export</Button>
-        <label className="btn secondary file-btn">Restore<input type="file" accept="application/json,.json" className="sr-only" onChange={async (e) => {
-          const f = e.target.files?.[0]; e.target.value = "";
-          if (!f) return;
-          if (f.size > 50_000_000) { toast("That file is too big to be a backup", { kind: "bad" }); return; }
-          const ok = actions.importJson(await f.text());
-          toast(ok ? "Backup restored" : "That file isn't a Pawse backup", { kind: ok ? "good" : "bad" });
-        }} /></label>
+        <label className="btn secondary file-btn">Add from a backup<input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void choose(f); }} /></label>
       </div>
+      <p className="muted small">Adding from a backup brings in records that aren't on this phone yet. You see what it would add first, and nothing here is replaced or removed.</p>
     </section>
+    <RestorePreview preview={preview} onCancel={() => setPreview(null)} onConfirm={addFromBackup} />
     <section className="card stack">
       <h2>Start over</h2>
       <AnimatePresence mode="wait" initial={false}>
@@ -334,13 +356,37 @@ function DataPage() {
           ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>Delete all data on this phone</Button></motion.div>
           : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
               <p className="small">{session
-                ? `This removes ${companion.name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.`
+                ? `This removes ${companion.name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in.${vault.hasPin() ? " App lock stays on." : ""} To remove it everywhere, delete your account in Account and backup.`
                 : `This removes ${companion.name}, every log and your settings from this phone. It can't be undone.`}</p>
-              <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
+              <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll({ keepLock: true }); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
             </motion.div>}
       </AnimatePresence>
     </section>
   </>);
+}
+
+/** What a backup file would add, said plainly, before anything changes. */
+function RestorePreview({ preview, onCancel, onConfirm }: { preview: { text: string; plan: ImportPlan } | null; onCancel: () => void; onConfirm: () => void }) {
+  const plan = preview?.plan;
+  const n = plan ? total(plan.add) : 0;
+  return (
+    <Sheet open={!!preview} onClose={onCancel} label="Add from a backup">
+      {plan && <div className="stack">
+        <h2>{n ? "Add from this backup?" : "Nothing new in this backup"}</h2>
+        {n > 0
+          ? <p>This adds {describeCounts(plan.add).join(", ")} to this phone. They then back up to your account and appear on your other phones.</p>
+          : <p>Everything in this file is already on this phone.</p>}
+        {total(plan.same) > 0 && <p className="small muted">{total(plan.same)} {total(plan.same) === 1 ? "record is" : "records are"} already here.</p>}
+        {total(plan.keep) > 0 && <p className="small">{total(plan.keep)} {total(plan.keep) === 1 ? "record" : "records"} in the file differ from what is here. The versions on this phone are kept.</p>}
+        {plan.unreadable > 0 && <p className="small" role="alert">{plan.unreadable} {plan.unreadable === 1 ? "row" : "rows"} in the file couldn't be read, so {plan.unreadable === 1 ? "it was" : "they were"} left out. The file itself isn't changed.</p>}
+        {plan.duplicates > 0 && <p className="small muted">{plan.duplicates} repeated {plan.duplicates === 1 ? "row was" : "rows were"} counted once.</p>}
+        {plan.version === 1 && <p className="small muted">This backup is from an older version of Pawse. It is read and brought up to date as it is added.</p>}
+        <p className="muted small">Nothing on this phone is replaced or removed, and you can undo right after.</p>
+        {n > 0 && <Button onClick={onConfirm}>Add {n} {n === 1 ? "record" : "records"}</Button>}
+        <Button variant="secondary" onClick={onCancel}>{n > 0 ? "Cancel" : "Close"}</Button>
+      </div>}
+    </Sheet>
+  );
 }
 
 const THEME_LABEL = { system: "System", light: "Light", dark: "Dark" } as const;

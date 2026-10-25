@@ -18,14 +18,21 @@ const missing = new Set<Table>();
 const isMissingTable = (msg: string) => /does not exist|could not find the table|schema cache/i.test(msg);
 const OVERLAP_MS = 5000;
 
-interface Meta { cursor: Partial<Record<Table, string>>; pending: Record<string, number>; removed: Record<string, number> }
-const emptyMeta = (): Meta => ({ cursor: {}, pending: {}, removed: {} });
+/**
+ * `rejected`: rows the server refused because of what is in them (an amount over its limit, say). They stay on this
+ * phone, are not retried on every cycle (that stalled everything behind them), and are shown to the person. A local
+ * change to the row, "Sync now" and the next app start all try them again.
+ */
+interface Meta { cursor: Partial<Record<Table, string>>; pending: Record<string, number>; removed: Record<string, number>; rejected: Record<string, { at: number; message: string }> }
+const emptyMeta = (): Meta => ({ cursor: {}, pending: {}, removed: {}, rejected: {} });
 
 export type SyncState = "off" | "idle" | "syncing" | "offline" | "error";
-let status: { state: SyncState; last: number | null; pending: number } = { state: "off", last: null, pending: 0 };
+let status: { state: SyncState; last: number | null; pending: number; rejected: number } = { state: "off", last: null, pending: 0, rejected: 0 };
 const watchers = new Set<() => void>();
 const setStatus = (p: Partial<typeof status>) => { status = { ...status, ...p }; watchers.forEach((w) => w()); if (typeof window !== "undefined") (window as unknown as { __companionSync: unknown }).__companionSync = status; };
 export const getSyncStatus = () => status;
+/** The rows the server refused, with its reason, for support and tests. */
+export const getRejected = () => Object.entries(meta.rejected).map(([key, r]) => ({ key, ...r }));
 export const useSyncStatus = () => useSyncExternalStore((cb) => { watchers.add(cb); return () => watchers.delete(cb); }, () => status);
 
 let userId: string | null = null;
@@ -44,7 +51,7 @@ let generation = 0;
 const echo = new Map<string, number>();
 
 const metaKey = (uid: string) => `sync:${uid}`;
-const saveMeta = () => { if (userId) void kv.set(metaKey(userId), meta).catch(() => undefined); setStatus({ pending: Object.keys(meta.pending).length + Object.keys(meta.removed).length }); };
+const saveMeta = () => { if (userId) void kv.set(metaKey(userId), meta).catch(() => undefined); setStatus({ pending: Object.keys(meta.pending).length + Object.keys(meta.removed).length, rejected: Object.keys(meta.rejected).length }); };
 
 onCommit((prev, next, source) => {
   if (!userId) return;
@@ -63,8 +70,8 @@ onCommit((prev, next, source) => {
   const t = Date.now();
   const { changed, removed } = diff(prev, next);
   if (!changed.length && !removed.length) return;
-  for (const k of changed) { meta.pending[k] = t; delete meta.removed[k]; }
-  for (const k of removed) { delete meta.pending[k]; if (tombstone(k)) meta.removed[k] = t; }
+  for (const k of changed) { meta.pending[k] = t; delete meta.removed[k]; delete meta.rejected[k]; }
+  for (const k of removed) { delete meta.pending[k]; delete meta.rejected[k]; if (tombstone(k)) meta.removed[k] = t; }
   saveMeta();
   schedule(1500);
 });
@@ -79,6 +86,7 @@ export async function startSync(uid: string): Promise<void> {
   if (userId === uid && status.state !== "off") return;
   userId = uid;
   meta = { ...emptyMeta(), ...((await kv.get<Meta>(metaKey(uid)).catch(() => undefined)) ?? {}) };
+  retryRejected(); // the server's rules may have changed since: each launch gives refused rows another try
   setStatus({ state: "idle" });
   await syncNow();
 }
@@ -92,8 +100,39 @@ export function stopSync() {
 /** Forgets this phone's sync position, used when the person signs out and wipes the phone. */
 export async function forgetSync(uid: string) { await kv.del(metaKey(uid)).catch(() => undefined); }
 
-export function syncNow(): Promise<void> {
+/**
+ * Erases this phone's copy for someone who has forgotten the app-lock PIN. It signs this phone out of the account
+ * FIRST, then wipes. Wiping alone proves nothing about who is holding the phone, and the account stays signed in
+ * on it, so the very next sync would hand the whole history back with no PIN and no app lock (audit P0-1). Now the
+ * history only comes back through signing in again, with the account's password.
+ *
+ * Only this phone signs out (scope "local"): the account's data and the person's other phones are untouched.
+ * Returns false, having wiped nothing, if the session could not be cleared.
+ */
+export async function signOutAndErase(): Promise<boolean> {
+  if (supabase) {
+    const uid = (await supabase.auth.getSession().catch(() => ({ data: { session: null } }))).data.session?.user.id;
+    stopSync();
+    if (uid) await forgetSync(uid);
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+    const still = (await supabase.auth.getSession().catch(() => ({ data: { session: null } }))).data.session;
+    if (still) { void startSync(still.user.id); return false; }
+  }
+  await actions.resetAll();
+  return true;
+}
+
+/** Puts every refused row back in the queue. */
+function retryRejected() {
+  const t = Date.now();
+  for (const k of Object.keys(meta.rejected)) meta.pending[k] ??= t;
+  meta.rejected = {};
+}
+
+/** `retry`: also give rows the server refused earlier another try (the "Sync now" button). */
+export function syncNow(retry = false): Promise<void> {
   if (!supabase || !userId) return Promise.resolve();
+  if (retry && Object.keys(meta.rejected).length) { retryRejected(); saveMeta(); }
   // No network: say so straight away instead of waiting on requests that can't succeed.
   if (typeof navigator !== "undefined" && navigator.onLine === false) { setStatus({ state: "offline" }); return Promise.resolve(); }
   if (running) { again = true; return running; }
@@ -198,46 +237,87 @@ async function cycle(uid: string) {
   // 3. push changes, parents first
   const snapshot = { ...meta.pending };
   const data = getData();
-  const byTable = new Map<Table, Record<string, unknown>[]>();
+  const byTable = new Map<Table, Item[]>();
   for (const [k, t] of Object.entries(snapshot)) {
-    for (const u of toRemote(k, data, uid, t)) byTable.set(u.table, [...(byTable.get(u.table) ?? []), u.row]);
+    for (const u of toRemote(k, data, uid, t)) byTable.set(u.table, [...(byTable.get(u.table) ?? []), { key: k, row: u.row }]);
   }
   const held = new Set<string>();
+  const refused = new Map<string, string>();
   for (const t of PUSH_ORDER) {
-    const rows = byTable.get(t);
-    if (!rows?.length) continue;
+    // An entry and its deduction are one key: if the entry was refused, its deduction isn't sent.
+    const items = (byTable.get(t) ?? []).filter((i) => !refused.has(i.key));
+    if (!items.length) continue;
     // Rows for a table the server lacks stay pending until it exists.
-    if (missing.has(t)) { for (const [k] of Object.entries(snapshot)) if (toRemote(k, data, uid, 0).some((u) => u.table === t)) held.add(k); continue; }
-    for (let i = 0; i < rows.length; i += 500) {
-      let batch = rows.slice(i, i + 500);
-      let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
-      // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
-      if (error && t === "companions" && /coat|personality/i.test(error.message)) {
-        batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
-      // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
-      // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
-      if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
-        const drop = new Set<string>(TRACK_COLUMNS[t]);
-        batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
-      // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
-      if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
-        batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
+    if (missing.has(t)) { for (const i of items) held.add(i.key); continue; }
+    for (let i = 0; i < items.length; i += 500) {
+      const bad = await pushRows(t, items.slice(i, i + 500), stale);
       if (stale()) return;
-      if (error) throw new Error(`${t}: ${error.message}`);
+      for (const [k, why] of bad) refused.set(k, why);
     }
   }
   for (const [k, t] of Object.entries(snapshot)) {
     if (held.has(k)) continue;
-    if (meta.pending[k] === t) delete meta.pending[k];
+    const unchanged = meta.pending[k] === t;
+    if (unchanged) delete meta.pending[k];
+    if (refused.has(k)) { if (unchanged) meta.rejected[k] = { at: Date.now(), message: refused.get(k)! }; continue; }
     echo.set(k, t);
   }
   saveMeta();
+}
+
+type Row = Record<string, unknown>;
+interface Item { key: string; row: Row }
+type PushError = { message: string; code?: string };
+
+/**
+ * Whether the server refused a row because of the data in it: a data exception or constraint violation (SQLSTATE
+ * classes 22 and 23) or a row-level-security check on a row whose parent it doesn't have (42501). Anything else
+ * (no network, an expired session, the server down) has no such code and is retried later as a whole.
+ */
+export const isRowError = (e: PushError): boolean => /^(22|23)/.test(e.code ?? "") || e.code === "42501";
+
+async function upsertBatch(t: Table, rows: Row[]): Promise<{ error: PushError | null }> {
+  let batch = rows;
+  let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
+  // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
+  if (error && t === "companions" && /coat|personality/i.test(error.message)) {
+    batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
+  // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
+  if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
+    const drop = new Set<string>(TRACK_COLUMNS[t]);
+    batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
+  if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
+    batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  return { error };
+}
+
+/**
+ * Sends rows to a table. A batch the server refuses for the data in it is split in halves until the row or rows
+ * responsible are found, so one bad row can't block the valid rows sent with it. Those rows are returned with the
+ * server's reason, never dropped: the caller keeps them on the phone and tells the person. Any other error throws.
+ */
+async function pushRows(t: Table, items: Item[], stale: () => boolean): Promise<Map<string, string>> {
+  const bad = new Map<string, string>();
+  const send = async (batch: Item[]): Promise<void> => {
+    if (stale()) return;
+    const { error } = await upsertBatch(t, batch.map((i) => i.row));
+    if (stale() || !error) return;
+    if (!isRowError(error)) throw new Error(`${t}: ${error.message}`);
+    if (batch.length === 1) { bad.set(batch[0].key, error.message); return; }
+    const mid = batch.length >> 1;
+    await send(batch.slice(0, mid));
+    await send(batch.slice(mid));
+  };
+  await send(items);
+  return bad;
 }
 
 if (typeof window !== "undefined") {

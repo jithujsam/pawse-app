@@ -201,6 +201,11 @@ export interface Settings {
    * classic: the PRD rules, with death at 100, a permanent scar floor and binge scars.
    */
   petLife: "continuity" | "classic";
+  /**
+   * The person agreed to send a few recovery details (never notes, photos or the journal) to the AI provider so it can
+   * write a sentence after a slip and a weekly summary. Off by default. The AI writes text only: it never changes a number.
+   */
+  aiConsent: boolean;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";

@@ -24,6 +24,10 @@ vi.mock("../src/supabase", () => ({
 }));
 
 const { aiCacheKey, aiForSlip, aiWeekly } = await import("../src/ai");
+const { actions, getData, slipRequest, weekRequestFor, AI_CACHE_KEY } = await import("../src/store");
+const { blank } = await import("../src/persist");
+// AI writing is opt-in: everything below that tests the AI itself starts from a person who said yes.
+actions.setAiConsent(true);
 
 const req: SlipRequest = {
   kind: "slip", tone: "honest", habitClass: "food_spending", companionName: "Biscuit", amount: 400, unit: "money", median: 200,
@@ -46,6 +50,120 @@ describe("AI cache", () => {
     expect(again?.explanation).toBe("Biscuit felt that.");
     expect(b?.explanation).toBe("Mochi felt that.");
     expect(calls).toBe(2);
+  });
+});
+
+describe("AI writing is opt-in (audit P0-2)", () => {
+  const week = { kind: "weekly" as const, tone: "honest" as const, habitClass: "food_spending", companionName: "Biscuit", unit: "money" as const,
+    thisWeek: { slips: 3, spend: 900, months: 9 }, lastWeek: { slips: 5, spend: 1500, months: 15 }, worstWeekday: "Friday", age: 12, currency: "₹" };
+  const fresh = (n: number): SlipRequest => ({ ...req, amount: 5000 + n });
+
+  it("is off for a new person, and for data saved before the choice existed", () => {
+    expect(blank().settings.aiConsent).toBe(false);
+  });
+
+  it("with it off, nothing is sent, for either feature, and no earlier answer is shown", async () => {
+    const warm = fresh(1);
+    expect(await aiForSlip(warm)).not.toBeNull(); // answered and cached while it was on
+    actions.setAiConsent(false);
+    const n = calls;
+    expect(await aiForSlip(fresh(2))).toBeNull();
+    expect(await aiForSlip(warm)).toBeNull();
+    expect(await aiWeekly(week)).toBeNull();
+    expect(calls).toBe(n);
+    actions.setAiConsent(true);
+  });
+
+  it("turning it off forgets the sentences this phone saved", async () => {
+    await aiForSlip(fresh(3));
+    expect(mem.has(AI_CACHE_KEY)).toBe(true);
+    actions.setAiConsent(false);
+    expect(mem.has(AI_CACHE_KEY)).toBe(false);
+    actions.setAiConsent(true);
+  });
+
+  it("turning it on and off is remembered with the person's settings", () => {
+    actions.setAiConsent(false);
+    expect(getData().settings.aiConsent).toBe(false);
+    actions.setAiConsent(true);
+    expect(getData().settings.aiConsent).toBe(true);
+  });
+});
+
+describe("the AI writes a sentence and nothing else (audit P0-5)", () => {
+  const fresh = (n: number): SlipRequest => ({ ...req, amount: 7000 + n });
+  const answer = (result: unknown) => () => ({ data: { ok: true, result }, error: null });
+
+  it("a sentence on its own is all it is asked for and all that is kept", async () => {
+    reply = answer({ explanation: "That was the second order today." });
+    expect(await aiForSlip(fresh(1))).toEqual({ explanation: "That was the second order today." });
+    reply = null;
+  });
+
+  it("an older server that also sends an adjustment and effects: they are ignored, never returned", async () => {
+    reply = answer({ ai_adjust_pct: 30, body_effects: ["cough"], explanation: "That was the second order today." });
+    const r = await aiForSlip(fresh(2));
+    expect(r).toEqual({ explanation: "That was the second order today." });
+    expect(r).not.toHaveProperty("months");
+    expect(r).not.toHaveProperty("adjustPct");
+    expect(r).not.toHaveProperty("effects");
+    reply = null;
+  });
+});
+
+describe("what leaves the phone", () => {
+  const FIELDS = [
+    { id: "amount", label: "How much?", type: "money" as const, required: true, amount: true },
+    { id: "note", label: "Anything to add?", type: "text" as const, required: false },
+    { id: "mood", label: "What was going on?", type: "multi" as const, required: false, options: [{ id: "stressed", label: "Stressed" }, { id: "bored", label: "Bored" }] },
+    { id: "who", label: "Who were you with?", type: "choice" as const, required: false, options: [{ id: "alone", label: "Alone" }, { id: "friends", label: "With my friends" }] },
+    { id: "where", label: "Where were you?", type: "choice" as const, required: false, options: [{ id: "home", label: "At home" }] },
+    { id: "plan", label: "Was it planned?", type: "choice" as const, required: false, options: [{ id: "unplanned", label: "Spur of the moment" }] },
+    { id: "late", label: "Late at night?", type: "yesno" as const, required: false, trigger: true },
+    { id: "urge", label: "How strong was the urge?", type: "scale" as const, required: false },
+  ];
+  const E = "33333333-3333-4333-8333-333333333333", H = "22222222-2222-4222-8222-222222222222", C = "11111111-1111-4111-8111-111111111111";
+  function load() {
+    const d = blank();
+    actions.applyRemote({
+      ...d,
+      settings: { ...d.settings, onboarded: true, aiConsent: true },
+      companions: [{ id: C, species: "dog", name: "Biscuit", bornOn: "2026-10-01", diedOn: null, finalAge: null }],
+      habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields: FIELDS }],
+      entries: [{ id: E, habitId: H, companionId: C, day: "2026-10-02", time: "23:10", values: { amount: "400", note: "fight with my sister about money", mood: "stressed", who: "alone", where: "home", plan: "unplanned", late: true, urge: "4", photo: "data:image/jpeg;base64,AAAA" },
+        amount: 400, months: 4.2, severity: 1.05, effects: [], explanation: "x", source: "baseline", aiAdjustPct: null, createdAt: 1 }],
+      journal: [{ day: "2026-10-02", mood: 2, body: "my private reflection" }],
+    });
+  }
+
+  it("a slip sends the habit kind, amounts, the situations tapped and counts: never notes, who, where, urge strength or photos", () => {
+    load();
+    const r = slipRequest(E)!;
+    expect(r.texts).toEqual([]);
+    expect(r.triggers).toEqual(["Late at night?", "Stressed"]);
+    expect(r).toMatchObject({ habitClass: "food_spending", companionName: "Biscuit", amount: 400, unit: "money", nthToday: 1, baselineMonths: 4.2 });
+    const wire = JSON.stringify(r);
+    for (const secret of ["sister", "Alone", "friends", "At home", "Spur of the moment", "4 of 5", "AAAA", "private reflection", "Jo"]) expect(wire).not.toContain(secret);
+  });
+
+  it("the weekly request is totals only", () => {
+    load();
+    const w = weekRequestFor(H, "2026-09-28", "Friday")!;
+    expect(Object.keys(w).sort()).toEqual(["age", "companionName", "currency", "habitClass", "kind", "lastWeek", "thisWeek", "tone", "unit", "worstWeekday"].sort());
+    expect(JSON.stringify(w)).not.toContain("private reflection");
+  });
+});
+
+describe("the server enforces the choice too (supabase/functions/ai/consent.ts)", async () => {
+  const { consentGiven } = await import("../../../supabase/functions/ai/consent.ts");
+  const { cacheKey } = await import("../../../supabase/functions/ai/cache.ts");
+  it("only a literal true counts", () => {
+    expect(consentGiven({ aiConsent: true })).toBe(true);
+    for (const v of [undefined, null, {}, { aiConsent: false }, { aiConsent: "true" }, { aiConsent: 1 }, { tone: "gentle" }, "aiConsent", []]) expect(consentGiven(v)).toBe(false);
+  });
+  it("answers cached before the sentence-only change (they carry an adjustment) are never served again", async () => {
+    const old = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(["u", req]))))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    expect(await cacheKey("u", req)).not.toBe(old);
   });
 });
 

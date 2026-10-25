@@ -18,7 +18,7 @@ export const defaultSettings = (): Settings => ({
   tone: "honest", userName: "", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false,
   haptics: true, remindersOn: false, coachSeen: false, autoLock: "1m",
   careNotes: true, riskNudge: true, neglectFrom: null, pet3d: true, theme: "system", accent: "pet",
-  petLife: "continuity", activeHabit: null,
+  petLife: "continuity", activeHabit: null, aiConsent: false,
 });
 
 export const blank = (): AppData => ({
@@ -82,7 +82,7 @@ const count = (x: unknown) => (Array.isArray(x) ? x.length : 0);
 /**
  * Validates anything read from storage, a backup file or a restore, migrates v1 data, and fills in settings added
  * since it was saved. The report says how many rows were left out, so callers can keep the original instead of
- * losing it silently (store.boot keeps it in IndexedDB; importJson refuses the file). Null when it isn't app data,
+ * losing it silently (store.boot keeps it in IndexedDB; a backup import shows the count before adding anything, see backup.ts). Null when it isn't app data,
  * including data from a newer version this one doesn't understand.
  */
 export function normalizeWithReport(raw: unknown): { data: AppData; report: LoadReport } | null {

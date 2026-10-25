@@ -20,7 +20,7 @@ export function SecurityCard() {
     <section className="card stack">
       <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.lock}<h2>Privacy and lock</h2></div>
       <Switch checked={on} onChange={(v) => setFlow(v ? "set" : "remove")} label="App lock"
-        hint={on ? "PIN on. Everything on this phone is encrypted." : "Ask for a PIN when the app opens"} />
+        hint={on ? "PIN on. Your records on this phone are encrypted with it." : "Ask for a PIN when the app opens"} />
       <AnimatePresence>
         {on && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
@@ -31,7 +31,7 @@ export function SecurityCard() {
           </motion.div>
         )}
       </AnimatePresence>
-      <p className="muted small">Photos never leave this phone. Nothing is shared, and there are no ads or trackers.</p>
+      <p className="muted small">Photos never leave this phone. Your records back up to your account, which only you can sign in to. AI writing is off unless you turn it on, and then it shares only what AI writing lists. There are no ads or trackers.</p>
       <Sheet open={flow !== null} onClose={() => setFlow(null)} label={flow === "remove" ? "Turn off app lock" : "Set a PIN"}>
         {flow === "set" && <SetPin onDone={() => { setOn(true); setFlow(null); }} />}
         {flow === "remove" && <CheckPin onOk={async () => { await vault.removePin(); toast("App lock is off"); setOn(false); setFlow(null); }} />}

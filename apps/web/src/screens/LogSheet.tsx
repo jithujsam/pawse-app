@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { aiForSlip } from "../ai";
-import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL } from "../copy";
+import { aiAllowed, aiForSlip } from "../ai";
+import { absorbedLine, bingeLine, CRISIS_MESSAGE } from "../copy";
 import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
 import { trackSummary } from "../progress";
 import { hasCrisisLanguage } from "../crisis";
@@ -9,7 +9,7 @@ import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { actions, slipRequest, useData, type Deduction } from "../store";
+import { actions, amountProblem, slipRequest, useData, type Deduction } from "../store";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
@@ -70,37 +70,34 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const keptMet = kept.metDays, keptUrges = kept.managedUrges;
   const alive = useRef(true);
   const [polishing, setPolishing] = useState(false);
+  // The AI's sentence, shown beside the app's own and never stored: it has no say in any number.
+  const [aiLine, setAiLine] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const set = (id: string, v: string | boolean) => setValues((s) => ({ ...s, [id]: v }));
 
   const missing = habit.fields.filter((f) => f.required && (values[f.id] === undefined || values[f.id] === ""));
   const amountField = habit.fields.find((f) => f.amount);
+  // An amount the account can't store is explained here and never saved (logSlip refuses it too).
+  const problem = amountProblem(habit, values);
   const recent = amountField
     ? [...new Set(data.entries.filter((e) => e.habitId === habit.id && e.amount !== null).slice(-12).reverse().map((e) => e.amount as number))].slice(0, 4)
     : [];
   const unitLabel = habit.unit === "money" ? data.settings.currency : habit.unit === "minutes" ? "min" : "";
 
   function save() {
-    if (missing.length) { haptic.warn(); setShake((s) => s + 1); return; }
+    if (missing.length || problem) { haptic.warn(); setShake((s) => s + 1); return; }
     const texts = habit.fields.filter((f) => f.type === "text").map((f) => String(values[f.id] ?? ""));
     if (texts.some(hasCrisisLanguage)) { setCrisis(true); return; }
     const d = actions.logSlip(habit.id, values, day, time || null);
     if (!d) { haptic.warn(); onClose(); return; } // the track is paused or archived for that day
     setResult(d);
     onSaved(d);
-    const req = slipRequest(d.entry.id);
+    // Only with the person's yes (You > AI writing). Whatever happens, the slip is already saved with the app's own numbers.
+    const req = aiAllowed() ? slipRequest(d.entry.id) : null;
     if (req) {
       setPolishing(true);
-      void aiForSlip(req).then((r) => {
-        if (!r) return;
-        const months = actions.applyAi(d.entry.id, r);
-        if (months === null) return;
-        if (alive.current) setResult((cur) => cur && ({
-          ...cur, line: r.explanation, entry: { ...cur.entry, months, source: "ai" },
-          effectLine: r.effects.map((e) => EFFECT_LABEL[e]).filter(Boolean).slice(0, 2).join(" ") || cur.effectLine,
-        }));
-      }).finally(() => { if (alive.current) setPolishing(false); });
+      void aiForSlip(req).then((r) => { if (r && alive.current) setAiLine(r.explanation); }).finally(() => { if (alive.current) setPolishing(false); });
     }
   }
 
@@ -134,10 +131,11 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
         </motion.div>
         <AnimatePresence mode="wait">
           <motion.p key={result.line} className="bubble" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
-            {result.line}{result.entry.source === "ai" && <span className="ai-tag" title="Written by AI, checked against the rules">{Icon.spark}</span>}
+            {result.line}
           </motion.p>
         </AnimatePresence>
         {polishing && <div className="shimmer-line" aria-live="polite"><span className="sr-only">Finding the right words</span></div>}
+        {aiLine && <p className="small" aria-live="polite">{aiLine}<span className="ai-tag" title="Written by AI. It doesn't change any number.">{Icon.spark}</span><span className="muted"> Written by AI. It changes no numbers.</span></p>}
         <motion.p className="muted small" variants={rise}>{progressKept(data.settings.tone, keptMet, keptUrges)}</motion.p>
         <motion.div variants={rise}><LapseReflection entryId={result.entry.id} habit={habit} onDone={onClose} /></motion.div>
       </motion.div>
@@ -166,6 +164,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
                 value={String(values[f.id] ?? "")} onChange={(e) => set(f.id, e.target.value)} />
               {f.type === "number" && habit.unit === "minutes" && <span className="suffix">min</span>}
             </div>
+            {f.amount && problem && <p className="err" role="alert">{problem}</p>}
             {f.amount && recent.length > 0 && (
               <div className="chips quick">{recent.map((a) => <Chip key={a} pressed={String(values[f.id]) === String(a)} onClick={() => set(f.id, String(a))}>{unitLabel && habit.unit === "money" ? `${unitLabel} ${a}` : `${a}${unitLabel ? ` ${unitLabel}` : ""}`}</Chip>)}</div>
             )}
@@ -196,7 +195,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
           )}
         </motion.div>
       ))}
-      <motion.div variants={rise}><Button onClick={save} className={missing.length ? "soft-disabled" : ""}>Save slip</Button></motion.div>
+      <motion.div variants={rise}><Button onClick={save} className={missing.length || problem ? "soft-disabled" : ""}>Save slip</Button></motion.div>
     </motion.div>
   );
 }

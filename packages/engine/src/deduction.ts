@@ -33,6 +33,9 @@ export function baselineMonths(severity: number, nthSlipToday: number): number {
 }
 
 /**
+ * NOT USED BY THE APP after 3.1.0: AI never changes a stored number, so a slip's months always come from baselineMonths
+ * (PRD section 22). Kept, with its tests, because slips saved by earlier versions may carry an adjustment made this way.
+ *
  * AI may nudge the baseline by at most +/-30%, and keeps to 0.5 to 12 months per slip. It never pulls a slip
  * past the baseline itself: a baseline above 12 months (heavy repeat slips) can only move down by up to 30%,
  * never be cut to 12 just because the AI answered.

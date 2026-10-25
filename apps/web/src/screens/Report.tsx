@@ -13,6 +13,8 @@ import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon, TrackContext } from "../ui/Controls";
 import { CheckIn, Observations } from "./WeeklyReview";
+import { AiConsent } from "./AiConsent";
+import { Sheet } from "../ui/Sheet";
 import type { Baseline } from "../types";
 
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -83,10 +85,14 @@ export function Report() {
   const recentPerWeek = pace ?? 0;
 
   const { session } = useSession();
+  // AI writing is opt-in. Without a yes nothing is sent, and the card says what it would do instead of writing anything.
+  const consent = data.settings.aiConsent;
+  const [aiInfo, setAiInfo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const summary = data.summaries[habit.id]?.[ws];
   async function write() {
+    if (!consent) return;
     const req = weekRequestFor(habit.id, ws, all.length >= 3 ? DOW[worst] : null);
     if (!req) return;
     setBusy(true); setFailed(false);
@@ -97,12 +103,12 @@ export function Report() {
 
   // Write the week's summary on its own once there's something to say; at most every six hours.
   useEffect(() => {
-    if (!session || summary || busy || cur.slips + prev.slips === 0) return;
+    if (!consent || !session || summary || busy || cur.slips + prev.slips === 0) return;
     const k = `companion/auto-summary/${ws}`;
     try { if (Date.now() - Number(localStorage.getItem(k) ?? 0) < 6 * 3600_000) return; localStorage.setItem(k, String(Date.now())); } catch { return; }
     void write();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, ws]);
+  }, [session, ws, consent]);
 
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 
@@ -193,19 +199,26 @@ export function Report() {
       {configured && (
         <motion.section className="card stack" aria-label="Written summary" variants={rise}>
           <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>In words</h2></div>
-          <AnimatePresence mode="wait">
-            {busy ? (
-              <motion.div key="busy" className="stack tight" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="shimmer-line" /><div className="shimmer-line" /><div className="shimmer-line short" />
-              </motion.div>
-            ) : summary ? (
-              <motion.p key={summary} className="bubble" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>{summary}</motion.p>
-            ) : (
-              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Sign in from You to get a short written read of your week."}</motion.p>
-            )}
-          </AnimatePresence>
+          {!consent && !summary
+            ? <>
+                <p className="muted">An optional written read of your week, from an AI model. It's off, so nothing is being sent.</p>
+                <Button variant="secondary" onClick={() => setAiInfo(true)}>See what it does</Button>
+              </>
+            : <AnimatePresence mode="wait">
+                {busy ? (
+                  <motion.div key="busy" className="stack tight" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <div className="shimmer-line" /><div className="shimmer-line" /><div className="shimmer-line short" />
+                  </motion.div>
+                ) : summary ? (
+                  <motion.p key={summary} className="bubble" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>{summary}</motion.p>
+                ) : (
+                  <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Sign in from You to get a short written read of your week."}</motion.p>
+                )}
+              </AnimatePresence>}
+          {summary && <p className="muted small">Written by AI from your weekly totals. It changes no numbers.{consent ? "" : " AI writing is off now."}</p>}
           {failed && <p className="err" role="alert">Couldn't write it just now. Your numbers above are unaffected. Try again later.</p>}
-          {session && <Button variant="secondary" disabled={busy || cur.slips + prev.slips === 0} onClick={write}>{busy ? "Writing…" : summary ? "Write it again" : "Write my summary"}</Button>}
+          {consent && session && <Button variant="secondary" disabled={busy || cur.slips + prev.slips === 0} onClick={write}>{busy ? "Writing…" : summary ? "Write it again" : "Write my summary"}</Button>}
+          <Sheet open={aiInfo} onClose={() => setAiInfo(false)} label="AI writing"><h2>AI writing</h2><AiConsent /></Sheet>
         </motion.section>
       )}
 

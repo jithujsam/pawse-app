@@ -5,6 +5,7 @@ import { addDays, today } from "../src/dates";
 import { dayStatus } from "../src/recovery";
 import { checkTracks, defaultTrackState, focusedTrackId, isPausedOn, listTracks, trackState } from "../src/tracks";
 import { diff, legacyProfileCopy, merge, toRemote, tombstone, type Pulled } from "../src/syncmap";
+import { total } from "../src/backup";
 import type { AppData, Entry } from "../src/types";
 
 const t0 = today();
@@ -371,17 +372,21 @@ describe("missing and deleted tracks", () => {
 });
 
 describe("backups, imports and data this version can't fully read", () => {
-  it("restores a backup from before tracks, and its own exports round-trip", () => {
-    expect(actions.importJson(JSON.stringify(v1()))).toBe(true);
+  it("adds a backup from before tracks, and its own export adds nothing new when added again", () => {
+    const d = blank();
+    actions.applyRemote({ ...d, settings: { ...d.settings, onboarded: true } });
+    const r = actions.applyImport(JSON.stringify(v1()));
+    expect(r.ok).toBe(true);
     expect(trackState(getData(), getData().habits[0].id).plan).toEqual(plan);
     const exported = actions.exportJson();
     expect(JSON.parse(exported).v).toBe(2);
-    expect(actions.importJson(exported)).toBe(true);
+    const again = actions.applyImport(exported);
+    expect(again.ok && total(again.add)).toBe(0);
     expect(JSON.parse(actions.exportJson())).toEqual({ ...JSON.parse(exported), updatedAt: expect.any(Number) });
   });
   it("refuses a backup from a newer version instead of half-reading it", () => {
     const before = getData();
-    expect(actions.importJson(JSON.stringify({ ...JSON.parse(actions.exportJson()), v: 3 }))).toBe(false);
+    expect(actions.applyImport(JSON.stringify({ ...JSON.parse(actions.exportJson()), v: 3 }))).toMatchObject({ ok: false, reason: "newer_version" });
     expect(getData()).toBe(before);
   });
   it("counts every row it had to leave out, so nothing is dropped silently", async () => {
