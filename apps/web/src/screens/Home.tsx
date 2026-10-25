@@ -21,7 +21,7 @@ import { SubPage } from "../ui/Settings";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
-import { openDownload, useUpdate } from "../update";
+import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
@@ -44,6 +44,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [act, setAct] = useState<Gesture>("none");
   const actTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const update = useUpdate();
+  const [updating, setUpdating] = useState<number | null>(null);
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
   const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
@@ -124,10 +125,10 @@ export function Home({ onBack }: { onBack?: () => void }) {
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
       <AnimatePresence>
         {update && (
-          <motion.button className="update-banner" onClick={() => { haptic.tap(); openDownload(update.url); }}
+          <motion.button className="update-banner" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
             <span><b>Update available</b><span className="small">Version {update.name}{update.notes ? ` · ${update.notes}` : ""}</span></span>
-            <span className="update-cta">Get it</span>
+            <span className="update-cta">{updating === null ? "Update" : updating > 0 ? `${updating}%` : "Downloading…"}</span>
           </motion.button>
         )}
       </AnimatePresence>
