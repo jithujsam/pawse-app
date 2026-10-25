@@ -80,8 +80,6 @@ The regression test compares both versions over 500 random histories. Streaks go
   - Pausing again on the day a pause ended rejoins it.
   - A pause can't start inside or before an earlier one, so history is never rewritten.
   - Resuming on the day a pause began drops it.
-- **A record during a pause** is kept, shown and counted. A pause never refuses one. An archived track is read-only and refuses new records.
-- **Where it's stored:** rest days, pauses and celebrated milestones live on each track (`Habit.track`), never in the person's settings. See `docs/MULTI_TRACK_ARCHITECTURE.md`.
 - Rest and paused days are neither success nor failure:
   - they never create, change or remove a record
   - they're never missed check-ins

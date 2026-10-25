@@ -61,12 +61,12 @@ export function Report() {
   const { baseline } = state;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
-  const idx = trackIndex(data, habit.id, today());
+  const track = trackIndex(data, habit.id, today());
   const progress = trackSummary(data, habit.id, today());
-  const cleanIn = (from: string) => countDays(idx, from, addDays(from, 6)).met;
+  const cleanIn = (from: string) => countDays(track, from, addDays(from, 6)).met;
   const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
   // Days with anything recorded (a slip, goal met or an urge), so a quiet week shows up as one.
-  const checkedIn = (from: string) => checkIns(idx, from, addDays(from, 6)).checkedIn;
+  const checkedIn = (from: string) => checkIns(track, from, addDays(from, 6)).checkedIn;
   const inThis = checkedIn(ws), inPrev = checkedIn(addDays(ws, -7));
   const prev = weekStats(data, habit.id, addDays(ws, -7));
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
