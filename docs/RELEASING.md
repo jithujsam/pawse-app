@@ -47,7 +47,7 @@ curl -s "https://raw.githubusercontent.com/jithujsam/pawse-releases/main/latest.
 Note the published `name` and `code`. The new version must have a higher `code` and a new `name`. Also check that `apk/Pawse-<new name>.apk` doesn't exist yet.
 
 ### 2. Build the signed release APK (from the gate commit, clean tree)
-**Easiest: build on GitHub.** Actions → **Android APK** → Run workflow → `release`, on `main`. It runs lint, typecheck and tests, builds, then checks the package, version, embedded web version, debuggable flag and the release certificate, and fails if any of them is wrong. The run's artifact holds the APK plus `BUILD-INFO.txt` (version, commit, build type, certificate, SHA-256, test results). It needs the signing secrets described in `apps/web/android/keystore/README.md`. Without them the release build refuses to run. Every PR and push to `main` also produces a **debug** test APK (`app.detoxcompanion.test`, "Pawse Test"), which installs next to the real app and never replaces it or its data. Debug APKs are never published.
+**Easiest: build on GitHub.** Actions → **Android APK** → Run workflow → `release`, on `main`. It runs lint, typecheck and tests, builds, then checks the package, version, embedded web version, debuggable flag and the release certificate, and fails if any of them is wrong. The run's artifact holds the APK plus `BUILD-INFO.txt` (version, commit, build type, certificate, SHA-256, test results). It needs the `ANDROID_RELEASE_BUNDLE` secret described in `apps/web/android/keystore/README.md`. Without it the release build refuses to run. `release-unsigned` builds the same APK without a signature, to sign on a machine that has the key. Every PR and push to `main` also produces a **debug** test APK (`app.detoxcompanion.test`, "Pawse Test"), which installs next to the real app and never replaces it or its data. Debug APKs are never published.
 
 **Or build locally:**
 ```
@@ -67,7 +67,7 @@ Run these in `apps/web/android/app/build/outputs/apk/release/`, with `BT=$ANDROI
 ```
 $BT/apksigner verify --verbose --print-certs app-release.apk
 #   "Verified using v2 scheme (APK Signature Scheme v2): true" (or v3), and
-#   "Signer #1 certificate SHA-256 digest: 8081688b71ff39e76203abadb59c51c15783ec53680d948c9fc7341134d8257b"
+#   "Signer #1 certificate SHA-256 digest: 10ab3feb74724e2e38161c8027e679438a89d3521525980fbbd796ad62faa9f8" (the key since 3.0.0; see apps/web/android/keystore/README.md)
 $BT/aapt2 dump badging app-release.apk | head -3
 #   package: name='app.detoxcompanion' versionCode='<new code>' versionName='<new name>'
 $BT/aapt2 dump badging app-release.apk | grep -c application-debuggable    # must print 0

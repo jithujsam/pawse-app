@@ -1,11 +1,13 @@
 # Builds the Pawse Android APK on GitHub's servers and attaches it, with its build info, to the run.
 #
 # - Every pull request and every push to main: lint, typecheck, tests, web build, debug (test) APK.
-# - Actions → "Android APK" → Run workflow: choose debug or release.
-#   A release build needs the existing signing key in the repository secrets (see
-#   apps/web/android/keystore/README.md). It refuses to run without them and checks the certificate,
-#   so it can never sign with any other key. Nothing here publishes to pawse-releases: that stays a
-#   reviewed PR (docs/RELEASING.md).
+# - Actions → "Android APK" → Run workflow: choose debug, release or release-unsigned.
+#   release: needs the release key in the ANDROID_RELEASE_BUNDLE repository secret (see
+#   apps/web/android/keystore/README.md). It refuses to run without it and checks the certificate,
+#   so it can never sign with any other key.
+#   release-unsigned: the same release build without a signature, for signing elsewhere with the key.
+#   It can't be installed or published as it is.
+#   Nothing here publishes to pawse-releases: that stays a reviewed PR (docs/RELEASING.md).
 name: Android APK
 
 on:
@@ -15,9 +17,9 @@ on:
   workflow_dispatch:
     inputs:
       build_type:
-        description: "debug (test app, installs next to the real one) or release (signed with the release key)"
+        description: "debug (test app, installs next to the real one), release (signed with the release key) or release-unsigned (to sign elsewhere)"
         type: choice
-        options: [debug, release]
+        options: [debug, release, release-unsigned]
         default: debug
 
 concurrency:
@@ -31,7 +33,7 @@ env:
   BUILD_TYPE: ${{ inputs.build_type || 'debug' }}
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   # The release certificate (apps/web/android/keystore/README.md). A release build signed with anything else fails.
-  RELEASE_CERT_SHA256: 8081688b71ff39e76203abadb59c51c15783ec53680d948c9fc7341134d8257b
+  RELEASE_CERT_SHA256: 10ab3feb74724e2e38161c8027e679438a89d3521525980fbbd796ad62faa9f8
 
 jobs:
   apk:
@@ -86,23 +88,19 @@ jobs:
       - name: Put the release key in place
         if: env.BUILD_TYPE == 'release'
         env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # base64 of a .tar.gz holding companion-release.jks and release.properties
+          RELEASE_BUNDLE: ${{ secrets.ANDROID_RELEASE_BUNDLE }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
-            echo "::error::Release signing secrets are missing (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD). Not building an unsigned or differently signed release."
+          if [ -z "$RELEASE_BUNDLE" ]; then
+            echo "::error::The ANDROID_RELEASE_BUNDLE secret is missing. Not building an unsigned or differently signed release (use release-unsigned for that)."
             exit 1
           fi
-          cd apps/web/android/keystore
-          echo "$KEYSTORE_BASE64" | base64 -d > companion-release.jks
-          printf 'storeFile=../keystore/companion-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > release.properties
+          echo "$RELEASE_BUNDLE" | base64 -d | tar -xz -C apps/web/android/keystore companion-release.jks release.properties
 
       - name: Build the APK and run the Android unit tests
         working-directory: apps/web/android
         run: |
-          task=$([ "$BUILD_TYPE" = release ] && echo assembleRelease || echo assembleDebug)
+          task=$([ "$BUILD_TYPE" = debug ] && echo assembleDebug || echo assembleRelease)
           ./gradlew --no-daemon "$task" testDebugUnitTest
 
       - name: Remove the release key
@@ -115,10 +113,11 @@ jobs:
           set -euo pipefail
           name=$(node -p "require('./apps/web/version.json').name")
           code=$(node -p "require('./apps/web/version.json').code")
-          src=$(ls apps/web/android/app/build/outputs/apk/"$BUILD_TYPE"/*.apk 2>/dev/null | head -n 1 || true)
+          dir=$([ "$BUILD_TYPE" = debug ] && echo debug || echo release)
+          src=$(ls apps/web/android/app/build/outputs/apk/"$dir"/*.apk 2>/dev/null | head -n 1 || true)
           [ -n "$src" ] && [ -s "$src" ] || { echo "::error::No $BUILD_TYPE APK was produced"; exit 1; }
           bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
-          [ "$BUILD_TYPE" = release ] && id=app.detoxcompanion || id=app.detoxcompanion.test
+          [ "$BUILD_TYPE" = debug ] && id=app.detoxcompanion.test || id=app.detoxcompanion
 
           badging=$("$bt/aapt2" dump badging "$src")
           first=$(printf '%s\n' "$badging" | sed -n 1p)
@@ -126,18 +125,23 @@ jobs:
           printf '%s\n' "$first" | grep -q "name='$id' versionCode='$code' versionName='$name'" \
             || { echo "::error::Package or version doesn't match version.json ($id $code $name)"; exit 1; }
           debuggable=$(printf '%s\n' "$badging" | grep -c application-debuggable || true)
-          if [ "$BUILD_TYPE" = release ] && [ "$debuggable" != 0 ]; then echo "::error::Release APK is debuggable"; exit 1; fi
+          if [ "$BUILD_TYPE" != debug ] && [ "$debuggable" != 0 ]; then echo "::error::Release APK is debuggable"; exit 1; fi
 
           web=$(unzip -p "$src" 'assets/public/assets/*.js' | grep -o 'name:"[0-9.]*",code:[0-9]*' | sort -u)
           [ "$web" = "name:\"$name\",code:$code" ] \
             || { echo "::error::The web bundle inside the APK reports $web, not $name / $code"; exit 1; }
 
-          "$bt/apksigner" verify --verbose --print-certs "$src" | tee signature.txt
-          # "Signer #1 certificate SHA-256 digest: …" or, on newer build tools, "V2 Signer: certificate SHA-256 digest: …"
-          cert=$(grep -m1 -E "certificate SHA-256 digest: [0-9a-f]{64}" signature.txt | awk '{print $NF}')
-          [ -n "$cert" ] || { echo "::error::Couldn't read the signing certificate"; exit 1; }
-          if [ "$BUILD_TYPE" = release ] && [ "$cert" != "$RELEASE_CERT_SHA256" ]; then
-            echo "::error::Signed with certificate $cert, not the release key"; exit 1
+          if [ "$BUILD_TYPE" = release-unsigned ]; then
+            if "$bt/apksigner" verify "$src" >/dev/null 2>&1; then echo "::error::Expected an unsigned APK"; exit 1; fi
+            cert="none (unsigned: sign it with the release key before use)"
+          else
+            "$bt/apksigner" verify --verbose --print-certs "$src" | tee signature.txt
+            # "Signer #1 certificate SHA-256 digest: …" or, on newer build tools, "V2 Signer: certificate SHA-256 digest: …"
+            cert=$(grep -m1 -E "certificate SHA-256 digest: [0-9a-f]{64}" signature.txt | awk '{print $NF}')
+            [ -n "$cert" ] || { echo "::error::Couldn't read the signing certificate"; exit 1; }
+            if [ "$BUILD_TYPE" = release ] && [ "$cert" != "$RELEASE_CERT_SHA256" ]; then
+              echo "::error::Signed with certificate $cert, not the release key"; exit 1
+            fi
           fi
 
           out="Pawse-$name-$code-$BUILD_TYPE-${COMMIT_SHA::7}.apk"
@@ -147,7 +151,7 @@ jobs:
             echo "File: $out"
             echo "App: $id"
             echo "Version: $name (code $code)"
-            echo "Build type: $BUILD_TYPE$([ "$BUILD_TYPE" = debug ] && echo ' (test only, never publish)')"
+            echo "Build type: $BUILD_TYPE$([ "$BUILD_TYPE" = debug ] && echo ' (test only, never publish)')$([ "$BUILD_TYPE" = release-unsigned ] && echo ' (must be signed before use)')"
             echo "Commit: $COMMIT_SHA"
             echo "Built: $(date -u +%Y-%m-%dT%H:%M:%SZ) by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "Signing certificate SHA-256: $cert"

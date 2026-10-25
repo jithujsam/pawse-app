@@ -3,8 +3,8 @@
 Release APKs are signed with `companion-release.jks` (alias `companion`). Android only installs an update
 when it is signed with the same key as the app already on the phone, so this key must never change or be lost.
 
-The key and `release.properties` (its passwords) are **not in git**. Keep a backup somewhere safe, for
-example a password manager. To build a release on a new machine, put both files back in this folder:
+The key and `release.properties` (its passwords) are **not in git**. The owner keeps the backup (a private
+file in their Google Drive, created 2026-10-25). To build a release on a new machine, put both files back in this folder:
 
 ```
 apps/web/android/keystore/companion-release.jks
@@ -22,11 +22,19 @@ keyPassword=...
 
 Without them, `assembleRelease` produces an unsigned APK that phones won't install as an update.
 
-Certificate SHA-256: `80:81:68:8B:71:FF:39:E7:62:03:AB:AD:B5:9C:51:C1:57:83:EC:53:68:0D:94:8C:9F:C7:34:11:34:D8:25:7B`
+Certificate SHA-256 (current key, since 3.0.0):
+`10:AB:3F:EB:74:72:4E:2E:38:16:1C:80:27:E6:79:43:8A:89:D3:52:15:25:98:0F:BB:D7:96:AD:62:FA:A9:F8`
 
-## Building on GitHub (Actions → Android APK → release)
+**Key history.** Versions up to 2.1.0 were signed with an earlier key (certificate
+`80:81:68:8B:…:25:7B`). That key existed only on a temporary build machine and was lost, so 3.0.0 can't
+install over 2.1.0. People on 2.1.0 uninstall it once and install 3.0.0; signing in brings their account's
+pet and history back. Anything not yet synced to the account is lost.
 
-The workflow reads the key from four repository secrets (Settings → Secrets and variables → Actions). It deletes the key after the build and fails if the APK isn't signed with the certificate above:
+## Building on GitHub (Actions → Android APK)
 
-- `ANDROID_KEYSTORE_BASE64`: the output of `base64 -w0 companion-release.jks`
-- `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`companion`), `ANDROID_KEY_PASSWORD`: the values from `release.properties`
+- **release**: signs on GitHub. Needs one repository secret, `ANDROID_RELEASE_BUNDLE` (Settings → Secrets
+  and variables → Actions). Its value is the output of
+  `tar -czf - companion-release.jks release.properties | base64 -w0`, run in this folder. The workflow
+  deletes the key after the build and fails unless the APK carries the certificate above.
+- **release-unsigned**: builds the release without a signature, for signing on a machine that has the key:
+  `zipalign -c -p 4 in.apk`, then `apksigner sign --ks companion-release.jks --ks-key-alias companion --out Pawse-<version>.apk in.apk`.
