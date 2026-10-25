@@ -157,7 +157,7 @@ export function Report() {
         <div className="row"><h2>When it happens</h2>{risk !== null && <span className="muted small">Peak around {fmtHour(risk)}</span>}</div>
         {timed < 3 ? <p className="muted">A map of your risky hours appears after a few slips.</p> : (
           <div className="heat" role="img" aria-label={`Slips by weekday and time of day. ${risk !== null ? `Most often around ${fmtHour(risk)}.` : ""}`}>
-            <span />{["12 AM", "4 AM", "8 AM", "12 PM", "4 PM", "8 PM"].map((l) => <span key={l} className="heat-h">{l}</span>)}
+            <span />{[0, 4, 8, 12, 16, 20].map((h) => <span key={h} className="heat-h">{fmtHour(h)}</span>)}
             {grid.map((row, d) => [
               <span key={`d${d}`} className="heat-d">{["M", "T", "W", "T", "F", "S", "S"][d]}</span>,
               ...row.map((n, b) => <motion.i key={`${d}-${b}`} className="heat-cell" style={{ ["--a" as string]: n / gridMax }} data-n={n}
@@ -190,7 +190,7 @@ export function Report() {
             ) : summary ? (
               <motion.p key={summary} className="bubble" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>{summary}</motion.p>
             ) : (
-              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Create an account in You to get a short written read of your week."}</motion.p>
+              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Sign in from Me to get a short written read of your week."}</motion.p>
             )}
           </AnimatePresence>
           {failed && <p className="err" role="alert">Couldn't write it just now. Your numbers above are unaffected. Try again later.</p>}

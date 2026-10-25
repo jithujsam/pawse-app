@@ -6,7 +6,7 @@ import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
 import { has3D, pet3dStatus } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
-import { daysBetween, fmtDay, fmtTime, today } from "../dates";
+import { daysBetween, fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
@@ -65,13 +65,8 @@ export function Me() {
       {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
 
       <motion.div variants={rise}>
-        <Group title="Your plan">
-          <Row icon={Icon.list} label="Goal, reasons and what helps" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
-        </Group>
-      </motion.div>
-      <motion.div variants={rise}>
-        <Group title="Companion">
-          <Row icon={Icon.paw} label="Your companion" value={companion.name} onClick={() => setPage("pet")} />
+        <Group title="Plan and voice">
+          <Row icon={Icon.flag} label="Goal, reasons and what helps" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
           <Row icon={Icon.chat} label="Voice" value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
         </Group>
       </motion.div>
@@ -90,16 +85,16 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title="App">
-          <Row icon={Icon.sun} label="Appearance" value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
+          <Row icon={Icon.palette} label="Appearance" value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
           <Row icon={Icon.phone} label="Feel and region"  value={placeName()} onClick={() => setPage("feel")} />
           <Row icon={Icon.info} label="About and help" value={APP_VERSION.name} onClick={() => setPage("about")} />
         </Group>
       </motion.div>
-      <motion.div variants={rise}>
+      {import.meta.env.DEV && <motion.div variants={rise}>
         <Group title="Developer">
           <Row icon={Icon.flask} label="Test the simulation" onClick={() => setSim(true)} />
         </Group>
-      </motion.div>
+      </motion.div>}
 
       <SubPage open={page === "plan"} title="Your plan" onClose={close}><PlanPage /></SubPage>
       <SubPage open={page === "pet"} title="Your companion" onClose={close}><PetPage /></SubPage>
@@ -112,7 +107,7 @@ export function Me() {
       <SubPage open={page === "appearance"} title="Appearance" onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title="Feel and region" onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title="About and help" onClose={close}><AboutPage /></SubPage>
-      <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />
+      {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />}
     </motion.main>
   );
 }
@@ -195,9 +190,6 @@ function PetPage() {
       <Switch checked={settings.petLife === "classic"} onChange={(v) => { if (v && classicDead) return; actions.setSettings({ petLife: v ? "classic" : "continuity" }); }}
         label="Classic rules" hint={classicDead ? `Not available: under classic rules ${companion.name}'s history would already have ended. Some good days first, then try again.` : "Permanent scars and death at 100. Off by default."} />
       {settings.petLife === "classic" && <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />}
-    </section>
-    <section className="card stack">
-      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint={settings.remindersOn ? "A thank-you after good days, and a note when it won't eat" : "Needs reminders to be on"} />
     </section>
     <section className="card stack">
       <h2>Hall of Companions</h2>
@@ -391,7 +383,7 @@ function FeelPage() {
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
       <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
-      <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
+      <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), {uses12h() ? "12-hour" : "24-hour"} time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>
     </section>
   );

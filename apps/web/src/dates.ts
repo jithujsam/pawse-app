@@ -14,12 +14,15 @@ export const weekStart = (s: string) => { const d = parse(s); const dow = (d.get
 export const fmtDay = (s: string) => parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 export const fmtMonth = (s: string) => parse(s).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
-/** "20:05" -> "8:05 PM". Times are stored as 24-hour HH:MM and always shown on a 12-hour clock. */
+/** Whether the phone's region uses a 12-hour clock. */
+export const uses12h = () => { const c = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hourCycle; return c === "h11" || c === "h12"; };
+/** "20:05" -> "8:05 PM" or "20:05". Times are stored as 24-hour HH:MM and shown on the phone's own clock. */
 export function fmtTime(hhmm: string | null | undefined): string {
   if (!hhmm) return "";
   const [h, m] = hhmm.split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm;
+  if (!uses12h()) return `${pad(h)}:${pad(m)}`;
   return `${h % 12 || 12}${m ? `:${pad(m)}` : ""} ${h < 12 ? "AM" : "PM"}`;
 }
-/** 22 -> "10 PM" */
-export const fmtHour = (h: number) => `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
+/** 22 -> "10 PM" or "22:00" */
+export const fmtHour = (h: number) => (uses12h() ? `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}` : `${pad(h)}:00`);

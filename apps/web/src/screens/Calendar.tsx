@@ -130,7 +130,7 @@ export function CalendarSections() {
               </AnimatePresence>
             </div>
             {canClean && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
-            {status(sel) === "met" && inLife && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove "goal met"</Button>}
+            {status(sel) === "met" && inLife && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove “goal met”</Button>}
             {canRest && <Button variant="text" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !resting); }}>{resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
             {canLog && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
           </motion.div>
