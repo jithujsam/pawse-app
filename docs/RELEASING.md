@@ -49,6 +49,12 @@ curl -s "https://raw.githubusercontent.com/jithujsam/pawse-releases/main/latest.
 Note the published `name` and `code`. The new version must have a higher `code` and a new `name`. Also check that `apk/Pawse-<new name>.apk` doesn't exist yet.
 
 ### 2. Build the signed release APK (from the gate commit, clean tree)
+**In a Claude cloud session (the usual way):** the owner stores the key bundle in the environment as the variable `ANDROID_RELEASE_BUNDLE` (the base64 of a `.tar.gz` holding `companion-release.jks` and `release.properties`). A new session has it. Unpack it into the git-ignored keystore folder, then build locally as below, and never print it or commit it:
+```
+base64 -d <<<"$ANDROID_RELEASE_BUNDLE" | tar -xz -C apps/web/android/keystore companion-release.jks release.properties
+```
+The Android SDK isn't preinstalled: download Google's command-line tools, accept the licences, and `sdkmanager "platforms;android-35" "build-tools;35.0.0"` (Java 21 is already there). Run step 3's checks, then step 4 straight to `main`.
+
 **Easiest: build on GitHub.** Actions → **Android APK** → Run workflow → `release`, on `main`. It runs lint, typecheck and tests, builds, then checks the package, version, embedded web version, debuggable flag and the release certificate, and fails if any of them is wrong. The run's artifact holds the APK plus `BUILD-INFO.txt` (version, commit, build type, certificate, SHA-256, test results). It needs the `ANDROID_RELEASE_BUNDLE` secret described in `apps/web/android/keystore/README.md`. Without it the release build refuses to run. `release-unsigned` builds the same APK without a signature, to sign on a machine that has the key. Every PR and push to `main` also produces a **debug** test APK (`app.detoxcompanion.test`, "Pawse Test"), which installs next to the real app and never replaces it or its data. Debug APKs are never published.
 
 **Or build locally:**
