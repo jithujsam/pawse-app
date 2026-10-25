@@ -176,3 +176,6 @@ export function reminderLine(tone: Tone, name: string): { title: string; body: s
   if (tone === "brutal") return { title: `${name} is waiting`, body: "How did today go? Ten seconds." };
   return { title: `Check in with ${name}`, body: "Slip or goal met? It takes ten seconds." };
 }
+
+/** Shown when someone tries to track eating less, calories or weight (CLAUDE.md: never add restriction tracking). */
+export const RESTRICTION_NOTE = "This app can't track eating less, calories or weight, and it won't. If food and eating feel hard right now, a doctor or counselor can really help. You can pick something else to watch, like money spent on orders.";

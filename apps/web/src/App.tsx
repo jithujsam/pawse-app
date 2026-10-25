@@ -13,8 +13,9 @@ import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
 import { slide, spring } from "./motion";
 import { Home } from "./screens/Home";
+import { Pets } from "./screens/Pets";
 
-// Only Home ships in the first bundle; the rest load on first visit.
+// Only Pets and the open track (Home) ship in the first bundle; the rest load on first visit.
 const Onboarding = lazy(() => import("./screens/Onboarding").then((m) => ({ default: m.Onboarding })));
 const Journey = lazy(() => import("./screens/Journey").then((m) => ({ default: m.Journey })));
 const Report = lazy(() => import("./screens/Report").then((m) => ({ default: m.Report })));
@@ -30,16 +31,16 @@ import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
 
-export type Tab = "home" | "calendar" | "insights" | "you";
-const TABS: Tab[] = ["home", "calendar", "insights", "you"];
+export type Tab = "pets" | "calendar" | "insights" | "you";
+const TABS: Tab[] = ["pets", "calendar", "insights", "you"];
 
 const ICONS: Record<Tab, React.JSX.Element> = {
-  home: <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>,
+  pets: <svg viewBox="0 0 24 24"><circle cx="5.5" cy="10" r="2" /><circle cx="9.5" cy="5.5" r="2" /><circle cx="14.5" cy="5.5" r="2" /><circle cx="18.5" cy="10" r="2" /><path d="M12 11c-3 0-6 4.5-6 7a2.5 2.5 0 0 0 3.5 2.3c1.6-.7 3.4-.7 5 0A2.5 2.5 0 0 0 18 18c0-2.5-3-7-6-7z" /></svg>,
   calendar: <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>,
   insights: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
   you: <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>,
 };
-const LABELS: Record<Tab, string> = { home: "Home", calendar: "Calendar", insights: "Insights", you: "You" };
+const LABELS: Record<Tab, string> = { pets: "Pets", calendar: "Calendar", insights: "Insights", you: "You" };
 listenForBack();
 
 const LOCK_AFTER: Record<string, number> = { immediately: 0, "1m": 60_000, "5m": 300_000, never: Infinity };
@@ -98,7 +99,10 @@ function Shell() {
   useMidnight();
   const data = useData();
   const view = useActiveView();
-  const [tab, setTab] = useState<Tab>("home");
+  const [tab, setTab] = useState<Tab>("pets");
+  // Inside the Pets tab: the grid, or one recovery track (the companion home screen).
+  const [track, setTrack] = useState(false);
+  const openTrack = () => { setTab("pets"); setTrack(true); };
   const [quick, setQuick] = useState(false);
   const dir = useRef(1);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
@@ -121,9 +125,9 @@ function Shell() {
     })();
   }, [uid]);
 
-  useEffect(() => onReminderTap(() => { dir.current = -1; setTab("home"); }), []);
+  useEffect(() => onReminderTap(() => { dir.current = -1; openTrack(); }), []);
   // The home screen widget opens straight into the quick check-in.
-  useEffect(() => { const open = () => { setTab("home"); setQuick(true); }; window.addEventListener(OPEN_QUICK, open); return () => window.removeEventListener(OPEN_QUICK, open); }, []);
+  useEffect(() => { const open = () => { openTrack(); setQuick(true); }; window.addEventListener(OPEN_QUICK, open); return () => window.removeEventListener(OPEN_QUICK, open); }, []);
   const [pinTick, setPinTick] = useState(0);
   useEffect(() => onPinChange(() => setPinTick((n) => n + 1)), []);
   useEffect(() => {
@@ -138,10 +142,19 @@ function Shell() {
     const line = slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
     updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
   }, [data, view, pinTick]);
-  useRootBack(() => { if (tab === "home") return false; dir.current = -1; setTab("home"); return true; });
+  // With no recovery track left (removed on another device, say), only the Pets grid makes sense.
+  const hasTrack = !!view?.habit;
+  useEffect(() => { if (!hasTrack) { setTab("pets"); setTrack(false); } }, [hasTrack]);
+  useRootBack(() => {
+    if (tab === "pets" && track) { dir.current = -1; setTrack(false); return true; }
+    if (tab === "pets") return false;
+    dir.current = -1; setTab("pets"); return true;
+  });
 
   const go = (t: Tab) => {
-    if (t === tab) return;
+    // Tapping Pets again goes back to the grid.
+    if (t === tab) { if (t === "pets" && track) { dir.current = -1; setTrack(false); } return; }
+    if (!view && t !== "pets") return;
     dir.current = TABS.indexOf(t) > TABS.indexOf(tab) ? 1 : -1;
     haptic.select();
     setTab(t);
@@ -163,12 +176,12 @@ function Shell() {
     <div className="app">
       <div className="stage">
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
-          <motion.div key={tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
+          <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<Loading />}>
-              {tab === "home" && <Home />}
-              {tab === "calendar" && <Journey />}
-              {tab === "insights" && <Report />}
-              {tab === "you" && <Me />}
+              {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
+              {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
+              {tab === "insights" && <WithTrack><Report /></WithTrack>}
+              {tab === "you" && <WithTrack><Me /></WithTrack>}
             </Suspense>
           </motion.div>
         </AnimatePresence>
@@ -183,14 +196,19 @@ function Shell() {
           );
           return i === 2 ? [
             <div key="fab" className="fab-slot">
-              <motion.button className="fab" aria-label="Log or check in" aria-haspopup="dialog" onClick={() => { haptic.tap(); setQuick(true); }}
+              <motion.button className="fab" aria-label="Log or check in" aria-haspopup="dialog" disabled={!view} onClick={() => { haptic.tap(); setQuick(true); }}
                 whileTap={{ scale: 0.9 }} animate={{ rotate: quick ? 45 : 0 }} transition={spring.bouncy}>{Icon.plus}</motion.button>
             </div>, button] : [button];
         })}
       </nav>
-      <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "home") { dir.current = -1; setTab("home"); } }} />
+      <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} />
     </div>
   );
+}
+
+/** Screens that show one recovery track render nothing once there is none, even mid-transition. */
+function WithTrack({ children }: { children: React.ReactNode }) {
+  return useActiveView()?.habit ? <>{children}</> : null;
 }
 
 function Loading() {

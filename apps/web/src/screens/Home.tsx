@@ -23,7 +23,8 @@ import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
 
-export function Home() {
+/** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
+export function Home({ onBack }: { onBack?: () => void }) {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
@@ -128,6 +129,7 @@ export function Home() {
           </motion.button>
         )}
       </AnimatePresence>
+      {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>All pets</span></motion.button>}
       <motion.header className="greet" variants={rise}>
         <div>
           <p className="muted small">{fmtDay(t0)}</p>

@@ -12,7 +12,8 @@ import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
-import type { AppData, Baseline, Companion, Entry, Habit, Personality, RecoveryPlan, Species, StrategyId, Tone, Urge } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Measure, Personality, RecoveryPlan, Species, StrategyId, Tone, Urge } from "./types";
+import type { HabitClass } from "@detox/engine";
 
 const LEGACY_KEY = "detox-companion/v1";
 /** Where ai.ts keeps AI results on this phone; cleared with everything else on a reset. */
@@ -170,8 +171,9 @@ export function canAllowPassingAway(d: AppData): boolean {
   return !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead");
 }
 
+/** The companion of the open recovery track: the one chosen on this phone, else the first. */
 export const activeCompanion = (d: AppData): Companion | undefined => {
-  const habit = d.habits[0];
+  const habit = d.habits.find((h) => h.id === d.settings.activeHabit) ?? d.habits[0];
   return habit ? d.companions.find((c) => c.id === habit.companionId) : undefined;
 };
 
@@ -533,6 +535,27 @@ export const actions = {
 
   renameCompanion: (id: string, name: string) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) }),
+
+  /** Opens a recovery track on this phone. Unknown ids are ignored. */
+  selectTrack(habitId: string) {
+    if (data.settings.activeHabit === habitId || !data.habits.some((h) => h.id === habitId)) return;
+    commit({ ...data, settings: { ...data.settings, activeHabit: habitId } });
+  },
+
+  /**
+   * A new recovery track: its own habit and its own companion, born today. Nothing is shared with other
+   * tracks' entries or companions. Opens it on this phone and returns its habit id.
+   */
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; species: Species; name: string }): string {
+    const companion: Companion = { id: uid(), species: o.species, name: o.name.trim().slice(0, 20) || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const intake: Intake = { what: o.what.trim().slice(0, 60), measure: o.measure, triggers: [], cls: o.cls };
+    const habit: Habit = {
+      id: uid(), name: intake.what || "My habit", cls: o.cls, classWeight: weightFor(o.cls),
+      companionId: companion.id, unit: o.measure, fields: buildFields(intake),
+    };
+    commit({ ...data, companions: [...data.companions, companion], habits: [...data.habits, habit], settings: { ...data.settings, activeHabit: habit.id } });
+    return habit.id;
+  },
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
     const habit = data.habits.find((h) => h.id === habitId)!;
