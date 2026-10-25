@@ -5,8 +5,8 @@ import { aiWeekly } from "../ai";
 import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
-import { countDays, trackIndex } from "../progress";
-import { addDays, fmtHour, parse, today, weekStart } from "../dates";
+import { checkIns, countDays, trackIndex, trackSummary, weekdayOf } from "../progress";
+import { addDays, fmtHour, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
@@ -58,16 +58,18 @@ export function Report() {
   const { tone, currency, baseline } = data.settings;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
-  const cleanIn = (from: string) => countDays(trackIndex(data, habit.id, today()), from, addDays(from, 6)).met;
+  const track = trackIndex(data, habit.id, today());
+  const progress = trackSummary(data, habit.id, today());
+  const cleanIn = (from: string) => countDays(track, from, addDays(from, 6)).met;
   const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
   // Days with anything recorded (a slip, goal met or an urge), so a quiet week shows up as one.
-  const checkedIn = (from: string) => new Set([...data.entries, ...data.cleanDays, ...data.urges].filter((x) => x.habitId === habit.id && x.day >= from && x.day <= addDays(from, 6)).map((x) => x.day)).size;
+  const checkedIn = (from: string) => checkIns(track, from, addDays(from, 6)).checkedIn;
   const inThis = checkedIn(ws), inPrev = checkedIn(addDays(ws, -7));
   const prev = weekStats(data, habit.id, addDays(ws, -7));
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
   const maxW = Math.max(1, ...weeks);
   const all = data.entries.filter((e) => e.habitId === habit.id);
-  const byDow = DOW.map((_, i) => all.filter((e) => parse(e.day).getDay() === i).length);
+  const byDow = DOW.map((_, i) => all.filter((e) => weekdayOf(e.day) === i).length);
   const worst = byDow.indexOf(Math.max(...byDow));
   const frailIn = view.age >= 80 ? 0 : projectDaysToAge(view.states, 80);
   const money = habit.unit === "money";
@@ -104,10 +106,10 @@ export function Report() {
   // Urges: noticing and riding them out is the skill that predicts lasting change.
   const urgeLog = data.urges.filter((u) => u.habitId === habit.id);
   const urgesWeek = urgeLog.filter((u) => u.day >= ws);
-  const rode = urgeLog.filter((u) => u.outcome === "rode_it_out").length;
+  const rode = progress.managedUrges;
   // When it happens: weekday x four-hour block.
   const grid = Array.from({ length: 7 }, () => Array(6).fill(0) as number[]);
-  for (const e of all) { const h = slipHour(e); if (h !== null) grid[(parse(e.day).getDay() + 6) % 7][Math.floor(h / 4)]++; }
+  for (const e of all) { const h = slipHour(e); if (h !== null) grid[(weekdayOf(e.day) + 6) % 7][Math.floor(h / 4)]++; }
   const gridMax = Math.max(1, ...grid.flat());
   const timed = grid.flat().reduce((a, b) => a + b, 0);
   const risk = riskyHour(data, habit.id);
@@ -173,7 +175,7 @@ export function Report() {
         {risk !== null && <p className="small">{companion.name} will send a heads-up half an hour before {fmtHour(risk)}, if reminders are on.</p>}
       </motion.section>
 
-      {baseline && pace !== null && all.length + data.cleanDays.length >= 3 && (
+      {baseline && pace !== null && progress.slips + progress.metDays >= 3 && (
         <motion.section className="card stack" variants={rise}>
           <h2>Since you started</h2>
           <p>You said it was <b>{BASELINE_LABEL[baseline]}</b>. On the days you checked in lately, it's about <b>{fmt(recentPerWeek)}</b> a week.</p>

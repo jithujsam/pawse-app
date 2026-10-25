@@ -1,6 +1,6 @@
 import type { HabitClass } from "@detox/engine";
-import { addDays, parse, today } from "./dates";
-import { careDayCount, countDays, statusOf, trackIndex, type DayStatus, type PastStatus } from "./progress";
+import { addDays, today } from "./dates";
+import { careDayCount, countDays, statusOf, trackIndex, weekdayOf, type DayStatus, type PastStatus } from "./progress";
 import { pickedLabels } from "./questions";
 import { slipHour } from "./store";
 import type { AppData, GoalKind, Habit, StrategyId, Tone } from "./types";
@@ -17,7 +17,7 @@ export { milestoneToCelebrate, type DayStatus } from "./progress";
 export const dayStatus = (d: AppData, habitId: string, day: string, t0 = today()): DayStatus => statusOf(trackIndex(d, habitId, t0), day);
 
 export const STATUS_LABEL: Record<DayStatus, string> = {
-  lapse: "Slip", met: "Goal met", urge: "Urge managed", paused: "Paused", rest: "Not tracking", unrecorded: "Not recorded", future: "Upcoming", before: "Before you started",
+  lapse: "Slip", met: "Goal met", urge: "Urge managed", paused: "Not tracking", rest: "Not tracking", unrecorded: "Not recorded", future: "Upcoming", before: "Before you started",
 };
 
 /** Urges managed on a day, shown alongside its status (a goal-met day can have managed urges too). */
@@ -131,7 +131,7 @@ export function observations(d: AppData, habit: Habit): { items: Observation[]; 
   const b = blocks.indexOf(Math.max(...blocks));
   if (timed.length) push("time", `In the ${BLOCKS[b]}`, `${blocks[b]} of ${timed.length} slips with a time`, blocks[b], timed.length);
 
-  const days = DOW.map((_, i) => slips.filter((e) => parse(e.day).getDay() === i).length);
+  const days = DOW.map((_, i) => slips.filter((e) => weekdayOf(e.day) === i).length);
   const w = days.indexOf(Math.max(...days));
   // A weekday is only worth mentioning with enough weeks behind it to tell it apart.
   if (slips.length >= 8) push("weekday", `On ${DOW[w]}s`, `${days[w]} of ${slips.length} slips`, days[w], slips.length);
