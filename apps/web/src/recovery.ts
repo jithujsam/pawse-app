@@ -224,7 +224,8 @@ export function weekReview(d: AppData, habit: Habit, bornOn: string, week: strin
   const recorded = days - counts.unrecorded - counts.rest;
   const goal = d.settings.plan?.goal ?? null;
   const goalLine = recorded === 0
-    ? "Nothing was recorded this week, so there's nothing to judge it by. That's fine: next week starts fresh."
+    ? end >= t0 ? "Nothing recorded yet this week. There's still time to check in."
+      : "Nothing was recorded that week, so there's nothing to go on. That's fine. Each week starts fresh."
     : goal === "stop" ? `${counts.met + counts.urge} of ${recorded} recorded ${recorded === 1 ? "day" : "days"} without a slip.`
       : goal === "understand" ? `${recorded} ${recorded === 1 ? "day" : "days"} recorded and ${urgeRows.length} ${urgeRows.length === 1 ? "urge" : "urges"} noticed. Every record adds to the picture.`
         : lapses < lapsesBefore ? `${lapses} ${lapses === 1 ? "slip" : "slips"}, down from ${lapsesBefore} the week before.`

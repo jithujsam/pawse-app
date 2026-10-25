@@ -159,7 +159,7 @@ export interface Settings {
   pet3d: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
-  /** The person's recovery plan (onboarding, editable in Me). Null until they start one. */
+  /** The person's recovery plan (onboarding, editable in You). Null until they start one. */
   plan: RecoveryPlan | null;
   /** Days the person chose not to track. Neither progress nor a lapse; never counted either way. */
   restDays: string[];

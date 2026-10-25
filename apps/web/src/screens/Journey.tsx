@@ -5,11 +5,10 @@ import { rise, spring, stagger } from "../motion";
 import { bestStreak, cleanStreak, useActiveView, useData } from "../store";
 import { careDays } from "../recovery";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Icon } from "../ui/Controls";
 import { CalendarSections } from "./Calendar";
 import { Reflect } from "./Reflect";
 
-/** The long view: how far you've come, the next milestone, and every day on the calendar. */
+/** The Calendar tab: every day on the calendar, then milestones and how far you've come. */
 export function Journey() {
   const data = useData();
   const view = useActiveView()!;
@@ -29,25 +28,19 @@ export function Journey() {
 
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>Journey</motion.h1>
+      <motion.h1 variants={rise}>Calendar</motion.h1>
 
-      <motion.section className="stats" aria-label="So far" variants={rise}>
-        <div className="card stat"><div className="muted small">Days together</div><div className="v"><AnimatedNumber value={together} /></div></div>
-        <div className="card stat"><div className="muted small">Good days</div><div className="v"><AnimatedNumber value={cleanTotal} /></div></div>
-        <div className="card stat"><div className="muted small">Urges managed</div><div className="v"><AnimatedNumber value={managed} /></div></div>
-        <div className="card stat"><div className="muted small">Best streak</div><div className="v"><AnimatedNumber value={best} /> <small>{best === 1 ? "day" : "days"}</small></div></div>
-      </motion.section>
+      <CalendarSections />
 
       <motion.section className="card stack" aria-label="Milestones" variants={rise}>
-        <div className="row"><h2>Milestones</h2>{next && <span className="muted small">{next - care} to go</span>}</div>
+        <div className="row"><h2>Milestones</h2>{next && <span className="muted small">{next - care} {next - care === 1 ? "day" : "days"} to go</span>}</div>
         <div className="milestones">
           {MILESTONES.map((m, i) => {
             const got = care >= m;
             return (
-              <motion.div key={m} className="badge" data-got={got} data-next={m === next}
+              <motion.div key={m} className="badge" data-got={got} data-next={m === next} role="img" aria-label={`${m} days${got ? ", reached" : ""}`}
                 initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: 0.1 + i * 0.05 }}>
-                <span className="badge-disc">{got ? Icon.check : m}</span>
-                <span className="small">{m}d</span>
+                <span className="badge-disc">{m}</span>
               </motion.div>
             );
           })}
@@ -60,9 +53,14 @@ export function Journey() {
           : <p className="muted small">Every milestone reached. {companion.name} is proud of you.</p>}
       </motion.section>
 
-      <motion.div variants={rise}><Reflect /></motion.div>
+      <motion.section className="stats" aria-label="So far" variants={rise}>
+        <div className="card stat"><div className="muted small">Days together</div><div className="v"><AnimatedNumber value={together} /></div></div>
+        <div className="card stat"><div className="muted small">Good days</div><div className="v"><AnimatedNumber value={cleanTotal} /></div></div>
+        <div className="card stat"><div className="muted small">Urges managed</div><div className="v"><AnimatedNumber value={managed} /></div></div>
+        <div className="card stat"><div className="muted small">Best streak</div><div className="v"><AnimatedNumber value={best} /> <small>{best === 1 ? "day" : "days"}</small></div></div>
+      </motion.section>
 
-      <CalendarSections />
+      <motion.div variants={rise}><Reflect /></motion.div>
     </motion.main>
   );
 }

@@ -43,10 +43,10 @@ function SavingsGoal({ saved, goal, currency }: { saved: number; goal: { label: 
 }
 
 function Delta({ cur, prev, unit = "", good = "down" }: { cur: number; prev: number; unit?: string; good?: "up" | "down" }) {
-  if (cur === prev) return <span className="delta flat">same as last week</span>;
+  if (cur === prev) return <span className="delta flat">No change</span>;
   const down = cur < prev;
   const better = good === "down" ? down : !down;
-  return <span className={`delta ${better ? "good" : "bad"}`}>{down ? "↓" : "↑"} {Math.abs(Math.round((cur - prev) * 10) / 10)}{unit} vs last week</span>;
+  return <span className={`delta ${better ? "good" : "bad"}`}>{down ? "↓" : "↑"} {Math.abs(Math.round((cur - prev) * 10) / 10)}{unit}</span>;
 }
 
 export function Report() {
@@ -126,14 +126,15 @@ export function Report() {
           <div className="stat"><div className="muted small">Goal-met days</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
           {money
             ? <div className="stat"><div className="muted small">Spent</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
-            : <div className="stat"><div className="muted small">Good-day streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">right now</span></div>}
+            : <div className="stat"><div className="muted small">Good-day streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">Right now</span></div>}
         </div>
+        <p className="muted small">Arrows compare with last week.</p>
       </motion.section>
 
       <motion.section className="card stack" aria-label="Urges" variants={rise}>
         <div className="row"><h2>Urges managed</h2><span className="muted small">{urgesWeek.length} this week</span></div>
         {urgeLog.length === 0
-          ? <p className="muted">Next time an urge hits, tap + and choose "Having an urge". Noticing urges and getting through them is a skill that grows with practice.</p>
+          ? <p className="muted">When an urge hits, tap + and choose “Having an urge”. Getting through urges is a skill, and it grows with practice.</p>
           : <>
               <div className="stats">
                 <div className="stat item"><span className="muted small">Managed</span><b className="v"><AnimatedNumber value={rode} from={0} /></b></div>
@@ -157,7 +158,7 @@ export function Report() {
         <div className="row"><h2>When it happens</h2>{risk !== null && <span className="muted small">Peak around {fmtHour(risk)}</span>}</div>
         {timed < 3 ? <p className="muted">A map of your risky hours appears after a few slips.</p> : (
           <div className="heat" role="img" aria-label={`Slips by weekday and time of day. ${risk !== null ? `Most often around ${fmtHour(risk)}.` : ""}`}>
-            <span />{["12 AM", "4 AM", "8 AM", "12 PM", "4 PM", "8 PM"].map((l) => <span key={l} className="heat-h">{l}</span>)}
+            <span />{[0, 4, 8, 12, 16, 20].map((h) => <span key={h} className="heat-h">{fmtHour(h)}</span>)}
             {grid.map((row, d) => [
               <span key={`d${d}`} className="heat-d">{["M", "T", "W", "T", "F", "S", "S"][d]}</span>,
               ...row.map((n, b) => <motion.i key={`${d}-${b}`} className="heat-cell" style={{ ["--a" as string]: n / gridMax }} data-n={n}
@@ -190,7 +191,7 @@ export function Report() {
             ) : summary ? (
               <motion.p key={summary} className="bubble" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>{summary}</motion.p>
             ) : (
-              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Create an account in You to get a short written read of your week."}</motion.p>
+              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? "A short, honest read of your week, written for you." : "Sign in from You to get a short written read of your week."}</motion.p>
             )}
           </AnimatePresence>
           {failed && <p className="err" role="alert">Couldn't write it just now. Your numbers above are unaffected. Try again later.</p>}

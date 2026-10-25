@@ -21,13 +21,13 @@ export function QuickSheet({ open, onClose, onPick }: { open: boolean; onClose: 
   const resting = data.settings.restDays.includes(t0);
   const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean; wide?: boolean }[] = [
     { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `Pick a way through it. ${ridden} managed so far.` : "Pick a way through it, with your companion.", tone: "calm", wide: true },
-    { id: "clean", icon: Icon.sun, title: clean ? "Goal met today ✓" : "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },
+    { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },
     { id: "slip", icon: Icon.slip, title: "I slipped", hint: "Ten seconds. Honest is enough.", tone: "bad" },
-    { id: "rest", icon: Icon.info, title: resting ? "Not tracking today ✓" : "Not tracking today", hint: slipped || clean ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: slipped || clean || resting },
+    { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? "Today counts neither way" : slipped || clean ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: slipped || clean || resting, wide: true },
   ];
   return (
     <Sheet open={open} onClose={onClose} label="Log or check in">
-      <h2>What happened?</h2>
+      <h2>What’s going on?</h2>
       <motion.div className="quick-grid" variants={stagger} initial="hidden" animate="show">
         {tiles.map((t) => (
           <motion.button key={t.id} className={`quick-tile${t.wide ? " wide" : ""}`} data-tone={t.tone} disabled={t.disabled} variants={rise}

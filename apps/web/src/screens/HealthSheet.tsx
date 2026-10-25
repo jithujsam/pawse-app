@@ -12,7 +12,7 @@ export type HealthTab = "health" | "history" | "conditions" | "stats";
 const TABS: { id: HealthTab; label: string }[] = [
   { id: "health", label: "Health" }, { id: "history", label: "History" }, { id: "conditions", label: "Conditions" }, { id: "stats", label: "You & pet" },
 ];
-export const LEVEL_COLOR: Record<Level, string> = { thriving: "var(--positive)", healthy: "var(--positive)", okay: "#d9a531", unwell: "var(--negative)", critical: "var(--negative)" };
+export const LEVEL_COLOR: Record<Level, string> = { thriving: "var(--positive)", healthy: "var(--positive)", okay: "var(--warning)", unwell: "var(--negative)", critical: "var(--negative)" };
 
 /** A heart that fills to the pet's health. */
 export function Heart({ value, level, size = 22 }: { value: number; level: Level; size?: number }) {

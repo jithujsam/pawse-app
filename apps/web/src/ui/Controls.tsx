@@ -103,6 +103,8 @@ export const Icon = {
   heart: <svg viewBox="0 0 24 24" className="ico"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg>,
   wave: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0" /><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5" /></svg>,
   slip: <svg viewBox="0 0 24 24" className="ico"><path d="M12 4v10M7 9l5 5 5-5" /><path d="M5 20h14" /></svg>,
+  flag: <svg viewBox="0 0 24 24" className="ico"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>,
+  palette: <svg viewBox="0 0 24 24" className="ico"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.6-1.6 0-1.3-1-1.6-1-2.6 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4-4-7.2-9-7.2z" /><circle cx="7.5" cy="11" r="1" /><circle cx="10.5" cy="7" r="1" /><circle cx="15" cy="7.5" r="1" /></svg>,
   sun: <svg viewBox="0 0 24 24" className="ico"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>,
   download: <svg viewBox="0 0 24 24" className="ico"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>,
 };

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { addDays, daysBetween, range, today, weekStart } from "../src/dates";
+import { addDays, daysBetween, fmtHour, fmtTime, range, today, weekStart } from "../src/dates";
 import { countTriggers } from "../src/questions";
 
 // Days are the phone's local calendar days. Check the arithmetic across DST changes and at midnight.
@@ -39,5 +39,25 @@ describe("late night", () => {
     const hours = Array.from({ length: 24 }, (_, h) => countTriggers([], {}, h));
     expect(hours.map((n, h) => (n ? h : -1)).filter((h) => h >= 0)).toEqual([0, 1, 2, 3, 22, 23]);
     expect(countTriggers([], {}, null)).toBe(0); // no time known: never guessed
+  });
+});
+
+describe("times follow the phone's clock", () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+  const clock = (hourCycle: "h12" | "h23") => {
+    const real = Intl.DateTimeFormat.prototype.resolvedOptions;
+    vi.spyOn(Intl.DateTimeFormat.prototype, "resolvedOptions").mockImplementation(function (this: Intl.DateTimeFormat) { return { ...real.call(this), hourCycle }; });
+  };
+  it("uses AM and PM on a 12-hour clock", () => {
+    clock("h12");
+    expect(fmtTime("20:05")).toBe("8:05 PM");
+    expect(fmtTime("00:00")).toBe("12 AM");
+    expect(fmtHour(22)).toBe("10 PM");
+  });
+  it("uses 24-hour time where the phone does", () => {
+    clock("h23");
+    expect(fmtTime("20:05")).toBe("20:05");
+    expect(fmtTime("07:00")).toBe("07:00");
+    expect(fmtHour(8)).toBe("08:00");
   });
 });

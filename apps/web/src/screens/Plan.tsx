@@ -81,7 +81,7 @@ export function HelpSection({ plan, set, cls }: { plan: RecoveryPlan; set: (p: P
   </>);
 }
 
-/** Me → Your plan: everything in one editable page. */
+/** You → Your plan: everything in one editable page. */
 export function PlanPage() {
   const data = useData();
   const view = useActiveView()!;

@@ -140,7 +140,7 @@ describe("weekly review", () => {
     load({}, { plan: { goal: "stop", reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] } });
     const r = weekReview(getData(), getData().habits[0], addDays(t0, -90), ws);
     expect(r.counts.met + r.counts.urge + r.counts.lapse).toBe(0);
-    expect(r.goalLine).toMatch(/Nothing was recorded/);
+    expect(r.goalLine).toMatch(/Nothing recorded yet this week/);
   });
   it("summarises a recorded week against the person's goal", () => {
     const last = addDays(ws, -7);

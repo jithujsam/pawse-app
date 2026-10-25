@@ -234,7 +234,7 @@ function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: H
         <div className="chips" role="radiogroup" aria-label="Ideas">{ideas.map((x) => <Chip key={x} pressed={adjust === x} onClick={() => setAdjust(adjust === x ? "" : x)}>{x}</Chip>)}</div>
         <input className="input" autoComplete="off" maxLength={160} value={adjust} placeholder="Or your own, e.g. If I'm home alone after 10, I'll make tea" onChange={(e) => setAdjust(e.target.value)} aria-label="Your own adjustment" />
       </div>
-      {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It will show up in Me → Your plan and when an urge hits." />}
+      {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It shows up in You → Your plan, and when an urge hits." />}
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       <Button onClick={save} disabled={crisis}>Save and go back</Button>
       <Button variant="text" onClick={onDone}>Skip</Button>
