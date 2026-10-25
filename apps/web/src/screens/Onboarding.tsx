@@ -8,14 +8,14 @@ import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
 import { inferClass, inferMeasure, isRestrictionRelated, MEASURES, MOODS, SUGGESTIONS } from "../questions";
-import { actions, emptyPlan } from "../store";
+import { actions, emptyPlan, useData } from "../store";
 import { HelpSection, planHasCrisis, WhySection } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
 import { has3D } from "../pet3d-support";
 import { say } from "../voice";
-import { Burst, Button, Chip, Icon, Switch } from "../ui/Controls";
+import { Burst, Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
 import type { Baseline, Measure, Personality, RecoveryPlan, Species, Tone } from "../types";
 
 const BASELINES: { id: Baseline; label: string }[] = [
@@ -45,6 +45,7 @@ const LAST = 12;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
+  const { settings } = useData();
   const dir = useRef(1);
   const [adult, setAdult] = useState(false);
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
@@ -91,10 +92,14 @@ export function Onboarding() {
                     <motion.div animate={d.species === s.id ? { y: [0, -10, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
                       <CompanionArt species={s.id} stage="baby" mood={d.species === s.id ? "happy" : "idle"} age={2} size={84} />
                     </motion.div>
-                    <b>{s.label}{has3D(s.id) && <span className="badge-3d">3D</span>}</b><span className="muted small">{s.blurb}</span>
+                    <b>{s.label}</b><span className="muted small">{s.blurb}</span>
                   </motion.button>
                 ))}
               </motion.div>
+              {has3D(d.species) && <motion.div className="field" variants={rise}>
+                <span className="field-label">Style</span>
+                <Segmented label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
+              </motion.div>}
               <motion.div variants={rise}><Button onClick={() => go(2)}>Continue</Button></motion.div>
             </>)}
 

@@ -10,8 +10,8 @@ export function Gallery() {
   if (parts[1] === "3d") {
     const sp = (parts[2] || "dog") as Species3D;
     const rows: [string, Mood, Gesture, Stage, number][] = [["baby", "happy", "none", "baby", 3], ["young idle", "idle", "none", "young", 15], ["adult waiting", "waiting", "none", "adult", 35], ["happy", "happy", "hop", "young", 15], ["hurt", "hurt", "none", "adult", 35], ["petted", "idle", "petted", "adult", 35], ["sick old", "sick", "none", "old", 74], ["frail sad", "sad", "none", "frail", 85], ["dying", "dying", "none", "frail", 95]];
-    return <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8 }}>{rows.map(([l, m, g, st, a]) => (
-      <figure key={l} style={{ margin: 0, textAlign: "center", font: "12px sans-serif" }}><Pet3D species={sp} coat={parts[3]} stage={st} mood={m} gesture={g} age={a} size={180} fallback={<b>fallback</b>} /><figcaption>{l}</figcaption></figure>))}</div>;
+    return <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8 }}>{rows.filter((_, i) => !parts[5] || String(i) === parts[5]).map(([l, m, g, st, a]) => (
+      <figure key={l} style={{ margin: 0, textAlign: "center", font: "12px sans-serif" }}><Pet3D species={sp} coat={parts[3]} stage={st} mood={m} gesture={g} age={a} size={+parts[4] || 180} fallback={<b>fallback</b>} /><figcaption>{l}</figcaption></figure>))}</div>;
   }
   // #gallery/pet/<species>/<mood>: one pet alone on a clear background, for widget images.
   const [, , sp, md] = location.hash.slice(1).split("/");

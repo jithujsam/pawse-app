@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import type { HabitClass } from "@detox/engine";
-import { CompanionArt, moodFor } from "../Companion";
+import { moodFor, PetPortrait } from "../Companion";
 import { CRISIS_MESSAGE, pauseHint, pauseRefused, pauseToast, RESTRICTION_NOTE, resumeHint, resumeToast } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { today } from "../dates";
@@ -17,6 +17,9 @@ import type { Measure, Species } from "../types";
 import { Button, Chip, Icon } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
+
+/** Every 3D pet is its own graphics context, which phones cap, so only the first few cards are 3D. */
+const MAX_3D_CARDS = 4;
 
 /**
  * The Pets tab: one card per recovery track. Each track is a habit with its own companion, so the grid is
@@ -51,7 +54,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
         </motion.section>
       ) : (
         <motion.section className="pet-grid" aria-label="Recovery tracks" variants={rise}>
-          {tracks.map(({ habit, view, status, paused }) => {
+          {tracks.map(({ habit, view, status, paused }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
@@ -63,7 +66,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
                   aria-label={`${view.companion.name}, ${habit.name}. ${line}. Open this track.`}>
                   <span className="pet-card-art" aria-hidden>
-                    <CompanionArt species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
+                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
                   </span>
                   <b className="pet-card-name">{view.companion.name}</b>
                   <span className="pet-card-track small">{habit.name}</span>

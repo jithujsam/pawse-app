@@ -106,6 +106,19 @@ function Shell() {
   const openTrack = () => { setTab("pets"); setTrack(true); };
   const [quick, setQuick] = useState(false);
   const dir = useRef(1);
+  const appRef = useRef<HTMLDivElement>(null);
+  // The shell eases in when the app opens and again when you come back to it after a while away.
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      const el = appRef.current;
+      if (!el || !hiddenAt || Date.now() - hiddenAt < 2000) return;
+      el.classList.remove("app-wake"); void el.offsetWidth; el.classList.add("app-wake");
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
   const { session, ready, recovering } = useSession();
   const [pwDone, setPwDone] = useState(false);
@@ -179,7 +192,7 @@ function Shell() {
   }
 
   return (
-    <div className="app">
+    <div className="app app-wake" ref={appRef}>
       <div className="stage">
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
@@ -217,6 +230,12 @@ function WithTrack({ children }: { children: React.ReactNode }) {
   return useActiveView()?.habit ? <>{children}</> : null;
 }
 
+/** Picks up where the splash in index.html leaves off: the same icon, then a ring and dots, easing in so a fast load never flashes. */
 function Loading() {
-  return <main className="screen center-screen" aria-busy="true"><div className="shimmer-line short" /></main>;
+  return (
+    <main className="screen center-screen loader" aria-busy="true" aria-label="Loading">
+      <div className="loader-mark" aria-hidden><span className="loader-ring" /><img src="./icon-192.png" alt="" width="88" height="88" /></div>
+      <div className="loader-dots" aria-hidden><i /><i /><i /></div>
+    </main>
+  );
 }
