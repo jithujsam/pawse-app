@@ -29,6 +29,7 @@ permissions:
 
 env:
   BUILD_TYPE: ${{ inputs.build_type || 'debug' }}
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   # The release certificate (apps/web/android/keystore/README.md). A release build signed with anything else fails.
   RELEASE_CERT_SHA256: 8081688b71ff39e76203abadb59c51c15783ec53680d948c9fc7341134d8257b
 
@@ -37,7 +38,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
+      # On a PR, build exactly the PR's latest commit (not GitHub's temporary merge commit).
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -62,7 +66,9 @@ jobs:
           pnpm lint
           pnpm typecheck
           pnpm test 2>&1 | tee test-output.txt
-          grep -E "Tests +[0-9]+ passed" test-output.txt | sed -E 's/.*Tests +//' > test-summary.txt
+          # Strip colour codes before reading the totals.
+          sed -E 's/\x1b\[[0-9;]*m//g' test-output.txt | grep -E "Tests +[0-9]+ passed" | sed -E 's/.*Tests +//' > test-summary.txt
+          [ -s test-summary.txt ] || { echo "::error::Couldn't read the test totals"; exit 1; }
 
       - name: Build the web app
         run: pnpm --filter web build
@@ -108,10 +114,11 @@ jobs:
           [ "$BUILD_TYPE" = release ] && id=app.detoxcompanion || id=app.detoxcompanion.test
 
           badging=$("$bt/aapt2" dump badging "$src")
-          echo "$badging" | head -1
-          echo "$badging" | head -1 | grep -q "name='$id' versionCode='$code' versionName='$name'" \
+          first=$(printf '%s\n' "$badging" | sed -n 1p)
+          echo "$first"
+          printf '%s\n' "$first" | grep -q "name='$id' versionCode='$code' versionName='$name'" \
             || { echo "::error::Package or version doesn't match version.json ($id $code $name)"; exit 1; }
-          debuggable=$(echo "$badging" | grep -c application-debuggable || true)
+          debuggable=$(printf '%s\n' "$badging" | grep -c application-debuggable || true)
           if [ "$BUILD_TYPE" = release ] && [ "$debuggable" != 0 ]; then echo "::error::Release APK is debuggable"; exit 1; fi
 
           web=$(unzip -p "$src" 'assets/public/assets/*.js' | grep -o 'name:"[0-9.]*",code:[0-9]*' | sort -u)
@@ -124,7 +131,7 @@ jobs:
             echo "::error::Signed with certificate $cert, not the release key"; exit 1
           fi
 
-          out="Pawse-$name-$code-$BUILD_TYPE-${GITHUB_SHA::7}.apk"
+          out="Pawse-$name-$code-$BUILD_TYPE-${COMMIT_SHA::7}.apk"
           mkdir -p out && cp "$src" "out/$out"
           sha=$(sha256sum "out/$out" | cut -d' ' -f1)
           {
@@ -132,7 +139,7 @@ jobs:
             echo "App: $id"
             echo "Version: $name (code $code)"
             echo "Build type: $BUILD_TYPE$([ "$BUILD_TYPE" = debug ] && echo ' (test only, never publish)')"
-            echo "Commit: $GITHUB_SHA"
+            echo "Commit: $COMMIT_SHA"
             echo "Built: $(date -u +%Y-%m-%dT%H:%M:%SZ) by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "Signing certificate SHA-256: $cert"
             echo "Debuggable: $([ "$debuggable" = 0 ] && echo no || echo yes)"
