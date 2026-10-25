@@ -235,7 +235,7 @@ describe("track lifecycle", () => {
     expect(trackState(getData(), "ha")).toMatchObject({ status: "active", archivedOn: null });
   });
 
-  it("deletes only an archived track with its name confirmed, removes only what it owns, and can be undone", () => {
+  it("deletes a track (archived or not) with its name confirmed, removes only what it owns, and can be undone", () => {
     const base = twoTracks();
     load({
       ...base,
@@ -245,9 +245,8 @@ describe("track lifecycle", () => {
       urges: [{ id: "ua", habitId: "ha", day: t0, time: null, strength: 2, outcome: "rode_it_out", createdAt: 1 }],
       summaries: { ha: { [t0]: "a" }, hb: { [t0]: "b" } },
     });
-    expect(actions.deleteTrack("ha", "Orders")).toBeNull(); // not archived yet
-    actions.archiveTrack("ha");
-    expect(actions.deleteTrack("ha", "Order")).toBeNull();
+    expect(actions.deleteTrack("ha", "Order")).toBeNull(); // the name has to match
+    expect(actions.deleteTrack("nope", "Orders")).toBeNull();
     const before = getData();
     const backup = actions.deleteTrack("ha", "  orders ")!;
     const d = getData();

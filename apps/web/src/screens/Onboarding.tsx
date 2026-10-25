@@ -7,7 +7,7 @@ import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
-import { inferClass, inferMeasure, isRestrictionRelated, MEASURES, MOODS, SUGGESTIONS } from "../questions";
+import { inferClass, inferMeasureFromLabel, isRestrictionRelated } from "../questions";
 import { actions, emptyPlan, useData } from "../store";
 import { HelpSection, planHasCrisis, WhySection } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
@@ -31,12 +31,12 @@ const STORY = [
 
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
-  step: number; species: Species; companionName: string; userName: string; what: string; cls: HabitClass; measure: Measure; measureTouched: boolean;
+  step: number; species: Species; companionName: string; userName: string; what: string; cls: HabitClass; amountLabel: string;
   baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; personality: Personality;
   plan: RecoveryPlan;
 }
 const initial: Draft = {
-  step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", measure: "none", measureTouched: false,
+  step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", amountLabel: "",
   baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", personality: "playful",
   plan: emptyPlan(),
 };
@@ -59,13 +59,10 @@ export function Onboarding() {
   const setPlan = (p: Partial<RecoveryPlan>) => setD((s) => ({ ...s, plan: { ...s.plan, ...p } }));
   const planCrisis = planHasCrisis(d.plan);
 
-  const pickWhat = (text: string, c?: HabitClass, m?: Measure) => {
-    const k = c ?? inferClass(text);
-    up({ what: text, cls: k, ...(d.measureTouched ? {} : { measure: m ?? inferMeasure(k) }) });
-  };
+  const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: d.measure, triggers: d.triggers, cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: inferMeasureFromLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -109,12 +106,9 @@ export function Onboarding() {
 
             {d.step === 4 && (<>
               <motion.h1 variants={rise}>What would you like to change?</motion.h1>
-              <motion.p className="muted" variants={rise}>Say it in your own words, or pick one. This stays between you and {name}.</motion.p>
-              <motion.div className="chips" variants={rise}>
-                {SUGGESTIONS.map((s) => <Chip key={s.label} pressed={d.what === s.label} onClick={() => pickWhat(s.label, s.cls, s.measure)}>{s.label}</Chip>)}
-              </motion.div>
+              <motion.p className="muted" variants={rise}>Say it in your own words. This stays between you and {name}.</motion.p>
               <motion.label className="field" variants={rise}><span className="field-label">In your own words</span>
-                <input className="input" autoComplete="off" value={d.what} maxLength={60} placeholder="e.g. late-night snack orders…" onChange={(e) => pickWhat(e.target.value)} />
+                <input className="input" autoComplete="off" value={d.what} maxLength={60} onChange={(e) => pickWhat(e.target.value)} />
               </motion.label>
               <AnimatePresence>
                 {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{CRISIS_MESSAGE}</motion.div>}
@@ -124,16 +118,11 @@ export function Onboarding() {
             </>)}
 
             {d.step === 5 && (<>
-              <motion.h1 variants={rise}>How does it show up?</motion.h1>
-              <motion.p className="muted" variants={rise}>This shapes the ten-second check-in after a slip.</motion.p>
-              <motion.div className="choice-grid" variants={rise} role="radiogroup" aria-label="What to track">
-                {MEASURES.map((m) => (
-                  <motion.button key={m.id} role="radio" aria-checked={d.measure === m.id} className="choice" whileTap={{ scale: 0.97 }}
-                    onClick={() => { haptic.select(); up({ measure: m.id, measureTouched: true }); }}>
-                    <b>{m.label}</b><div className="small muted">{m.hint}</div>
-                  </motion.button>
-                ))}
-              </motion.div>
+              <motion.h1 variants={rise}>Anything you'd like to count?</motion.h1>
+              <motion.p className="muted" variants={rise}>If there's a number you want to note each time, name it yourself. Leave it empty to just record that it happened.</motion.p>
+              <motion.label className="field" variants={rise}><span className="field-label">Count each time (optional)</span>
+                <input className="input" autoComplete="off" value={d.amountLabel} maxLength={40} onChange={(e) => up({ amountLabel: e.target.value })} />
+              </motion.label>
               <motion.h2 variants={rise}>And how often, right now?</motion.h2>
               <motion.div className="chips" variants={rise}>
                 {BASELINES.map((b) => <Chip key={b.id} pressed={d.baseline === b.id} onClick={() => up({ baseline: b.id })}>{b.label}</Chip>)}
@@ -144,11 +133,11 @@ export function Onboarding() {
 
             {d.step === 6 && (<>
               <motion.h1 variants={rise}>What tends to set it off?</motion.h1>
-              <motion.p className="muted" variants={rise}>Pick any that fit. After a slip you'll tap the one that was true, so your report can show what really sets it off.</motion.p>
-              <motion.div className="chips" role="group" aria-label="Triggers" variants={rise}>
-                {MOODS.map((t) => <Chip key={t.id} pressed={d.triggers.includes(t.id)} onClick={() => up({ triggers: d.triggers.includes(t.id) ? d.triggers.filter((x) => x !== t.id) : [...d.triggers, t.id] })}>{t.chip}</Chip>)}
-              </motion.div>
-              <motion.div variants={rise}><Button onClick={() => go(7)}>{d.triggers.length ? "Continue" : "Skip for now"}</Button></motion.div>
+              <motion.p className="muted" variants={rise}>In your own words, one or more. Pawse offers these back when an urge hits. All optional.</motion.p>
+              <motion.label className="field" variants={rise}><span className="field-label">Situations</span>
+                <input className="input" autoComplete="off" value={d.triggers.join(", ")} maxLength={120} onChange={(e) => up({ triggers: e.target.value.split(",").map((x) => x.trimStart()) })} />
+              </motion.label>
+              <motion.div variants={rise}><Button onClick={() => { setPlan({ situations: [...new Set([...d.plan.situations, ...d.triggers.map((x) => x.trim()).filter(Boolean)])].slice(0, 12) }); up({ triggers: [] }); go(7); }}>{d.triggers.some((x) => x.trim()) ? "Continue" : "Skip for now"}</Button></motion.div>
             </>)}
 
             {d.step === 7 && (<>

@@ -9,7 +9,7 @@ import { today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { NAMES, SPECIES } from "../pets";
-import { inferClass, inferMeasure, isRestrictionRelated, MEASURES, SUGGESTIONS } from "../questions";
+import { inferClass, inferMeasureFromLabel, isRestrictionRelated } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
@@ -108,9 +108,26 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
     toast(paused ? resumeToast(tone) : pauseToast(tone, companion?.name ?? ""), { kind: paused ? "good" : undefined });
     onClose();
   };
+  const [confirming, setConfirming] = useState(false);
+  const remove = () => {
+    if (!habit) return;
+    const backup = actions.deleteTrack(habit.id, habit.name);
+    if (!backup) { haptic.warn(); return; }
+    haptic.success();
+    setConfirming(false);
+    onClose();
+    toast(`${companion?.name ?? "Your pet"} and ${habit.name} are deleted`, { action: { label: "Undo", run: () => { actions.restoreTrack(backup); } } });
+  };
+  const close = () => { setConfirming(false); onClose(); };
   return (
-    <Sheet open={!!habit} onClose={onClose} label={habit ? `${habit.name} options` : "Track options"}>
-      {habit && <div className="stack">
+    <Sheet open={!!habit} onClose={close} label={habit ? `${habit.name} options` : "Track options"}>
+      {habit && confirming && <div className="stack">
+        <h2>Delete {companion?.name}?</h2>
+        <p className="muted">This removes {companion?.name}, {habit.name} and every record, check-in and note for it. You can undo for a few seconds.</p>
+        <Button onClick={remove}>Delete {companion?.name}</Button>
+        <Button variant="secondary" onClick={() => setConfirming(false)}>Keep {companion?.name}</Button>
+      </div>}
+      {habit && !confirming && <div className="stack">
         <div className="stack tight">
           <h2>{habit.name}</h2>
           <p className="muted small">{companion?.name}{paused ? " · Paused" : ""}</p>
@@ -118,6 +135,7 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
         <Button onClick={() => onOpen(habit.id)}>Open</Button>
         <Button variant="secondary" onClick={toggle}>{paused ? "Resume tracking" : "Pause tracking"}</Button>
         <p className="muted small">{paused ? resumeHint(tone) : pauseHint(tone)}</p>
+        <Button variant="text" onClick={() => setConfirming(true)}>Delete {companion?.name ?? "this pet"}</Button>
       </div>}
     </Sheet>
   );
@@ -126,22 +144,15 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
 /** Adds a recovery track with the same building blocks as onboarding: what, how it's measured, and a pet. */
 function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (habitId: string) => void }) {
   const [what, setWhat] = useState("");
-  const [cls, setCls] = useState<HabitClass>("custom");
-  const [measure, setMeasure] = useState<Measure>("none");
-  const [touched, setTouched] = useState(false);
+  const [amountLabel, setAmountLabel] = useState("");
   const [species, setSpecies] = useState<Species>("cat");
   const [name, setName] = useState("");
   const crisis = hasCrisisLanguage(what) || hasCrisisLanguage(name);
   const restriction = isRestrictionRelated(what);
-  const pick = (text: string, c?: HabitClass, m?: Measure) => {
-    const k = c ?? inferClass(text);
-    setWhat(text); setCls(k);
-    if (!touched) setMeasure(m ?? inferMeasure(k));
-  };
-  const reset = () => { setWhat(""); setCls("custom"); setMeasure("none"); setTouched(false); setName(""); };
+  const reset = () => { setWhat(""); setAmountLabel(""); setName(""); };
   const save = () => {
     const petName = name.trim() || NAMES[species][0];
-    const id = actions.addTrack({ what, cls, measure, species, name: petName });
+    const id = actions.addTrack({ what, cls: inferClass(what), measure: inferMeasureFromLabel(amountLabel), amountLabel, species, name: petName });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
     toast(`${petName} is here for ${what.trim()}`, { kind: "good" });
@@ -155,19 +166,16 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
         <h2>Add a recovery track</h2>
         <div className="field">
           <span className="field-label">What would you like to change?</span>
-          <div className="chips">{SUGGESTIONS.map((s) => <Chip key={s.label} pressed={what === s.label} onClick={() => pick(s.label, s.cls, s.measure)}>{s.label}</Chip>)}</div>
-          <input className="input" autoComplete="off" value={what} maxLength={60} placeholder="Or in your own words" aria-label="In your own words" onChange={(e) => pick(e.target.value)} />
+          <input className="input" autoComplete="off" value={what} maxLength={60} aria-label="What you'd like to change, in your own words" onChange={(e) => setWhat(e.target.value)} />
         </div>
         <AnimatePresence>
           {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{CRISIS_MESSAGE}</motion.div>}
           {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{RESTRICTION_NOTE}</motion.div>}
         </AnimatePresence>
-        <div className="field">
-          <span className="field-label">How does it show up?</span>
-          <div className="chips" role="radiogroup" aria-label="How it's measured">
-            {MEASURES.map((m) => <Chip key={m.id} pressed={measure === m.id} onClick={() => { setMeasure(m.id); setTouched(true); }}>{m.label}</Chip>)}
-          </div>
-        </div>
+        <label className="field">
+          <span className="field-label">Count something each time? (optional)</span>
+          <input className="input" autoComplete="off" value={amountLabel} maxLength={40} onChange={(e) => setAmountLabel(e.target.value)} />
+        </label>
         <div className="field">
           <span className="field-label">Its pet</span>
           <div className="chips" role="radiogroup" aria-label="Species">

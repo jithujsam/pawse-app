@@ -3,4 +3,5 @@
     <color name="widget_surface">#FF18191C</color>
     <color name="widget_text">#FFECEAE6</color>
     <color name="widget_muted">#FFA3A09A</color>
+    <color name="app_bg">#FF0F1012</color>
 </resources>

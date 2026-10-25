@@ -13,10 +13,14 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- The strips behind the status and navigation bars: the app's own background, so nothing flashes white or black. -->
+        <item name="android:windowBackground">@color/app_bg</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/app_bg</item>
     </style>
+    <color name="app_bg">#FFF2F4F7</color>
 </resources>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFields, countTriggers, inferClass, inferMeasure, isRestrictionRelated, pickedLabels } from "../src/questions";
+import { buildFields, countTriggers, inferClass, inferMeasure, inferMeasureFromLabel, isRestrictionRelated, pickedLabels, starterFields } from "../src/questions";
 
 describe("questions", () => {
   it("infers the habit class from free text", () => {
@@ -52,5 +52,19 @@ describe("questions", () => {
   it("refuses to track restriction, calories or weight", () => {
     for (const t of ["counting calories", "dieting", "skipping meals", "my weight", "eating less"]) expect(isRestrictionRelated(t)).toBe(true);
     expect(isRestrictionRelated("ordering food I didn't plan")).toBe(false);
+  });
+  it("starts a new track with only what the person asked for", () => {
+    const none = starterFields({ what: "biting nails", measure: "none", cls: "custom", triggers: [] });
+    expect(none.map((f) => f.id)).toEqual(["note", "photo"]);
+    const f = starterFields({ what: "x", measure: "count", amountLabel: "  cigarettes ", cls: "smoking", triggers: [] });
+    expect(f.map((x) => x.id)).toEqual(["amount", "note", "photo"]);
+    expect(f[0]).toMatchObject({ label: "cigarettes", type: "number", required: true, amount: true });
+    expect(f.some((x) => x.options)).toBe(false); // nothing prefilled to pick from
+  });
+  it("reads money, minutes or a count from what the person typed", () => {
+    expect(inferMeasureFromLabel("")).toBe("none");
+    expect(inferMeasureFromLabel("₹ spent")).toBe("money");
+    expect(inferMeasureFromLabel("minutes")).toBe("minutes");
+    expect(inferMeasureFromLabel("cigarettes")).toBe("count");
   });
 });
