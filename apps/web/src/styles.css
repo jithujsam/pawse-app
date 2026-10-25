@@ -377,7 +377,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .wday[data-s="lapse"] i { background: var(--negative); }
 .wday[data-s="met"] i { background: var(--positive); }
 .wday[data-s="urge"] i { background: transparent; border: 4px solid var(--positive); }
-.wday[data-s="rest"] i { background: transparent; border: 2px dashed var(--muted); }
+.wday[data-s="rest"] i, .wday[data-s="paused"] i { background: transparent; border: 2px dashed var(--muted); }
 .wday[data-s="future"] i { background: transparent; border: 2px dashed var(--control); }
 .wday[data-today="true"] .small { color: var(--text); font-weight: 800; }
 .wday[data-today="true"] i { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
@@ -526,7 +526,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .day[data-s="lapse"] { background: var(--negative); color: var(--on-status); }
 .day[data-s="met"] { background: var(--positive); color: var(--on-status); }
 .day[data-s="urge"] { background: var(--surface); box-shadow: inset 0 0 0 3px var(--positive); }
-.day[data-s="rest"] { background: repeating-linear-gradient(135deg, var(--raised) 0 6px, transparent 6px 10px); color: var(--muted); }
+.day[data-s="rest"], .day[data-s="paused"] { background: repeating-linear-gradient(135deg, var(--raised) 0 6px, transparent 6px 10px); color: var(--muted); }
 .day[data-s="future"] { background: transparent; color: var(--muted); cursor: default; }
 .day[data-today="true"] { font-weight: 900; }
 .day-ring { position: absolute; inset: -3px; border-radius: 16px; border: 2.5px solid var(--text); }
@@ -617,5 +617,5 @@ body.privacy #root { filter: blur(24px); }
 .review-days .dot[data-s="lapse"] { background: var(--negative); }
 .review-days .dot[data-s="met"] { background: var(--positive); }
 .review-days .dot[data-s="urge"] { background: transparent; border: 3px solid var(--positive); }
-.review-days .dot[data-s="rest"] { background: transparent; border: 2px dashed var(--muted); }
+.review-days .dot[data-s="rest"], .review-days .dot[data-s="paused"] { background: transparent; border: 2px dashed var(--muted); }
 .inline-add .btn { width: auto; flex: none; padding-inline: 18px; }

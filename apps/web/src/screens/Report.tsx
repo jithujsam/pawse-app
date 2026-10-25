@@ -5,6 +5,7 @@ import { aiWeekly } from "../ai";
 import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
+import { countDays, trackIndex } from "../progress";
 import { addDays, fmtHour, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
@@ -57,7 +58,7 @@ export function Report() {
   const { tone, currency, baseline } = data.settings;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
-  const cleanIn = (from: string) => data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= from && c.day <= addDays(from, 6)).length;
+  const cleanIn = (from: string) => countDays(trackIndex(data, habit.id, today()), from, addDays(from, 6)).met;
   const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
   // Days with anything recorded (a slip, goal met or an urge), so a quiet week shows up as one.
   const checkedIn = (from: string) => new Set([...data.entries, ...data.cleanDays, ...data.urges].filter((x) => x.habitId === habit.id && x.day >= from && x.day <= addDays(from, 6)).map((x) => x.day)).size;

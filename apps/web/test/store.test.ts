@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { actions, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
+import { dayStatus } from "../src/recovery";
 import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import type { Entry } from "../src/types";
@@ -82,16 +83,22 @@ describe("missing days", () => {
 });
 
 describe("correcting an old day", () => {
-  it("a slip logged for a past clean day replaces the clean mark and ages the pet from that day", () => {
+  it("a slip logged for a past clean day wins over the clean mark, keeps it as history, and ages the pet from that day", () => {
     load([]);
     const old = addDays(t0, -10);
     actions.markClean(H, old);
     const d = actions.logSlip(H, {}, old);
     expect(d.entry.day).toBe(old);
-    expect(getData().cleanDays.some((c) => c.day === old)).toBe(false);
+    expect(getData().cleanDays.some((c) => c.day === old)).toBe(true);
+    expect(dayStatus(getData(), H, old)).toBe("lapse");
     const v = viewCompanion(getData(), C);
-    expect(v.states.find((s) => s.day === old)!.damageMonths).toBeCloseTo(d.entry.months);
+    const st = v.states.find((s) => s.day === old)!;
+    expect(st.damageMonths).toBeCloseTo(d.entry.months);
+    expect(st.healedMonths).toBe(0);
     expect(v.age).toBeGreaterThan(0);
+    // Deleting the slip brings the goal-met day back.
+    actions.deleteEntry(d.entry.id);
+    expect(dayStatus(getData(), H, old)).toBe("met");
   });
 });
 

@@ -7,7 +7,8 @@ import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare, updateNotifications } from "../notify";
-import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, type Deduction } from "../store";
+import { actions, getData, recoveryPlan, riskyHour, useActiveView, useData, type Deduction } from "../store";
+import { celebratedFor, milestoneToCelebrate, trackSummary } from "../progress";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -19,7 +20,7 @@ import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
 import { openDownload, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
-import { afterSlipLine, careDays, dayStatus, milestoneToCelebrate, restLine, STATUS_LABEL } from "../recovery";
+import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
 
 export function Home() {
@@ -48,17 +49,18 @@ export function Home() {
   useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(null), 6000); return () => clearTimeout(t); }, [note]);
 
   const t0 = today();
-  const slippedToday = data.entries.some((e) => e.habitId === habit.id && e.day === t0);
-  const cleanToday = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
-  const resting = data.settings.restDays.includes(t0);
+  const progress = trackSummary(data, habit.id, t0);
+  const slippedToday = progress.today === "lapse";
+  const cleanToday = progress.today === "met";
+  const resting = progress.resting || progress.paused;
   const checked = slippedToday || cleanToday;
   const myPlan = data.settings.plan;
   const weekFocus = data.settings.weekFocus.find((w) => w.week === weekStart(t0))?.text;
   const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
   const reasons = (myPlan?.reasons ?? []).slice(0, 3);
-  const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
+  const lonely = !checked && progress.quiet >= 3;
   const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
-  const streak = cleanStreak(data, habit.id);
+  const streak = progress.current;
   const age = view.age;
   const danger = age >= 80;
   const report = healthReport(data, view, tone);
@@ -74,7 +76,7 @@ export function Home() {
 
   // One notification plan (at most two a day), kept in step with today's check-in, the risky hour and quiet days.
   const risk = riskyHour(data, habit.id);
-  const lastCheckIn = [companion.bornOn, ...data.entries.filter((e) => e.habitId === habit.id).map((e) => e.day), ...data.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day)].sort().pop()!;
+  const lastCheckIn = progress.lastRecorded ?? progress.start;
   const { remindersOn, reminder, riskNudge, careNotes } = data.settings;
   useEffect(() => {
     void updateNotifications({ enabled: remindersOn, reminder, tone, name: companion.name, personality, checkedToday: checked, lastCheckIn, riskHour: riskNudge ? risk : null, careNotes });
@@ -90,9 +92,9 @@ export function Home() {
     setJust("clean"); setSparks((s) => s + 1);
     setNote(say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
-    const s = careDays({ ...data, cleanDays: [...data.cleanDays, { habitId: habit.id, day: t0 }] }, habit.id);
-    const m = milestoneToCelebrate(s, data.settings.celebrated, MILESTONES);
-    if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setSettings({ celebrated: m.seen }); }
+    const after = getData();
+    const m = milestoneToCelebrate(trackSummary(after, habit.id, t0).care, celebratedFor(after, habit.id), MILESTONES);
+    if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
     else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, t0) } });
   }
   function rest(on: boolean) {

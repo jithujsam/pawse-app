@@ -4,6 +4,7 @@ import {
   type DayInput, type DayState, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
+import { quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
@@ -146,7 +147,8 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
   const from = QUIET_DAYS_AGE ? d.settings.neglectFrom : null;
   // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
   const inputs: DayInput[] = daysBetween(companion.bornOn, last) < 0 ? [] : range(companion.bornOn, last).map((day) => ({
-    day, damage: damage.get(day) ?? [], clean: clean.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
+    // A goal-met mark under a slip is kept as history, but the slip wins: the day isn't clean.
+    day, damage: damage.get(day) ?? [], clean: clean.has(day) && !damage.has(day), missed: !!from && day >= from && day < today() && !companion.diedOn,
   }));
   // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
   // A companion that already died stays as it was.
@@ -186,28 +188,11 @@ export function median(xs: number[]): number | undefined {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-export function cleanStreak(d: AppData, habitId: string): number {
-  let n = 0;
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  const cleans = new Set(d.cleanDays.filter((c) => c.habitId === habitId).map((c) => c.day));
-  for (let day = today(); ; day = addDays(day, -1)) {
-    const slipped = slips.has(day);
-    const clean = cleans.has(day);
-    if (slipped) break;
-    if (clean) n++; else if (day !== today()) break;
-    if (n > 3650) break;
-  }
-  return n;
-}
+/** Good days (goal met or an urge managed) since the last slip. Unrecorded, rest and paused days don't break it. */
+export const cleanStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).current;
 
-/** The longest run of clean days with no slip in between, ever. */
-export function bestStreak(d: AppData, habitId: string): number {
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  const days = [...new Set(d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).map((c) => c.day))].sort();
-  let best = 0, run = 0, prev = "";
-  for (const day of days) { run = prev && addDays(prev, 1) === day ? run + 1 : 1; best = Math.max(best, run); prev = day; }
-  return best;
-}
+/** The longest streak ever, by the same rule as cleanStreak. */
+export const bestStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).best;
 
 /** The hour slips most often happen, once there's a clear pattern (at least 5 timed slips, 30% within an hour of the peak). */
 export function riskyHour(d: AppData, habitId: string): number | null {
@@ -232,14 +217,8 @@ export function treatsLeft(d: AppData, habitId: string): number {
   return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - d.settings.treatsGiven);
 }
 
-/** Days since the last check-in (slip or clean day), counting from yesterday. 0 if today or yesterday is logged. */
-export function silentDays(d: AppData, habitId: string, bornOn: string): number {
-  const t = today();
-  let last = bornOn;
-  for (const e of d.entries) if (e.habitId === habitId && e.day > last) last = e.day;
-  for (const c of d.cleanDays) if (c.habitId === habitId && c.day > last) last = c.day;
-  return Math.max(0, daysBetween(last, t) - 1);
-}
+/** Unrecorded days in a row up to yesterday. A rest or paused day, or anything recorded, ends the count. */
+export const silentDays = (d: AppData, habitId: string, t0 = today()) => quietDays(trackIndex(d, habitId, t0));
 
 /** Days from `from` to today with a check-in (a slip or a clean mark). Days with nothing logged are unknown, not clean. */
 export function checkedInDays(d: AppData, habitId: string, from: string): string[] {
@@ -289,7 +268,19 @@ export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => 
 
 // ---------- actions ----------
 
-const withoutRest = (s: AppData["settings"], day: string) => (s.restDays.includes(day) ? { ...s, restDays: s.restDays.filter((x) => x !== day) } : s);
+/**
+ * Clears a rest day for one track. A day in the shared list from before tracks were separate is moved to every
+ * other track's own list, so clearing it here doesn't change what the other tracks show.
+ */
+function withoutRest(d: AppData, habitId: string, day: string): AppData["settings"] {
+  const s = d.settings;
+  const own = s.trackRest?.[habitId] ?? [];
+  const shared = s.restDays.includes(day);
+  if (!shared && !own.includes(day)) return s;
+  const trackRest = { ...s.trackRest, [habitId]: own.filter((x) => x !== day) };
+  if (shared) for (const h of d.habits) if (h.id !== habitId) trackRest[h.id] = [...new Set([...(trackRest[h.id] ?? []), day])].sort();
+  return { ...s, restDays: shared ? s.restDays.filter((x) => x !== day) : s.restDays, trackRest };
+}
 
 export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] });
 
@@ -422,9 +413,9 @@ export const actions = {
     let next: AppData = {
       ...data,
       entries: [...data.entries, entry],
-      cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
-      // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
-      settings: withoutRest(data.settings, day),
+      // A goal-met mark on this day stays as history: the slip wins while it exists, and deleting the slip brings
+      // the goal-met day back. Milestones count days of care, which a slip doesn't take away, so they aren't reset.
+      settings: withoutRest(data, habitId, day),
     };
     let died = false;
     const v = viewCompanion(next, companion.id);
@@ -446,7 +437,7 @@ export const actions = {
   markClean(habitId: string, day = today()) {
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
-    commit({ ...data, cleanDays: [...data.cleanDays, { habitId, day }], settings: withoutRest(data.settings, day) });
+    commit({ ...data, cleanDays: [...data.cleanDays, { habitId, day }], settings: withoutRest(data, habitId, day) });
     return true;
   },
 
@@ -456,9 +447,24 @@ export const actions = {
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day))) return false;
-    const rest = data.settings.restDays.filter((x) => x !== day);
-    commit({ ...data, settings: { ...data.settings, restDays: on ? [...rest, day].sort().slice(-4000) : rest } });
+    if (!on) { commit({ ...data, settings: withoutRest(data, habitId, day) }); return true; }
+    const own = data.settings.trackRest?.[habitId] ?? [];
+    if (own.includes(day) || data.settings.restDays.includes(day)) return true;
+    commit({ ...data, settings: { ...data.settings, trackRest: { ...data.settings.trackRest, [habitId]: [...own, day].sort().slice(-4000) } } });
     return true;
+  },
+
+  /** Pauses a track from a day on (today by default). Paused days count neither way. Records still win. */
+  pauseTrack(habitId: string, from = today()) {
+    const pauses = data.settings.pauses?.[habitId] ?? [];
+    const next = withPause(pauses, from);
+    if (next !== pauses) commit({ ...data, settings: { ...data.settings, pauses: { ...data.settings.pauses, [habitId]: next } } });
+  },
+  /** Resumes a paused track: `on` (today by default) is the first day tracked again. */
+  resumeTrack(habitId: string, on = today()) {
+    const pauses = data.settings.pauses?.[habitId] ?? [];
+    if (!pauses.some((p) => p.to === null)) return;
+    commit({ ...data, settings: { ...data.settings, pauses: { ...data.settings.pauses, [habitId]: withResume(pauses, on) } } });
   },
 
   /** Saves the person's plan. Text is trimmed and capped; empty items are dropped. */
@@ -493,8 +499,13 @@ export const actions = {
   /** Puts back an entry removed by mistake (undo). */
   restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
-  celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
-  resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
+  /** Records which milestones a track has celebrated. */
+  setCelebrated: (habitId: string, seen: number[]) => commit({ ...data, settings: { ...data.settings, celebratedBy: { ...data.settings.celebratedBy, [habitId]: seen } } }),
+  /** A new companion on a track celebrates its milestones afresh, once each. */
+  resetCelebrations: (habitId: string) => {
+    const legacy = data.habits[0]?.id === habitId && data.settings.celebrated.length > 0;
+    commit({ ...data, settings: { ...data.settings, celebratedBy: { ...data.settings.celebratedBy, [habitId]: [] }, celebrated: legacy ? [] : data.settings.celebrated } });
+  },
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
   recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}) {

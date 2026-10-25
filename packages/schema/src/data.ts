@@ -111,6 +111,9 @@ export const SettingsSchema = z.object({
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
   plan: PlanSchema.nullable(),
   restDays: z.array(day).max(4000),
+  trackRest: z.record(z.array(day).max(4000)),
+  pauses: z.record(z.array(z.object({ from: day, to: day.nullable() })).max(500)),
+  celebratedBy: z.record(z.array(z.number().int()).max(50)),
   weekFocus: z.array(z.object({ week: day, text: short(160) })).max(60),
   petLife: z.enum(["continuity", "classic"]),
 }).partial();

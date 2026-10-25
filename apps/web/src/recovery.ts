@@ -1,5 +1,6 @@
 import type { HabitClass } from "@detox/engine";
-import { addDays, daysBetween, parse, today } from "./dates";
+import { addDays, parse, today } from "./dates";
+import { careDayCount, countDays, statusOf, trackIndex, type DayStatus, type PastStatus } from "./progress";
 import { pickedLabels } from "./questions";
 import { slipHour } from "./store";
 import type { AppData, GoalKind, Habit, StrategyId, Tone } from "./types";
@@ -10,21 +11,14 @@ import type { AppData, GoalKind, Habit, StrategyId, Tone } from "./types";
  * day nobody recorded is "unrecorded", never progress and never a lapse.
  */
 
-/** lapse: a slip was logged. met: marked as goal met. urge: no slip, an urge managed, nothing else marked. */
-export type DayStatus = "lapse" | "met" | "urge" | "rest" | "unrecorded" | "future";
+/** Day states and the numbers built on them live in progress.ts; re-exported here for the screens that use them. */
+export { milestoneToCelebrate, type DayStatus } from "./progress";
+
+export const dayStatus = (d: AppData, habitId: string, day: string, t0 = today()): DayStatus => statusOf(trackIndex(d, habitId, t0), day);
 
 export const STATUS_LABEL: Record<DayStatus, string> = {
-  lapse: "Slip", met: "Goal met", urge: "Urge managed", rest: "Not tracking", unrecorded: "Not recorded", future: "Upcoming",
+  lapse: "Slip", met: "Goal met", urge: "Urge managed", paused: "Paused", rest: "Not tracking", unrecorded: "Not recorded", future: "Upcoming", before: "Before you started",
 };
-
-export function dayStatus(d: AppData, habitId: string, day: string, t0 = today()): DayStatus {
-  if (day > t0) return "future";
-  if (d.entries.some((e) => e.habitId === habitId && e.day === day)) return "lapse";
-  if (d.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return "met";
-  if (d.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out")) return "urge";
-  if (d.settings.restDays.includes(day)) return "rest";
-  return "unrecorded";
-}
 
 /** Urges managed on a day, shown alongside its status (a goal-met day can have managed urges too). */
 export const urgesManaged = (d: AppData, habitId: string, day: string) =>
@@ -34,24 +28,7 @@ export const urgesManaged = (d: AppData, habitId: string, day: string) =>
  * Days of care: days with the goal met (no slip) or with an urge managed, ever. Unlike a streak it only
  * grows, so a slip never takes away what was earned.
  */
-export function careDays(d: AppData, habitId: string): number {
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  const days = new Set<string>();
-  for (const c of d.cleanDays) if (c.habitId === habitId && !slips.has(c.day)) days.add(c.day);
-  for (const u of d.urges) if (u.habitId === habitId && u.outcome === "rode_it_out") days.add(u.day);
-  return days.size;
-}
-
-/**
- * The milestone to celebrate at this many days of care: the highest one reached and not yet celebrated, so a
- * person who already has many days sees one celebration, not a backlog. Lower ones are marked as seen with it.
- */
-export function milestoneToCelebrate(care: number, celebrated: number[], milestones: readonly number[]): { hit: number; seen: number[] } | null {
-  const reached = milestones.filter((m) => m <= care);
-  const hit = reached[reached.length - 1];
-  if (hit === undefined || celebrated.includes(hit)) return null;
-  return { hit, seen: [...new Set([...celebrated, ...reached])].sort((a, b) => a - b) };
-}
+export const careDays = (d: AppData, habitId: string, t0 = today()) => careDayCount(trackIndex(d, habitId, t0));
 
 // ---------- strategies ----------
 
@@ -188,9 +165,9 @@ export function strategyResults(d: AppData, habitId: string, from?: string, to?:
 
 export interface WeekReview {
   week: string;
-  /** Days of this week that have happened and the companion was around for. */
+  /** Days of this week that have happened since the track started. */
   days: number;
-  counts: Record<Exclude<DayStatus, "future">, number>;
+  counts: Record<PastStatus, number>;
   lapses: number;
   lapsesBefore: number;
   urges: { managed: number; total: number };
@@ -202,17 +179,10 @@ export interface WeekReview {
   lastFocus: string | null;
 }
 
-export function weekReview(d: AppData, habit: Habit, bornOn: string, week: string, t0 = today()): WeekReview {
+export function weekReview(d: AppData, habit: Habit, week: string, t0 = today()): WeekReview {
   const end = addDays(week, 6);
-  const counts = { lapse: 0, met: 0, urge: 0, rest: 0, unrecorded: 0 };
-  let days = 0;
-  for (let i = 0; i < 7; i++) {
-    const day = addDays(week, i);
-    if (day > t0 || daysBetween(bornOn, day) < 0) continue;
-    days++;
-    const s = dayStatus(d, habit.id, day, t0);
-    if (s !== "future") counts[s]++;
-  }
+  const counts = countDays(trackIndex(d, habit.id, t0), week, end);
+  const days = Object.values(counts).reduce((a, n) => a + n, 0);
   const inWeek = (day: string, from = week, to = end) => day >= from && day <= to;
   const lapses = d.entries.filter((e) => e.habitId === habit.id && inWeek(e.day)).length;
   const lapsesBefore = d.entries.filter((e) => e.habitId === habit.id && inWeek(e.day, addDays(week, -7), addDays(week, -1))).length;
@@ -221,7 +191,7 @@ export function weekReview(d: AppData, habit: Habit, bornOn: string, week: strin
   const mood = habit.fields.find((f) => f.id === "mood");
   for (const e of d.entries) if (e.habitId === habit.id && inWeek(e.day) && mood) for (const l of pickedLabels(mood, e.values.mood)) tally.set(l, (tally.get(l) ?? 0) + 1);
   for (const u of urgeRows) if (u.trigger) tally.set(u.trigger, (tally.get(u.trigger) ?? 0) + 1);
-  const recorded = days - counts.unrecorded - counts.rest;
+  const recorded = counts.lapse + counts.met + counts.urge;
   const goal = d.settings.plan?.goal ?? null;
   const goalLine = recorded === 0
     ? end >= t0 ? "Nothing recorded yet this week. There's still time to check in."

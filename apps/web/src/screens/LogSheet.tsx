@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
 import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL } from "../copy";
 import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
+import { trackSummary } from "../progress";
 import { hasCrisisLanguage } from "../crisis";
 import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
@@ -64,8 +65,8 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const [result, setResult] = useState<Deduction | null>(null);
   const [ageBefore] = useState(age);
   // What the person had built before this slip, so the result can say plainly that it still stands.
-  const [keptMet] = useState(() => { const slips = new Set(data.entries.filter((e) => e.habitId === habit.id).map((e) => e.day)); return data.cleanDays.filter((c) => c.habitId === habit.id && !slips.has(c.day)).length; });
-  const [keptUrges] = useState(() => data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length);
+  const [kept] = useState(() => trackSummary(data, habit.id, today()));
+  const keptMet = kept.metDays, keptUrges = kept.managedUrges;
   const alive = useRef(true);
   const [polishing, setPolishing] = useState(false);
   const [shake, setShake] = useState(0);

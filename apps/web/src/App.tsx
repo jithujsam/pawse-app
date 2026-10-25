@@ -6,7 +6,8 @@ import { Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
 import { onReminderTap } from "./notify";
 import { useSession } from "./supabase";
-import { actions, cleanStreak, onPinChange, useActiveView, useData, vault, type Boot } from "./store";
+import { trackSummary } from "./progress";
+import { actions, onPinChange, useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -128,9 +129,10 @@ function Shell() {
   useEffect(() => {
     if (!view?.habit || !data.settings.onboarded) return;
     const t0 = today();
-    const slipped = data.entries.some((e) => e.habitId === view.habit!.id && e.day === t0);
-    const clean = data.cleanDays.some((c) => c.habitId === view.habit!.id && c.day === t0);
-    const streak = cleanStreak(data, view.habit.id);
+    const progress = trackSummary(data, view.habit.id, t0);
+    const slipped = progress.today === "lapse";
+    const clean = progress.today === "met";
+    const streak = progress.current;
     // With app lock on, the home screen widget shows nothing about today: it sits outside the PIN.
     if (vault.hasPin()) { updateWidget({ species: view.companion.species, name: view.companion.name, line: "Tap to check in", sad: false }); return; }
     const line = slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;

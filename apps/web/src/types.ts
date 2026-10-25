@@ -110,6 +110,9 @@ export interface RecoveryPlan {
   ifThen: string[];
 }
 
+/** A stretch when a track was paused: from `from` up to, not including, `to` (still paused while to is null). */
+export interface Pause { from: string; to: string | null }
+
 /** The one adjustment picked in a weekly review, for the week that follows it. */
 export interface WeekFocus { week: string; text: string }
 
@@ -137,8 +140,10 @@ export interface Settings {
   remindersOn: boolean;
   /** First-run tips on Home have been shown. */
   coachSeen: boolean;
-  /** Clean-streak milestones already celebrated, so each fires once per streak. */
+  /** Milestones celebrated before tracks were separate. Read as the first track's; see celebratedBy. */
   celebrated: number[];
+  /** Days-of-care milestones already celebrated, per track (habit id), so each fires once. */
+  celebratedBy?: Record<string, number[]>;
   /** How long the app may sit in the background before the PIN is asked again. */
   autoLock: AutoLock;
   /** What the companion is wearing, if anything. */
@@ -163,8 +168,15 @@ export interface Settings {
   neglectFrom: string | null;
   /** The person's recovery plan (onboarding, editable in You). Null until they start one. */
   plan: RecoveryPlan | null;
-  /** Days the person chose not to track. Neither progress nor a lapse; never counted either way. */
+  /**
+   * Days the person chose not to track, from before tracks were separate: they apply to every track.
+   * New ones go in trackRest. Neither progress nor a lapse; never counted either way.
+   */
   restDays: string[];
+  /** Days not tracked, per track (habit id). */
+  trackRest?: Record<string, string[]>;
+  /** Paused stretches, per track (habit id). Paused days count neither way, like rest days. */
+  pauses?: Record<string, Pause[]>;
   /** One adjustment per reviewed week. */
   weekFocus: WeekFocus[];
   /**
