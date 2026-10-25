@@ -224,6 +224,37 @@ export function adjustmentIdeas(r: WeekReview, habit: Habit, what: string): stri
   return [...new Set(ideas)].slice(0, 4);
 }
 
+/**
+ * What one track's own history has taught so far, for its plan: reflections written after slips, what tends to
+ * set urges off, and which ways through have worked. Only this track's records; counts, never causes. Triggers
+ * and strategies wait for MIN_EVENTS urges, like the other observations.
+ */
+export interface TrackLessons {
+  reflections: { day: string; before: string; adjust: string }[];
+  triggers: [string, number][];
+  helped: StrategyResult[];
+  urges: number;
+  needed: number;
+}
+export function trackLessons(d: AppData, habitId: string): TrackLessons {
+  const reflections = d.entries
+    .filter((e) => e.habitId === habitId && (String(e.values.lapse_before ?? "").trim() || String(e.values.lapse_adjust ?? "").trim()))
+    .sort((a, b) => b.day.localeCompare(a.day) || b.createdAt - a.createdAt)
+    .slice(0, 5)
+    .map((e) => ({ day: e.day, before: String(e.values.lapse_before ?? ""), adjust: String(e.values.lapse_adjust ?? "") }));
+  const urges = d.urges.filter((u) => u.habitId === habitId);
+  const enough = urges.length >= MIN_EVENTS;
+  const tally = new Map<string, number>();
+  for (const u of urges) if (u.trigger?.trim()) tally.set(u.trigger.trim(), (tally.get(u.trigger.trim()) ?? 0) + 1);
+  return {
+    reflections,
+    triggers: enough ? [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3) : [],
+    helped: enough ? strategyResults(d, habitId).filter((r) => r.managed > 0).slice(0, 3) : [],
+    urges: urges.length,
+    needed: Math.max(0, MIN_EVENTS - urges.length),
+  };
+}
+
 // ---------- copy that depends on tone ----------
 
 /** After a lapse: calm, factual, and pointing back to the plan. Never shaming in any tone. */

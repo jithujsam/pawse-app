@@ -4,8 +4,9 @@ import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import { planNotifications } from "../src/notify";
 import { trackSummary } from "../src/progress";
+import { trackLessons } from "../src/recovery";
 import { defaultTrackState, focusedTrackId, trackState } from "../src/tracks";
-import type { AppData } from "../src/types";
+import type { AppData, RecoveryPlan } from "../src/types";
 
 /**
  * Regression tests for the recovery experience (PRD §21): pausing from the Pets grid, reminders that follow the
@@ -102,5 +103,56 @@ describe("pausing a track silences its reminders, and resuming restores them", (
     actions.archiveTrack("ha");
     expect(focusedTrackId(getData())).toBe("hb");
     expect(reminderInputs(getData())).toMatchObject({ enabled: true, name: "Miso" });
+  });
+});
+
+describe("each track keeps its own plan", () => {
+  const planA: RecoveryPlan = { goal: "stop", reasons: ["Money"], situations: ["When I get paid"], firstStep: "Delete the app", strategies: ["friction"], supportName: "Asha", ifThen: ["If it's payday, I'll cook"] };
+  const planB: RecoveryPlan = { goal: "reduce", reasons: ["My health"], situations: ["After work or college"], firstStep: "No cigarettes before noon", strategies: ["breathe"], supportName: "", ifThen: [] };
+
+  it("saving one track's plan never changes another's", () => {
+    load();
+    actions.savePlan(planA, "ha");
+    actions.savePlan(planB, "hb");
+    expect(trackState(getData(), "ha").plan).toMatchObject({ goal: "stop", reasons: ["Money"], supportName: "Asha" });
+    expect(trackState(getData(), "hb").plan).toMatchObject({ goal: "reduce", reasons: ["My health"], supportName: "" });
+  });
+
+  it("switching the open track doesn't move or overwrite a plan", () => {
+    load();
+    actions.savePlan(planA, "ha");
+    actions.selectTrack("hb");
+    actions.savePlan(planB, "hb");
+    actions.selectTrack("ha");
+    expect(trackState(getData(), "ha").plan?.firstStep).toBe("Delete the app");
+    expect(trackState(getData(), "hb").plan?.firstStep).toBe("No cigarettes before noon");
+  });
+
+  it("an if-then from a slip reflection goes to that slip's track only", () => {
+    load();
+    actions.savePlan(planA, "ha");
+    actions.addIfThen("If I'm stressed after work, I'll walk first", "hb");
+    expect(trackState(getData(), "hb").plan?.ifThen).toEqual(["If I'm stressed after work, I'll walk first"]);
+    expect(trackState(getData(), "ha").plan?.ifThen).toEqual(["If it's payday, I'll cook"]);
+  });
+
+  it("plans survive a reload (sync round trip of the stored data)", () => {
+    load();
+    actions.savePlan(planA, "ha");
+    actions.applyRemote(JSON.parse(JSON.stringify(getData())));
+    expect(trackState(getData(), "ha").plan).toMatchObject({ goal: "stop", ifThen: ["If it's payday, I'll cook"] });
+    expect(trackState(getData(), "hb").plan).toBeNull();
+  });
+
+  it("lessons come from the track's own reflections and urges, and patterns wait for five urges", () => {
+    load();
+    for (let i = 0; i < 4; i++) actions.recordUrge("ha", 3, "rode_it_out", { strategy: "breathe", trigger: "Bored" });
+    actions.recordUrge("hb", 3, "rode_it_out", { strategy: "move", trigger: "Stressed" });
+    expect(trackLessons(getData(), "ha")).toMatchObject({ triggers: [], helped: [], urges: 4, needed: 1 });
+    actions.recordUrge("ha", 4, "slipped", { strategy: "breathe", trigger: "Bored" });
+    const l = trackLessons(getData(), "ha");
+    expect(l.triggers).toEqual([["Bored", 5]]);
+    expect(l.helped).toEqual([{ id: "breathe", managed: 4, total: 5 }]);
+    expect(trackLessons(getData(), "hb").urges).toBe(1);
   });
 });

@@ -16,6 +16,8 @@ import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
 import { recoveryLine, say } from "../voice";
 import { LogSheet } from "./LogSheet";
+import { PlanPage } from "./Plan";
+import { SubPage } from "../ui/Settings";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
@@ -69,6 +71,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
+  const [planOpen, setPlanOpen] = useState(false);
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const trackPaused = track.status === "paused";
@@ -169,12 +172,18 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
       {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
-      {(focus || reasons.length > 0) && (
-        <motion.section className="card stack tight plan-card" aria-label="Your plan" variants={rise}>
+      {/* This track's own plan, one tap away. A track without one gets a short invitation instead. */}
+      <motion.button className="card stack tight plan-card" aria-label={`Your plan for ${habit.name}`} variants={rise} onClick={() => { haptic.tap(); setPlanOpen(true); }}>
+        {focus || reasons.length > 0 ? <>
           {focus && <><span className="muted small">{focus.kind === "week" ? "This week's focus" : "Your first step"}</span><b>{focus.text}</b></>}
           {reasons.length > 0 && <span className="small plan-why"><span className="muted">Why you're doing this:</span> {reasons.join(", ")}</span>}
-        </motion.section>
-      )}
+        </> : <>
+          <b>Make a plan for {habit.name}</b>
+          <span className="muted small">Why it matters, what's hard and what helps. It shows up when an urge hits.</span>
+        </>}
+        <span className="plan-open small">Open your plan {Icon.chevR}</span>
+      </motion.button>
+      <SubPage open={planOpen} title="Your plan" onClose={() => setPlanOpen(false)}><PlanPage key={habit.id} habitId={habit.id} onSaved={() => setPlanOpen(false)} /></SubPage>
 
       <AnimatePresence initial={false}>
         {showPlan && plan && (

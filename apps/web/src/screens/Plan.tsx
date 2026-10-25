@@ -5,8 +5,9 @@ import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { rise } from "../motion";
-import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES } from "../recovery";
-import { actions, emptyPlan, useActiveView, useData } from "../store";
+import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES, strategy, trackLessons } from "../recovery";
+import { fmtDay } from "../dates";
+import { actions, emptyPlan, useData } from "../store";
 import { trackState } from "../tracks";
 import { Button, Chip, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -82,16 +83,22 @@ export function HelpSection({ plan, set, cls }: { plan: RecoveryPlan; set: (p: P
   </>);
 }
 
-/** You → Your plan: everything in one editable page. */
-export function PlanPage() {
+/**
+ * One track's plan, in one editable page. It belongs to that track only: the page is given its track id and
+ * saves to it, and callers remount it per track (key={habitId}), so switching tracks can never carry one
+ * track's unsaved plan into another.
+ */
+export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () => void }) {
   const data = useData();
-  const view = useActiveView()!;
-  const habit = view.habit!;
-  const [plan, setPlan] = useState<RecoveryPlan>(() => trackState(data, habit.id).plan ?? emptyPlan());
+  const habit = data.habits.find((h) => h.id === habitId);
+  const companion = habit && data.companions.find((c) => c.id === habit.companionId);
+  const [plan, setPlan] = useState<RecoveryPlan>(() => trackState(data, habitId).plan ?? emptyPlan());
+  if (!habit) return null;
   const set = (p: Partial<RecoveryPlan>) => setPlan((x) => ({ ...x, ...p }));
   const crisis = planHasCrisis(plan);
   return (
     <div className="stack">
+      <p className="track-context small" aria-label={`Plan for ${habit.name}`}><span className="muted">For</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
       <p className="muted">Your plan, in your words. Everything is optional and you can change it any time. It shapes what Pawse offers you when an urge hits and after a slip.</p>
       <section className="card stack"><WhySection plan={plan} set={set} /></section>
       <section className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
@@ -104,6 +111,7 @@ export function PlanPage() {
                 <button className="icon-btn danger" aria-label={`Remove: ${x}`} onClick={() => set({ ifThen: plan.ifThen.filter((y) => y !== x) })}>{Icon.trash}</button></div>
             ))}</div>}
       </section>
+      <Lessons habitId={habit.id} />
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       <section className="card stack" aria-label="More support">
         <h2>More support</h2>
@@ -111,7 +119,34 @@ export function PlanPage() {
         <p className="small">If you drink heavily every day, don't stop suddenly without medical advice: withdrawal can be dangerous. A doctor can help you cut down safely.</p>
         <p className="small muted">Free helplines: India Tele-MANAS 14416 (mental health). US SAMHSA National Helpline 1-800-662-4357 (substance use), or call or text 988 in a crisis. UK Samaritans 116 123. Elsewhere, your local emergency number.</p>
       </section>
-      <motion.div variants={rise}><Button disabled={crisis} onClick={() => { actions.savePlan(plan, habit.id); haptic.success(); toast("Plan saved", { kind: "good" }); }}>Save plan</Button></motion.div>
+      <motion.div variants={rise}><Button disabled={crisis} onClick={() => { actions.savePlan(plan, habit.id); haptic.success(); toast("Plan saved", { kind: "good" }); onSaved?.(); }}>Save plan</Button></motion.div>
     </div>
+  );
+}
+
+/** What this track's own history shows so far: reflections after slips, triggers and ways through that worked. */
+function Lessons({ habitId }: { habitId: string }) {
+  const data = useData();
+  const l = trackLessons(data, habitId);
+  return (
+    <section className="card stack" aria-label="What you've noticed">
+      <h2>What you've noticed</h2>
+      {l.reflections.length === 0 && l.needed > 0 && (
+        <p className="muted small">Nothing here yet. Reflections after a slip, and what set off your urges, collect here for this track.{l.urges > 0 ? ` ${l.needed} more ${l.needed === 1 ? "urge" : "urges"} before patterns show.` : ""}</p>
+      )}
+      {l.triggers.length > 0 && <p className="small"><span className="muted">Urges often came with:</span> {l.triggers.map(([t, n]) => `${t} (${n})`).join(", ")}</p>}
+      {l.helped.length > 0 && <p className="small"><span className="muted">Helped you through:</span> {l.helped.map((r) => `${strategy(r.id).title} (${r.managed} of ${r.total})`).join(", ")}</p>}
+      {l.reflections.length > 0 && (
+        <div className="list" aria-label="Reflections after slips">
+          {l.reflections.map((r, i) => (
+            <div key={`${r.day}-${i}`} className="item stack tight">
+              <span className="muted small">{fmtDay(r.day)}</span>
+              {r.before && <span className="small">Before: {r.before}</span>}
+              {r.adjust && <span className="small">Next time: {r.adjust}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

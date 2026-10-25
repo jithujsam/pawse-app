@@ -98,7 +98,7 @@ export function Me() {
         </Group>
       </motion.div>}
 
-      <SubPage open={page === "plan"} title="Your plan" onClose={close}><PlanPage /></SubPage>
+      <SubPage open={page === "plan"} title="Your plan" onClose={close}><PlanPage key={habit.id} habitId={habit.id} /></SubPage>
       <SubPage open={page === "pet"} title="Your companion" onClose={close}><PetPage /></SubPage>
       <SubPage open={page === "voice"} title="Voice" onClose={close}><VoicePage /></SubPage>
       <SubPage open={page === "reminders"} title="Reminders" onClose={close}><RemindersPage /></SubPage>
