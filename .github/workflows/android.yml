@@ -56,6 +56,12 @@ jobs:
           java-version: 21
       # Caches Gradle and its downloaded dependencies between runs.
       - uses: gradle/actions/setup-gradle@v4
+      # Keep the test-build signing key between runs, so a newer "Pawse Test" installs over an older one
+      # instead of needing the test app removed first. Only debug builds use it; it never signs a release.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: pawse-debug-keystore-v1
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -109,7 +115,8 @@ jobs:
           set -euo pipefail
           name=$(node -p "require('./apps/web/version.json').name")
           code=$(node -p "require('./apps/web/version.json').code")
-          src=$(ls apps/web/android/app/build/outputs/apk/$BUILD_TYPE/*.apk)
+          src=$(ls apps/web/android/app/build/outputs/apk/"$BUILD_TYPE"/*.apk 2>/dev/null | head -n 1 || true)
+          [ -n "$src" ] && [ -s "$src" ] || { echo "::error::No $BUILD_TYPE APK was produced"; exit 1; }
           bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           [ "$BUILD_TYPE" = release ] && id=app.detoxcompanion || id=app.detoxcompanion.test
 
@@ -153,8 +160,18 @@ jobs:
           cat out/BUILD-INFO.txt >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        id: upload
         with:
           name: ${{ steps.verify.outputs.artifact }}
           path: out/
           retention-days: 30
           if-no-files-found: error
+
+      - name: Confirm the APK is downloadable
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          [ -n "$ARTIFACT_ID" ] && [ -n "$ARTIFACT_URL" ] || { echo "::error::The APK artifact wasn't uploaded"; exit 1; }
+          echo "Download (signed-in GitHub users; a zip with the APK and BUILD-INFO.txt): $ARTIFACT_URL"
+          { echo; echo "**Download:** $ARTIFACT_URL"; } >> "$GITHUB_STEP_SUMMARY"
