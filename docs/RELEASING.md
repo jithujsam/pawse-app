@@ -9,7 +9,7 @@ Every Pawse release ends with an update to the distribution repository, **`jithu
 | File | Role | Read by |
 |---|---|---|
 | `apk/Pawse-<version>.apk` | The signed release APK, one file per version. Older ones stay. | People downloading; the update banner opens its URL |
-| `latest.json` | One-line update manifest: `{ "name", "code", "url", "notes", "sha256" }` | The app (`checkForUpdate`): it offers the update when `code` > its own version code and `url` starts with `https://`. `name` and `notes` show in the banner. `sha256` is for people verifying by hand; the app doesn't check it. |
+| `latest.json` | One-line update manifest: `{ "name", "code", "url", "notes", "sha256" }` | The app (`checkForUpdate`): it offers the update when `code` > its own version code and `url` starts with `https://`. `name` and `notes` show in the banner. `sha256` is also what the in-app installer checks the download against: with a valid 64-character `sha256` the app downloads the APK itself and opens Android's installer; without one it falls back to opening `url` in the browser. A background check (every ~6 h) notifies phones when `code` is newer. |
 | `README.md` | Download page: the download link (version, size), install steps, a **Versions** table (newest first), and the SHA-256 of the current APK | People |
 | `icon.png` | Page icon | README |
 

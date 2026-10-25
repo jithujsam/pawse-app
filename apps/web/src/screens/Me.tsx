@@ -27,7 +27,7 @@ import { Account } from "./Account";
 import { AiConsent } from "./AiConsent";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
-import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE } from "../update";
+import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE, runUpdate } from "../update";
 import { FIELDS_MAX } from "@detox/schema";
 import type { Field, FieldType, Settings } from "../types";
 
@@ -448,7 +448,7 @@ function AboutPage() {
     setChecking(true);
     const latest = await checkForUpdate();
     setChecking(false);
-    if (latest) toast(`Version ${latest.name} is ready`, { action: { label: "Get it", run: () => openDownload(latest.url) }, ms: 8000 });
+    if (latest) toast(`Version ${latest.name} is ready`, { action: { label: "Update", run: () => void runUpdate(latest) }, ms: 8000 });
     else toast("You have the latest version", { kind: "good" });
   }
   return (<>
