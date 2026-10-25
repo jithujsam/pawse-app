@@ -149,7 +149,7 @@ export function Onboarding() {
             {d.step === 7 && (<>
               <motion.h1 variants={rise}>Why it matters</motion.h1>
               <motion.p className="muted" variants={rise}>Your goal and your reasons, in your words. Pawse shows them back to you when things get hard. All optional.</motion.p>
-              <motion.div className="stack" variants={rise}><WhySection plan={d.plan} set={setPlan} /></motion.div>
+              <motion.div className="stack" variants={rise}><WhySection plan={d.plan} set={setPlan} situations={false} /></motion.div>
               {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
               <motion.div className="stack tight" variants={rise}>
                 <Button disabled={planCrisis} onClick={() => go(8)}>Continue</Button>
@@ -159,7 +159,7 @@ export function Onboarding() {
 
             {d.step === 8 && (<>
               <motion.h1 variants={rise}>A first step, and what helps</motion.h1>
-              <motion.p className="muted" variants={rise}>Something small and realistic is enough. You can change all of this later in You → Your plan.</motion.p>
+              <motion.p className="muted" variants={rise}>Something small and realistic is enough. You can change all of this later from your pet's screen or in You → Your plan.</motion.p>
               <motion.div className="stack" variants={rise}><HelpSection plan={d.plan} set={setPlan} cls={d.cls} /></motion.div>
               {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
               <motion.div className="stack tight" variants={rise}>

@@ -90,7 +90,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-what">What's going on? (optional)</span>
-        <div className="chips" role="radiogroup" aria-labelledby="urge-what">
+        <div className="chips" role="group" aria-labelledby="urge-what">
           {situations.map((l) => <Chip key={l} pressed={trigger === l} onClick={() => { haptic.select(); setTrigger(trigger === l ? "" : l); }}>{l}</Chip>)}
         </div>
         <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="Or in your own words" aria-label="What's going on, in your own words" onChange={(e) => setTrigger(e.target.value)} />
@@ -148,7 +148,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
           {current === "breathe" && <Breathing />}
           {current === "name" && (
             <div className="field">
-              <div className="chips" role="radiogroup" aria-label="What's going on">
+              <div className="chips" role="group" aria-label="What's going on">
                 {situations.map((l) => <Chip key={l} pressed={trigger === l} onClick={() => setTrigger(trigger === l ? "" : l)}>{l}</Chip>)}
               </div>
               <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="Or in your own words" aria-label="What set it off, in your own words" onChange={(e) => setTrigger(e.target.value)} />

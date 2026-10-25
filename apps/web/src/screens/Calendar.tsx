@@ -145,6 +145,6 @@ export function CalendarSections() {
 function pausedDayLine(pauses: Pause[], day: string): string {
   const p = pauses.find((x) => day >= x.from && (x.to === null || day < x.to));
   if (!p) return "Not tracking: this track was paused. It counts neither way.";
-  const span = p.to === null ? `paused since ${fmtDay(p.from)}` : `paused from ${fmtDay(p.from)} to ${fmtDay(addDays(p.to, -1))}`;
-  return `Not tracking: this track was ${span}. It counts neither way.`;
+  const span = p.to === null ? `has been paused since ${fmtDay(p.from)}` : `was paused from ${fmtDay(p.from)} to ${fmtDay(addDays(p.to, -1))}`;
+  return `Not tracking: this track ${span}. It counts neither way.`;
 }

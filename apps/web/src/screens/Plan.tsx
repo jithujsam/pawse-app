@@ -49,12 +49,15 @@ export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; o
   );
 }
 
-/** Why it matters and where it's hard. Onboarding step one of the plan. */
-export function WhySection({ plan, set }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void }) {
+/**
+ * Why it matters and where it's hard. Onboarding step one of the plan leaves out hard situations
+ * (situations={false}): onboarding has just asked what sets it off, and asking twice adds nothing.
+ */
+export function WhySection({ plan, set, situations = true }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; situations?: boolean }) {
   return (<>
     <div className="field"><span className="field-label">What are you aiming for?</span><GoalPicker value={plan.goal} onChange={(goal) => set({ goal })} /></div>
     <ChipList label="Why it matters to you" options={REASONS} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder="In your own words" />
-    <ChipList label="Situations that tend to be hard" options={SITUATIONS} value={plan.situations} onChange={(situations) => set({ situations })} max={8} placeholder="Another situation" />
+    {situations && <ChipList label="Situations that tend to be hard" options={SITUATIONS} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder="Another situation" />}
   </>);
 }
 
@@ -98,7 +101,7 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
   const crisis = planHasCrisis(plan);
   return (
     <div className="stack">
-      <p className="track-context small" aria-label={`Plan for ${habit.name}`}><span className="muted">For</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
+      <p className="track-context small"><span className="muted">For</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
       <p className="muted">Your plan, in your words. Everything is optional and you can change it any time. It shapes what Pawse offers you when an urge hits and after a slip.</p>
       <section className="card stack"><WhySection plan={plan} set={set} /></section>
       <section className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
