@@ -4,10 +4,11 @@ import { startSync, useSyncStatus } from "./sync";
 import { kv } from "./db";
 import { Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
-import { onReminderTap } from "./notify";
+import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
 import { trackSummary } from "./progress";
-import { actions, onPinChange, useActiveView, useData, vault, type Boot } from "./store";
+import { trackState } from "./tracks";
+import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -128,6 +129,10 @@ function Shell() {
   useEffect(() => onReminderTap(() => { dir.current = -1; openTrack(); }), []);
   // The home screen widget opens straight into the quick check-in.
   useEffect(() => { const open = () => { openTrack(); setQuick(true); }; window.addEventListener(OPEN_QUICK, open); return () => window.removeEventListener(OPEN_QUICK, open); }, []);
+  // One notification plan for the whole app, for the open track. It is re-planned only when its inputs change,
+  // so pausing or resuming from the Pets grid takes effect at once, without opening the track.
+  const reminderKey = data.settings.onboarded ? JSON.stringify(reminderInputs(data)) : "";
+  useEffect(() => { if (reminderKey) void updateNotifications(JSON.parse(reminderKey)); }, [reminderKey]);
   const [pinTick, setPinTick] = useState(0);
   useEffect(() => onPinChange(() => setPinTick((n) => n + 1)), []);
   useEffect(() => {
@@ -139,7 +144,8 @@ function Shell() {
     const streak = progress.current;
     // With app lock on, the home screen widget shows nothing about today: it sits outside the PIN.
     if (vault.hasPin()) { updateWidget({ species: view.companion.species, name: view.companion.name, line: "Tap to check in", sad: false }); return; }
-    const line = slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
+    const paused = trackState(data, view.habit.id).status === "paused";
+    const line = paused ? "Paused · tap to open" : slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
     updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
   }, [data, view, pinTick]);
   // With no recovery track left (removed on another device, say), only the Pets grid makes sense.

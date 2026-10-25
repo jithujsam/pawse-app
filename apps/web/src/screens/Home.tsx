@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
+import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { scheduleCare, updateNotifications } from "../notify";
-import { actions, getData, recoveryPlan, riskyHour, useActiveView, useData, type Deduction } from "../store";
+import { scheduleCare } from "../notify";
+import { actions, getData, recoveryPlan, useActiveView, useData, type Deduction } from "../store";
 import { celebratedFor, milestoneToCelebrate, trackSummary } from "../progress";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
@@ -71,22 +71,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [health, setHealth] = useState<HealthTab | null>(null);
   const plan = recoveryPlan(view);
   const showPlan = plan && (slippedToday || plan.stageBack !== null);
+  const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
+    : trackPaused && !checked ? pausedLine(tone, companion.name)
     : lonely ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : !checked ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = act;
 
-  // One notification plan (at most two a day), kept in step with today's check-in, the risky hour and quiet days.
-  const risk = riskyHour(data, habit.id);
-  const lastCheckIn = progress.lastRecorded ?? progress.start;
-  const { remindersOn, reminder, riskNudge, careNotes } = data.settings;
-  useEffect(() => {
-    void updateNotifications({ enabled: remindersOn, reminder, tone, name: companion.name, personality, checkedToday: checked, lastCheckIn, riskHour: riskNudge ? risk : null, careNotes });
-  }, [remindersOn, reminder, tone, companion.name, personality, checked, lastCheckIn, riskNudge, risk, careNotes]);
-
   const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
-  const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn });
+  const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
   function clean() {
     if (cleanToday) return;
@@ -192,8 +186,15 @@ export function Home({ onBack }: { onBack?: () => void }) {
         )}
       </AnimatePresence>
 
+      {trackPaused && (
+        <motion.section className="card row paused-card" aria-label="Paused" variants={rise}>
+          <span className="small">{pauseHint(tone)}</span>
+          <Button variant="secondary" onClick={() => { if (actions.resumeTrack(habit.id)) { haptic.select(); toast(resumeToast(tone), { kind: "good" }); } }}>Resume</Button>
+        </motion.section>
+      )}
+
       <motion.section className="checkin" aria-label="Today's check-in" variants={rise}>
-        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : resting ? "Not tracking" : "Not checked in yet"}</span></div>
+        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : progress.paused ? "Paused" : resting ? "Not tracking" : "Not checked in yet"}</span></div>
         <div className="actions">
           <Button variant="secondary" className="slip-btn" onClick={() => setSheet(true)}>I slipped</Button>
           <motion.button className="btn clean-btn" data-done={cleanToday} onClick={clean} aria-pressed={cleanToday} disabled={slippedToday}

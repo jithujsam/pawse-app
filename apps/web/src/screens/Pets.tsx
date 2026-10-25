@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import type { HabitClass } from "@detox/engine";
 import { CompanionArt, moodFor } from "../Companion";
-import { CRISIS_MESSAGE, RESTRICTION_NOTE } from "../copy";
+import { CRISIS_MESSAGE, pauseHint, pauseRefused, pauseToast, RESTRICTION_NOTE, resumeHint, resumeToast } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { today } from "../dates";
 import { haptic } from "../haptics";
@@ -12,7 +12,7 @@ import { NAMES, SPECIES } from "../pets";
 import { inferClass, inferMeasure, isRestrictionRelated, MEASURES, SUGGESTIONS } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
-import { focusedTrackId, listTracks } from "../tracks";
+import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Measure, Species } from "../types";
 import { Button, Chip, Icon } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
@@ -25,13 +25,14 @@ import { toast } from "../ui/Toast";
 export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   const data = useData();
   const [adding, setAdding] = useState(false);
+  const [menu, setMenu] = useState<string | null>(null);
   const t0 = today();
   // Archived tracks are read-only and leave the grid; a track whose pet is missing (damaged data) is skipped
   // rather than crashing the grid.
   const tracks = useMemo(() => listTracks(data, ["active", "paused"]).filter((t) => t.companion).map(({ habit }) => {
     const view = viewCompanion(data, habit.companionId, t0);
     const status = dayStatus(data, habit.id, t0, t0);
-    return { habit, view, status };
+    return { habit, view, status, paused: trackState(data, habit.id).status === "paused" };
   }), [data, t0]);
   const open = (id: string) => { haptic.tap(); actions.selectTrack(id); onOpen(id); };
 
@@ -50,21 +51,26 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
         </motion.section>
       ) : (
         <motion.section className="pet-grid" aria-label="Recovery tracks" variants={rise}>
-          {tracks.map(({ habit, view, status }) => {
+          {tracks.map(({ habit, view, status, paused }) => {
             const checked = status === "met" || status === "lapse";
-            const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age });
-            const line = view.dead ? STAGE_LABEL.dead : `${STAGE_LABEL[view.stage]} · ${status === "unrecorded" ? "Not checked in" : STATUS_LABEL[status]}`;
+            const mood = paused ? "idle" : moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age });
+            // A paused track says so first; today's state still shows when something was logged.
+            const day = status === "unrecorded" ? "Not checked in" : STATUS_LABEL[status];
+            const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? `Paused · ${day}` : "Paused") : `${STAGE_LABEL[view.stage]} · ${day}`;
             return (
-              <motion.button key={habit.id} className="pet-card" data-active={habit.id === focusedTrackId(data)}
-                onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
-                aria-label={`${view.companion.name}, ${habit.name}. ${line}. Open this track.`}>
-                <span className="pet-card-art" aria-hidden>
-                  <CompanionArt species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
-                </span>
-                <b className="pet-card-name">{view.companion.name}</b>
-                <span className="pet-card-track small">{habit.name}</span>
-                <span className="pet-card-status small" data-s={status}>{line}</span>
-              </motion.button>
+              <div key={habit.id} className="pet-card-wrap">
+                <motion.button className="pet-card" data-active={habit.id === focusedTrackId(data)} data-paused={paused}
+                  onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
+                  aria-label={`${view.companion.name}, ${habit.name}. ${line}. Open this track.`}>
+                  <span className="pet-card-art" aria-hidden>
+                    <CompanionArt species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
+                  </span>
+                  <b className="pet-card-name">{view.companion.name}</b>
+                  <span className="pet-card-track small">{habit.name}</span>
+                  <span className="pet-card-status small" data-s={paused ? "paused" : status}>{line}</span>
+                </motion.button>
+                <button className="icon-btn pet-card-more" aria-haspopup="dialog" aria-label={`More for ${habit.name}`} onClick={() => { haptic.tap(); setMenu(habit.id); }}>{Icon.more}</button>
+              </div>
             );
           })}
           {data.habits.length < 50 && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
@@ -75,8 +81,42 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
         </motion.section>
       )}
 
+      <TrackMenu habitId={menu} onClose={() => setMenu(null)} onOpen={(id) => { setMenu(null); open(id); }} />
       <AddTrack open={adding} onClose={() => setAdding(false)} onAdded={(id) => { setAdding(false); onOpen(id); }} />
     </motion.main>
+  );
+}
+
+/**
+ * The card menu: open the track, or pause and resume it. Pausing never changes a record or the person's reminder
+ * settings; while a track is paused its days count neither way and the app plans no reminders for it.
+ */
+function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClose: () => void; onOpen: (id: string) => void }) {
+  const data = useData();
+  const habit = habitId ? data.habits.find((h) => h.id === habitId) : undefined;
+  const companion = habit && data.companions.find((c) => c.id === habit.companionId);
+  const { tone } = data.settings;
+  const paused = habit ? trackState(data, habit.id).status === "paused" : false;
+  const toggle = () => {
+    if (!habit) return;
+    const ok = paused ? actions.resumeTrack(habit.id) : actions.pauseTrack(habit.id);
+    if (!ok) { haptic.warn(); toast(pauseRefused(tone)); return; }
+    haptic.select();
+    toast(paused ? resumeToast(tone) : pauseToast(tone, companion?.name ?? ""), { kind: paused ? "good" : undefined });
+    onClose();
+  };
+  return (
+    <Sheet open={!!habit} onClose={onClose} label={habit ? `${habit.name} options` : "Track options"}>
+      {habit && <div className="stack">
+        <div className="stack tight">
+          <h2>{habit.name}</h2>
+          <p className="muted small">{companion?.name}{paused ? " · Paused" : ""}</p>
+        </div>
+        <Button onClick={() => onOpen(habit.id)}>Open</Button>
+        <Button variant="secondary" onClick={toggle}>{paused ? "Resume tracking" : "Pause tracking"}</Button>
+        <p className="muted small">{paused ? resumeHint(tone) : pauseHint(tone)}</p>
+      </div>}
+    </Sheet>
   );
 }
 

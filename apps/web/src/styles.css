@@ -636,3 +636,9 @@ body.privacy #root { filter: blur(24px); }
 .review-days .dot[data-s="urge"] { background: transparent; border: 3px solid var(--positive); }
 .review-days .dot[data-s="rest"], .review-days .dot[data-s="paused"] { background: transparent; border: 2px dashed var(--muted); }
 .inline-add .btn { width: auto; flex: none; padding-inline: 18px; }
+.pet-card-wrap { position: relative; display: grid; min-width: 0; }
+.pet-card-more { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; color: var(--muted); background: transparent; }
+.pet-card-more .ico circle { fill: currentColor; stroke: none; }
+.pet-card[data-paused="true"] .pet-card-art { opacity: 0.7; }
+.pet-card-status[data-s="paused"] { color: var(--muted); }
+.paused-card { gap: 12px; align-items: center; }

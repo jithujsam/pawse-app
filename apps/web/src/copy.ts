@@ -179,3 +179,43 @@ export function reminderLine(tone: Tone, name: string): { title: string; body: s
 
 /** Shown when someone tries to track eating less, calories or weight (CLAUDE.md: never add restriction tracking). */
 export const RESTRICTION_NOTE = "This app can't track eating less, calories or weight, and it won't. If food and eating feel hard right now, a doctor or counselor can really help. You can pick something else to watch, like money spent on orders.";
+
+// ---------- pausing a track ----------
+
+/** What pausing does, in the card menu. Plain about the rules in every tone: paused days count neither way. */
+export function pauseHint(tone: Tone): string {
+  if (tone === "gentle") return "Take a break whenever you need one. While this track is paused, days count neither way and its reminders stop. Anything you do log still counts.";
+  if (tone === "brutal") return "Pausing stops this track's reminders. Paused days aren't wins or losses. Anything you log still counts.";
+  return "Paused days count neither way: no progress and no slips. This track's reminders stop. Anything you log still counts.";
+}
+
+/** What the pet says while its track is paused and nothing is logged today. */
+export function pausedLine(tone: Tone, name: string): string {
+  if (tone === "gentle") return `${name} is resting with you. Come back whenever you're ready.`;
+  if (tone === "brutal") return `Paused. Nothing counts either way until you resume.`;
+  return `Tracking is paused. ${name} is fine, and nothing changes while it's paused.`;
+}
+
+export function pauseToast(tone: Tone, name: string): string {
+  if (tone === "gentle") return `Paused. ${name} will be here.`;
+  if (tone === "brutal") return "Paused. No reminders for this track until you resume.";
+  return "Paused. Reminders for this track are off.";
+}
+
+export function resumeToast(tone: Tone): string {
+  if (tone === "gentle") return "Welcome back. Tracking is on again.";
+  if (tone === "brutal") return "Resumed. Back to it.";
+  return "Resumed. Reminders follow your settings again.";
+}
+
+export function resumeHint(tone: Tone): string {
+  if (tone === "gentle") return "Resuming starts counting again from today, gently. Your reminders come back exactly as you set them.";
+  if (tone === "brutal") return "Resuming counts from today. Your reminders come back as you set them.";
+  return "Resuming starts counting again from today. Your reminders come back exactly as you set them.";
+}
+
+export function pauseRefused(tone: Tone): string {
+  if (tone === "gentle") return "That couldn't change just now. Nothing was lost.";
+  if (tone === "brutal") return "Couldn't change that. Nothing was lost.";
+  return "That couldn't be changed. Nothing was lost.";
+}

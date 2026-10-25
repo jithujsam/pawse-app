@@ -83,6 +83,7 @@ export const Icon = {
   back: <svg viewBox="0 0 24 24" className="ico"><path d="M15 5l-7 7 7 7" /></svg>,
   check: <svg viewBox="0 0 24 24" className="ico"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>,
   close: <svg viewBox="0 0 24 24" className="ico"><path d="M6 6l12 12M18 6L6 18" /></svg>,
+  more: <svg viewBox="0 0 24 24" className="ico"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>,
   camera: <svg viewBox="0 0 24 24" className="ico"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>,
   chevL: <svg viewBox="0 0 24 24" className="ico"><path d="M15 5l-7 7 7 7" /></svg>,
   chevR: <svg viewBox="0 0 24 24" className="ico"><path d="M9 5l7 7-7 7" /></svg>,
