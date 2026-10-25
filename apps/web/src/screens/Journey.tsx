@@ -4,11 +4,11 @@ import { daysBetween, today } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { bestStreak, cleanStreak, useActiveView, useData } from "../store";
 import { careDays } from "../recovery";
+import { stats } from "../health";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { CalendarSections } from "./Calendar";
-import { Reflect } from "./Reflect";
 
-/** The Calendar tab: every day on the calendar, then milestones and how far you've come. */
+/** The Calendar tab: every day on the calendar, then milestones and how far you've come. Reflection lives in the check-in on Insights. */
 export function Journey() {
   const data = useData();
   const view = useActiveView()!;
@@ -21,7 +21,7 @@ export function Journey() {
   const best = Math.max(bestStreak(data, habit.id), streak);
   // Milestones count days of care (goal met or an urge managed). They only add up, so a slip never resets them.
   const care = careDays(data, habit.id);
-  const managed = data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length;
+  const healed = stats(data, view).healed;
   const next = MILESTONES.find((m) => m > care);
   const prev = [...MILESTONES].reverse().find((m) => m <= care) ?? 0;
   const pct = next ? ((care - prev) / (next - prev)) * 100 : 100;
@@ -56,11 +56,10 @@ export function Journey() {
       <motion.section className="stats" aria-label="So far" variants={rise}>
         <div className="card stat"><div className="muted small">Days together</div><div className="v"><AnimatedNumber value={together} /></div></div>
         <div className="card stat"><div className="muted small">Good days</div><div className="v"><AnimatedNumber value={cleanTotal} /></div></div>
-        <div className="card stat"><div className="muted small">Urges managed</div><div className="v"><AnimatedNumber value={managed} /></div></div>
+        <div className="card stat"><div className="muted small">Life healed</div><div className="v"><AnimatedNumber value={healed} decimals={1} /> <small>mo</small></div></div>
         <div className="card stat"><div className="muted small">Best streak</div><div className="v"><AnimatedNumber value={best} /> <small>{best === 1 ? "day" : "days"}</small></div></div>
       </motion.section>
 
-      <motion.div variants={rise}><Reflect /></motion.div>
     </motion.main>
   );
 }

@@ -7,7 +7,7 @@ import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare, updateNotifications } from "../notify";
-import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, weekStats, type Deduction } from "../store";
+import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, type Deduction } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -22,12 +22,12 @@ import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, careDays, dayStatus, milestoneToCelebrate, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
 
-export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
+export function Home() {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const { tone, currency } = data.settings;
+  const { tone } = data.settings;
   const personality = companion.personality;
   const [sheet, setSheet] = useState(false);
   const [urge, setUrge] = useState(false);
@@ -55,11 +55,10 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   const myPlan = data.settings.plan;
   const weekFocus = data.settings.weekFocus.find((w) => w.week === weekStart(t0))?.text;
   const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
+  const reasons = (myPlan?.reasons ?? []).slice(0, 3);
   const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
   const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checked, slippedToday, justLogged: just, age: view.age });
-  const week = weekStats(data, habit.id, weekStart(t0));
   const streak = cleanStreak(data, habit.id);
-  const weekClean = data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= weekStart(t0) && c.day <= t0).length;
   const age = view.age;
   const danger = age >= 80;
   const report = healthReport(data, view, tone);
@@ -130,7 +129,7 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
       <motion.header className="greet" variants={rise}>
         <div>
           <p className="muted small">{fmtDay(t0)}</p>
-          <h1>{greeting(tone, new Date().getHours())}</h1>
+          <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
         {streak > 0 && <motion.div className="streak-chip" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring.bouncy} key={streak}>
           <span aria-hidden>●</span> <AnimatedNumber value={streak} /> {streak === 1 ? "day" : "days"}
@@ -170,17 +169,17 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
 
       {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
-      {focus && (
+      {(focus || reasons.length > 0) && (
         <motion.section className="card stack tight plan-card" aria-label="Your plan" variants={rise}>
-          <span className="muted small">{focus.kind === "week" ? "This week's focus" : "Your first step"}</span>
-          <b>{focus.text}</b>
+          {focus && <><span className="muted small">{focus.kind === "week" ? "This week's focus" : "Your first step"}</span><b>{focus.text}</b></>}
+          {reasons.length > 0 && <span className="small plan-why"><span className="muted">Why you're doing this:</span> {reasons.join(", ")}</span>}
         </motion.section>
       )}
 
       <AnimatePresence initial={false}>
         {showPlan && plan && (
           <motion.section key="plan" className="card stack plan" aria-label="The way back" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
-            <div className="row"><h2>The way back</h2>{plan.lifeExpectancy < 100 && <span className="muted small">Life expectancy {plan.lifeExpectancy}</span>}</div>
+            <h2>The way back</h2>
             <p>{recoveryLine(tone, companion.name, plan.undoToday, plan.stageBack)}</p>
             {plan.stageBack && <div className="progress" aria-hidden><motion.i initial={{ width: 0 }} animate={{ width: `${Math.max(4, Math.min(100, (streak / plan.stageBack.days) * 100))}%` }} transition={spring.calm} /></div>}
           </motion.section>
@@ -200,10 +199,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
             </AnimatePresence>
           </motion.button>
         </div>
-        <div className="row tight-row">
-          <Button variant="text" onClick={() => setUrge(true)}>Having an urge?</Button>
-          {!checked && <Button variant="text" onClick={() => rest(!resting)} aria-pressed={resting}>{resting ? "Track today after all" : "Not tracking today"}</Button>}
-        </div>
         <div className="weekstrip" aria-label="This week">
           {strip.map((x) => (
             <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${STATUS_LABEL[x.s]}`}>
@@ -212,18 +207,6 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
             </div>
           ))}
         </div>
-      </motion.section>
-
-      <motion.section className="stats" aria-label="This week" variants={rise}>
-        <div className="card stat"><div className="muted small">Slips this week</div><div className="v"><AnimatedNumber value={week.slips} /></div></div>
-        <div className="card stat"><div className="muted small">Life lost this week</div><div className="v"><AnimatedNumber value={week.months} decimals={1} /> <small>mo</small></div></div>
-        {habit.unit === "money"
-          ? <div className="card stat"><div className="muted small">Spent this week</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(week.spend)} /></div></div>
-          : <div className="card stat"><div className="muted small">Goal-met days this week</div><div className="v"><AnimatedNumber value={weekClean} /></div></div>}
-        <button className="card stat link-card" onClick={() => onNavigate("insights")}>
-          <span className="muted small">See your patterns</span>
-          <span className="link-row"><b>Insights</b>{Icon.chevR}</span>
-        </button>
       </motion.section>
 
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
@@ -239,7 +222,6 @@ const VITALS: { id: HealthTab; label: string; icon: React.JSX.Element | null }[]
   { id: "health", label: "Health", icon: null },
   { id: "history", label: "History", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></svg> },
   { id: "conditions", label: "Conditions", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M6 3v6a4 4 0 0 0 8 0V3M10 13v2a5 5 0 0 0 10 0v-2" /><circle cx="20" cy="11" r="2" /></svg> },
-  { id: "stats", label: "You & pet", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2" /></svg> },
 ];
 
 function Milestone({ days, name, onClose, view }: { days: number | null; name: string; onClose: () => void; view: NonNullable<ReturnType<typeof useActiveView>> }) {

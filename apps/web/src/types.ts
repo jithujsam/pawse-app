@@ -120,6 +120,8 @@ export interface SavingsGoal { label: string; target: number }
 
 export interface Settings {
   tone: Tone;
+  /** What the companion calls the person. Optional; empty means no name is used. */
+  userName: string;
   reminder: string;
   currency: string;
   deathScene: boolean;

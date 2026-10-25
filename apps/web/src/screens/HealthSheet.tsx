@@ -8,9 +8,9 @@ import { useActiveView, useData } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Sheet } from "../ui/Sheet";
 
-export type HealthTab = "health" | "history" | "conditions" | "stats";
+export type HealthTab = "health" | "history" | "conditions";
 const TABS: { id: HealthTab; label: string }[] = [
-  { id: "health", label: "Health" }, { id: "history", label: "History" }, { id: "conditions", label: "Conditions" }, { id: "stats", label: "You & pet" },
+  { id: "health", label: "Health" }, { id: "history", label: "History" }, { id: "conditions", label: "Conditions" },
 ];
 export const LEVEL_COLOR: Record<Level, string> = { thriving: "var(--positive)", healthy: "var(--positive)", okay: "var(--warning)", unwell: "var(--negative)", critical: "var(--negative)" };
 
@@ -84,14 +84,6 @@ function Body({ initial }: { initial: HealthTab }) {
                 <p className="muted small">Pet conditions are illustrative. They reflect your logs, not anyone's real health.</p>
               </motion.div>)}
 
-          {tab === "stats" && (
-            <div className="stats stats-3">
-              {([["Days together", st.together], ["Good days", st.cleanDays], ["Best streak", st.best], ["Slips logged", st.slips], ["Life lost", `${st.lost} mo`], ["Life healed", `${st.healed} mo`],
-                ["Urges ridden out", st.urges], ["Reflections", st.reflections], ["Check-in rate", `${st.checkInRate}%`]] as [string, string | number][]).map(([k, v]) => (
-                <div className="stat item" key={k}><span className="muted small">{k}</span><b className="v sm">{v}</b></div>
-              ))}
-            </div>
-          )}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -102,17 +94,9 @@ function History() {
   const data = useData();
   const view = useActiveView()!;
   const items = history(data, view).slice(0, 80);
-  const W = 320, H = 64, s = view.states;
-  const top = Math.max(5, ...s.map((x) => x.visibleAge)) * 1.25;
-  const pts = s.map((x, i) => `${(i / Math.max(1, s.length - 1)) * W},${H - (x.visibleAge / top) * (H - 6) - 3}`).join(" ");
   return (
     <div className="stack">
-      {s.length > 1 && (
-        <div className="stack tight">
-          <span className="muted small">Age over {view.companion.name}'s life, now {Math.round(view.age)} (lower is healthier)</span>
-          <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Age over time"><polyline points={pts} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" /></svg>
-        </div>
-      )}
+      <span className="muted small">What changed {view.companion.name}'s health, newest first. The age chart is on the Calendar tab.</span>
       <ol className="timeline">
         {items.map((it, i) => (
           <li key={i} data-kind={it.kind}>

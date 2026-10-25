@@ -9,7 +9,7 @@ function sample() {
   const d = blank();
   return {
     ...d,
-    settings: { ...d.settings, onboarded: true, goal: "Late-night orders" },
+    settings: { ...d.settings, onboarded: true, goal: "Late-night orders", userName: "Jo" },
     companions: [{ id: C, species: "dog" as const, name: "Biscuit", bornOn: "2026-10-01", diedOn: null, finalAge: null }],
     habits: [{ id: H, name: "Orders", cls: "food_spending" as const, classWeight: 0.7, companionId: C, unit: "money" as const, fields: [] }],
     entries: [{ id: "33333333-3333-4333-8333-333333333333", habitId: H, companionId: C, day: "2026-10-02", time: "23:10", values: { photo: PHOTO, what: "Pizza" }, amount: 420, months: 4.2, severity: 1.05, effects: [], explanation: "x", source: "baseline" as const, aiAdjustPct: null, createdAt: 5 }],
@@ -29,6 +29,7 @@ describe("backup and restore", () => {
     expect(d.journal[0].body).toBe("rough day at work");
     expect(d.cleanDays).toHaveLength(1);
     expect(d.settings.onboarded).toBe(true);
+    expect(d.settings.userName).toBe("Jo");
   });
 
   it("refuses files that aren't a finished Pawse backup, and leaves the data alone", () => {

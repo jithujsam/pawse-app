@@ -337,7 +337,7 @@ export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
   setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
 
-  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }) {
+  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
     const habit: Habit = {
@@ -346,7 +346,7 @@ export const actions = {
     };
     commit({
       ...data,
-      settings: { ...data.settings, neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true, plan: o.plan ? cleanPlan(o.plan) : data.settings.plan },
+      settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true, plan: o.plan ? cleanPlan(o.plan) : data.settings.plan },
       companions: [companion], habits: [habit],
     });
   },

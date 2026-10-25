@@ -9,6 +9,7 @@ import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults,
 import { actions, useActiveView, useData } from "../store";
 import { Button, Chip, Segmented } from "../ui/Controls";
 import { toast } from "../ui/Toast";
+import { Reflect } from "./Reflect";
 
 /**
  * The weekly review: what was recorded, what helped, what was hard, and one realistic adjustment for the
@@ -31,9 +32,12 @@ export function WeeklyReview() {
   const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
 
   return (
-    <motion.section className="card stack" aria-label="Weekly review" variants={rise}>
-      <div className="row"><h2>Weekly review</h2><span className="muted small">Week of {fmtDay(week)}</span></div>
-      <Segmented label="Which week" value={which} onChange={setWhich} options={[{ value: "last", label: "Last week" }, { value: "this", label: "This week so far" }]} />
+    <div className="stack">
+      <div className="chips" role="group" aria-label="Which week">
+        <Chip pressed={which === "last"} onClick={() => setWhich("last")}>Last week</Chip>
+        <Chip pressed={which === "this"} onClick={() => setWhich("this")}>This week</Chip>
+      </div>
+      <p className="muted small">From {fmtDay(week)}</p>
       <p>{r.goalLine}</p>
       {r.lastFocus && <p className="small">Your focus for this week was: <b>{r.lastFocus}</b></p>}
       <dl className="review-days" aria-label="Days">
@@ -54,6 +58,20 @@ export function WeeklyReview() {
         </div>
         {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       </div>
+    </div>
+  );
+}
+
+/** One place to check in with yourself: today's reflection and the weekly review. */
+export function CheckIn() {
+  const data = useData();
+  const doneToday = data.journal.some((j) => j.day === today());
+  const [part, setPart] = useState<"today" | "week">(doneToday ? "week" : "today");
+  return (
+    <motion.section className="card stack" aria-label="Check in with yourself" variants={rise}>
+      <h2>Check in with yourself</h2>
+      <Segmented label="Check-in" value={part} onChange={setPart} options={[{ value: "today", label: "Today" }, { value: "week", label: "Weekly review" }]} />
+      {part === "today" ? <Reflect /> : <WeeklyReview />}
     </motion.section>
   );
 }
