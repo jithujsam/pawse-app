@@ -586,3 +586,11 @@ These override the sections they name. Reasons and sources: `docs/PAWSE_RECOVERY
 6. **Rewards (§7.9, milestones).** Milestones and unlocks count cumulative days of care (goal met or urge managed) and never reset on a slip.
 7. **Weekly report (§7.4).** Adds a deterministic weekly review with one adjustment for the week ahead. Observations need at least five records, show counts, and never claim causes.
 8. **Notifications (§12).** At most two neutral reminders when check-ins stop; no post-slip guilt notification.
+
+## 20. Multi-track amendment (2026-10-25)
+
+This overrides §5.1's "v1" note and §9 where they conflict. Design, schema, migration and risks: `docs/MULTI_TRACK_ARCHITECTURE.md`.
+
+1. **Tracks.** A person can keep several independent recovery tracks, one per behaviour. Each track is a `habits` row and owns its companion (and past companions), slips, goal-met days, urges, weekly summaries, plan, starting pace, rest days, weekly focus, milestones and accessory. Progress is always recomputed from one track's own events, never stored, and never mixed across tracks.
+2. **Lifecycle.** Tracks can be created, edited, paused, resumed, archived, restored and deleted. Pausing stops new records for the paused days and counts them as "not tracking" (§19.2); it does not change progress. Delete needs an archived track and the name typed back, and can be undone in the session.
+3. **Person-level.** Tone, reminders, currency, pet rules (§19.1), the death-scene choice and the daily journal stay with the person. Whether any of these should become per track is open (architecture doc §7).

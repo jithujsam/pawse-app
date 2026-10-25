@@ -34,7 +34,7 @@ describe("loading saved data", () => {
   });
   it("rejects things that aren't app data", () => {
     expect(normalize(null)).toBeNull();
-    expect(normalize({ v: 2 })).toBeNull();
+    expect(normalize({ v: 3 })).toBeNull();
     expect(normalize("hello")).toBeNull();
   });
   it("drops rows whose parent is gone", () => {

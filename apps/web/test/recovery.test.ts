@@ -4,7 +4,8 @@ import { blank } from "../src/persist";
 import { addDays, today, weekStart } from "../src/dates";
 import { careDays, dayStatus, milestoneToCelebrate, observations, strategyOrder, strategyResults, weekReview, MIN_EVENTS } from "../src/recovery";
 import { buildFields } from "../src/questions";
-import type { AppData, Entry, Urge } from "../src/types";
+import { defaultTrackState, trackState } from "../src/tracks";
+import type { AppData, Entry, TrackState, Urge } from "../src/types";
 
 const t0 = today();
 const C = "c1", H = "h1";
@@ -14,13 +15,14 @@ const entry = (id: string, day: string, values: Entry["values"] = {}, months = 4
 });
 const urge = (id: string, day: string, outcome: Urge["outcome"], extra: Partial<Urge> = {}): Urge => ({ id, habitId: H, day, time: "20:00", strength: 3, outcome, createdAt: 0, ...extra });
 
-function load(p: Partial<AppData> = {}, settings: Partial<AppData["settings"]> = {}) {
+/** Per-track settings (rest days, plan...) go on the track, the person's on settings. */
+function load(p: Partial<AppData> = {}, track: Partial<TrackState> = {}) {
   const d = blank();
   actions.applyRemote({
     ...d,
-    settings: { ...d.settings, onboarded: true, ...settings },
-    companions: [{ id: C, species: "dog", name: "Biscuit", bornOn: addDays(t0, -90), diedOn: null, finalAge: null }],
-    habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields }],
+    settings: { ...d.settings, onboarded: true },
+    companions: [{ id: C, species: "dog", name: "Biscuit", bornOn: addDays(t0, -90), diedOn: null, finalAge: null, trackId: H }],
+    habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields, track: { ...defaultTrackState(addDays(t0, -90)), ...track } }],
     ...p,
   });
 }
@@ -58,9 +60,9 @@ describe("rest days (intentionally untracked)", () => {
   it("logging a slip or marking goal met replaces the rest day: what was recorded wins", () => {
     load({}, { restDays: [t0, addDays(t0, -1)] });
     actions.markClean(H, t0);
-    expect(getData().settings.restDays).toEqual([addDays(t0, -1)]);
+    expect(trackState(getData(), H).restDays).toEqual([addDays(t0, -1)]);
     actions.logSlip(H, {}, addDays(t0, -1));
-    expect(getData().settings.restDays).toEqual([]);
+    expect(trackState(getData(), H).restDays).toEqual([]);
   });
 });
 
@@ -75,7 +77,8 @@ describe("continuity rules (default)", () => {
     expect(getData().companions[0].diedOn).toBeNull();
   });
   it("classic rules keep the PRD behaviour: the same history ends in death", () => {
-    load({ entries: heavy() }, { petLife: "classic" });
+    load({ entries: heavy() });
+    actions.setSettings({ petLife: "classic" });
     expect(viewCompanion(getData(), C).states.some((s) => s.stage === "dead")).toBe(true);
   });
   it("a binge day is not a permanent scar under continuity", () => {
@@ -91,7 +94,7 @@ describe("plan, lapse reflection and weekly focus", () => {
     actions.savePlan({ goal: "reduce", reasons: [" Money ", "", "Money", "Sleep"], situations: ["Late at night"], firstStep: "  Log out of the app  ", strategies: ["breathe", "breathe", "move"], supportName: " Asha ", ifThen: [] });
     actions.addIfThen("If I'm home alone after 10, then I'll make tea");
     actions.addIfThen("if i'm home alone after 10, then i'll make tea");
-    expect(getData().settings.plan).toEqual({ goal: "reduce", reasons: ["Money", "Sleep"], situations: ["Late at night"], firstStep: "Log out of the app", strategies: ["breathe", "move"], supportName: "Asha", ifThen: ["If I'm home alone after 10, then I'll make tea"] });
+    expect(trackState(getData(), H).plan).toEqual({ goal: "reduce", reasons: ["Money", "Sleep"], situations: ["Late at night"], firstStep: "Log out of the app", strategies: ["breathe", "move"], supportName: "Asha", ifThen: ["If I'm home alone after 10, then I'll make tea"] });
   });
   it("a lapse reflection is stored on the slip and never changes the companion's age", () => {
     load({ entries: [entry("e1", t0)] });
@@ -160,9 +163,9 @@ describe("weekly review", () => {
     load();
     actions.setWeekFocus(ws, "Charge the phone outside the bedroom");
     actions.setWeekFocus(ws, "Log out of one app");
-    expect(getData().settings.weekFocus).toEqual([{ week: ws, text: "Log out of one app" }]);
+    expect(trackState(getData(), H).weekFocus).toEqual([{ week: ws, text: "Log out of one app" }]);
     actions.setWeekFocus(ws, "  ");
-    expect(getData().settings.weekFocus).toEqual([]);
+    expect(trackState(getData(), H).weekFocus).toEqual([]);
   });
 });
 
@@ -170,10 +173,10 @@ describe("days of care and milestones", () => {
   it("count goal-met days and days with a managed urge, and a slip never takes them away", () => {
     load({ cleanDays: [{ habitId: H, day: addDays(t0, -3) }, { habitId: H, day: addDays(t0, -2) }], urges: [urge("u1", addDays(t0, -1), "rode_it_out"), urge("u2", addDays(t0, -1), "rode_it_out"), urge("u3", t0, "slipped")] });
     expect(careDays(getData(), H)).toBe(3);
-    const celebrated = [...getData().settings.celebrated];
+    const celebrated = [...trackState(getData(), H).celebrated];
     actions.logSlip(H, {}, t0);
     expect(careDays(getData(), H)).toBe(3);
-    expect(getData().settings.celebrated).toEqual(celebrated);
+    expect(trackState(getData(), H).celebrated).toEqual(celebrated);
   });
   it("celebrates only the highest new milestone, once", () => {
     const M = [3, 7, 14, 30] as const;

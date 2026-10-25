@@ -7,6 +7,7 @@ import { haptic } from "../haptics";
 import { rise } from "../motion";
 import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES } from "../recovery";
 import { actions, emptyPlan, useActiveView, useData } from "../store";
+import { trackState } from "../tracks";
 import { Button, Chip, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import type { RecoveryPlan } from "../types";
@@ -86,7 +87,7 @@ export function PlanPage() {
   const data = useData();
   const view = useActiveView()!;
   const habit = view.habit!;
-  const [plan, setPlan] = useState<RecoveryPlan>(() => data.settings.plan ?? emptyPlan());
+  const [plan, setPlan] = useState<RecoveryPlan>(() => trackState(data, habit.id).plan ?? emptyPlan());
   const set = (p: Partial<RecoveryPlan>) => setPlan((x) => ({ ...x, ...p }));
   const crisis = planHasCrisis(plan);
   return (
@@ -110,7 +111,7 @@ export function PlanPage() {
         <p className="small">If you drink heavily every day, don't stop suddenly without medical advice: withdrawal can be dangerous. A doctor can help you cut down safely.</p>
         <p className="small muted">Free helplines: India Tele-MANAS 14416 (mental health). US SAMHSA National Helpline 1-800-662-4357 (substance use), or call or text 988 in a crisis. UK Samaritans 116 123. Elsewhere, your local emergency number.</p>
       </section>
-      <motion.div variants={rise}><Button disabled={crisis} onClick={() => { actions.savePlan(plan); haptic.success(); toast("Plan saved", { kind: "good" }); }}>Save plan</Button></motion.div>
+      <motion.div variants={rise}><Button disabled={crisis} onClick={() => { actions.savePlan(plan, habit.id); haptic.success(); toast("Plan saved", { kind: "good" }); }}>Save plan</Button></motion.div>
     </div>
   );
 }

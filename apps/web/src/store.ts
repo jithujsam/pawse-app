@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
   baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, simulate, STAGE_LABEL, stageForAge,
-  type DayInput, type DayState, type Stage,
+  type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
 import { addDays, daysBetween, range, today, weekStart } from "./dates";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
@@ -9,9 +9,10 @@ import { weightFor } from "./templates";
 import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, uuid } from "./persist";
+import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, isPausedOn, trackState, type Track } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
-import type { AppData, Baseline, Companion, Entry, Habit, Personality, RecoveryPlan, Species, StrategyId, Tone, Urge } from "./types";
+import type { AppData, Baseline, Companion, Entry, Habit, Measure, Personality, RecoveryPlan, Species, StrategyId, Tone, TrackState, Urge } from "./types";
 
 const LEGACY_KEY = "detox-companion/v1";
 /** Where ai.ts keeps AI results on this phone; cleared with everything else on a reset. */
@@ -81,9 +82,12 @@ export async function boot(): Promise<Boot> {
     if (raw === undefined) { const s = localStorage.getItem(LEGACY_KEY); if (s) { raw = JSON.parse(s); legacy = true; } }
     const loaded = raw === undefined ? null : normalize(raw);
     if (raw !== undefined && !loaded) await kv.set(`data.unreadable.${Date.now()}`, raw);
+    // Saved before tracks: keep the old copy once, so the move to tracks can be undone by hand.
+    const v1 = loaded !== null && (raw as { v?: unknown }).v === 1;
+    if (v1 && (await kv.get("data.v1-backup")) === undefined) await kv.set("data.v1-backup", raw);
     data = migrateIds(loaded ?? blank());
     if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
-    if (legacy || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
+    if (legacy || v1 || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
   } catch { data = blank(); }
   return { kind: "ready" };
 }
@@ -141,7 +145,9 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
   const last = companion.diedOn && companion.diedOn < upTo ? companion.diedOn : upTo;
   // Bucket once so the fold is linear in days + entries, not days x entries.
   const damage = new Map<string, number[]>();
-  for (const e of d.entries) if (e.companionId === companionId) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
+  // Only this companion's own track: a slip filed under another track can never age it.
+  const owner = companion.trackId ?? habit?.id;
+  for (const e of d.entries) if (e.companionId === companionId && (!owner || e.habitId === owner)) { const a = damage.get(e.day); if (a) a.push(e.months); else damage.set(e.day, [e.months]); }
   const clean = new Set(habit ? d.cleanDays.filter((c) => c.habitId === habit.id).map((c) => c.day) : []);
   const from = QUIET_DAYS_AGE ? d.settings.neglectFrom : null;
   // A day is "missed" only once it's over, only after the rule arrived, and only if nothing was logged.
@@ -160,18 +166,27 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
 /**
  * Classic rules (death, scars) can be switched on only while that wouldn't mean the companion had already died:
  * under continuity, damage past the ceiling was never counted, but the classic rules would count it. False when
- * switching them on now would end the companion's life on the spot.
+ * switching them on now would end any track's companion's life on the spot.
  */
 export function canAllowPassingAway(d: AppData): boolean {
-  const c = activeCompanion(d);
-  if (!c || c.diedOn) return true;
-  return !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead");
+  // The pet rules are the person's, so they apply to every track's current companion, not only the one on screen.
+  const living = d.habits.map((h) => d.companions.find((c) => c.id === h.companionId)).filter((c): c is Companion => !!c && !c.diedOn);
+  return living.every((c) => !viewCompanion(d, c.id, today(), { ignoreNoDeath: true }).states.some((s) => s.stage === "dead"));
 }
 
+/** The focused track's current companion (see focusedTrackId). With one track, habits[0]'s. */
 export const activeCompanion = (d: AppData): Companion | undefined => {
-  const habit = d.habits[0];
+  const id = focusedTrackId(d);
+  const habit = id ? d.habits.find((h) => h.id === id) : undefined;
   return habit ? d.companions.find((c) => c.id === habit.companionId) : undefined;
 };
+
+/** The focused track, with its state. Screens that show one pet read per-track settings from here. */
+export function useActiveTrack(): Track | undefined {
+  const d = useData();
+  return useMemo(() => { const id = focusedTrackId(d); return id ? getTrack(d, id) : undefined; }, [d]);
+}
+export const activeTrackId = (d: AppData = data) => focusedTrackId(d);
 
 /** The active companion's view, recomputed only when the data changes. */
 export function useActiveView(): CompanionView | undefined {
@@ -229,7 +244,7 @@ export function slipHour(e: Entry): number | null {
 /** Treats in the jar: one per clean day ever, minus those already given. */
 export function treatsLeft(d: AppData, habitId: string): number {
   const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - d.settings.treatsGiven);
+  return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - trackState(d, habitId).treatsGiven);
 }
 
 /** Days since the last check-in (slip or clean day), counting from yesterday. 0 if today or yesterday is logged. */
@@ -257,7 +272,7 @@ export const BASELINE_PER_WEEK: Record<Baseline, number> = { many_daily: 21, dai
  * logged could have been a slip, so it never counts as money saved. Null without a baseline or any amounts.
  */
 export function moneyKept(d: AppData, habitId: string, bornOn: string): { saved: number; days: number } | null {
-  const baseline = d.settings.baseline;
+  const baseline = trackState(d, habitId).baseline;
   // This life only: spending from earlier companions' lives isn't set against days counted since this one was born.
   const amounts = d.entries.filter((e) => e.habitId === habitId && e.day >= bornOn && e.amount !== null && e.amount > 0).map((e) => e.amount as number);
   const typical = median(amounts);
@@ -289,7 +304,13 @@ export const weekStats = (d: AppData, habitId: string, weekStartDay: string) => 
 
 // ---------- actions ----------
 
-const withoutRest = (s: AppData["settings"], day: string) => (s.restDays.includes(day) ? { ...s, restDays: s.restDays.filter((x) => x !== day) } : s);
+/** Replaces one track's state. Every per-track write goes through here. */
+const withTrack = (d: AppData, habitId: string, fn: (s: TrackState) => TrackState): AppData =>
+  ({ ...d, habits: d.habits.map((h) => (h.id === habitId ? { ...h, track: fn(trackState(d, habitId)) } : h)) });
+const withoutRest = (d: AppData, habitId: string, day: string): AppData =>
+  (trackState(d, habitId).restDays.includes(day) ? withTrack(d, habitId, (s) => ({ ...s, restDays: s.restDays.filter((x) => x !== day) })) : d);
+/** The track an action without one applies to: the focused one. */
+const focused = (habitId?: string) => habitId ?? focusedTrackId(data) ?? "";
 
 export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] });
 
@@ -299,6 +320,11 @@ function cleanPlan(p: RecoveryPlan): RecoveryPlan {
     goal: p.goal, reasons: list(p.reasons, 8, 80), situations: list(p.situations, 8, 60), firstStep: p.firstStep.trim().slice(0, 140),
     strategies: [...new Set(p.strategies)].slice(0, 7), supportName: p.supportName.trim().slice(0, 40), ifThen: list(p.ifThen, 8, 160),
   };
+}
+
+/** Everything deleteTrack removed, so it can be put back. */
+export interface TrackBackup {
+  habit: Habit; position: number; companions: Companion[]; entries: Entry[]; cleanDays: AppData["cleanDays"]; urges: Urge[]; summaries: Record<string, string>;
 }
 
 export interface Deduction {
@@ -340,14 +366,16 @@ export const actions = {
   finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }) {
     const companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const habitId = uid();
     const habit: Habit = {
-      id: uid(), name: o.intake.what.trim() || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
+      id: habitId, name: o.intake.what.trim().slice(0, 60) || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
       companionId, unit: o.intake.measure, fields: buildFields(o.intake),
+      track: { ...defaultTrackState(today(), Date.now()), baseline: o.baseline, plan: o.plan ? cleanPlan(o.plan) : null },
     };
     commit({
       ...data,
-      settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, goal: o.intake.what.trim(), baseline: o.baseline, onboarded: true, plan: o.plan ? cleanPlan(o.plan) : data.settings.plan },
-      companions: [companion], habits: [habit],
+      settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, onboarded: true, focusTrackId: habitId },
+      companions: [{ ...companion, trackId: habitId }], habits: [habit],
     });
   },
 
@@ -371,7 +399,10 @@ export const actions = {
     return next.entries.find((x) => x.id === entryId)!.months;
   },
 
-  setSummary: (week: string, text: string) => commit({ ...data, summaries: { ...data.summaries, [week]: text } }),
+  setSummary: (week: string, text: string, habitId?: string) => {
+    const id = focused(habitId);
+    if (data.habits.some((h) => h.id === id)) commit({ ...data, summaries: { ...data.summaries, [id]: { ...data.summaries[id], [week]: text } } });
+  },
 
   /** Replace everything, used when an account's saved copy is newer than this phone's. */
   /** Applies rows that arrived from the account. Never marked as local changes, so they don't bounce back. */
@@ -392,13 +423,15 @@ export const actions = {
     const h = data.habits.find((x) => x.id === habitId);
     if (!h) return;
     const triggers = h.fields.find((f) => f.id === "mood")?.options?.map((o) => o.id) ?? [];
-    commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: buildFields({ what: data.settings.goal || x.name, measure: x.unit, cls: x.cls, triggers }) } : x)) });
+    commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: buildFields({ what: trackState(data, x.id).description || x.name, measure: x.unit, cls: x.cls, triggers }) } : x)) });
   },
 
   updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
     commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
 
-  logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction {
+  /** Null when the track can't take a record for that day (paused then, or archived). */
+  logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
+    if (!canRecord(data, habitId, day)) return null;
     const habit = data.habits.find((h) => h.id === habitId)!;
     const companion = data.companions.find((c) => c.id === habit.companionId)!;
     const amountField = habit.fields.find((f) => f.amount);
@@ -419,13 +452,12 @@ export const actions = {
       id: uid(), habitId, companionId: companion.id, day, time, values, amount, months, severity, effects,
       explanation: slipLine(tone, companion.name, months, nth), source: "baseline", aiAdjustPct: null, createdAt: Date.now(),
     };
-    let next: AppData = {
+    // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
+    let next: AppData = withoutRest({
       ...data,
       entries: [...data.entries, entry],
       cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)),
-      // Milestones count days of care, which a slip doesn't take away, so celebrations aren't reset either.
-      settings: withoutRest(data.settings, day),
-    };
+    }, habitId, day);
     let died = false;
     const v = viewCompanion(next, companion.id);
     const deadState = v.states.find((s) => s.stage === "dead");
@@ -444,9 +476,10 @@ export const actions = {
   },
 
   markClean(habitId: string, day = today()) {
+    if (!canRecord(data, habitId, day)) return false;
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
-    commit({ ...data, cleanDays: [...data.cleanDays, { habitId, day }], settings: withoutRest(data.settings, day) });
+    commit(withoutRest({ ...data, cleanDays: [...data.cleanDays, { habitId, day }] }, habitId, day));
     return true;
   },
 
@@ -455,22 +488,23 @@ export const actions = {
    * can't be a rest day: what was recorded wins. Rest days never count as progress or as a lapse.
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
+    if (!canRecord(data, habitId, day)) return false;
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day))) return false;
-    const rest = data.settings.restDays.filter((x) => x !== day);
-    commit({ ...data, settings: { ...data.settings, restDays: on ? [...rest, day].sort().slice(-4000) : rest } });
+    commit(withTrack(data, habitId, (s) => { const rest = s.restDays.filter((x) => x !== day); return { ...s, restDays: on ? [...rest, day].sort().slice(-4000) : rest }; }));
     return true;
   },
 
-  /** Saves the person's plan. Text is trimmed and capped; empty items are dropped. */
-  savePlan(p: RecoveryPlan) { commit({ ...data, settings: { ...data.settings, plan: cleanPlan(p) } }); },
+  /** Saves a track's plan (the focused one by default). Text is trimmed and capped; empty items are dropped. */
+  savePlan(p: RecoveryPlan, habitId?: string) { const id = focused(habitId); if (data.habits.some((h) => h.id === id)) commit(withTrack(data, id, (s) => ({ ...s, plan: cleanPlan(p) }))); },
 
   /** Adds one if-then plan (e.g. from a lapse reflection or weekly review) without duplicating it. */
-  addIfThen(text: string) {
+  addIfThen(text: string, habitId?: string) {
     const t = text.trim().slice(0, 160);
-    if (!t) return;
-    const plan = data.settings.plan ?? emptyPlan();
+    const id = focused(habitId);
+    if (!t || !data.habits.some((h) => h.id === id)) return;
+    const plan = trackState(data, id).plan ?? emptyPlan();
     if (plan.ifThen.some((x) => x.toLowerCase() === t.toLowerCase())) return;
-    commit({ ...data, settings: { ...data.settings, plan: { ...plan, ifThen: [...plan.ifThen, t].slice(-8) } } });
+    commit(withTrack(data, id, (s) => ({ ...s, plan: { ...plan, ifThen: [...plan.ifThen, t].slice(-8) } })));
   },
 
   /**
@@ -483,21 +517,30 @@ export const actions = {
   },
 
   /** The one adjustment picked for the week after a weekly review. */
-  setWeekFocus(week: string, text: string) {
+  setWeekFocus(week: string, text: string, habitId?: string) {
     const t = text.trim().slice(0, 160);
-    const rest = data.settings.weekFocus.filter((w) => w.week !== week);
-    commit({ ...data, settings: { ...data.settings, weekFocus: (t ? [...rest, { week, text: t }] : rest).sort((a, b) => a.week.localeCompare(b.week)).slice(-60) } });
+    const id = focused(habitId);
+    if (!data.habits.some((h) => h.id === id)) return;
+    commit(withTrack(data, id, (s) => {
+      const rest = s.weekFocus.filter((w) => w.week !== week);
+      return { ...s, weekFocus: (t ? [...rest, { week, text: t }] : rest).sort((a, b) => a.week.localeCompare(b.week)).slice(-60) };
+    }));
   },
 
   deleteEntry: (id: string) => commit({ ...data, entries: data.entries.filter((e) => e.id !== id) }),
   /** Puts back an entry removed by mistake (undo). */
   restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
-  celebrate: (n: number) => commit({ ...data, settings: { ...data.settings, celebrated: [...data.settings.celebrated, n] } }),
-  resetCelebrations: () => { if (data.settings.celebrated.length) commit({ ...data, settings: { ...data.settings, celebrated: [] } }); },
+  celebrate: (n: number, habitId?: string) => { const id = focused(habitId); if (data.habits.some((h) => h.id === id)) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [...s.celebrated, n] }))); },
+  resetCelebrations: (habitId?: string) => { const id = focused(habitId); if (trackState(data, id).celebrated.length) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [] }))); },
+  /** Per-track settings that need no checks of their own (what the pet wears, the savings goal, milestones seen...). */
+  setTrackSettings(habitId: string, patch: Partial<Pick<TrackState, "wear" | "savingsGoal" | "celebrated" | "baseline" | "treatsGiven" | "fedOn">>) {
+    if (data.habits.some((h) => h.id === habitId)) commit(withTrack(data, habitId, (s) => ({ ...s, ...patch })));
+  },
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
-  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}) {
+  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}): Urge | null {
+    if (!canRecord(data, habitId, today())) return null;
     const now = new Date();
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -525,12 +568,159 @@ export const actions = {
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
     const habit = data.habits.find((h) => h.id === habitId)!;
-    const companion: Companion = { id: uid(), species, personality, name: name.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: uid(), species, personality, name: name.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null, trackId: habit.id };
     commit({
       ...data,
       companions: [...data.companions, companion],
       habits: data.habits.map((h) => (h.id === habit.id ? { ...h, companionId: companion.id } : h)),
     });
+  },
+
+  // ---------- tracks: create, edit, pause, archive, delete ----------
+
+  /**
+   * Starts a new track with its own companion. Returns its id, or null when the name is empty or the
+   * 50-track limit is reached. Nothing about any other track changes.
+   */
+  createTrack(o: {
+    name: string; description?: string; cls: HabitClass; unit: Measure; triggers?: string[]; fields?: Habit["fields"];
+    species: Species; companionName: string; coat?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean;
+  }): string | null {
+    const name = o.name.trim().slice(0, 60);
+    if (!name || data.habits.length >= 50) return null;
+    const habitId = uid(), companionId = uid();
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim().slice(0, 20) || "Biscuit", bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
+    const habit: Habit = {
+      id: habitId, name, cls: o.cls, classWeight: weightFor(o.cls), companionId, unit: o.unit,
+      fields: o.fields ?? buildFields({ what: name, measure: o.unit, cls: o.cls, triggers: o.triggers ?? [] }),
+      track: { ...defaultTrackState(today(), Date.now()), description: (o.description ?? "").trim().slice(0, 280), baseline: o.baseline ?? null, plan: o.plan ? cleanPlan(o.plan) : null },
+    };
+    commit({
+      ...data, companions: [...data.companions, companion], habits: [...data.habits, habit],
+      settings: o.focus ? { ...data.settings, focusTrackId: habitId } : data.settings,
+    });
+    return habitId;
+  },
+
+  /** Edits a track. A start date can't be in the future or after the track's first record. False if refused. */
+  updateTrack(habitId: string, patch: { name?: string; description?: string; startedOn?: string; baseline?: Baseline | null; plan?: RecoveryPlan | null }): boolean {
+    const h = data.habits.find((x) => x.id === habitId);
+    if (!h) return false;
+    const name = patch.name === undefined ? h.name : patch.name.trim().slice(0, 60);
+    if (!name) return false;
+    if (patch.startedOn !== undefined) {
+      const first = firstEventDay(data, habitId);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(patch.startedOn) || patch.startedOn > today() || (first !== null && patch.startedOn > first)) return false;
+    }
+    const next = withTrack({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, name } : x)) }, habitId, (s) => ({
+      ...s,
+      ...(patch.description !== undefined ? { description: patch.description.trim().slice(0, 280) } : {}),
+      ...(patch.startedOn !== undefined ? { startedOn: patch.startedOn } : {}),
+      ...(patch.baseline !== undefined ? { baseline: patch.baseline } : {}),
+      ...(patch.plan !== undefined ? { plan: patch.plan ? cleanPlan(patch.plan) : null } : {}),
+    }));
+    commit(next);
+    return true;
+  },
+
+  /**
+   * Pauses an active track from today. While paused nothing new can be recorded for paused days; earlier days
+   * stay editable. Progress is not frozen or changed: paused days count as "not tracking". False if not active.
+   */
+  pauseTrack(habitId: string): boolean {
+    const s = trackState(data, habitId);
+    if (!data.habits.some((h) => h.id === habitId) || s.status !== "active") return false;
+    commit(withTrack(data, habitId, (x) => ({ ...x, status: "paused", pauses: [...x.pauses, { from: today(), to: null }].slice(-500) })));
+    return true;
+  },
+
+  /** Resumes a paused track from today. A pause started and ended the same day leaves no trace. */
+  resumeTrack(habitId: string): boolean {
+    const s = trackState(data, habitId);
+    if (s.status !== "paused") return false;
+    const t = today();
+    commit(withTrack(data, habitId, (x) => ({
+      ...x, status: "active",
+      pauses: x.pauses.map((p) => (p.to === null ? { ...p, to: t } : p)).filter((p) => p.to !== p.from),
+    })));
+    return true;
+  },
+
+  /**
+   * Archives a track: read-only, history and pet kept. Refused for the last track that isn't archived,
+   * since the app always shows one pet.
+   */
+  archiveTrack(habitId: string): boolean {
+    const s = trackState(data, habitId);
+    if (!data.habits.some((h) => h.id === habitId) || s.status === "archived") return false;
+    if (!data.habits.some((h) => h.id !== habitId && trackState(data, h.id).status !== "archived")) return false;
+    const t = today();
+    commit(withTrack(data, habitId, (x) => ({
+      ...x, status: "archived", archivedOn: t,
+      pauses: x.pauses.map((p) => (p.to === null ? { ...p, to: t } : p)).filter((p) => p.to !== p.from),
+    })));
+    return true;
+  },
+
+  unarchiveTrack(habitId: string): boolean {
+    if (trackState(data, habitId).status !== "archived") return false;
+    commit(withTrack(data, habitId, (x) => ({ ...x, status: "active", archivedOn: null })));
+    return true;
+  },
+
+  /**
+   * Deletes a track and everything it owns. Only an archived track, and only when `confirmName` matches its
+   * name (ignoring case and outer spaces). A companion another track still points at is never removed.
+   * Returns what was removed so restoreTrack can undo it, or null if refused.
+   */
+  deleteTrack(habitId: string, confirmName: string): TrackBackup | null {
+    const habit = data.habits.find((h) => h.id === habitId);
+    if (!habit || trackState(data, habitId).status !== "archived") return null;
+    if (confirmName.trim().toLowerCase() !== habit.name.trim().toLowerCase()) return null;
+    const usedElsewhere = new Set(data.habits.filter((h) => h.id !== habitId).map((h) => h.companionId));
+    const companionIds = new Set(data.companions.filter((c) => (c.trackId === habitId || (!c.trackId && c.id === habit.companionId)) && !usedElsewhere.has(c.id)).map((c) => c.id));
+    const backup: TrackBackup = {
+      habit, position: data.habits.indexOf(habit),
+      companions: data.companions.filter((c) => companionIds.has(c.id)),
+      entries: data.entries.filter((e) => e.habitId === habitId),
+      cleanDays: data.cleanDays.filter((c) => c.habitId === habitId),
+      urges: data.urges.filter((u) => u.habitId === habitId),
+      summaries: data.summaries[habitId] ?? {},
+    };
+    const { [habitId]: _gone, ...summaries } = data.summaries;
+    commit({
+      ...data,
+      habits: data.habits.filter((h) => h.id !== habitId),
+      companions: data.companions.filter((c) => !companionIds.has(c.id)),
+      entries: data.entries.filter((e) => e.habitId !== habitId),
+      cleanDays: data.cleanDays.filter((c) => c.habitId !== habitId),
+      urges: data.urges.filter((u) => u.habitId !== habitId),
+      summaries,
+      settings: data.settings.focusTrackId === habitId ? { ...data.settings, focusTrackId: null } : data.settings,
+    });
+    return backup;
+  },
+
+  /** Puts back a track removed by deleteTrack (undo). False if a track with that id exists again. */
+  restoreTrack(b: TrackBackup): boolean {
+    if (data.habits.some((h) => h.id === b.habit.id)) return false;
+    const have = new Set(data.companions.map((c) => c.id));
+    const habits = [...data.habits];
+    habits.splice(Math.min(b.position, habits.length), 0, b.habit);
+    commit({
+      ...data, habits,
+      companions: [...data.companions, ...b.companions.filter((c) => !have.has(c.id))],
+      entries: [...data.entries, ...b.entries].sort((a, c) => a.createdAt - c.createdAt),
+      cleanDays: [...data.cleanDays, ...b.cleanDays],
+      urges: [...data.urges, ...b.urges].sort((a, c) => a.createdAt - c.createdAt),
+      summaries: Object.keys(b.summaries).length ? { ...data.summaries, [b.habit.id]: b.summaries } : data.summaries,
+    });
+    return true;
+  },
+
+  /** Which track the single-pet screens show on this phone. Never changes recovery data. */
+  focusTrack(habitId: string) {
+    if (data.habits.some((h) => h.id === habitId) && data.settings.focusTrackId !== habitId) commit({ ...data, settings: { ...data.settings, focusTrackId: habitId } });
   },
 
   exportJson: () => JSON.stringify(data, null, 2),

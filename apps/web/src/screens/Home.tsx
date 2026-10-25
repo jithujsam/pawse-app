@@ -8,6 +8,7 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare, updateNotifications } from "../notify";
 import { actions, cleanStreak, recoveryPlan, riskyHour, silentDays, useActiveView, useData, type Deduction } from "../store";
+import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -27,6 +28,7 @@ export function Home() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
+  const track = trackState(data, habit.id);
   const { tone } = data.settings;
   const personality = companion.personality;
   const [sheet, setSheet] = useState(false);
@@ -50,10 +52,10 @@ export function Home() {
   const t0 = today();
   const slippedToday = data.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const cleanToday = data.cleanDays.some((c) => c.habitId === habit.id && c.day === t0);
-  const resting = data.settings.restDays.includes(t0);
+  const resting = track.restDays.includes(t0);
   const checked = slippedToday || cleanToday;
-  const myPlan = data.settings.plan;
-  const weekFocus = data.settings.weekFocus.find((w) => w.week === weekStart(t0))?.text;
+  const myPlan = track.plan;
+  const weekFocus = track.weekFocus.find((w) => w.week === weekStart(t0))?.text;
   const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
   const reasons = (myPlan?.reasons ?? []).slice(0, 3);
   const lonely = !checked && silentDays(data, habit.id, companion.bornOn) >= 3;
@@ -91,8 +93,8 @@ export function Home() {
     setNote(say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
     const s = careDays({ ...data, cleanDays: [...data.cleanDays, { habitId: habit.id, day: t0 }] }, habit.id);
-    const m = milestoneToCelebrate(s, data.settings.celebrated, MILESTONES);
-    if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setSettings({ celebrated: m.seen }); }
+    const m = milestoneToCelebrate(s, track.celebrated, MILESTONES);
+    if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setTrackSettings(habit.id, { celebrated: m.seen }); }
     else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, t0) } });
   }
   function rest(on: boolean) {
@@ -141,7 +143,7 @@ export function Home() {
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
         <div className="pet-stage-live">
-          <LiveCompanion species={companion.species} coat={companion.coat} personality={personality} accessory={data.settings.wear}
+          <LiveCompanion species={companion.species} coat={companion.coat} personality={personality} accessory={track.wear}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} />
         </div>
         <AnimatePresence mode="wait">
@@ -227,6 +229,7 @@ const VITALS: { id: HealthTab; label: string; icon: React.JSX.Element | null }[]
 function Milestone({ days, name, onClose, view }: { days: number | null; name: string; onClose: () => void; view: NonNullable<ReturnType<typeof useActiveView>> }) {
   const data = useData();
   const tone = data.settings.tone;
+  const track = trackState(data, view.companion.trackId ?? view.habit?.id ?? "");
   useEffect(() => { if (days) haptic.success(); }, [days]);
   return (
     <AnimatePresence>
@@ -236,7 +239,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
             initial={{ scale: 0.7, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} transition={spring.bouncy}>
             <Burst burst={days} kind="spark" count={14} />
             <motion.div className="big-num" initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ ...spring.bouncy, delay: 0.15 }}>{days}</motion.div>
-            <LiveCompanion species={view.companion.species} coat={view.companion.coat} accessory={data.settings.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
+            <LiveCompanion species={view.companion.species} coat={view.companion.coat} accessory={track.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
             <h2>{milestoneLine(tone, name, days).title}</h2>
             <p className="muted">{milestoneLine(tone, name, days).body}</p>
             <UnlockNote days={days} />

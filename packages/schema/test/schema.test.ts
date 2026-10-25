@@ -22,3 +22,37 @@ describe("AI weekly result", () => {
     expect(AiWeeklyResult.safeParse({ summary: "You did worse this week than before, mostly on Fridays." }).success).toBe(false);
   });
 });
+
+import { AppDataSchema, AppDataV1Schema, parseAppData, parseAppDataV1, TrackStateSchema } from "../src/data";
+
+describe("tracks (stored data v2)", () => {
+  const state = {
+    description: "", startedOn: "2026-10-01", status: "active", pauses: [{ from: "2026-10-10", to: "2026-10-12" }], archivedOn: null, createdAt: 0,
+    baseline: null, plan: null, restDays: [], weekFocus: [], celebrated: [], wear: null, treatsGiven: 0, fedOn: null, savingsGoal: null,
+  };
+  const habit = { id: "h1", name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: "c1", unit: "money", fields: [] };
+  const base = { settings: {}, companions: [], entries: [], cleanDays: [] };
+
+  it("accepts a valid track state and rejects a bad status or pause", () => {
+    expect(TrackStateSchema.safeParse(state).success).toBe(true);
+    expect(TrackStateSchema.safeParse({ ...state, status: "deleted" }).success).toBe(false);
+    expect(TrackStateSchema.safeParse({ ...state, pauses: [{ from: "soon", to: null }] }).success).toBe(false);
+    expect(TrackStateSchema.safeParse({ ...state, description: "x".repeat(281) }).success).toBe(false);
+  });
+
+  it("keeps v1 and v2 apart: each parser takes only its own version", () => {
+    const v1 = { ...base, v: 1, habits: [habit], settings: { plan: null, restDays: [] }, summaries: { "2026-10-19": "ok" } };
+    const v2 = { ...base, v: 2, habits: [{ ...habit, track: state }], summaries: { h1: { "2026-10-19": "ok" } } };
+    expect(parseAppDataV1(v1)?.settings).toEqual({ plan: null, restDays: [] });
+    expect(parseAppData(v1)).toBeNull();
+    expect(parseAppData(v2)?.habits[0].track).toEqual(state);
+    expect(parseAppDataV1(v2)).toBeNull();
+    expect(AppDataSchema.safeParse({ ...v2, summaries: { "2026-10-19": "flat" } }).success).toBe(false);
+    expect(AppDataV1Schema.safeParse(v1).success).toBe(true);
+  });
+
+  it("drops per-track keys from v2 settings", () => {
+    const v2 = { ...base, v: 2, habits: [], settings: { tone: "gentle", plan: null, restDays: [], focusTrackId: "h1" } };
+    expect(parseAppData(v2)?.settings).toEqual({ tone: "gentle", focusTrackId: "h1" });
+  });
+});

@@ -2,6 +2,7 @@ import type { HabitClass } from "@detox/engine";
 import { addDays, daysBetween, parse, today } from "./dates";
 import { pickedLabels } from "./questions";
 import { slipHour } from "./store";
+import { isPausedOn, trackState } from "./tracks";
 import type { AppData, GoalKind, Habit, StrategyId, Tone } from "./types";
 
 /**
@@ -22,7 +23,9 @@ export function dayStatus(d: AppData, habitId: string, day: string, t0 = today()
   if (d.entries.some((e) => e.habitId === habitId && e.day === day)) return "lapse";
   if (d.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return "met";
   if (d.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out")) return "urge";
-  if (d.settings.restDays.includes(day)) return "rest";
+  // A day the person chose not to track, or one inside a pause of this track: neither progress nor a lapse.
+  const s = trackState(d, habitId);
+  if (s.restDays.includes(day) || isPausedOn(s, day)) return "rest";
   return "unrecorded";
 }
 
@@ -222,7 +225,8 @@ export function weekReview(d: AppData, habit: Habit, bornOn: string, week: strin
   for (const e of d.entries) if (e.habitId === habit.id && inWeek(e.day) && mood) for (const l of pickedLabels(mood, e.values.mood)) tally.set(l, (tally.get(l) ?? 0) + 1);
   for (const u of urgeRows) if (u.trigger) tally.set(u.trigger, (tally.get(u.trigger) ?? 0) + 1);
   const recorded = days - counts.unrecorded - counts.rest;
-  const goal = d.settings.plan?.goal ?? null;
+  const track = trackState(d, habit.id);
+  const goal = track.plan?.goal ?? null;
   const goalLine = recorded === 0
     ? end >= t0 ? "Nothing recorded yet this week. There's still time to check in."
       : "Nothing was recorded that week, so there's nothing to go on. That's fine. Each week starts fresh."
@@ -231,7 +235,7 @@ export function weekReview(d: AppData, habit: Habit, bornOn: string, week: strin
         : lapses < lapsesBefore ? `${lapses} ${lapses === 1 ? "slip" : "slips"}, down from ${lapsesBefore} the week before.`
           : lapses === lapsesBefore ? `${lapses} ${lapses === 1 ? "slip" : "slips"}, the same as the week before.`
             : `${lapses} ${lapses === 1 ? "slip" : "slips"}, up from ${lapsesBefore} the week before. One week doesn't undo the ones before it.`;
-  const focusFor = (w: string) => d.settings.weekFocus.find((f) => f.week === w)?.text ?? null;
+  const focusFor = (w: string) => track.weekFocus.find((f) => f.week === w)?.text ?? null;
   return {
     week, days, counts, lapses, lapsesBefore,
     urges: { managed: urgeRows.filter((u) => u.outcome === "rode_it_out").length, total: urgeRows.length },

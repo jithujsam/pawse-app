@@ -27,6 +27,8 @@ export const CompanionSchema = z.object({
   finalAge: z.number().min(0).max(100).nullable(),
   coat: z.string().regex(/^[a-z_]{1,20}$/).optional(),
   personality: z.enum(["playful", "calm", "sassy", "wise"]).optional(),
+  /** The track this companion belongs to (v2). Filled on load for older data. */
+  trackId: id.optional(),
 });
 
 export const HabitSchema = z.object({
@@ -84,6 +86,12 @@ export const UrgeSchema = z.object({
 
 export const JournalSchema = z.object({ day, mood: z.number().int().min(1).max(5), body: z.string().max(600) });
 
+const accessory = z.enum(["bandana", "bow", "flowers", "scarf", "glasses", "crown"]);
+const baseline = z.enum(["many_daily", "daily", "few_weekly", "weekly"]);
+const savingsGoal = z.object({ label: z.string().min(1).max(40), target: z.number().min(1).max(100_000_000) });
+const weekFocus = z.array(z.object({ week: day, text: short(160) })).max(60);
+
+/** Settings that belong to the person or this phone. Per-track settings live in TrackStateSchema. */
 export const SettingsSchema = z.object({
   tone: z.enum(["gentle", "honest", "brutal"]),
   userName: short(30),
@@ -92,45 +100,95 @@ export const SettingsSchema = z.object({
   deathScene: z.boolean(),
   onboarded: z.boolean(),
   tint: z.enum(["ocean", "meadow", "blossom", "sunrise"]),
-  goal: z.string().max(60),
-  baseline: z.enum(["many_daily", "daily", "few_weekly", "weekly"]).nullable(),
   haptics: z.boolean(),
   remindersOn: z.boolean(),
   coachSeen: z.boolean(),
-  celebrated: z.array(z.number().int()).max(50),
   autoLock: z.enum(["immediately", "1m", "5m", "never"]),
-  wear: z.enum(["bandana", "bow", "flowers", "scarf", "glasses", "crown"]).nullable(),
-  treatsGiven: z.number().int().min(0).max(100_000),
-  fedOn: day.nullable(),
   careNotes: z.boolean(),
-  savingsGoal: z.object({ label: z.string().min(1).max(40), target: z.number().min(1).max(100_000_000) }).nullable(),
   riskNudge: z.boolean(),
   neglectFrom: day.nullable(),
   pet3d: z.boolean(),
   theme: z.enum(["system", "light", "dark"]),
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
-  plan: PlanSchema.nullable(),
-  restDays: z.array(day).max(4000),
-  weekFocus: z.array(z.object({ week: day, text: short(160) })).max(60),
   petLife: z.enum(["continuity", "classic"]),
+  focusTrackId: id.nullable(),
 }).partial();
 
-export const AppDataSchema = z.object({
-  v: z.literal(1),
-  settings: SettingsSchema,
+/** Settings as stored before tracks (v1): one habit, so its settings sat here. Read only to migrate. */
+export const LegacySettingsSchema = SettingsSchema.extend({
+  goal: z.string().max(60),
+  baseline: baseline.nullable(),
+  celebrated: z.array(z.number().int()).max(50),
+  wear: accessory.nullable(),
+  treatsGiven: z.number().int().min(0).max(100_000),
+  fedOn: day.nullable(),
+  savingsGoal: savingsGoal.nullable(),
+  plan: PlanSchema.nullable(),
+  restDays: z.array(day).max(4000),
+  weekFocus,
+}).partial();
+
+/** One pause: from the first paused day to the day it ended (null while still paused). */
+export const PauseSchema = z.object({ from: day, to: day.nullable() });
+
+/** Everything that belongs to one recovery track rather than to the person. */
+export const TrackStateSchema = z.object({
+  description: short(280),
+  startedOn: day,
+  status: z.enum(["active", "paused", "archived"]),
+  pauses: z.array(PauseSchema).max(500),
+  archivedOn: day.nullable(),
+  createdAt: z.number(),
+  baseline: baseline.nullable(),
+  plan: PlanSchema.nullable(),
+  restDays: z.array(day).max(4000),
+  weekFocus,
+  celebrated: z.array(z.number().int()).max(50),
+  wear: accessory.nullable(),
+  treatsGiven: z.number().int().min(0).max(100_000),
+  fedOn: day.nullable(),
+  savingsGoal: savingsGoal.nullable(),
+});
+
+export const TrackHabitSchema = HabitSchema.extend({ track: TrackStateSchema.optional() });
+
+const rowsOf = {
   companions: z.array(CompanionSchema).max(500),
-  habits: z.array(HabitSchema).max(50),
   entries: z.array(EntrySchema).max(100_000),
   cleanDays: z.array(CleanDaySchema).max(100_000),
   urges: z.array(UrgeSchema).max(100_000).default([]),
   journal: z.array(JournalSchema).max(20_000).default([]),
-  summaries: z.record(z.string().max(800)).default({}),
   updatedAt: z.number().default(0),
+};
+
+/** v1: one habit; per-track settings in settings; summaries keyed by week. */
+export const AppDataV1Schema = z.object({
+  v: z.literal(1),
+  settings: LegacySettingsSchema,
+  habits: z.array(HabitSchema).max(50),
+  summaries: z.record(z.string().max(800)).default({}),
+  ...rowsOf,
+});
+export type StoredDataV1 = z.infer<typeof AppDataV1Schema>;
+
+/** v2: many tracks; each habit carries its track state; summaries keyed by track, then week. */
+export const AppDataSchema = z.object({
+  v: z.literal(2),
+  settings: SettingsSchema,
+  habits: z.array(TrackHabitSchema).max(50),
+  summaries: z.record(z.record(z.string().max(800))).default({}),
+  ...rowsOf,
 });
 export type StoredData = z.infer<typeof AppDataSchema>;
 
 /** Parses stored data. Returns null rather than throwing, so a bad file can never crash the app. */
 export function parseAppData(raw: unknown): StoredData | null {
   const r = AppDataSchema.safeParse(raw);
+  return r.success ? r.data : null;
+}
+
+/** Parses data saved before tracks (v1). Null when it isn't valid v1 data. */
+export function parseAppDataV1(raw: unknown): StoredDataV1 | null {
+  const r = AppDataV1Schema.safeParse(raw);
   return r.success ? r.data : null;
 }

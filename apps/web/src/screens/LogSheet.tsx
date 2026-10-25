@@ -9,6 +9,7 @@ import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { actions, slipRequest, useData, type Deduction } from "../store";
+import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
@@ -84,6 +85,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
     const texts = habit.fields.filter((f) => f.type === "text").map((f) => String(values[f.id] ?? ""));
     if (texts.some(hasCrisisLanguage)) { setCrisis(true); return; }
     const d = actions.logSlip(habit.id, values, day, time || null);
+    if (!d) { haptic.warn(); onClose(); return; } // the track is paused or archived for that day
     setResult(d);
     onSaved(d);
     const req = slipRequest(d.entry.id);
@@ -204,7 +206,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
  */
 function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: Habit; onDone: () => void }) {
   const data = useData();
-  const plan = data.settings.plan;
+  const plan = trackState(data, habit.id).plan;
   const [open, setOpen] = useState(false);
   const [before, setBefore] = useState("");
   const [adjust, setAdjust] = useState("");
@@ -214,7 +216,7 @@ function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: H
   function save() {
     if (crisis) return;
     if (before.trim() || adjust.trim()) actions.reflectOnLapse(entryId, { before, adjust });
-    if (keep && adjust.trim()) actions.addIfThen(adjust);
+    if (keep && adjust.trim()) actions.addIfThen(adjust, habit.id);
     haptic.success();
     onDone();
   }

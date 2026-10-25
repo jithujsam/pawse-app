@@ -10,6 +10,7 @@ vi.mock("../src/supabase", async () => ({ configured: true, supabase: (await imp
 const { actions, getData } = await import("../src/store");
 const { startSync, stopSync } = await import("../src/sync");
 const { blank } = await import("../src/persist");
+const { trackState } = await import("../src/tracks");
 
 const u = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const CA = u(1), HA = u(2), EA = u(3); // the account's
@@ -56,7 +57,8 @@ describe("a new phone joining an account that already has a companion", () => {
     expect(local.cleanDays.map((c) => c.day).sort()).toEqual([D2]);
     // The account's settings win.
     expect(local.settings.tone).toBe("gentle");
-    expect(local.settings.goal).toBe("Account goal");
+    // The account's old per-track keys seed its track, which arrives with no track state of its own.
+    expect(trackState(local, HA).description).toBe("Account goal");
 
     // And the server agrees: the phone's rows arrived under the account's ids; the phone's companion never did.
     expect(table("companions").has(CP)).toBe(false);

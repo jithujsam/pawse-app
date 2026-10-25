@@ -8,6 +8,7 @@ import { rise, spring, stagger } from "../motion";
 import { MOODS } from "../questions";
 import { frictionIdeas, REPLACEMENTS, strategyOrder, urgeManagedLine } from "../recovery";
 import { actions, useActiveView, useData } from "../store";
+import { trackState } from "../tracks";
 import { Burst, Button, Chip } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import type { StrategyId } from "../types";
@@ -33,7 +34,8 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const { tone, plan } = data.settings;
+  const { tone } = data.settings;
+  const { plan } = trackState(data, habit.id);
   const order = strategyOrder(plan?.strategies);
   const [phase, setPhase] = useState<"rate" | "support" | "won">("rate");
   const [strength, setStrength] = useState(3);
@@ -84,7 +86,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   if (phase === "won") return (
     <motion.div className="stack center-text urge-won" variants={stagger} initial="hidden" animate="show">
       <Burst burst={1} kind="spark" count={14} />
-      <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={data.settings.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
+      <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={trackState(data, view.habit!.id).wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
       <motion.h2 variants={rise}>{win}</motion.h2>
       <motion.p className="muted" variants={rise}>{managed} {managed === 1 ? "urge" : "urges"} managed so far. Each one is practice.</motion.p>
       <motion.div variants={rise}><Button onClick={onClose}>Back to {companion.name}</Button></motion.div>
@@ -155,7 +157,7 @@ function Breathing() {
       <div className="breath">
         <motion.div className="breath-ring" animate={reduce ? undefined : { scale: step.scale }} transition={{ duration: step.secs, ease: "easeInOut" }} />
         <motion.div animate={reduce ? undefined : { scale: step.scale * 0.92 }} transition={{ duration: step.secs, ease: "easeInOut" }}>
-          <LiveCompanion species={companion.species} coat={companion.coat} personality="calm" accessory={data.settings.wear} stage={view.stage} mood="idle" age={view.age} size={130} interactive={false} />
+          <LiveCompanion species={companion.species} coat={companion.coat} personality="calm" accessory={trackState(data, view.habit!.id).wear} stage={view.stage} mood="idle" age={view.age} size={130} interactive={false} />
         </motion.div>
       </div>
       <AnimatePresence mode="wait"><motion.p className="breath-label" aria-live="polite" key={step.label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>{step.label}</motion.p></AnimatePresence>

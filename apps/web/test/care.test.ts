@@ -4,6 +4,7 @@ import { absorbedLine, bingeLine, dyingBanner, greeting, quietBanner, welcomeBac
 import { blank, normalize } from "../src/persist";
 import { toRemote, merge, type Pulled } from "../src/syncmap";
 import { treatsLeft } from "../src/store";
+import { defaultTrackState } from "../src/tracks";
 import { COATS, coatFor, mix } from "../src/pets";
 import type { AppData, Personality, Tone } from "../src/types";
 
@@ -53,9 +54,9 @@ function sample(): AppData {
   const d = blank();
   return {
     ...d,
-    settings: { ...d.settings, onboarded: true, treatsGiven: 1 },
+    settings: { ...d.settings, onboarded: true },
     companions: [{ id: "c1", species: "fox", coat: "arctic", personality: "sassy", name: "Ember", bornOn: "2026-10-01", diedOn: null, finalAge: null }],
-    habits: [{ id: "h1", name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: "c1", unit: "money", fields: [] }],
+    habits: [{ id: "h1", name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: "c1", unit: "money", fields: [], track: { ...defaultTrackState("2026-10-01"), treatsGiven: 1 } }],
     entries: [{ id: "e1", habitId: "h1", companionId: "c1", day: "2026-10-05", time: null, values: {}, amount: 1, months: 2, severity: 1, effects: [], explanation: "", source: "baseline", aiAdjustPct: null, createdAt: 1 }],
     cleanDays: [{ habitId: "h1", day: "2026-10-02" }, { habitId: "h1", day: "2026-10-03" }, { habitId: "h1", day: "2026-10-04" }],
   };
@@ -64,7 +65,8 @@ function sample(): AppData {
 describe("care data", () => {
   it("treats: one per clean day, minus those given", () => {
     expect(treatsLeft(sample(), "h1")).toBe(2);
-    expect(treatsLeft({ ...sample(), settings: { ...sample().settings, treatsGiven: 9 } }, "h1")).toBe(0);
+    const s = sample();
+    expect(treatsLeft({ ...s, habits: s.habits.map((h) => ({ ...h, track: { ...h.track!, treatsGiven: 9 } })) }, "h1")).toBe(0);
   });
   it("coat, personality and care settings survive storage and sync", () => {
     const d = normalize(JSON.parse(JSON.stringify(sample())))!;

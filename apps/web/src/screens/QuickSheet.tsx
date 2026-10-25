@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { rise, spring, stagger } from "../motion";
 import { requestQuick, type QuickAction } from "../quick";
 import { cleanStreak, useActiveView, useData } from "../store";
+import { trackState } from "../tracks";
 import { today } from "../dates";
 import { Icon } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
@@ -18,7 +19,7 @@ export function QuickSheet({ open, onClose, onPick }: { open: boolean; onClose: 
   const streak = cleanStreak(data, habit.id);
   const pick = (a: QuickAction) => { requestQuick(a); onPick(); };
   const ridden = data.urges.filter((u) => u.habitId === habit.id && u.outcome === "rode_it_out").length;
-  const resting = data.settings.restDays.includes(t0);
+  const resting = trackState(data, habit.id).restDays.includes(t0);
   const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean; wide?: boolean }[] = [
     { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `Pick a way through it. ${ridden} managed so far.` : "Pick a way through it, with your companion.", tone: "calm", wide: true },
     { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },

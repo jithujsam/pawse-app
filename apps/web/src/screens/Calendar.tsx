@@ -4,6 +4,7 @@ import { daysBetween, fmtDay, fmtMonth, fmtTime, iso, parse, pad, today } from "
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData } from "../store";
+import { trackState } from "../tracks";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { Button, Icon } from "../ui/Controls";
@@ -16,6 +17,7 @@ export function CalendarSections() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
+  const track = trackState(data, habit.id);
   const [cursor, setCursor] = useState(() => today().slice(0, 7) + "-01");
   const [sel, setSel] = useState(today());
   const dir = useRef(1);
@@ -40,7 +42,7 @@ export function CalendarSections() {
   const inLife = sel <= t0 && daysBetween(companion.bornOn, sel) >= 0;
   const canClean = inLife && dayEntries.length === 0 && status(sel) !== "met";
   const canRest = inLife && (status(sel) === "unrecorded" || status(sel) === "urge" || status(sel) === "rest") && dayEntries.length === 0 && !data.cleanDays.some((c) => c.habitId === habit.id && c.day === sel);
-  const resting = data.settings.restDays.includes(sel);
+  const resting = track.restDays.includes(sel);
   const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
   const count = (k: string) => monthDays.filter((d) => status(d) === k).length;
 

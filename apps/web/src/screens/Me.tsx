@@ -13,6 +13,7 @@ import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
 import { actions, bestStreak, canAllowPassingAway, cleanStreak, useActiveView, useData, vault } from "../store";
+import { companionsOf, trackState } from "../tracks";
 import { careDays } from "../recovery";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
@@ -40,6 +41,7 @@ export function Me() {
   const { companion } = view;
   const habit = view.habit ?? data.habits[0];
   const { settings } = data;
+  const track = trackState(data, habit.id);
   const [page, setPage] = useState<Page>(null);
   const [sim, setSim] = useState(false);
   const { session } = useSession();
@@ -54,7 +56,7 @@ export function Me() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>You</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><CompanionArt species={companion.species} coat={companion.coat} accessory={settings.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+        <span className="profile-art"><CompanionArt species={companion.species} coat={companion.coat} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
           <span className="muted small">{SPECIES_LABEL[companion.species]} · {PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label} · {STAGE_LABEL[view.stage]} · day {together}</span>
@@ -66,7 +68,7 @@ export function Me() {
 
       <motion.div variants={rise}>
         <Group title="Plan and voice">
-          <Row icon={Icon.flag} label="Your plan" value={settings.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[settings.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
+          <Row icon={Icon.flag} label="Your plan" value={track.plan?.goal ? { stop: "Stop", reduce: "Cut down", understand: "Understand" }[track.plan.goal] : "Not set"} onClick={() => setPage("plan")} />
           <Row icon={Icon.chat} label="Voice" value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
         </Group>
       </motion.div>
@@ -118,8 +120,9 @@ function PetPage() {
   const { companion } = view;
   const habit = view.habit ?? data.habits[0];
   const { settings } = data;
+  const track = trackState(data, habit.id);
   const [name, setName] = useState(companion.name);
-  const hall = data.companions.filter((c) => c.diedOn);
+  const hall = companionsOf(data, habit.id).filter((c) => c.diedOn);
   const best = Math.max(bestStreak(data, habit.id), cleanStreak(data, habit.id));
   const care = careDays(data, habit.id);
   // Classic rules can only be switched on if the history wouldn't already mean death under them.
@@ -133,7 +136,7 @@ function PetPage() {
   };
   return (<>
     <section className="card stack">
-      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={settings.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
+      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
       <div className="stats">
         <div className="stat item"><span className="muted small">Age</span><b className="v">{Math.round(view.age)}</b></div>
         <div className="stat item"><span className="muted small">Born</span><b>{fmtDay(companion.bornOn)}</b></div>
@@ -169,12 +172,12 @@ function PetPage() {
     <section className="card stack">
       <div className="row"><h2>Wardrobe</h2><span className="muted small">{care} {care === 1 ? "day" : "days"} of care</span></div>
       <div className="wardrobe">
-        <motion.button className="ward" data-on={!settings.wear} whileTap={{ scale: 0.94 }} onClick={() => { haptic.select(); actions.setSettings({ wear: null }); }}><b>None</b></motion.button>
+        <motion.button className="ward" data-on={!track.wear} whileTap={{ scale: 0.94 }} onClick={() => { haptic.select(); actions.setTrackSettings(habit.id, { wear: null }); }}><b>None</b></motion.button>
         {ACCESSORIES.map((a) => {
           const open = Math.max(best, care) >= a.days;
           return (
-            <motion.button key={a.id} className="ward" data-on={settings.wear === a.id} disabled={!open} whileTap={open ? { scale: 0.94 } : undefined}
-              onClick={() => { haptic.select(); actions.setSettings({ wear: a.id }); }}>
+            <motion.button key={a.id} className="ward" data-on={track.wear === a.id} disabled={!open} whileTap={open ? { scale: 0.94 } : undefined}
+              onClick={() => { haptic.select(); actions.setTrackSettings(habit.id, { wear: a.id }); }}>
               <b>{a.label}</b><span className="small muted">{open ? "Unlocked" : `${a.days} days of care`}</span>
             </motion.button>
           );

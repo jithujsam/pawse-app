@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { kv } from "./db";
 import { actions, getData, onCommit } from "./store";
 import { supabase } from "./supabase";
-import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, type Pulled, type Table } from "./syncmap";
+import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, TRACK_COLUMNS, type Pulled, type Table } from "./syncmap";
 
 /**
  * Offline-first sync. Every local change is recorded as a pending key; pushes are batched upserts in
@@ -152,7 +152,7 @@ async function cycle(uid: string) {
   pulled.clean_days = drop(pulled.clean_days, (r) => `k:${r.habit_id}:${r.day}`);
   pulled.deductions = drop(pulled.deductions, (r) => `e:${r.entry_id}`);
   pulled.profiles = drop(pulled.profiles, () => "s");
-  pulled.weekly_reports = drop(pulled.weekly_reports, (r) => `w:${r.week_start}`);
+  pulled.weekly_reports = drop(pulled.weekly_reports, (r) => `w:${r.habit_id}:${r.week_start}`);
   pulled.urges = drop(pulled.urges ?? [], (r) => `u:${r.id}`);
   pulled.journal = drop(pulled.journal ?? [], (r) => `j:${r.day}`);
 
@@ -214,6 +214,13 @@ async function cycle(uid: string) {
       // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
       if (error && t === "companions" && /coat|personality/i.test(error.message)) {
         batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
+        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+      }
+      // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
+      // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
+      if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
+        const drop = new Set<string>(TRACK_COLUMNS[t]);
+        batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
         ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
       }
       // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.

@@ -47,7 +47,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
           {SPECIES.map((s) => <Chip key={s.id} pressed={species === s.id} onClick={() => setSpecies(s.id)}>{s.label}</Chip>)}
         </div>
         <label className="field"><span className="field-label">New name</span><input className="input" autoComplete="off" value={name} maxLength={20} placeholder="Biscuit" onChange={(e) => setName(e.target.value)} /></label>
-        <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(); onDone(); }}>Adopt a new {BABY[species]}</Button>
+        <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>Adopt a new {BABY[species]}</Button>
       </motion.section>
     </main>
   );

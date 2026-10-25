@@ -35,6 +35,8 @@ export interface Companion {
   /** Coat colour id for the species (see COATS). Older companions have none and get the first coat. */
   coat?: string;
   personality?: Personality;
+  /** The track this companion belongs to. Filled on load; a companion belongs to exactly one track. */
+  trackId?: string;
 }
 
 export interface Habit {
@@ -46,6 +48,48 @@ export interface Habit {
   fields: Field[];
   /** Unit shown next to the amount figure. */
   unit: "money" | "count" | "minutes" | "none";
+  /**
+   * The track's own state and settings. Always present in loaded data; optional so a habit built in memory
+   * still works. Read it through trackState() in tracks.ts, which fills the defaults.
+   */
+  track?: TrackState;
+}
+
+/** A recovery track: one behaviour the person wants to change. The Habit row is the track; this is its state. */
+export type TrackStatus = "active" | "paused" | "archived";
+
+/** One pause: from the first paused day to the day it ended (null while still paused). */
+export interface Pause { from: string; to: string | null }
+
+export interface TrackState {
+  /** What this is about, in the person's own words. */
+  description: string;
+  /** The day the track began. Never later than its first recorded event. */
+  startedOn: string;
+  status: TrackStatus;
+  /** Every pause, oldest first. At most one is open (to = null), and only while status is paused. */
+  pauses: Pause[];
+  archivedOn: string | null;
+  /** When the track was made (ms), for a stable order. */
+  createdAt: number;
+  /** How often it happened before they started, as they described it. */
+  baseline: Baseline | null;
+  /** The person's plan for this track. plan.goal is the track's goal. */
+  plan: RecoveryPlan | null;
+  /** Days the person chose not to track. Neither progress nor a lapse; never counted either way. */
+  restDays: string[];
+  /** One adjustment per reviewed week. */
+  weekFocus: WeekFocus[];
+  /** Milestones already celebrated, so each fires once. */
+  celebrated: number[];
+  /** What this track's companion is wearing, if anything. */
+  wear: Accessory | null;
+  /** Treats handed out so far. Treats earned = clean days; the difference is what's in the jar. */
+  treatsGiven: number;
+  /** The last day the companion ate (YYYY-MM-DD). */
+  fedOn: string | null;
+  /** Something to save the money toward (money habits). */
+  savingsGoal: SavingsGoal | null;
 }
 
 export type Tint = "ocean" | "meadow" | "blossom" | "sunrise";
@@ -128,29 +172,15 @@ export interface Settings {
   onboarded: boolean;
   /** Legacy colour choice, no longer used. */
   tint?: Tint;
-  /** What the user said they want to let go of, in their own words. */
-  goal: string;
-  /** How often it happened before they started, as they described it. */
-  baseline: Baseline | null;
   haptics: boolean;
   /** The person agreed to a daily check-in reminder. */
   remindersOn: boolean;
   /** First-run tips on Home have been shown. */
   coachSeen: boolean;
-  /** Clean-streak milestones already celebrated, so each fires once per streak. */
-  celebrated: number[];
   /** How long the app may sit in the background before the PIN is asked again. */
   autoLock: AutoLock;
-  /** What the companion is wearing, if anything. */
-  wear: Accessory | null;
-  /** Treats handed out so far. Treats earned = clean days; the difference is what's in the jar. */
-  treatsGiven: number;
-  /** The last day the companion ate (YYYY-MM-DD). */
-  fedOn: string | null;
   /** Care notifications in the companion's voice (thank-yous, hunger strikes). */
   careNotes: boolean;
-  /** Something to save the money toward (money habits). */
-  savingsGoal: SavingsGoal | null;
   /** A heads-up before the hour slips usually happen. */
   riskNudge: boolean;
   /** Light, dark, or follow the phone. */
@@ -161,17 +191,13 @@ export interface Settings {
   pet3d: boolean;
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
-  /** The person's recovery plan (onboarding, editable in You). Null until they start one. */
-  plan: RecoveryPlan | null;
-  /** Days the person chose not to track. Neither progress nor a lapse; never counted either way. */
-  restDays: string[];
-  /** One adjustment per reviewed week. */
-  weekFocus: WeekFocus[];
   /**
    * continuity: the companion can become very frail but never dies, and all damage can heal back.
    * classic: the PRD rules, with death at 100, a permanent scar floor and binge scars.
    */
   petLife: "continuity" | "classic";
+  /** The track the single-pet screens show on this phone. UI state only: never synced, never recovery data. */
+  focusTrackId: string | null;
 }
 
 export type AutoLock = "immediately" | "1m" | "5m" | "never";
@@ -179,7 +205,7 @@ export type AutoLock = "immediately" | "1m" | "5m" | "never";
 export type Baseline = "many_daily" | "daily" | "few_weekly" | "weekly";
 
 export interface AppData {
-  v: 1;
+  v: 2;
   settings: Settings;
   companions: Companion[];
   habits: Habit[];
@@ -187,7 +213,7 @@ export interface AppData {
   cleanDays: CleanDay[];
   urges: Urge[];
   journal: JournalEntry[];
-  /** AI weekly summaries keyed by week start (YYYY-MM-DD). */
-  summaries: Record<string, string>;
+  /** AI weekly summaries, by track id, then week start (YYYY-MM-DD). */
+  summaries: Record<string, Record<string, string>>;
   updatedAt: number;
 }

@@ -8,6 +8,7 @@ import { verdict } from "../copy";
 import { addDays, fmtHour, parse, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon } from "../ui/Controls";
 import { CheckIn, Observations } from "./WeeklyReview";
@@ -17,7 +18,7 @@ const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
 
 
-function SavingsGoal({ saved, goal, currency }: { saved: number; goal: { label: string; target: number } | null; currency: string }) {
+function SavingsGoal({ habitId, saved, goal, currency }: { habitId: string; saved: number; goal: { label: string; target: number } | null; currency: string }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(goal?.label ?? "");
   const [target, setTarget] = useState(goal ? String(goal.target) : "");
@@ -26,8 +27,8 @@ function SavingsGoal({ saved, goal, currency }: { saved: number; goal: { label: 
       <label className="field"><span className="field-label">Saving toward</span><input className="input" autoComplete="off" maxLength={40} placeholder="New headphones" value={label} onChange={(e) => setLabel(e.target.value)} /></label>
       <label className="field"><span className="field-label">It costs</span><input className="input" inputMode="decimal" type="number" min="1" placeholder="5000" value={target} onChange={(e) => setTarget(e.target.value)} /></label>
       <div className="actions">
-        <Button disabled={!label.trim() || !(Number(target) > 0)} onClick={() => { actions.setSettings({ savingsGoal: { label: label.trim(), target: Math.round(Number(target)) } }); setEditing(false); }}>Save goal</Button>
-        <Button variant="secondary" onClick={() => { if (goal) actions.setSettings({ savingsGoal: null }); setEditing(false); }}>{goal ? "Remove" : "Cancel"}</Button>
+        <Button disabled={!label.trim() || !(Number(target) > 0)} onClick={() => { actions.setTrackSettings(habitId, { savingsGoal: { label: label.trim(), target: Math.round(Number(target)) } }); setEditing(false); }}>Save goal</Button>
+        <Button variant="secondary" onClick={() => { if (goal) actions.setTrackSettings(habitId, { savingsGoal: null }); setEditing(false); }}>{goal ? "Remove" : "Cancel"}</Button>
       </div>
     </div>
   );
@@ -54,7 +55,9 @@ export function Report() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const { tone, currency, baseline } = data.settings;
+  const { tone, currency } = data.settings;
+  const track = trackState(data, habit.id);
+  const { baseline } = track;
   const ws = weekStart(today());
   const cur = weekStats(data, habit.id, ws);
   const cleanIn = (from: string) => data.cleanDays.filter((c) => c.habitId === habit.id && c.day >= from && c.day <= addDays(from, 6)).length;
@@ -79,14 +82,14 @@ export function Report() {
   const { session } = useSession();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const summary = data.summaries[ws];
+  const summary = data.summaries[habit.id]?.[ws];
   async function write() {
     const req = weekRequestFor(habit.id, ws, all.length >= 3 ? DOW[worst] : null);
     if (!req) return;
     setBusy(true); setFailed(false);
     const text = await aiWeekly(req);
     setBusy(false);
-    if (text) actions.setSummary(ws, text); else setFailed(true);
+    if (text) actions.setSummary(ws, text, habit.id); else setFailed(true);
   }
 
   // Write the week's summary on its own once there's something to say; at most every six hours.
@@ -114,7 +117,7 @@ export function Report() {
   // Only checked-in days count: a day with nothing logged is unknown, never money kept.
   const kept = moneyKept(data, habit.id, companion.bornOn);
   const saved = kept ? kept.saved : null;
-  const goal = data.settings.savingsGoal;
+  const goal = track.savingsGoal;
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
@@ -153,7 +156,7 @@ export function Report() {
           {saved === null
             ? <p className="muted">{baseline ? "Log a slip with an amount and this shows what you're keeping compared with before." : "This needs your starting pace, set during setup."}</p>
             : <p className="big-money"><small>{currency}</small> <AnimatedNumber value={saved} from={0} /></p>}
-          <SavingsGoal saved={saved ?? 0} goal={goal} currency={currency} />
+          <SavingsGoal habitId={habit.id} saved={saved ?? 0} goal={goal} currency={currency} />
         </motion.section>
       )}
 
@@ -172,7 +175,7 @@ export function Report() {
         {risk !== null && <p className="small">{companion.name} will send a heads-up half an hour before {fmtHour(risk)}, if reminders are on.</p>}
       </motion.section>
 
-      {baseline && pace !== null && all.length + data.cleanDays.length >= 3 && (
+      {baseline && pace !== null && all.length + data.cleanDays.filter((c) => c.habitId === habit.id).length >= 3 && (
         <motion.section className="card stack" variants={rise}>
           <h2>Since you started</h2>
           <p>You said it was <b>{BASELINE_LABEL[baseline]}</b>. On the days you checked in lately, it's about <b>{fmt(recentPerWeek)}</b> a week.</p>

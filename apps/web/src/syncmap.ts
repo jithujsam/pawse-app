@@ -1,8 +1,11 @@
-import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, Urge } from "./types";
+import { TrackStateSchema } from "@detox/schema";
+import { PER_TRACK_KEYS } from "./persist";
+import { trackState } from "./tracks";
+import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, TrackState, Urge } from "./types";
 
 /**
  * Pure mapping between what the phone keeps and the normalised tables.
- * Each local row has a key: "c:<id>", "h:<id>", "e:<id>", "k:<habitId>:<day>", "w:<week>", "u:<id>" (urge),
+ * Each local row has a key: "c:<id>", "h:<id>", "e:<id>", "k:<habitId>:<day>", "w:<habitId>:<week>", "u:<id>" (urge),
  * "j:<day>" (journal), or "s" for settings.
  */
 
@@ -12,16 +15,17 @@ export const PUSH_ORDER: Table[] = ["profiles", "companions", "habits", "entries
 /** Tables added in v2. A server without them keeps syncing everything else. */
 export const OPTIONAL_TABLES: Table[] = ["urges", "journal"];
 
-type Local = { kind: "c"; row: Companion } | { kind: "h"; row: Habit; position: number } | { kind: "e"; row: Entry } | { kind: "k"; row: CleanDay } | { kind: "w"; week: string; text: string } | { kind: "s"; row: Settings } | { kind: "u"; row: Urge } | { kind: "j"; row: JournalEntry };
+type Local = { kind: "c"; row: Companion } | { kind: "h"; row: Habit; position: number } | { kind: "e"; row: Entry } | { kind: "k"; row: CleanDay } | { kind: "w"; habitId: string; week: string; text: string } | { kind: "s"; row: Settings; legacy: TrackState | undefined } | { kind: "u"; row: Urge } | { kind: "j"; row: JournalEntry };
 
 export function indexRows(d: AppData): Map<string, Local> {
   const m = new Map<string, Local>();
-  m.set("s", { kind: "s", row: d.settings });
+  // The profile also carries a copy of the first track's settings for app versions from before tracks.
+  m.set("s", { kind: "s", row: d.settings, legacy: d.habits[0]?.track });
   for (const c of d.companions) m.set(`c:${c.id}`, { kind: "c", row: c });
   d.habits.forEach((h, i) => m.set(`h:${h.id}`, { kind: "h", row: h, position: i }));
   for (const e of d.entries) m.set(`e:${e.id}`, { kind: "e", row: e });
   for (const k of d.cleanDays) m.set(`k:${k.habitId}:${k.day}`, { kind: "k", row: k });
-  for (const [week, text] of Object.entries(d.summaries)) m.set(`w:${week}`, { kind: "w", week, text });
+  for (const [habitId, weeks] of Object.entries(d.summaries)) for (const [week, text] of Object.entries(weeks)) m.set(`w:${habitId}:${week}`, { kind: "w", habitId, week, text });
   for (const u of d.urges ?? []) m.set(`u:${u.id}`, { kind: "u", row: u });
   for (const j of d.journal ?? []) m.set(`j:${j.day}`, { kind: "j", row: j });
   return m;
@@ -36,6 +40,7 @@ export function diff(prev: AppData, next: AppData): { changed: string[]; removed
     if (!old) { changed.push(k); continue; }
     if (v.kind === "w" && old.kind === "w") { if (v.text !== old.text) changed.push(k); continue; }
     if (v.kind === "h" && old.kind === "h" && v.position !== old.position) { changed.push(k); continue; }
+    if (v.kind === "s" && old.kind === "s" && v.legacy !== old.legacy) { changed.push(k); continue; }
     if ("row" in v && "row" in old && v.row !== old.row) changed.push(k);
   }
   for (const k of a.keys()) if (!b.has(k)) removed.push(k);
@@ -47,8 +52,30 @@ const isPhoto = (v: unknown) => typeof v === "string" && v.startsWith("data:");
 export const stripPhotos = (values: Entry["values"]) => Object.fromEntries(Object.entries(values).filter(([, v]) => !isPhoto(v)));
 
 /** Settings that belong to this phone rather than the person. */
-const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "remindersOn", "autoLock", "coachSeen", "pet3d", "theme"];
+const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "remindersOn", "autoLock", "coachSeen", "pet3d", "theme", "focusTrackId"];
 export const portableSettings = (s: Settings) => Object.fromEntries(Object.entries(s).filter(([k]) => !DEVICE_ONLY.includes(k as keyof Settings)));
+
+/**
+ * What app versions from before tracks read from the profile: the first track's settings under the old keys.
+ * Written only, never read back as the truth (see docs/MULTI_TRACK_ARCHITECTURE.md §4.3).
+ */
+export function legacyProfileCopy(d: AppData): Record<string, unknown> {
+  const h = d.habits[0];
+  if (!h) return {};
+  const t = trackState(d, h.id);
+  return {
+    goal: (t.description || h.name).slice(0, 60), baseline: t.baseline, plan: t.plan, restDays: t.restDays, weekFocus: t.weekFocus,
+    celebrated: t.celebrated, wear: t.wear, treatsGiven: t.treatsGiven, fedOn: t.fedOn, savingsGoal: t.savingsGoal,
+  };
+}
+
+/** The per-track part of a track that goes in the habits row's `track` column. */
+const trackColumn = (t: TrackState) => ({
+  pauses: t.pauses, archivedOn: t.archivedOn, createdAt: t.createdAt, baseline: t.baseline, plan: t.plan, restDays: t.restDays, weekFocus: t.weekFocus,
+  celebrated: t.celebrated, wear: t.wear, treatsGiven: t.treatsGiven, fedOn: t.fedOn, savingsGoal: t.savingsGoal,
+});
+/** Columns added by migration 0006. A server without them keeps syncing the rest. */
+export const TRACK_COLUMNS = { habits: ["description", "started_on", "status", "archived_at", "track"], companions: ["habit_id"] } as const;
 
 export interface Upsert { table: Table; row: Record<string, unknown> }
 
@@ -58,9 +85,15 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
   if (!l) return [];
   const base = { user_id: userId, client_updated_at: t };
   switch (l.kind) {
-    case "s": return [{ table: "profiles", row: { id: userId, settings: portableSettings(l.row), client_updated_at: t, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone?.slice(0, 64) ?? null } }];
-    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, personality: l.row.personality ?? null, deleted_at: null } }];
-    case "h": return [{ table: "habits", row: { ...base, id: l.row.id, companion_id: l.row.companionId, name: l.row.name, class: l.row.cls, class_weight: l.row.classWeight, unit: l.row.unit, fields: l.row.fields, position: l.position, deleted_at: null } }];
+    case "s": return [{ table: "profiles", row: { id: userId, settings: { ...legacyProfileCopy(d), ...portableSettings(l.row) }, client_updated_at: t, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone?.slice(0, 64) ?? null } }];
+    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, personality: l.row.personality ?? null, habit_id: l.row.trackId ?? null, deleted_at: null } }];
+    case "h": {
+      const tr = trackState(d, l.row.id);
+      return [{ table: "habits", row: {
+        ...base, id: l.row.id, companion_id: l.row.companionId, name: l.row.name, class: l.row.cls, class_weight: l.row.classWeight, unit: l.row.unit, fields: l.row.fields, position: l.position, deleted_at: null,
+        description: tr.description, started_on: tr.startedOn, status: tr.status, archived_at: tr.archivedOn, track: trackColumn(tr),
+      } }];
+    }
     case "e": return [
       { table: "entries", row: { ...base, id: l.row.id, habit_id: l.row.habitId, companion_id: l.row.companionId, occurred_on: l.row.day, occurred_at: l.row.time, values: stripPhotos(l.row.values), amount: l.row.amount, client_created_at: l.row.createdAt, deleted_at: null } },
       { table: "deductions", row: { ...base, entry_id: l.row.id, months_lost: l.row.months, severity: Math.max(0.5, l.row.severity), baseline_months: null, ai_adjust_pct: l.row.aiAdjustPct, body_effects: l.row.effects, explanation: l.row.explanation.slice(0, 200), source: l.row.source } },
@@ -68,10 +101,7 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
     case "k": return [{ table: "clean_days", row: { ...base, habit_id: l.row.habitId, day: l.row.day, deleted_at: null } }];
     case "u": return [{ table: "urges", row: { ...base, id: l.row.id, habit_id: l.row.habitId, occurred_on: l.row.day, occurred_at: l.row.time, strength: l.row.strength, outcome: l.row.outcome, strategy: l.row.strategy ?? null, trigger: l.row.trigger ?? null, client_created_at: l.row.createdAt, deleted_at: null } }];
     case "j": return [{ table: "journal", row: { ...base, day: l.row.day, mood: l.row.mood, body: l.row.body, deleted_at: null } }];
-    case "w": {
-      const habit = d.habits[0];
-      return habit ? [{ table: "weekly_reports", row: { ...base, habit_id: habit.id, week_start: l.week, summary: l.text } }] : [];
-    }
+    case "w": return d.habits.some((h) => h.id === l.habitId) ? [{ table: "weekly_reports", row: { ...base, habit_id: l.habitId, week_start: l.week, summary: l.text } }] : [];
   }
 }
 
@@ -97,6 +127,37 @@ export interface Pulled {
   profiles: R[]; companions: R[]; habits: R[]; entries: R[]; deductions: R[]; clean_days: R[]; weekly_reports: R[]; urges?: R[]; journal?: R[];
 }
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const day = (v: unknown) => (typeof v === "string" && DAY.test(v.slice(0, 10)) ? v.slice(0, 10) : null);
+
+/**
+ * A track's state from a habits row. Columns from migration 0006 win; anything missing keeps the local value,
+ * or for a track this phone has never seen, the profile's old per-track keys (seed), or the defaults.
+ * Undefined when the row says nothing about tracks and there's nothing local (normalize fills it on next load).
+ */
+function remoteTrack(r: R, local: TrackState | undefined, seed: Record<string, unknown> | undefined, bornOn: string | undefined): TrackState | undefined {
+  const t = r.track && typeof r.track === "object" ? (r.track as Record<string, unknown>) : undefined;
+  const src: Record<string, unknown> = t ?? seed ?? {};
+  if (!t && !seed && !local && r.status === undefined) return undefined;
+  const base = local ?? {
+    description: "", startedOn: day(r.started_on) ?? bornOn ?? day(r.created_at) ?? "", status: "active", pauses: [], archivedOn: null, createdAt: 0,
+    baseline: null, plan: null, restDays: [], weekFocus: [], celebrated: [], wear: null, treatsGiven: 0, fedOn: null, savingsGoal: null,
+  } as TrackState;
+  const pick = <K extends keyof TrackState>(k: K): unknown => (k in src ? src[k] : base[k]);
+  // Nothing is coerced: a malformed value fails the schema below and the local state stands.
+  const status = r.status === undefined || r.status === null ? base.status : r.status;
+  const next = {
+    description: typeof r.description === "string" ? r.description : (seed && !local && typeof seed.goal === "string" && seed.goal !== r.name ? seed.goal.slice(0, 280) : base.description),
+    startedOn: day(r.started_on) ?? base.startedOn, status,
+    pauses: pick("pauses"), archivedOn: status === "archived" ? (pick("archivedOn") ?? day(r.archived_at)) : null,
+    createdAt: pick("createdAt"), baseline: pick("baseline"), plan: pick("plan"), restDays: pick("restDays"), weekFocus: pick("weekFocus"),
+    celebrated: pick("celebrated"), wear: pick("wear"), treatsGiven: pick("treatsGiven"), fedOn: pick("fedOn"), savingsGoal: pick("savingsGoal"),
+  };
+  // Server data is validated like anything else loaded: a bad track state never replaces a good one.
+  const ok = TrackStateSchema.safeParse(next);
+  return ok.success ? (ok.data as TrackState) : local;
+}
+
 /**
  * Merges pulled rows into local data. A row only wins when it is newer than an unsent local change
  * to the same key (last write wins, by the time each phone made the change).
@@ -107,7 +168,11 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
   let { companions, habits, entries, cleanDays, settings, summaries } = d;
   let urges = d.urges ?? [], journal = d.journal ?? [];
 
-  for (const r of p.profiles) if (wins("s", r) && r.settings && typeof r.settings === "object") settings = { ...settings, ...(r.settings as Partial<Settings>), ...Object.fromEntries(DEVICE_ONLY.map((k) => [k, settings[k]])) };
+  // The profile's copy of per-track settings (for old app versions) is never read back, except to seed a track
+  // that arrives from the server with no state of its own (a server or app from before tracks).
+  const profile = p.profiles.find((r) => r.settings && typeof r.settings === "object")?.settings as Record<string, unknown> | undefined;
+  const person = (x: Record<string, unknown>) => Object.fromEntries(Object.entries(x).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k)));
+  for (const r of p.profiles) if (wins("s", r) && r.settings && typeof r.settings === "object") settings = { ...settings, ...(person(r.settings as Record<string, unknown>) as Partial<Settings>), ...Object.fromEntries(DEVICE_ONLY.map((k) => [k, settings[k]])) };
 
   const upsert = <T extends { id: string }>(list: T[], row: T) => { const i = list.findIndex((x) => x.id === row.id); return i < 0 ? [...list, row] : list.map((x, j) => (j === i ? row : x)); };
 
@@ -115,15 +180,19 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     const key = `c:${r.id}`;
     if (!wins(key, r)) continue;
     if (r.deleted_at) { companions = companions.filter((c) => c.id !== r.id); continue; }
+    const owner = r.habit_id ? String(r.habit_id) : companions.find((c) => c.id === r.id)?.trackId;
     companions = upsert(companions, { id: String(r.id), species: r.species as Companion["species"], name: String(r.name), bornOn: String(r.born_on), diedOn: (r.died_on as string) ?? null, finalAge: num(r.final_age),
-      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}) });
+      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}), ...(owner ? { trackId: owner } : {}) });
   }
   const sortedHabits = [...p.habits].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0));
   for (const r of sortedHabits) {
     const key = `h:${r.id}`;
     if (!wins(key, r)) continue;
     if (r.deleted_at) { habits = habits.filter((h) => h.id !== r.id); continue; }
-    habits = upsert(habits, { id: String(r.id), companionId: String(r.companion_id), name: String(r.name), cls: r.class as Habit["cls"], classWeight: Number(r.class_weight), unit: r.unit as Habit["unit"], fields: r.fields as Habit["fields"] });
+    const local = habits.find((h) => h.id === r.id)?.track;
+    const bornOn = companions.find((c) => c.id === String(r.companion_id))?.bornOn;
+    const track = remoteTrack(r, local, !local && Number(r.position ?? 0) === 0 ? profile : undefined, bornOn);
+    habits = upsert(habits, { id: String(r.id), companionId: String(r.companion_id), name: String(r.name), cls: r.class as Habit["cls"], classWeight: Number(r.class_weight), unit: r.unit as Habit["unit"], fields: r.fields as Habit["fields"], ...(track ? { track } : {}) });
   }
   const ded = new Map(p.deductions.map((x) => [String(x.entry_id), x]));
   for (const r of p.entries) {
@@ -153,7 +222,10 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     cleanDays = cleanDays.filter((c) => !(c.habitId === r.habit_id && c.day === r.day));
     if (!r.deleted_at) cleanDays = [...cleanDays, { habitId: String(r.habit_id), day: String(r.day) }];
   }
-  for (const r of p.weekly_reports) if (r.summary && wins(`w:${r.week_start}`, r)) summaries = { ...summaries, [String(r.week_start)]: String(r.summary) };
+  for (const r of p.weekly_reports) {
+    const h = String(r.habit_id), w = String(r.week_start);
+    if (r.summary && habits.some((x) => x.id === h) && wins(`w:${h}:${w}`, r)) summaries = { ...summaries, [h]: { ...summaries[h], [w]: String(r.summary) } };
+  }
 
   for (const r of p.urges ?? []) {
     const key = `u:${r.id}`;

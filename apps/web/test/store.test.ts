@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { actions, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
 import { blank } from "../src/persist";
+import { defaultTrackState } from "../src/tracks";
 import { addDays, today } from "../src/dates";
 import type { Entry } from "../src/types";
 
@@ -45,9 +46,9 @@ describe("missing days", () => {
     const d = blank();
     actions.applyRemote({
       ...d,
-      settings: { ...d.settings, onboarded: true, baseline, neglectFrom: born },
+      settings: { ...d.settings, onboarded: true, neglectFrom: born },
       companions: [{ id: C, species: "dog", name: "Biscuit", bornOn: born, diedOn: null, finalAge: null }],
-      habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields: [] }],
+      habits: [{ id: H, name: "Orders", cls: "food_spending", classWeight: 0.7, companionId: C, unit: "money", fields: [], track: { ...defaultTrackState(born), baseline } }],
       entries: slips.map((s, i) => ({ ...entry(`e${i}`, s.day, 2.8), amount: s.amount })),
       cleanDays: cleanDays.map((day) => ({ habitId: H, day })),
     });
