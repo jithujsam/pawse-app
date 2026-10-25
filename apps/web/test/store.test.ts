@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { actions, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
+import { actions, activeCompanion, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
+import { toRemote } from "../src/syncmap";
 import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import type { Entry } from "../src/types";
@@ -162,3 +163,52 @@ describe("pet rules: continuity by default, classic opt-in", () => {
   });
 });
 
+
+describe("recovery tracks", () => {
+  it("adding a track gives it its own habit and companion and leaves the first track untouched", () => {
+    load([entry("e1", t0, 4)]);
+    const before = viewCompanion(getData(), C).age;
+    const id = actions.addTrack({ what: "Doomscrolling", cls: "doomscrolling", measure: "minutes", species: "cat", name: "Miso" });
+    const d = getData();
+    expect(d.habits).toHaveLength(2);
+    expect(d.companions).toHaveLength(2);
+    const habit = d.habits.find((h) => h.id === id)!;
+    const pet = d.companions.find((c) => c.id === habit.companionId)!;
+    expect(pet).toMatchObject({ name: "Miso", species: "cat", bornOn: t0, diedOn: null });
+    expect(habit).toMatchObject({ name: "Doomscrolling", cls: "doomscrolling", unit: "minutes" });
+    expect(habit.fields.length).toBeGreaterThan(0);
+    // The new pet starts with no history; the first pet keeps its own.
+    expect(viewCompanion(d, pet.id).age).toBe(0);
+    expect(viewCompanion(d, C).age).toBe(before);
+    expect(d.entries.every((e) => e.habitId === H)).toBe(true);
+  });
+
+  it("the open track follows the choice on this phone and falls back to the first", () => {
+    load([]);
+    const id = actions.addTrack({ what: "Vaping", cls: "smoking", measure: "count", species: "fox", name: "" });
+    const second = getData().habits.find((h) => h.id === id)!.companionId;
+    expect(activeCompanion(getData())?.id).toBe(second);
+    actions.selectTrack(H);
+    expect(activeCompanion(getData())?.id).toBe(C);
+    actions.selectTrack("nope");
+    expect(getData().settings.activeHabit).toBe(H);
+    actions.setSettings({ activeHabit: "deleted-elsewhere" });
+    expect(activeCompanion(getData())?.id).toBe(C);
+  });
+
+  it("a slip on one track only ages that track's pet", () => {
+    load([]);
+    const id = actions.addTrack({ what: "Online shopping", cls: "impulse_buying", measure: "money", species: "rabbit", name: "Pip" });
+    const pet = getData().habits.find((h) => h.id === id)!.companionId;
+    actions.logSlip(id, { amount: 500 });
+    expect(viewCompanion(getData(), pet).age).toBeGreaterThan(0);
+    expect(viewCompanion(getData(), C).age).toBe(0);
+  });
+
+  it("which track is open stays on this phone and is never synced", () => {
+    load([]);
+    actions.selectTrack(H);
+    const [row] = toRemote("s", getData(), "u", 1);
+    expect((row.row.settings as Record<string, unknown>).activeHabit).toBeUndefined();
+  });
+});

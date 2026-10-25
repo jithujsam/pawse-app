@@ -122,6 +122,8 @@ export interface Settings {
   tone: Tone;
   /** What the companion calls the person. Optional; empty means no name is used. */
   userName: string;
+  /** The recovery track (habit id) open on this phone. Null or unknown means the first track. Device-only. */
+  activeHabit: string | null;
   reminder: string;
   currency: string;
   deathScene: boolean;

@@ -199,13 +199,15 @@ The companion fills roughly the top 55 percent of the screen. Everything else is
 |  This week: 9 slips, Rs 2,340  |
 |  Clean streak: 0 days          |
 +--------------------------------+
-| Home |Calendar| + |Insights|You|
+| Pets |Calendar| + |Insights|You|
 +--------------------------------+
 ```
 
-Tabs: **Home**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
+Tabs: **Pets**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
 
-Each number and action has one home. Home keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
+Each number and action has one home. The open recovery track (the screen sketched above, reached from Pets) keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
+
+**Pets and recovery tracks.** A recovery track is one habit with its own companion (5.1): its own entries, clean days, urges, age and history. The Pets tab is a two-column grid with one card per track (the pet, its name, the habit in the person's words, and its stage and today's check-in status) plus an "Add a recovery track" card; with no tracks it shows an empty state with the same action. Tapping a card opens that track's screen, with "All pets" to go back; Calendar, Insights and You show the open track. Which track is open is remembered per phone and never synced. Adding a track asks what to change, how it shows up and which pet, reusing the onboarding suggestions and safety checks. Still shared across tracks for now: the plan and reasons, voice, reminders, "not tracking today" days, reflections and the weekly AI summary. Reminders follow the track opened last.
 
 States the companion must express:
 
