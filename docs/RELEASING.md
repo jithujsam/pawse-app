@@ -2,7 +2,9 @@
 
 Every Pawse release ends with an update to the distribution repository, **`jithujsam/pawse-releases`**. The repo name is plural; some prompts say "pawse-release", but that repository doesn't exist. The app reads `https://raw.githubusercontent.com/jithujsam/pawse-releases/main/latest.json` (`apps/web/src/update.ts`). Whatever is on that repo's `main` is what phones are offered.
 
-> **Merging a change into `pawse-releases/main` *is* publishing.** Installed apps check `latest.json` on launch and offer the update immediately. Treat that merge as the production release step: it needs the owner's approval.
+> **Pushing to `pawse-releases/main` *is* publishing.** Installed apps check `latest.json` on launch and offer the update immediately.
+>
+> **Standing owner approval (2026-10-25):** the owner is currently the only user, and needs every new build on their phone to test it. So **every verified, signed release APK is published to `pawse-releases/main` straight away, as soon as it is compiled.** No PR and no separate approval step. The checks in "Non-negotiable rules" still apply and are what makes this safe. Revisit this when there are other users: go back to a reviewed PR and the owner's merge.
 
 ## How `pawse-releases` distributes builds (verified 2026-10-24)
 
@@ -29,7 +31,7 @@ Releases are plain files on `main`. The repo doesn't use GitHub Releases or tags
 3. **One build everywhere.** The APK filename, `latest.json` (`name`, `code`, `url`, `sha256`), the README link, the Versions row and the SHA-256 line all describe the same file. So does the version baked into that APK.
 4. **Never go backwards.** The new `code` must be greater than the published `code`, and the filename must not already exist. Never replace an existing APK file in place.
 5. **Keep history.** Older APKs and older Versions rows stay.
-6. **Approval, signing credentials and security review are blockers, not hurdles.** Signing needs the owner's keystore, which isn't in git, and publishing needs the owner's approval. An agent without both prepares everything up to the PR and reports the blocker; it never merges to `pawse-releases/main` itself.
+6. **Signing credentials are a blocker, not a hurdle.** Signing needs the owner's keystore, which isn't in git. An agent or run without it can't publish: it reports the blocker and never publishes a debug, unsigned or differently signed APK. Publishing itself needs no further approval while the standing approval above is in force.
 
 ## Procedure
 
@@ -80,7 +82,8 @@ Without the build tools, `keytool -printcert -jarfile app-release.apk` shows the
 
 *Checked on 2026-10-24 against the published 2.1.0:* the `unzip … | grep` version check, `keytool -printcert -jarfile`, `sha256sum` and the step 4 consistency script all gave the expected results (`OK 2.1.0 7`). `apksigner` and `aapt2` aren't installed where this was written; they're the standard Android build-tools commands for the build machine.
 
-### 4. Prepare the `pawse-releases` change (on a branch, as a PR)
+### 4. Prepare the `pawse-releases` change
+With the standing approval, commit it straight to `main` (skip the branch and PR). Without it, use a branch and PR as below.
 ```
 git clone https://github.com/jithujsam/pawse-releases && cd pawse-releases
 git checkout -b release/<new name>
@@ -107,10 +110,10 @@ sha256sum apk/Pawse-<new name>.apk       # must equal step 3's value
   print("OK", j["name"], j["code"])
   EOF
   ```
-- Commit with a message like `Pawse <new name>: APK, update manifest and notes (pawse-app <short sha>)`, then push the branch and open a PR. **Don't merge it**: merging publishes.
+- Commit with a message like `Pawse <new name>: APK, update manifest and notes (pawse-app <short sha>)`, then push. Straight to `main` publishes at once (standing approval); on a branch, open a PR and **don't merge it**: merging publishes.
 
-### 5. Publish (the owner)
-The owner reviews the PR (APK provenance, the step 3 output, the notes) and merges it. That's the moment phones get offered the update.
+### 5. Publish
+Under the standing approval, the push to `main` in step 4 is the publish. Go to step 6. Otherwise the owner reviews the PR (APK provenance, the step 3 output, the notes) and merges it. That's the moment phones get offered the update.
 
 ### 6. Verify the published release
 ```
@@ -123,6 +126,6 @@ Raw GitHub can cache for a few minutes, so retry before worrying. Then, on a pho
 Android won't install a lower version code over a higher one, so there's no rollback for phones that already updated. To stop offering a bad build, revert `latest.json` to the previous entry in a PR. Ship the fix as a new, higher version. Never overwrite the bad APK file; leave it, and note it in the Versions table.
 
 ## Agents and future sessions
-- Every release task must end with step 1–4 for `pawse-releases`, and step 6 after the owner merges. This is also stated in `CLAUDE.md`.
+- Every release task must end with steps 1–4 for `pawse-releases`, which publishes under the standing approval, and then step 6. This is also stated in `CLAUDE.md`.
 - If there's no verified, signed release candidate, don't touch `apk/` or `latest.json`. Report "unreleased" and the blocking item.
 - If GitHub permissions block a push or PR to `pawse-releases`, report the exact error and leave the prepared files and commands in the report.
