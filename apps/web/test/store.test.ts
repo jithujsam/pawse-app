@@ -117,9 +117,9 @@ describe("slip, clean and nothing logged are three different days", () => {
   });
 });
 
-describe("pet life rules: continuity by default, classic opt-in (PRD §19.1)", () => {
+describe("pet rules: continuity by default, classic opt-in", () => {
   const heavy = () => Array.from({ length: 60 }, (_, i) => entry(`h${i}`, addDays(t0, -59 + i), 24));
-  it("by default (continuity) the heaviest history leaves the companion frail at 99, alive, and it can heal", () => {
+  it("continuity is the default: the heaviest history leaves the companion frail at 99, alive, and healing", () => {
     expect(blank().settings.petLife).toBe("continuity");
     load(heavy());
     const d = actions.logSlip(H, {}, t0);
@@ -130,14 +130,22 @@ describe("pet life rules: continuity by default, classic opt-in (PRD §19.1)", (
     expect(getData().companions[0].diedOn).toBeNull();
   });
 
-  it("classic rules (opt-in) keep the PRD death rule", () => {
+  it("classic rules (opt-in) keep the PRD behaviour: a companion can die", () => {
     load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
     actions.setSettings({ petLife: "classic" });
     actions.logSlip(H, {}, t0);
     expect(getData().companions[0].diedOn).not.toBeNull();
   });
 
-  it("never rewrites history: a companion that already died stays in the Hall under either rule", () => {
+  it("classic can't be switched on while it would mean the companion had already died", async () => {
+    const { canAllowPassingAway } = await import("../src/store");
+    load(heavy());
+    expect(canAllowPassingAway(getData())).toBe(false);
+    load([entry("one", t0, 4)]);
+    expect(canAllowPassingAway(getData())).toBe(true);
+  });
+
+  it("never rewrites history: a companion that already died stays in the Hall", () => {
     load(heavy());
     actions.applyRemote({ ...getData(), companions: [{ ...getData().companions[0], diedOn: addDays(t0, -10), finalAge: 100 }] });
     const v = viewCompanion(getData(), C);
@@ -145,7 +153,7 @@ describe("pet life rules: continuity by default, classic opt-in (PRD §19.1)", (
     expect(v.age).toBe(100);
   });
 
-  it("the rule survives storage and travels with the account", async () => {
+  it("the setting survives storage and travels with the account", async () => {
     const { normalize } = await import("../src/persist");
     const { portableSettings } = await import("../src/syncmap");
     const s = { ...blank(), settings: { ...blank().settings, petLife: "classic" as const, onboarded: true } };
@@ -153,3 +161,4 @@ describe("pet life rules: continuity by default, classic opt-in (PRD §19.1)", (
     expect(portableSettings(s.settings)).toMatchObject({ petLife: "classic" });
   });
 });
+

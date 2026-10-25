@@ -55,7 +55,7 @@ Date: 2026-10-24 · App branch: `ccr-9d7d359f-c2d6k6` (from `main` at `12a1d83`)
 | `pawse-app` | `ccr-9d7d359f-c2d6k6` | `4c157d3` data layer · `9076fe5` UX · `c762439` notifications · `a1c3de2` docs | [#14](https://github.com/jithujsam/pawse-app/pull/14) (draft) |
 | `pawse-releases` | `ccr-9d7d359f-c2d6k6` | `af27e09` release status + checklist only | [#1](https://github.com/jithujsam/pawse-releases/pull/1) (draft) |
 
-**Overlap with open PR #13** (`claude/pawse-audit-6h0t1a`, unmerged): a trial merge conflicts in 10 files (`copy.ts`, `notify.ts`, `persist.ts`, `Home.tsx`, `LogSheet.tsx`, `Me.tsx`, `store.ts`, `sync.ts`, `engine/life.ts`, engine tests). There's one product conflict: #13 keeps death as the default with a no-death opt-in, and 3.0 makes no-death the default. I did not merge #13 into this branch, because that would decide an unreviewed PR's fate. Suggested order: decide the death default, merge #13, then merge `main` into this branch and resolve the conflicts. Each side has tests, so a wrong resolution shows up.
+**PR #13 is now merged into this work** (follow-up branch `ccr-9d7d359f-c2d6k6`, restarted from `main` after #14 was merged). Decision taken: **continuity (no death) is the default**; classic rules are opt-in. The two no-death settings became one (`petLife`; #13's unreleased `petsCanDie` is gone), using #13's damage ceiling, its guard against switching classic on when that would mean death, and its rule that companions that already died stay in the Hall. #13's notification planner (max two a day) is kept, with 3.0's two neutral quiet-day notes and no post-slip note. #13's copy lines were swept for "clean". After the merge, 166/166 tests pass and the browser flows were re-run with no page errors. See the merge PR for details.
 
 ## 6. Supabase
 
@@ -67,8 +67,8 @@ No APK was built, signed, checksummed or published. `latest.json` and the 2.1.0 
 
 ## 8. Blockers and owner actions, in order
 
-1. **Decide the default pet rules** (continuity vs death) and review PR #13 and this PR together (section 5).
-2. Review and merge in the order above. CI doesn't exist, so run `pnpm test`, `pnpm typecheck` and `pnpm build` locally after the merge.
+1. ~~Decide the default pet rules~~ (decided: continuity). Review and merge the follow-up PR, which includes #13; then close #13 as superseded.
+2. After merging, CI doesn't exist, so run `pnpm test`, `pnpm typecheck` and `pnpm build` locally after the merge.
 3. Apply migration 0005 (after 0004) to production, then deploy the `ai` function. Earlier owner steps still stand: rotate the OpenRouter key that was found in the live function source, apply 0004, and turn on leaked-password protection.
 4. Build the release APK on a machine with the signing key and working Maven access (bump `apps/web/version.json` first), then run device tests: notifications per day, widget with PIN, urge flow, onboarding on a small screen.
 5. Follow `pawse-releases/RELEASE_STATUS.md` to publish, and only update `latest.json` with the real file's SHA-256.

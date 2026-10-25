@@ -142,20 +142,6 @@ The only CI on the repo is the Vercel integration. Its "Vercel Preview Comments"
 | Local Postgres 16: stub + 0001–0004 (0004 applied twice), `rls.sql`, `privacy.sql`, and the post-0004 checks in step 4 below | All as expected; privacy 11/11 PASS |
 | Not run | Live e2e (production), Android build, device tests, Deno type-check of the function (no Deno; `cache.ts` is plain Web Crypto and exercised by the tests) |
 
-## Round 4: brought up to date with `main` after PR #14 (2026-10-24)
-
-PR #14 (PAWSE 3.0 recovery redesign) merged into `main` after PR #13 was opened. It changed the same areas, so `main` was merged into this branch and the 11 conflicting files were resolved by hand:
-
-| Area | Resolution |
-|---|---|
-| Pet death and scars | **PR #14's design wins.** It's a PRD amendment (§19.1): continuity by default (no death, no scars), with the PRD rules available as opt-in "classic". This round's opt-in `petsCanDie` setting and its engine ceiling were removed, along with their tests and tuning entry; PR #14's engine, tests, tuning entry and settings UI were taken as they are. PR #14 already blocks switching to classic rules when that would retroactively end the pet's life, so the equivalent guard from this branch was dropped. |
-| Notifications | This branch's two-a-day planner stays, with PR #14's rules built into it: two neutral notes only (after 2 and 7 days without a record, PR #14's wording) and no notification after a slip, ever. The planner no longer has a post-slip kind at all. |
-| Copy and tones | PR #14's tone-aware dying banner and "goal met / good day" wording win. This branch's toned lines (welcome back, absorbed, binge, quiet-day banner) now use that wording. The binge "permanent scar" line only appears under classic rules, the only rules with scars. |
-| Sync | Both kept: PR #14's fallback for urges before 0005, and this branch's stale-cycle guard, first-sync adoption and slip-beats-clean rule. |
-| Store, `Me`, `Home`, `LogSheet`, `persist` | Both sides' additions kept; `petsCanDie` removed. |
-
-Checks after the merge (all run): `pnpm lint` and `pnpm typecheck` clean; `pnpm test` **163/163** (engine 26, schema 10, web 127); `pnpm build` OK; `pnpm simulate` unchanged. On local Postgres 16, migrations 0001–0005 apply and 0004/0005 re-run cleanly; `rls.sql` gives the expected results; `privacy.sql` 11/11 PASS; `recovery.sql` 5/5 PASS. PR #14's AI function changes (a global daily cap and the "good day" wording rule) merged cleanly, with no key in source.
-
 ## Security and privacy status
 
 - **Fixed in the repo:**
@@ -191,12 +177,11 @@ The merged function has no key in its source; it reads only this secret. Keep th
 2. Check: Dashboard → Edge Functions → `ai` → its source must contain no `sk-or-` string, and "Verify JWT" must be on.
 3. Smoke test: on a signed-in phone, log a slip. Within a few seconds the slip card's line should gain the ✦ AI mark. If it doesn't, check Edge Functions → `ai` → Logs for `upstream 401` (key problem) or `not_configured` (secret missing).
 
-### 4. Apply migrations 0004 and 0005 (after step 3, never before)
+### 4. Apply migration 0004 (after step 3, never before)
 Order: if 0004 runs while the old function is still deployed, that function keeps writing shared, ownerless cache rows until it's replaced.
 
-**Do not run `supabase db push`.** The live migration history records only 0001 (under a different version name), and 0002 creates its tables without `if not exists`. So `db push` would try to re-run 0001–0005 and fail partway.
+**Do not run `supabase db push`.** The live migration history records only 0001 (under a different version name), and 0002 creates its tables without `if not exists`. So `db push` would try to re-run 0001–0004 and fail partway.
 1. Dashboard → SQL Editor → New query → paste the entire contents of `supabase/migrations/0004_privacy_hardening.sql` → Run. It's additive and safe to run twice. Its only data change deletes ownerless (formerly shared) AI cache rows, which are just cached AI text. No user data is touched.
-1b. Then, in a new query, paste and run `supabase/migrations/0005_recovery.sql` (from PR #14). It adds an urge's coping strategy and trigger columns, is additive, and is safe to run twice. Apps sync urges without those columns until it's applied. Check: `select column_name from information_schema.columns where table_schema = 'public' and table_name = 'urges' and column_name in ('strategy', 'trigger');` should return two rows.
 2. Verify in the SQL Editor:
    ```sql
    select column_name from information_schema.columns
@@ -318,3 +303,13 @@ Brief: `.claude/commands/pawse-full-run-v3.md` → `pawse-3.0-evidence-informed-
 | Local Postgres 16: migrations 0001–0005, `rls.sql`, `privacy.sql`, `recovery.sql` | All expected results; 0005 idempotent |
 | Playwright, local dev server with a fake session and an unreachable backend (CSP blocked it; nothing reached the live project) | Onboarding with plan, Home, urge flow, slip + reflection, Insights, Journey, Plan, dark mode: no page errors |
 | Not run | Android build (blocked), device tests, `e2e-live.cjs` (touches the live project), Deno check of the edge function |
+
+## Follow-up: PR #13 merged into 3.0 (2026-10-24)
+
+#14 was merged to `main`, so the branch restarted from `main` and #13 (`claude/pawse-audit-6h0t1a`) was merged into it. Owner instruction: "do what makes the most sense".
+
+- **Pet rules:** one setting, `petLife`, default `continuity`. #13's `petsCanDie` (unreleased) was folded into it. Engine: one options type (`SimOptions`; `SimulateOptions` kept as an alias) with #13's rule that damage past the ceiling counts toward nothing, plus 3.0's `scars: false`. Companions that already died stay dead (#13). Classic can only be switched on while it wouldn't mean death (`canAllowPassingAway`). One switch in Me → Your companion; the farewell-scene option shows under classic.
+- **Notifications:** #13's two-a-day planner kept; its four quiet-day notes replaced by 3.0's two neutral ones; the post-slip "strike" note removed (a slip still clears that day's thank-you). Test updated to pin this.
+- **Copy:** #13's new tone lines kept and swept for "clean". 3.0's dying banner kept. The binge line shows only under classic.
+- **Sync:** both the 0005 urge-column fallback and #13's stale-cycle guard.
+- **Checks:** `pnpm test` 166/166 (schema 10, engine 29, web 127); typecheck, build and simulate clean; Playwright onboarding and recovery flows, no page errors. Migrations unchanged since the earlier local run.

@@ -12,7 +12,7 @@ import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
 import { rise, spring, stagger } from "../motion";
-import { actions, bestStreak, cleanStreak, useActiveView, useData, vault, viewCompanion } from "../store";
+import { actions, bestStreak, canAllowPassingAway, cleanStreak, useActiveView, useData, vault } from "../store";
 import { careDays } from "../recovery";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
@@ -128,7 +128,7 @@ function PetPage() {
   const best = Math.max(bestStreak(data, habit.id), cleanStreak(data, habit.id));
   const care = careDays(data, habit.id);
   // Classic rules can only be switched on if the history wouldn't already mean death under them.
-  const classicDead = settings.petLife !== "classic" && viewCompanion({ ...data, settings: { ...settings, petLife: "classic" } }, companion.id).states.some((s) => s.stage === "dead");
+  const classicDead = settings.petLife !== "classic" && !canAllowPassingAway(data);
   const save = () => {
     const n = name.trim();
     if (!n || n === companion.name) { setName(companion.name); return; }
@@ -193,7 +193,8 @@ function PetPage() {
         ? "Classic rules are on: some damage is permanent, and at 100 a companion dies and you adopt a new one."
         : `${companion.name} can get very frail but never dies, and every month can heal back with enough good days.`}</p>
       <Switch checked={settings.petLife === "classic"} onChange={(v) => { if (v && classicDead) return; actions.setSettings({ petLife: v ? "classic" : "continuity" }); }}
-        label="Classic rules" hint={classicDead ? `Not available: under classic rules ${companion.name}'s history would already have ended.` : "Permanent scars and death at 100. Off by default."} />
+        label="Classic rules" hint={classicDead ? `Not available: under classic rules ${companion.name}'s history would already have ended. Some good days first, then try again.` : "Permanent scars and death at 100. Off by default."} />
+      {settings.petLife === "classic" && <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />}
     </section>
     <section className="card stack">
       <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint={settings.remindersOn ? "A thank-you after good days, and a note when it won't eat" : "Needs reminders to be on"} />
@@ -383,12 +384,12 @@ function AppearancePage() {
 }
 
 function FeelPage() {
-  const { settings } = useData();
+  const data = useData();
+  const { settings } = data;
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
       <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
-      <Switch checked={settings.deathScene} onChange={(v) => actions.setSettings({ deathScene: v })} label="Show the farewell scene" hint="Turn off to see only the memorial text" />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), 12-hour time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>

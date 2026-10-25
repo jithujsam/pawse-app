@@ -104,7 +104,8 @@ export function Home({ onNavigate }: { onNavigate: (t: "insights") => void }) {
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
     setNote(d.binge && data.settings.petLife === "classic" ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
-    // No "won't eat" notification after a slip: a guilt nudge from the pet hours later doesn't help anyone.
+    // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
+    void scheduleCare("slip", careOpts());
   }
   const react = (r: Reaction) => setNote(say(r, personality, tone));
 

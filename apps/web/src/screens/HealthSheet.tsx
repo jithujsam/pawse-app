@@ -86,7 +86,7 @@ function Body({ initial }: { initial: HealthTab }) {
 
           {tab === "stats" && (
             <div className="stats stats-3">
-              {([["Days together", st.together], ["Clean days", st.cleanDays], ["Best streak", st.best], ["Slips logged", st.slips], ["Life lost", `${st.lost} mo`], ["Life healed", `${st.healed} mo`],
+              {([["Days together", st.together], ["Good days", st.cleanDays], ["Best streak", st.best], ["Slips logged", st.slips], ["Life lost", `${st.lost} mo`], ["Life healed", `${st.healed} mo`],
                 ["Urges ridden out", st.urges], ["Reflections", st.reflections], ["Check-in rate", `${st.checkInRate}%`]] as [string, string | number][]).map(([k, v]) => (
                 <div className="stat item" key={k}><span className="muted small">{k}</span><b className="v sm">{v}</b></div>
               ))}

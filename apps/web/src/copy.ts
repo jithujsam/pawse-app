@@ -56,10 +56,10 @@ export function dyingBanner(tone: Tone, name: string, age: number): string {
   return `${name} is very frail at ${Math.round(age)} of 100. Days with your goal met help them recover.`;
 }
 
-/** Home, after a few days with nothing recorded. Unrecorded days cost nothing; the line never scolds. */
+/** Home, after a few days with nothing logged. Quiet days cost nothing; the line never scolds. */
 export function welcomeBackLine(tone: Tone, name: string): string {
   if (tone === "gentle") return `Hello again. ${name} is just happy to see you. No catching up needed.`;
-  if (tone === "brutal") return `You're back. ${name} is ready. Record today and carry on.`;
+  if (tone === "brutal") return `You're back. ${name} is ready. Check in for today and carry on.`;
   return `There you are! ${name} is glad you're back. No catching up needed: just today.`;
 }
 
@@ -68,7 +68,7 @@ export function absorbedLine(tone: Tone, name: string, streak: number, absorbed:
   const m = Math.round(absorbed * 10) / 10;
   if (all) {
     if (tone === "gentle") return `${streak} good days kept ${name} strong, so this one barely landed. The cushion is a little thinner now.`;
-    if (tone === "brutal") return `${streak} good days absorbed this one. That cushion is thinner now.`;
+    if (tone === "brutal") return `${streak} good days absorbed this one. That cushion is thinner now; don't spend it all.`;
     return `${streak} good days made ${name} strong. This one was absorbed, but the cushion is thinner now.`;
   }
   if (tone === "gentle") return `${name}'s good days softened this: ${m} months of it never landed.`;
@@ -76,18 +76,18 @@ export function absorbedLine(tone: Tone, name: string, streak: number, absorbed:
   return `${name}'s strength from good days took ${m} months of it.`;
 }
 
-/** The slip card on a day with three or more slips. Only shown under classic rules, the only rules with scars. */
+/** The slip card on a day with three or more slips. */
 export function bingeLine(tone: Tone, name: string): string {
   if (tone === "gentle") return `A heavy day. Part of it will stay with ${name} as a scar, but every good day from here still helps.`;
   if (tone === "brutal") return `Three or more slips today. Part of this is now permanent: ${name}'s life expectancy went down.`;
   return `Binge day. Part of today is now a permanent scar: ${name}'s life expectancy went down.`;
 }
 
-/** Health sheet, after two or more days with nothing recorded. */
+/** Health sheet, after two or more quiet days. */
 export function quietBanner(tone: Tone, name: string): string {
-  if (tone === "gentle") return `${name} recovers on days with your goal met. Days you don't record change nothing, so pick up whenever you're ready.`;
-  if (tone === "brutal") return `${name} only recovers on days with your goal met. Unrecorded days change nothing, good or bad.`;
-  return `${name} recovers on days with your goal met. Days you don't record change nothing, so you can pick up again any time.`;
+  if (tone === "gentle") return `${name} heals on the days you check in. Quiet days don't cost anything, so pick up whenever you're ready.`;
+  if (tone === "brutal") return `${name} only heals on days you check in. Quiet days cost nothing, but they don't heal either.`;
+  return `${name} heals only on days you check in. Quiet days don't cost anything, so you can pick up again any time.`;
 }
 
 export function verdict(tone: Tone, slips: number, prev: number): string {

@@ -126,7 +126,7 @@ export function Report() {
           <div className="stat"><div className="muted small">Goal-met days</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
           {money
             ? <div className="stat"><div className="muted small">Spent</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
-            : <div className="stat"><div className="muted small">Clean streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">right now</span></div>}
+            : <div className="stat"><div className="muted small">Good-day streak</div><div className="v"><AnimatedNumber value={cleanStreak(data, habit.id)} from={0} /> <small>days</small></div><span className="delta flat">right now</span></div>}
         </div>
       </motion.section>
 

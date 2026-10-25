@@ -13,8 +13,8 @@ export const remindersSupported = native;
  * Everything Pawse sends is planned here, in one place, as one-shot notifications for the next two weeks:
  * at most MAX_PER_DAY on any local calendar day. Each re-plan cancels the previous plan first and runs one at a
  * time, so retries and rescheduling can never stack extra notifications. When more than two want the same day,
- * the most useful win: the check-in reminder (or, after days without a record, the neutral note that replaces it),
- * then a thank-you for a good day, then the risky-hour heads-up, then the good-morning. A slip sends nothing.
+ * the most useful win: the check-in reminder (or, after quiet days, the neutral quiet-day note that replaces
+ * it), then a note about something that happened today, then the risky-hour heads-up, then the good-morning.
  */
 export const MAX_PER_DAY = 2;
 const HORIZON_DAYS = 14;
@@ -23,8 +23,8 @@ const MANAGED_IDS = Array.from({ length: 100 }, (_, i) => FIRST_ID + i);
 /** Ids older versions used for repeating schedules (daily, care, risky hour, lapse). Cancelled so they can't add to the count. */
 const LEGACY_IDS = [1001, 2001, 2002, 2003, 2004, 2010, 2011, 2012, 2013];
 
-export type NoteKind = "daily" | "lapse" | "thanks" | "risk" | "morning";
-const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, risk: 2, morning: 3 };
+export type NoteKind = "daily" | "lapse" | "thanks" | "strike" | "risk" | "morning";
+const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, strike: 1, risk: 2, morning: 3 };
 
 export interface PlanInput {
   now: Date;
@@ -41,9 +41,9 @@ export interface PlanInput {
   lastCheckIn: string | null;
   /** The usual slip hour, when the risky-hour heads-up is on and a pattern exists. */
   riskHour: number | null;
-  /** Notes in the companion's voice after a clean day or a slip. */
+  /** Notes in the companion's voice after a good day or a slip. */
   careNotes: boolean;
-  /** The last clean-day or slip event, which care notes respond to. */
+  /** The last good-day or slip event, which care notes respond to. */
   care: { kind: "clean" | "slip"; at: number } | null;
 }
 export interface Planned { id: number; kind: NoteKind; at: Date; title: string; body: string; extra: { open: string } }
@@ -51,14 +51,12 @@ export interface Planned { id: number; kind: NoteKind; at: Date; title: string; 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const atTime = (base: Date, dayOffset: number, hour: number, minute: number) => { const d = new Date(base); d.setDate(d.getDate() + dayOffset); d.setHours(hour, minute, 0, 0); return d; };
 
-/**
- * When check-ins stop: two neutral notes, after 2 and 7 days without a record. They never imply the pet suffers
- * from silence (an unrecorded day is missing data) and never shame (PRD §19.8).
- */
+/** If check-ins stop: two neutral notes, never implying the pet suffers from silence. A quiet day is missing data. */
 function lapseNotes(tone: Tone, n: string): [number, string, string][] {
+  const g = tone === "gentle", b = tone === "brutal";
   return [
-    [2, "A quick check-in?", tone === "gentle" ? "Whenever you're ready. How have the last couple of days gone?" : tone === "brutal" ? "Two days unrecorded. How did they go?" : "How have the last couple of days gone? It takes ten seconds."],
-    [7, `${n} is here when you're ready`, tone === "brutal" ? "Unrecorded days don't count against you. Pick it up today." : "Days you don't record don't count against you. Pick up whenever it suits you."],
+    [2, "A quick check-in?", g ? "Whenever you're ready. How have the last couple of days gone?" : b ? "Two days unrecorded. How did they go?" : "How have the last couple of days gone? It takes ten seconds."],
+    [7, `${n} is here when you're ready`, b ? "Unrecorded days don't count against you. Pick it up today." : "Days you don't record don't count against you. Pick up whenever it suits you."],
   ];
 }
 
@@ -95,7 +93,8 @@ export function planNotifications(p: PlanInput): Planned[] {
       add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name));
       add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name));
     }
-    // A slip gets no notification: a guilt nudge from the pet hours later doesn't help anyone (PRD §19.8).
+    // After a slip nothing is scheduled: a "won't eat" note from the pet hours later is a guilt nudge, not help.
+    // Recording the slip still clears any thank-you planned for that day.
   }
 
   const byDay = new Map<string, Omit<Planned, "id">[]>();
@@ -169,7 +168,7 @@ export function onReminderTap(fn: () => void): () => void {
   return () => { void h.then((x) => x.remove()); };
 }
 
-/** Records a clean day or a slip so the care notes can answer it, then re-plans. */
+/** Records a good day or a slip so the care notes can answer it, then re-plans. */
 export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; personality?: Personality; name: string; enabled: boolean }) {
   try { localStorage.setItem(CARE_KEY, JSON.stringify({ kind, at: Date.now() })); } catch { /* ignore */ }
   await updateNotifications({ tone: o.tone, personality: o.personality, name: o.name, careNotes: o.enabled });

@@ -36,22 +36,15 @@ describe("notification plan: at most two a day", async () => {
     expect(perDay(plan).get(at(1, 0).toDateString())).toEqual(["daily", "risk"]);
   });
 
-  it("a slip sends no notification at all, now or later (PRD §19.8)", () => {
+  it("after a slip: no guilt note from the pet, and any thank-you planned for that day is gone", () => {
     const plan = planNotifications({ ...base, now: at(0, 21), checkedToday: true, care: { kind: "slip", at: at(0, 21).getTime() } });
-    const without = planNotifications({ ...base, now: at(0, 21), checkedToday: true, care: null });
-    expect(plan).toEqual(without);
+    expect(plan.some((n) => n.kind === "strike" || n.kind === "thanks")).toBe(false);
+    expect(perDay(plan).get(at(1, 0).toDateString())).toEqual(["daily", "risk"]);
   });
 
-  it("days without a record get two neutral notes only, at 2 and 7 days, that never say the pet suffers", () => {
-    const plan = planNotifications({ ...base, lastCheckIn: "2026-10-14", riskHour: null, reminder: "nope" });
-    const lapse = plan.filter((n) => n.kind === "lapse");
-    expect(lapse.map((n) => n.at.getDate())).toEqual([21]); // the 2-day note (16th) is already past; the 7-day note is on the 21st
-    for (const n of lapse) expect(`${n.title} ${n.body}`).not.toMatch(/lonely|miss|fading|aging|ageing|hurt/i);
-  });
-
-  it("on a quiet day the 'we miss you' note replaces that day's reminder, never adds to it", () => {
+  it("on a quiet day the neutral check-in note replaces that day's reminder, never adds to it", () => {
     const plan = planNotifications({ ...base, lastCheckIn: "2026-10-18", riskHour: null });
-    const day = perDay(plan).get(at(0, 0).toDateString())!; // 2 unrecorded days since the 18th
+    const day = perDay(plan).get(at(0, 0).toDateString())!; // 2 quiet days since the 18th
     expect(day).toEqual(["lapse"]);
     expect(plan.filter((n) => n.kind === "daily" && n.at.toDateString() === at(0, 0).toDateString())).toHaveLength(0);
   });
