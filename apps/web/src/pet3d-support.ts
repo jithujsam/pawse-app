@@ -4,8 +4,11 @@ import type { Species } from "./types";
 export type Species3D = "dog" | "cat" | "fox";
 export const MODEL: Record<Species3D, string> = { dog: "models/dog.glb", cat: "models/cat.glb", fox: "models/fox.glb" };
 
-/** Species shown in 3D. The free cat model is blocky voxel art that clashes with the others, so cats stay 2D. */
-const ENABLED: Species3D[] = ["dog", "fox"];
+/**
+ * Species that can be shown in 3D. Only the dog has the face rig (eyelids, brows, tongue) that gives the 3D pet
+ * its emotions. The free cat model is blocky voxel art that clashes with the others, and the fox has no eye parts to rig.
+ */
+const ENABLED: Species3D[] = ["dog"];
 export const has3D = (s: Species): s is Species3D => (ENABLED as Species[]).includes(s);
 
 let webgl: boolean | null = null;

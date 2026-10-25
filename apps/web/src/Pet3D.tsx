@@ -13,8 +13,9 @@ import type { Gesture, Mood } from "./Companion";
  * plus a little procedural posing on top (head droop with age, bigger head for babies, looking at
  * your finger). Rendering stops when the pet is off screen or the app is hidden.
  *
- * Limitations, honestly: these models have no facial rig (no blend shapes), so expressions come
- * from body animation and posture, not from the face. Accessories are not shown in 3D.
+ * The models have no facial rig, so the dog gets a small one built here: eyelids, brows, tears and a
+ * tongue parented to the head bone, plus ear and tail posing and floating hearts, z's and drops.
+ * Accessories are not shown in 3D.
  */
 import { markPet3d, MODEL, type Species3D } from "./pet3d-support";
 export type { Species3D };
@@ -65,13 +66,110 @@ function clipFor(mood: Mood, gesture: Gesture): Clip {
   return restingClip(mood);
 }
 
+
+/** What the face and body should be doing for a mood and gesture. All values ease toward these. */
+interface Expr { wide: number; lid: number; brow: number; lift: number; tongue: number; tears: number; ears: number; tail: number; bob: number; tilt: number }
+function expressionFor(mood: Mood, gesture: Gesture, stage: Stage): Expr {
+  const e: Expr = { wide: 1, lid: 0, brow: 0, lift: 0, tongue: 0, tears: 0, ears: 0, tail: 0, bob: 0, tilt: 0 };
+  const tired = stage === "old" || stage === "frail" || stage === "dead";
+  if (tired) { e.wide = 0.92; e.lid = 0.38; e.ears = -0.6; e.brow = 0.5; }
+  switch (mood) {
+    case "happy": e.wide = 1.06; e.lift = 0.5; e.tongue = 0.55; e.tail = 1; e.bob = 1; e.ears = 0.3; break;
+    case "waiting": e.wide = 1.18; e.lift = 0.8; e.brow = 0.55; e.tilt = 1; e.tail = 0.35; e.ears = 0.6; break;
+    case "hurt": e.wide = 1.15; e.lid = 0.3; e.brow = 1; e.tears = 1; e.ears = -1; break;
+    case "sad": e.lid = 0.42; e.brow = 1; e.tears = 0.6; e.ears = -1; break;
+    case "sick": e.lid = 0.5; e.brow = 0.8; e.ears = -0.9; e.tears = stage === "frail" ? 0.4 : 0; break;
+    case "dying": e.lid = 1; e.ears = -1; break;
+    default: break;
+  }
+  if (mood !== "dying") {
+    if (gesture === "petted" || gesture === "treat") { e.lid = 0.82; e.brow = 0; e.lift = 0.3; e.tongue = 0.8; e.tail = 1.6; e.ears = -0.3; e.tears = 0; }
+    else if (gesture === "giggle" || gesture === "hop") { e.lid = 0.7; e.brow = 0; e.lift = 0.6; e.tongue = 1; e.tail = 1.6; e.bob = 1.6; e.tears = 0; }
+    else if (gesture === "yawn" || gesture === "nap") { e.lid = 1; e.tongue = gesture === "yawn" ? 1 : 0; }
+    else if (gesture === "dizzy") { e.lid = 0.5; e.brow = 0.6; }
+  }
+  return e;
+}
+
+interface Face { balls: THREE.Mesh[]; glints: THREE.Mesh[]; lids: THREE.Mesh[]; brows: THREE.Mesh[]; tears: THREE.Mesh[]; tongue: THREE.Mesh; eyeR: number; eyes: THREE.Vector3[] }
+
+/**
+ * Builds the face from the eye geometry itself, so it lands where this model's eyes are. Everything is parented to
+ * the head bone through a group that cancels the rig's own rotation and scale, which lets us work in plain model
+ * space (x right, y up, z forward). Returns null for a model with no separate eye parts.
+ */
+function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
+  scene.updateMatrixWorld(true);
+  const v = new THREE.Vector3();
+  const white: THREE.Vector3[] = [];
+  const nose: THREE.Vector3[] = [];
+  scene.traverse((o) => {
+    const sm = o as THREE.SkinnedMesh;
+    if (!sm.isSkinnedMesh) return;
+    const name = (sm.material as THREE.Material).name;
+    if (name !== "Eyes_White" && name !== "Black") return;
+    sm.skeleton.update();
+    const n = sm.geometry.attributes.position.count;
+    for (let i = 0; i < n; i++) { sm.getVertexPosition(i, v); v.applyMatrix4(sm.matrixWorld); (name === "Black" ? nose : white).push(v.clone()); }
+  });
+  if (white.length < 6) return null;
+  const mid = white.reduce((a, p) => a + p.x, 0) / white.length;
+  const eyes = [white.filter((p) => p.x > mid), white.filter((p) => p.x <= mid)].map((ps) => {
+    const c = ps.reduce((a, p) => a.add(p), new THREE.Vector3()).divideScalar(ps.length);
+    return { c, r: Math.max(...ps.map((p) => p.distanceTo(c))) };
+  });
+  // The eye parts reach well into the skull; the part that shows is about half that.
+  const eyeR = ((eyes[0].r + eyes[1].r) / 2) * 0.5;
+
+  const face = new THREE.Group();
+  face.matrixAutoUpdate = false;
+  face.matrix.copy(head.matrixWorld).invert();
+  head.add(face);
+
+  const skin = new THREE.MeshStandardMaterial({ name: "Main", color: "#c8803f" });
+  const ink = new THREE.MeshStandardMaterial({ color: "#26170d", roughness: 0.7 });
+  // A rounder, glossier eyeball over the model's tiny one, so the eyes can open wide or droop.
+  const out = (c: THREE.Vector3) => new THREE.Vector3(Math.sign(c.x - mid) * eyeR * 0.12, 0, eyeR * 0.25);
+  const balls = eyes.map(({ c }) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 1.05, 18, 14), new THREE.MeshStandardMaterial({ color: "#1b1009", roughness: 0.25, metalness: 0.1 }));
+    m.position.copy(c).add(out(c)); face.add(m); return m;
+  });
+  const glintMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+  const glints = eyes.map(({ c }) => {
+    const g = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.3, 10, 8), glintMat);
+    g.position.copy(c).add(out(c)).add(new THREE.Vector3(eyeR * 0.3, eyeR * 0.38, eyeR * 0.82)); face.add(g); return g;
+  });
+  const lids = eyes.map(({ c }) => {
+    const lid = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 1.17, 20, 14, 0, Math.PI * 2, 0, (110 * Math.PI) / 180), skin);
+    lid.position.copy(c).add(out(c)); face.add(lid); return lid;
+  });
+  const brows = eyes.map(({ c }, i) => {
+    const b = new THREE.Mesh(new THREE.CapsuleGeometry(eyeR * 0.26, eyeR * 1.6, 3, 8), ink);
+    b.userData.home = c.clone().add(new THREE.Vector3(0, eyeR * 1.75, eyeR * 0.55)); b.userData.side = i === 0 ? 1 : -1;
+    b.position.copy(b.userData.home as THREE.Vector3); face.add(b); return b;
+  });
+  const tears = eyes.map(({ c }) => {
+    const t = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.3, 10, 8), new THREE.MeshStandardMaterial({ color: "#9fd4ff", transparent: true, opacity: 0, roughness: 0.2 }));
+    t.userData.home = c.clone().add(new THREE.Vector3(0, -eyeR * 0.9, eyeR * 0.9)); t.position.copy(t.userData.home as THREE.Vector3); face.add(t); return t;
+  });
+  // The nose is the part of the "Black" material furthest forward; the tongue hangs just below it.
+  const tip = nose.reduce((a, p) => (p.z > a.z ? p : a), nose[0] ?? new THREE.Vector3());
+  const tongue = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.8, 12, 8), new THREE.MeshStandardMaterial({ color: "#ee7f8c", roughness: 0.6 }));
+  tongue.userData.home = tip.clone().add(new THREE.Vector3(0, -eyeR * 2.6, -eyeR * 1.1));
+  tongue.position.copy(tongue.userData.home as THREE.Vector3); tongue.scale.set(1, 0, 1); face.add(tongue);
+  return { balls, glints, lids, brows, tears, tongue, eyeR, eyes: eyes.map((e) => e.c) };
+}
+
 interface Props { species: Species3D; coat?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean }
 
 function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
   const gltf = useLoader(GLTFLoader, MODEL[species], (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
   useEffect(() => markPet3d("ok"), []);
-  const { scene, mixer, actions, head, neck } = useMemo(() => {
+  const { scene, mixer, actions, head, neck, face, ears, tail } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene) as THREE.Group;
+    const found: Record<string, THREE.Object3D> = {};
+    scene.traverse((o) => { if (["Head", "Ear1.L", "Ear1.R", "Tail1", "Tail2"].includes(o.name)) found[o.name] = o; });
+    const face = found.Head ? buildFace(scene, found.Head) : null;
     // Fit to a 1-unit tall box standing on the floor, centred. Bounds come from the posed skeleton.
     scene.updateMatrixWorld(true);
     scene.traverse((o) => { const sm = o as THREE.SkinnedMesh; if (sm.isSkinnedMesh) { sm.skeleton.update(); sm.computeBoundingBox(); } });
@@ -99,7 +197,9 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
         mesh.material = Array.isArray(mesh.material) ? mesh.material.map((m) => m.clone()) : mesh.material.clone();
       }
     });
-    return { scene, mixer, actions, head, neck };
+    const ears = [found["Ear1.L"], found["Ear1.R"]].filter(Boolean);
+    const tail = [found.Tail1, found.Tail2].filter(Boolean);
+    return { scene, mixer, actions, head, neck, face, ears, tail };
   }, [gltf, species]);
 
   // Coat colour and age greying, applied to cloned materials so other instances are untouched.
@@ -153,31 +253,70 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
   useEffect(() => { if (mood === "hurt") flinch.current = 0.5; }, [mood]);
   const scale = STAGE_SCALE[stage];
 
-  useFrame((_, dt) => {
+  // Procedural posing on top of the clip: droop with age, a baby's bigger head, eyes on your finger.
+  // A bone the current clip doesn't animate keeps last frame's pose, so undo our own tweak first.
+  const pose = (bone: THREE.Object3D | undefined, apply: (b: THREE.Object3D) => void) => {
+    if (!bone) return;
+    const u = bone.userData as { post?: THREE.Quaternion; pre?: THREE.Quaternion; spost?: THREE.Vector3; spre?: THREE.Vector3 };
+    if (u.post && bone.quaternion.equals(u.post)) bone.quaternion.copy(u.pre!);
+    if (u.spost && bone.scale.equals(u.spost)) bone.scale.copy(u.spre!);
+    u.pre = bone.quaternion.clone(); u.spre = bone.scale.clone();
+    apply(bone);
+    u.post = bone.quaternion.clone(); u.spost = bone.scale.clone();
+  };
+
+  // The face and body language ease toward the mood's expression; `t` drives blinking, wagging and tears.
+  const ex = useRef<Expr>(expressionFor("idle", "none", "adult"));
+  const blinkAt = useRef({ next: 1.5, until: 0 });
+  const wantEx = expressionFor(mood, gesture, stage);
+  const drive = (t: number, dt: number, live: boolean) => {
+    const k = live ? 1 - Math.exp(-dt * 9) : 1;
+    for (const key of Object.keys(wantEx) as (keyof Expr)[]) ex.current[key] += (wantEx[key] - ex.current[key]) * k;
+    const e = ex.current;
+    if (live && t > blinkAt.current.next) { blinkAt.current = { next: t + 2.2 + Math.random() * 4, until: t + 0.14 }; }
+    const blinking = live && t < blinkAt.current.until && mood !== "dying";
+    if (face) {
+      const close = Math.max(e.lid, blinking ? 1 : 0);
+      const phi = (-62 + 80 * close) * (Math.PI / 180);
+      face.balls.forEach((m, i) => { m.scale.setScalar(e.wide); face.glints[i].scale.setScalar(e.wide * (1 - 0.35 * Math.min(1, e.lid))); });
+      for (const lid of face.lids) { lid.rotation.x = phi; lid.visible = close > 0.04; }
+      for (const b of face.brows) {
+        const home = b.userData.home as THREE.Vector3, side = b.userData.side as number;
+        b.position.set(home.x, home.y + face.eyeR * 0.7 * e.lift - face.eyeR * 0.5 * e.brow * 0.3, home.z);
+        b.rotation.z = -side * e.brow * 0.7 + Math.PI / 2;
+        b.visible = Math.abs(e.brow) + e.lift > 0.05 && close < 0.9;
+        b.scale.y = 1 - 0.25 * e.brow;
+      }
+      const pant = e.tongue > 0.5 && live ? 1 + Math.sin(t * 9) * 0.12 : 1;
+      face.tongue.scale.set(1, Math.max(0.0001, e.tongue * pant), 1);
+      face.tongue.visible = e.tongue > 0.04;
+      face.tears.forEach((tear, i) => {
+        const ph = live ? ((t * 0.55 + i * 0.37) % 1) : 0.4;
+        const home = tear.userData.home as THREE.Vector3;
+        tear.position.set(home.x, home.y - ph * face.eyeR * 4.5, home.z);
+        (tear.material as THREE.MeshStandardMaterial).opacity = Math.min(1, e.tears * 1.4) * Math.sin(Math.PI * ph);
+        tear.visible = e.tears > 0.05;
+      });
+    }
+    // Ears perk or droop; the tail wags when it is glad and hangs when it is not.
+    ears.forEach((b, i) => pose(b, (bb) => { bb.rotateX(-e.ears * 0.5); bb.rotateZ((i === 0 ? 1 : -1) * e.ears * 0.25); }));
+    tail.forEach((b, i) => pose(b, (bb) => { bb.rotateY(live ? Math.sin(t * 9 - i) * 0.5 * e.tail * (1 - i * 0.3) : 0); bb.rotateX(e.tail > 0.3 ? 0 : 0.35 * (1 - e.tail)); }));
+    if (mood !== "dying") pose(head, (b) => {
+      b.rotateX(STAGE_DROOP[stage] + (mood === "sick" || mood === "sad" ? 0.08 : 0) - (live ? Math.sin(t * 6) * 0.05 * e.bob : 0));
+      b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35);
+      b.rotateZ(live ? Math.sin(t * 1.1) * 0.14 * e.tilt + 0.1 * e.tilt : 0.1 * e.tilt);
+      if (stage === "baby") b.scale.multiplyScalar(1.22);
+    });
+  };
+  useEffect(() => { if (reduced) { drive(0, 0, false); mixer.update(0); } });
+
+  useFrame((state, dt) => {
     if (reduced) return;
     const step = Math.min(dt, 0.05);
     const sickSlow = mood === "sick" || mood === "sad" ? 0.7 : 1;
     mixer.update(step * STAGE_SPEED[stage] * sickSlow);
-    // Procedural posing on top of the clip: droop with age, a baby's bigger head, eyes on your finger.
-    // A bone the current clip doesn't animate keeps last frame's pose, so undo our own tweak first.
-    const pose = (bone: THREE.Object3D | undefined, apply: (b: THREE.Object3D) => void) => {
-      if (!bone) return;
-      const u = bone.userData as { post?: THREE.Quaternion; pre?: THREE.Quaternion; spost?: THREE.Vector3; spre?: THREE.Vector3 };
-      if (u.post && bone.quaternion.equals(u.post)) bone.quaternion.copy(u.pre!);
-      if (u.spost && bone.scale.equals(u.spost)) bone.scale.copy(u.spre!);
-      u.pre = bone.quaternion.clone(); u.spre = bone.scale.clone();
-      apply(bone);
-      u.post = bone.quaternion.clone(); u.spost = bone.scale.clone();
-    };
-    const tired = mood === "sick" || mood === "sad";
-    if (mood !== "dying") {
-      pose(head, (b) => {
-        b.rotateX(STAGE_DROOP[stage] + (tired ? 0.08 : 0));
-        b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35);
-        if (stage === "baby") b.scale.multiplyScalar(1.22);
-      });
-      if (species !== "cat") pose(neck, (b) => b.rotateX(STAGE_DROOP[stage] * 0.5));
-    }
+    drive(state.clock.elapsedTime, step, true);
+    if (mood !== "dying" && species !== "cat") pose(neck, (b) => b.rotateX(STAGE_DROOP[stage] * 0.5));
     if (flinch.current > 0) {
       flinch.current = Math.max(0, flinch.current - step);
       scene.rotation.z = Math.sin(flinch.current * 40) * 0.05 * flinch.current * 2;
@@ -211,13 +350,23 @@ function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
   return on;
 }
 
-export function Pet3D({ size, fallback, onFail, ...props }: Props & { size: number; fallback: ReactNode; onFail?: () => void }) {
+/** Little things that float up from the pet while it feels something: hearts, z's, a sweat drop. */
+function fxFor(mood: Mood, gesture: Gesture): "heart" | "zzz" | "drop" | null {
+  if (mood === "dying" || gesture === "nap") return "zzz";
+  if (gesture === "petted" || gesture === "treat" || gesture === "giggle" || (mood === "happy" && gesture === "hop")) return "heart";
+  if (mood === "sick" || mood === "sad" || mood === "hurt") return "drop";
+  return null;
+}
+
+/** `loading` is shown while the model downloads, `fallback` only if 3D can't run, so the 2D art never flashes in first. */
+export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { size: number; fallback: ReactNode; loading?: ReactNode; onFail?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref);
+  const fx = props.reduced ? null : fxFor(props.mood, props.gesture ?? "none");
   return (
     <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={`${props.species}, ${props.stage}, ${props.mood}`} role="img">
       <Guard fallback={fallback} onFail={onFail}>
-        <Suspense fallback={fallback}>
+        <Suspense fallback={loading ?? fallback}>
           <Canvas frameloop={on && !props.reduced ? "always" : "demand"} dpr={[1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
             camera={{ fov: 26, position: [0, 0.66, 2.8], near: 0.1, far: 20 }} onCreated={({ camera }) => camera.lookAt(0, 0.5, 0)}>
             <hemisphereLight args={["#fff8ee", "#b8a48c", 1.6]} />
@@ -229,6 +378,7 @@ export function Pet3D({ size, fallback, onFail, ...props }: Props & { size: numb
             </mesh>
             <Model {...props} />
           </Canvas>
+          {fx && <span className={`pet3d-fx fx-${fx}`} aria-hidden><i /><i /><i /></span>}
         </Suspense>
       </Guard>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
-import { CompanionArt, LiveCompanion } from "../Companion";
+import { CompanionArt, LiveCompanion, PetPortrait } from "../Companion";
 import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
 import { has3D, pet3dStatus } from "../pet3d-support";
 import { say } from "../voice";
@@ -56,7 +56,7 @@ export function Me() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>You</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><CompanionArt species={companion.species} coat={companion.coat} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
           <span className="muted small">{SPECIES_LABEL[companion.species]} · {PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label} · {STAGE_LABEL[view.stage]} · day {together}</span>
@@ -148,10 +148,14 @@ function PetPage() {
       <div className="field"><span className="field-label">Species</span>
         <div className="chips" role="radiogroup" aria-label="Species">
           {SPECIES.map((sp) => <Chip key={sp.id} pressed={companion.species === sp.id} onClick={() => { if (sp.id !== companion.species) { actions.setSpecies(companion.id, sp.id); haptic.success(); toast(`${companion.name} is a ${sp.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }}>
-            {sp.label}{has3D(sp.id) && <span className="badge-3d">3D</span>}</Chip>)}
+            {sp.label}</Chip>)}
         </div>
-        {!has3D(companion.species) && <span className="muted small">Dogs and foxes are animated in 3D. Others use the drawn style.</span>}
       </div>
+      {!has3D(companion.species) && <span className="muted small">Switch to a dog to see them in 3D.</span>}
+      {has3D(companion.species) && <div className="field"><span className="field-label">Style</span>
+        <Segmented label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
+        <span className="muted small">{settings.pet3d ? ({ ok: "Animated in 3D, with a face that shows how they feel.", failed: "3D couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Animated in 3D, with a face that shows how they feel." } as const)[pet3dStatus()] : "The soft drawn style."}</span>
+      </div>}
       <div className="field"><span className="field-label">Coat</span>
         <div className="chips" role="radiogroup" aria-label="Coat">
           {COATS[companion.species].map((c) => <Chip key={c.id} pressed={(companion.coat ?? COATS[companion.species][0].id) === c.id} onClick={() => actions.setCompanionLook(companion.id, { coat: c.id, personality: companion.personality })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
@@ -388,7 +392,6 @@ function FeelPage() {
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
-      <Switch checked={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} label="3D pet" hint={`Dogs and foxes in animated 3D. ${({ ok: "Working on this phone.", failed: "Couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Shows on Home for a dog or fox." } as const)[pet3dStatus()]}`} />
       <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), {uses12h() ? "12-hour" : "24-hour"} time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>

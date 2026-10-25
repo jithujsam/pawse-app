@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { CompanionArt } from "../Companion";
+import { PetPortrait } from "../Companion";
 import { deathLine } from "../copy";
 import { addDays } from "../dates";
 import { daysTogether } from "../progress";
@@ -30,7 +30,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
       <motion.h1 {...slow(0.2)}>{companion.name}</motion.h1>
       {data.settings.deathScene && (
         <motion.div className="memorial-art" initial={{ opacity: 1, filter: "grayscale(0)" }} animate={{ opacity: 0.75, filter: "grayscale(0.7)" }} transition={{ duration: 3, ease: "easeOut" }}>
-          <CompanionArt species={companion.species} coat={companion.coat} stage="frail" mood="dying" age={100} size={220} />
+          <PetPortrait species={companion.species} coat={companion.coat} stage="frail" mood="dying" age={100} size={220} />
         </motion.div>
       )}
       <motion.p {...slow(1.2)}>{deathLine(tone, companion.name)}</motion.p>

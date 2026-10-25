@@ -294,6 +294,33 @@ function Wear({ kind, h, species }: { kind: Accessory; h: (typeof HEAD)[Species]
   }
 }
 
+/** Whether this species should be drawn in 3D right now: the setting is on, the phone can do it and it hasn't failed. */
+function use3d(species: Species) {
+  const allow = useData().settings.pet3d;
+  const [failed, setFailed] = useState(false);
+  return { on: allow && !failed && has3D(species) && webglOk(), fail: () => { markPet3d("failed"); setFailed(true); } };
+}
+
+/** A calm blank disc while the model loads, so the old drawing never flashes in before the 3D pet. */
+const Waiting3D = ({ size }: { size: number }) => <span className="pet3d-wait" style={{ width: size, height: size }} aria-hidden />;
+
+/**
+ * A pet for small, non-interactive spots (the Pets grid, the profile): the same 3D or drawn art as the home screen,
+ * following the same setting. `still` forces the drawing, for lists too long to give every pet its own 3D view.
+ */
+export function PetPortrait({ still, ...art }: ArtProps & { still?: boolean }) {
+  const reduce = useReducedMotion();
+  const t = use3d(art.species);
+  const size = art.size ?? 280;
+  if (!t.on || still) return <CompanionArt {...art} />;
+  return (
+    <Suspense fallback={<Waiting3D size={size} />}>
+      <Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} reduced={!!reduce}
+        size={size} onFail={t.fail} loading={<Waiting3D size={size} />} fallback={<CompanionArt {...art} />} />
+    </Suspense>
+  );
+}
+
 /** Idle behaviours, weighted by personality: a playful pet hops, a calm one naps, a sassy one side-eyes. */
 const IDLE: Record<Personality, [Gesture, number][]> = {
   playful: [["hop", 3], ["look", 2], ["perk", 2], ["tilt", 1], ["yawn", 0.5]],
@@ -323,9 +350,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
   const stroke = useRef<{ x: number; dist: number; down: boolean }>({ x: 0, dist: 0, down: false });
   const touchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const low = art.mood === "dying" || art.stage === "frail" || art.stage === "dead";
-  const allow3d = useData().settings.pet3d;
-  const [failed3d, setFailed3d] = useState(false);
-  const use3d = allow3d && !failed3d && has3D(art.species) && webglOk();
+  const t3d = use3d(art.species);
 
   // Blink on an irregular rhythm, like something alive.
   useEffect(() => {
@@ -396,9 +421,9 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       onPointerCancel={() => { stroke.current = { x: 0, dist: 0, down: false }; }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); haptic.tap(); play("petted", 1200); setHearts((h) => h + 1); onReact?.("petted"); } }}
       whileTap={interactive ? { scale: 0.97 } : undefined}>
-      {use3d
-        ? <Suspense fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />}><Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
-            size={art.size ?? 280} onFail={() => { markPet3d("failed"); setFailed3d(true); }} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
+      {t3d.on
+        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
+            size={art.size ?? 280} onFail={t3d.fail} loading={<Waiting3D size={art.size ?? 280} />} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
         : <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />}
       <Burst burst={hearts} kind="heart" count={6} />
       <Burst burst={sparks} kind="spark" count={8} />

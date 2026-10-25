@@ -415,6 +415,39 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .compare i.now { background: var(--accent); }
 .compare i.now.worse { background: var(--negative); }
 
+
+/* ---------- opening and loading ---------- */
+.loader { gap: 26px; animation: loader-in .4s .12s var(--ease) both; }
+.loader-mark { position: relative; width: 88px; height: 88px; display: grid; place-items: center; }
+.loader-mark img { width: 88px; height: 88px; border-radius: 24px; animation: loader-breathe 1.8s ease-in-out infinite; }
+.loader-ring { position: absolute; inset: -14px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--accent); border-right-color: color-mix(in srgb, var(--accent) 35%, transparent); animation: loader-spin 1.1s linear infinite; }
+.loader-dots { display: flex; gap: 8px; }
+.loader-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: .35; animation: loader-hop 1.1s ease-in-out infinite; }
+.loader-dots i:nth-child(2) { animation-delay: .15s; }
+.loader-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes loader-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+@keyframes loader-breathe { 50% { transform: scale(.9); } }
+@keyframes loader-spin { to { transform: rotate(360deg); } }
+@keyframes loader-hop { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-7px); opacity: 1; } }
+.app-wake { animation: app-in .55s var(--ease) both; }
+.app-wake .tabbar { animation: bar-in .6s .1s var(--ease) both; }
+@keyframes app-in { from { opacity: 0; transform: translateY(12px) scale(.985); } }
+@keyframes bar-in { from { opacity: 0; transform: translateY(26px); } }
+
+/* ---------- 3D pet ---------- */
+.pet3d { position: relative; }
+.pet3d-wait { display: block; border-radius: 50%; background: radial-gradient(closest-side, var(--soft), transparent); animation: loader-breathe 1.6s ease-in-out infinite; }
+.pet3d-fx { position: absolute; inset: 0; pointer-events: none; }
+.pet3d-fx i { position: absolute; left: 58%; top: 26%; opacity: 0; font-style: normal; font-weight: 700; color: var(--accent); animation: fx-rise 2.4s ease-out infinite; }
+.pet3d-fx i:nth-child(2) { animation-delay: .8s; left: 46%; }
+.pet3d-fx i:nth-child(3) { animation-delay: 1.6s; left: 64%; }
+.fx-heart i::before { content: "\2665"; font-size: 18px; color: #e8607a; }
+.fx-zzz i::before { content: "z"; font-size: 16px; }
+.fx-drop i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #8fcaf2; font-size: 0; left: 36%; top: 22%; animation-name: fx-drip; animation-duration: 2.2s; }
+.fx-drop i:nth-child(2) { left: 40%; } .fx-drop i:nth-child(3) { display: none; }
+@keyframes fx-rise { 0% { transform: translateY(14px) scale(.6); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-34px) scale(1.1); opacity: 0; } }
+@keyframes fx-drip { 0% { transform: translateY(0) scale(.6); opacity: 0; } 20% { opacity: .95; transform: translateY(2px) scale(1); } 100% { transform: translateY(26px); opacity: 0; } }
+
 /* ---------- companion ---------- */
 .live-pet { position: relative; cursor: pointer; border-radius: 50%; outline-offset: 6px; touch-action: manipulation; }
 .pet { color: var(--text); overflow: visible; display: block; }
