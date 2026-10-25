@@ -2,8 +2,15 @@ import { AiSlipResult, AiWeeklyResult, type SlipRequest, type WeeklyRequest } fr
 import { supabase } from "./supabase";
 import { AI_CACHE_KEY, getData } from "./store";
 
-type Cache = Record<string, unknown>;
-const readCache = (): Cache => { try { return JSON.parse(localStorage.getItem(AI_CACHE_KEY) ?? "{}"); } catch { return {}; } };
+/** Answers are kept on the phone 7 days. Entries from before this (no `at`) are dropped when read. */
+export const AI_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+type Cache = Record<string, { at: number; raw: unknown }>;
+const readCache = (): Cache => {
+  try {
+    const now = Date.now();
+    return Object.fromEntries(Object.entries(JSON.parse(localStorage.getItem(AI_CACHE_KEY) ?? "{}") as Cache).filter(([, v]) => typeof v?.at === "number" && now - v.at < AI_CACHE_TTL_MS));
+  } catch { return {}; }
+};
 const writeCache = (c: Cache) => { try { const keys = Object.keys(c); if (keys.length > 200) delete c[keys[0]]; localStorage.setItem(AI_CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ } };
 
 /**
@@ -41,10 +48,11 @@ export async function aiForSlip(req: SlipRequest): Promise<SlipAi | null> {
   if (!aiAllowed()) return null;
   const key = aiCacheKey(req);
   const cache = readCache();
-  const raw = cache[key] ?? (await call(req));
+  const hit = cache[key];
+  const raw = hit ? hit.raw : await call(req);
   const parsed = AiSlipResult.safeParse(raw);
   if (!parsed.success) return null;
-  if (!cache[key]) { cache[key] = raw; writeCache(cache); }
+  if (!hit) { cache[key] = { at: Date.now(), raw }; writeCache(cache); }
   return { explanation: parsed.data.explanation };
 }
 

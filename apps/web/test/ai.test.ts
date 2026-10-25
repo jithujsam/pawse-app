@@ -154,6 +154,40 @@ describe("what leaves the phone", () => {
   });
 });
 
+describe("AI answers are kept 7 days, to the millisecond", () => {
+  const DAY = 24 * 3600_000;
+  it("this phone serves a saved answer until it is 7 days old, then asks again", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const t0 = Date.now();
+    const r: SlipRequest = { ...req, amount: 9100 };
+    const n = calls;
+    await aiForSlip(r);
+    vi.setSystemTime(t0 + 7 * DAY - 1);
+    await aiForSlip(r);
+    expect(calls).toBe(n + 1); // still saved
+    vi.setSystemTime(t0 + 7 * DAY);
+    await aiForSlip(r);
+    expect(calls).toBe(n + 2); // expired: asked again, and saved afresh
+    vi.setSystemTime(t0 + 14 * DAY - 1);
+    await aiForSlip(r);
+    expect(calls).toBe(n + 2); // the new copy dates from the refresh
+    vi.useRealTimers();
+  });
+
+  it("answers saved by earlier versions (no date) are not served", async () => {
+    const r: SlipRequest = { ...req, amount: 9200 };
+    mem.set(AI_CACHE_KEY, JSON.stringify({ [aiCacheKey(r)]: { ai_adjust_pct: 5, body_effects: [], explanation: "Old." } }));
+    const n = calls;
+    await aiForSlip(r);
+    expect(calls).toBe(n + 1);
+  });
+
+  it("the server's cut-off is exactly 7 days back", async () => {
+    const { cacheCutoff } = await import("../../../supabase/functions/ai/cache.ts");
+    expect(cacheCutoff(Date.UTC(2026, 9, 25))).toBe("2026-10-18T00:00:00.000Z");
+  });
+});
+
 describe("the server enforces the choice too (supabase/functions/ai/consent.ts)", async () => {
   const { consentGiven } = await import("../../../supabase/functions/ai/consent.ts");
   const { cacheKey } = await import("../../../supabase/functions/ai/cache.ts");

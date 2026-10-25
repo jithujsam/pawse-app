@@ -240,6 +240,46 @@ describe("a restore never removes records from the account or other phones", () 
   });
 });
 
+describe("the sync and undo races found in review", () => {
+  afterAll(() => stopSync());
+  it("a backup never overwrites a newer version already on the account", async () => {
+    stopSync(); authState.session = { user: { id: "u1" } };
+    for (const t of ["entries", "deductions", "companions", "habits", "profiles", "clean_days", "urges", "journal"]) table(t).clear();
+    phone([entry(1)]);
+    await startSync("u1"); await syncNow();
+    const { remoteWrite } = await import("./fake-supabase");
+    remoteWrite("entries", { id: eid(7), user_id: "u1", habit_id: H, companion_id: C, occurred_on: "2026-10-02", occurred_at: null, values: {}, amount: 999, client_created_at: 1007, client_updated_at: Date.now() - 3_600_000, deleted_at: null });
+    remoteWrite("deductions", { entry_id: eid(7), user_id: "u1", months_lost: 2.8, severity: 0.7, body_effects: [], explanation: "x", source: "baseline", ai_adjust_pct: null, client_updated_at: Date.now() - 3_600_000 });
+    actions.applyImport(file([entry(1), entry(7, 111), entry(8)])); // the backup holds an older X, and a slip the account lacks
+    await syncNow(); await syncNow();
+    expect(table("entries").get(eid(7))!.amount).toBe(999);
+    expect(getData().entries.find((e) => e.id === eid(7))!.amount).toBe(999);
+    expect(table("entries").has(eid(8))).toBe(true); // what the account lacks does go up
+  });
+
+  it("undo keeps what the person changed after the import", () => {
+    phone([entry(1)]);
+    const r = actions.applyImport(file([entry(1), entry(2)], { journal: [{ day: "2026-10-03", mood: 2, body: "from the backup" }] }));
+    if (!r.ok) throw new Error("refused");
+    actions.setJournal("2026-10-03", 5, "my own rewrite");
+    actions.undoImport(r.added);
+    expect(getData().journal).toEqual([{ day: "2026-10-03", mood: 5, body: "my own rewrite" }]);
+    expect(getData().entries.map((e) => e.id)).toEqual([eid(1)]);
+  });
+
+  it("undo keeps an added track once the person has recorded on it", () => {
+    phone([]);
+    const H2 = "88888888-8888-4888-8888-888888888888", C2 = "99999999-9999-4999-8999-999999999999";
+    const text = JSON.stringify({ ...base(), companions: [...base().companions, { id: C2, species: "fox", name: "Ember", bornOn: "2026-10-05", diedOn: null, finalAge: null, trackId: H2 }], habits: [...base().habits, { id: H2, name: "Scrolling", cls: "doomscrolling", classWeight: 0.8, companionId: C2, unit: "minutes", fields: [] }], entries: [] });
+    const r = actions.applyImport(text);
+    if (!r.ok) throw new Error("refused");
+    actions.applyRemote({ ...getData(), entries: [{ ...entry(5), habitId: H2, companionId: C2 }] }); // logged on the imported track afterwards
+    actions.undoImport(r.added);
+    expect(getData().habits.map((h) => h.id)).toContain(H2);
+    expect(getData().entries.map((e) => e.id)).toEqual([eid(5)]);
+  });
+});
+
 describe("added tracks come with their own data and stay separate", () => {
   it("a whole extra track (pet, slips, goal-met days, plan) is added next to the existing one", () => {
     phone([entry(1)]);

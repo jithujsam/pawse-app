@@ -4,7 +4,7 @@ import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions } from "../store";
 import { AUTH_REDIRECT, configured, supabase, useSession } from "../supabase";
-import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
+import { deleteAccount, forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
 import { Button, Segmented } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
@@ -61,6 +61,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
   const [sent, setSent] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const [delPw, setDelPw] = useState("");
 
   if (!configured || !supabase) {
     return <p className="muted small">Accounts aren't available in this build.</p>;
@@ -92,16 +93,18 @@ export function Account({ compact = false }: { compact?: boolean }) {
             )}
             {confirm === "delete" && (
               <motion.div key="del" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small">This permanently deletes your account, your companion and every log, here and in the cloud. It can't be undone.</p>
-                <Button variant="danger" onClick={async () => {
+                <p className="small">This permanently deletes your account, your companion and every log, here and in the cloud. It can't be undone. Type your password to confirm.</p>
+                <input className="input" type="password" autoComplete="current-password" aria-label="Your password" maxLength={128} value={delPw} onChange={(e) => setDelPw(e.target.value)} />
+                <Button variant="danger" disabled={!delPw} onClick={async () => {
                   haptic.heavy();
                   const uid = session.user.id;
-                  const { error } = await supabase!.rpc("delete_my_account");
-                  if (error) { toast(friendly(error.message), { kind: "bad" }); return; }
+                  const err = await deleteAccount(session.user.email ?? "", delPw);
+                  if (err) { toast(friendly(err), { kind: "bad" }); return; }
+                  setDelPw("");
                   stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
                   toast("Your account was deleted");
                 }}>Delete my account for good</Button>
-                <Button variant="text" onClick={() => setConfirm(null)}>Cancel</Button>
+                <Button variant="text" onClick={() => { setDelPw(""); setConfirm(null); }}>Cancel</Button>
               </motion.div>
             )}
           </AnimatePresence>

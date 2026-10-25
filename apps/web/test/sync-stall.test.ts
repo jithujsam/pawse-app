@@ -155,6 +155,24 @@ describe("deleting a refused slip clears the warning", () => {
   });
 });
 
+describe("the account keeps AI summaries 7 days", () => {
+  it("older ones are blanked on the account once per launch; recent ones stay", async () => {
+    stopSync();
+    authState.session = { user: { id: "u1" } };
+    for (const t of ["entries", "deductions", "companions", "habits", "profiles", "clean_days", "weekly_reports"]) table(t).clear();
+    const { addDays, today } = await import("../src/dates");
+    const row = (week: string) => ({ habit_id: H, week_start: week, user_id: "u1", summary: `Summary ${week}`, client_updated_at: 1 });
+    const [old, recent] = [addDays(today(), -7), addDays(today(), -6)];
+    table("weekly_reports").set(`${H}|${old}`, row(old));
+    table("weekly_reports").set(`${H}|${recent}`, row(recent));
+    seed([]);
+    await startSync("u1");
+    expect(table("weekly_reports").get(`${H}|${old}`)!.summary).toBeNull();
+    expect(table("weekly_reports").get(`${H}|${recent}`)!.summary).toBe(`Summary ${recent}`);
+    stopSync();
+  });
+});
+
 describe("an amount the account can't store is never saved in the first place", () => {
   beforeAll(() => { seed([]); });
   const habit = () => getData().habits[0];

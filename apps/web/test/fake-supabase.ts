@@ -37,7 +37,9 @@ export const resetCalls = () => { for (const k of Object.keys(upsertCalls)) dele
 export const refuse = (t: string, test: (r: Row) => boolean, error: Refusal["error"] = { message: `new row for relation "${t}" violates check constraint "${t}_check"`, code: "23514" }) => { refusals.push({ t, test, error }); };
 export const clearRefusals = () => { refusals.length = 0; };
 export const networkDown = (on: boolean) => { down = on; };
-export const authState: { session: { user: { id: string } } | null; stuck: boolean } = { session: { user: { id: "u1" } }, stuck: false };
+export const authState: { session: { user: { id: string } } | null; stuck: boolean; password: string } = { session: { user: { id: "u1" } }, stuck: false, password: "right-password" };
+/** Names of the database functions the app called. */
+export const rpcCalls: string[] = [];
 
 /** Another phone writes a row straight to the server. */
 export function remoteWrite(t: string, row: Row) {
@@ -49,11 +51,15 @@ function query(t: string) {
   const eqs: [string, unknown][] = [];
   let since: string | null = null;
   let patch: Row | null = null;
+  const lte: [string, string][] = [];
+  const notNull: string[] = [];
   const q = {
     select: () => q, order: () => q, range: () => q,
     gt: (_c: string, v: string) => { since = v; return q; },
     eq: (c: string, v: unknown) => { eqs.push([c, v]); return q; },
     update: (p: Row) => { patch = p; return q; },
+    lte: (c: string, v: string) => { lte.push([c, v]); return q; },
+    not: (c: string) => { notNull.push(c); return q; },
     upsert: (rows: Row[]) => {
       upsertCalls[t] = (upsertCalls[t] ?? 0) + 1;
       if (down) return Promise.resolve({ error: { message: "TypeError: Failed to fetch", code: "" } });
@@ -66,7 +72,7 @@ function query(t: string) {
     },
     then: async (res: (v: { data: Row[] | null; error: null }) => unknown) => {
       if (!patch && gate) await gate;
-      const match = [...table(t).values()].filter((r) => eqs.every(([c, v]) => r[c] === v) && (patch || !since || String(r.updated_at) > since));
+      const match = [...table(t).values()].filter((r) => eqs.every(([c, v]) => r[c] === v) && lte.every(([c, v]) => String(r[c]) <= v) && notNull.every((c) => r[c] != null) && (patch || !since || String(r.updated_at) > since));
       if (patch) { for (const r of match) if (!stale(r, patch)) Object.assign(r, patch, { updated_at: stamp() }); return res({ data: null, error: null }); }
       return res({ data: match.map((r) => ({ ...r })), error: null });
     },
@@ -79,5 +85,11 @@ export const client = {
   auth: {
     getSession: async () => ({ data: { session: authState.session } }),
     signOut: async () => { if (!authState.stuck) authState.session = null; return { error: null }; },
+    signInWithPassword: async ({ password }: { email: string; password: string }) => {
+      if (password !== authState.password) return { error: { message: "Invalid login credentials" } };
+      authState.session = { user: { id: "u1" } };
+      return { error: null };
+    },
   },
+  rpc: async (name: string) => { rpcCalls.push(name); return { error: null }; },
 };

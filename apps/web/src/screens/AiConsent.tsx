@@ -33,7 +33,7 @@ export function AiConsent() {
       </div>
       <div className="stack tight">
         <b>Where it goes</b>
-        <p className="small">To Pawse's server, which passes it to OpenRouter and an AI model (today's default is OpenAI GPT-4.1 mini). Pawse asks OpenRouter to use only providers that say they don't keep or train on requests, but Pawse can't check what they do. Pawse's server knows which account is asking, to apply a daily limit and to keep a saved copy of each answer so the same request isn't repeated. Those copies are deleted with your account.</p>
+        <p className="small">To Pawse's server, which passes it to OpenRouter and an AI model (today's default is OpenAI GPT-4.1 mini). Pawse asks OpenRouter to use only providers that say they don't keep or train on requests, but Pawse can't check what they do. Pawse's server knows which account is asking, to apply a daily limit and to keep a saved copy of each answer for 7 days so the same request isn't repeated, then deletes it. Written weekly summaries are removed from this phone and your account once their week is a week old.</p>
       </div>
       <p className="muted small">Turning it off stops all sending straight away. Writing already saved stays as it is. Check-ins, streaks, the calendar and your pet work the same either way.</p>
     </section>

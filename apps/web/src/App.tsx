@@ -86,11 +86,12 @@ function useMidnight() {
     let t: ReturnType<typeof setTimeout>;
     const arm = () => {
       const next = new Date(); next.setHours(24, 0, 1, 0);
-      t = setTimeout(() => { setDay(today()); arm(); }, Math.min(next.getTime() - Date.now(), 2 ** 31 - 1));
+      t = setTimeout(() => { setDay(today()); actions.pruneExpiredAi(); arm(); }, Math.min(next.getTime() - Date.now(), 2 ** 31 - 1));
     };
     arm();
+    actions.pruneExpiredAi(); // AI summaries older than 7 days go at start-up too
     // Phones suspend timers in the background; check again whenever the app comes back.
-    const onVis = () => { if (document.visibilityState === "visible") setDay(today()); };
+    const onVis = () => { if (document.visibilityState === "visible") { setDay(today()); actions.pruneExpiredAi(); } };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearTimeout(t); document.removeEventListener("visibilitychange", onVis); };
   }, []);

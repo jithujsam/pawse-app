@@ -5,7 +5,7 @@
 // and never logged; the app no longer sends notes at all, and `texts` from an older app is ignored.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { z } from "npm:zod@3.23.8";
-import { cacheKey } from "./cache.ts";
+import { cacheCutoff, cacheKey } from "./cache.ts";
 import { consentGiven } from "./consent.ts";
 
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
   const body = parsed.data;
 
   const ck = await cacheKey(u.user.id, body);
-  const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).maybeSingle();
+  const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).gt("created_at", cacheCutoff()).maybeSingle(); // expired answers are never served
   if (hit?.result) return json(req, { ok: true, result: hit.result, cached: true });
 
   // Everyone's calls today, checked before this person's own quota. Fails closed: no count, no call.
@@ -163,7 +163,10 @@ Deno.serve(async (req) => {
     const check = (body.kind === "slip" ? SlipOut : WeeklyOut).safeParse(extractJson(content));
     if (!check.success) { console.warn("invalid output", body.kind); return json(req, { ok: false, error: "invalid" }); }
     // user_id (migration 0004) lets the cache go with the account. Before 0004 the write fails quietly and nothing is cached.
-    await admin.from("ai_cache").upsert({ key: ck, user_id: u.user.id, kind: body.kind, result: check.data });
+    // Seven-day retention: drop everyone's expired answers (indexed on created_at), and stamp this one afresh, since an upsert
+    // alone would keep the old created_at and a refreshed answer would stay "expired".
+    await admin.from("ai_cache").delete().lt("created_at", cacheCutoff());
+    await admin.from("ai_cache").upsert({ key: ck, user_id: u.user.id, kind: body.kind, result: check.data, created_at: new Date().toISOString() });
     return json(req, { ok: true, result: check.data });
   } catch (e) {
     console.warn("failed", e instanceof Error ? e.name : "unknown");

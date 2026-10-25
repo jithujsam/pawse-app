@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * The first sync after that brought the whole history back, unencrypted and with no PIN. Erasing local data is not
  * proof of who is holding the phone; signing in with the account's password is.
  */
-import { authState, table } from "./fake-supabase";
+import { authState, rpcCalls, table } from "./fake-supabase";
 
 vi.mock("../src/supabase", async () => ({ configured: true, supabase: (await import("./fake-supabase")).client }));
+const m = vi.hoisted(() => new Map<string, unknown>());
 vi.mock("../src/db", () => {
-  const m = new Map<string, unknown>();
   return {
     idbAvailable: () => true, __m: m,
     kv: { get: async (k: string) => m.get(k), set: async (k: string, v: unknown) => void m.set(k, v), del: async (k: string) => void m.delete(k), clear: async () => m.clear() },
@@ -18,7 +18,7 @@ vi.mock("../src/db", () => {
 
 const db = (await import("../src/db")) as unknown as { __m: Map<string, unknown> };
 const { actions, flush, getData, vault } = await import("../src/store");
-const { getSyncStatus, signOutAndErase, startSync, stopSync, syncNow } = await import("../src/sync");
+const { deleteAccount, getSyncStatus, signOutAndErase, startSync, stopSync, syncNow } = await import("../src/sync");
 const { blank } = await import("../src/persist");
 
 const C = "11111111-1111-4111-8111-111111111111", H = "22222222-2222-4222-8222-222222222222", E = "33333333-3333-4333-8333-333333333333";
@@ -130,5 +130,37 @@ describe("deleting this phone's data from Your data, with app lock on", () => {
     expect(vault.hasPin()).toBe(false);
     expect(db.__m.has("pinLength")).toBe(false);
     stopSync();
+  });
+});
+
+describe("deleting the account needs the password", () => {
+  beforeEach(() => { rpcCalls.length = 0; authState.session = { user: { id: "u1" } }; });
+
+  it("a wrong password never reaches the database function, even with the app lock open", async () => {
+    expect(await deleteAccount("a@b.c", "guess")).toMatch(/Invalid login/);
+    expect(await deleteAccount("a@b.c", "")).not.toBeNull();
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it("the right password signs in fresh, then deletes", async () => {
+    expect(await deleteAccount("a@b.c", "right-password")).toBeNull();
+    expect(rpcCalls).toEqual(["delete_my_account"]);
+  });
+});
+
+describe("hiding the app on the lock screen keeps the encrypted data", () => {
+  it("a cold start that finds a PIN, then a background save, leaves the vault and the next start still locked", async () => {
+    vi.stubGlobal("document", { documentElement: { dataset: {} } });
+    await signedInWithHistoryAndPin();
+    stopSync();
+    expect(m.has("data.enc")).toBe(true);
+    vi.resetModules(); // the app is closed and opened again
+    const s2 = await import("../src/store");
+    expect((await s2.boot()).kind).toBe("locked");
+    await s2.flush(); // what main.tsx runs when the app is hidden
+    expect(m.has("data.enc")).toBe(true);
+    expect(m.has("data")).toBe(false);
+    vi.resetModules();
+    expect((await (await import("../src/store")).boot()).kind).toBe("locked");
   });
 });

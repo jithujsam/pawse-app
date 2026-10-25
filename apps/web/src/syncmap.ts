@@ -1,4 +1,6 @@
 import { LegacySettingsSchema, TrackStateSchema } from "@detox/schema";
+import { today } from "./dates";
+import { summaryExpired } from "./progress";
 import { defaultTrackState, PER_TRACK_KEYS, trackFromLegacy, trackState, type LegacyTrackSettings } from "./tracks";
 import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, TrackState, Urge } from "./types";
 
@@ -230,7 +232,7 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
   }
   for (const r of p.weekly_reports) {
     const h = String(r.habit_id), w = String(r.week_start);
-    if (r.summary && habits.some((x) => x.id === h) && wins(`w:${h}:${w}`, r)) summaries = { ...summaries, [h]: { ...summaries[h], [w]: String(r.summary) } };
+    if (r.summary && !summaryExpired(w, today()) && habits.some((x) => x.id === h) && wins(`w:${h}:${w}`, r)) summaries = { ...summaries, [h]: { ...summaries[h], [w]: String(r.summary) } };
   }
 
   for (const r of p.urges ?? []) {

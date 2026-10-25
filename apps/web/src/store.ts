@@ -4,7 +4,7 @@ import {
   type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
 import { addDays, iso, today, weekStart } from "./dates";
-import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
+import { outcomeDays, petDayInputs, quietDays, streaks, summaryExpired, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { buildFields, countTriggers, pickedLabels, type Intake } from "./questions";
@@ -25,7 +25,7 @@ const uid = uuid;
 let data: AppData = blank();
 const listeners = new Set<() => void>();
 /** local: a change made on this phone, synced up. remote: rows from the account. reset: this phone's copy was wiped; never synced as deletions. */
-export type CommitSource = "local" | "remote" | "reset";
+export type CommitSource = "local" | "remote" | "reset" | "import";
 const hooks = new Set<(prev: AppData, next: AppData, source: CommitSource) => void>();
 /** Lets sync see exactly which rows changed in each commit. */
 export const onCommit = (fn: (prev: AppData, next: AppData, source: CommitSource) => void) => { hooks.add(fn); return () => { hooks.delete(fn); }; };
@@ -41,6 +41,8 @@ function commit(next: AppData, source: CommitSource = "local") {
 // ---------- persistence: IndexedDB, encrypted when a PIN is set ----------
 
 let vaultKey: VaultKey | null = null;
+/** True from a cold start that found PIN-encrypted data until the PIN opens it: memory holds nothing real, so nothing may be saved over the vault. */
+let locked = false;
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 let writing: Promise<void> = Promise.resolve();
 
@@ -51,6 +53,8 @@ function schedulePersist() {
 /** Writes now. Called on a timer after each change and when the app goes to the background. */
 export function flush(): Promise<void> {
   clearTimeout(persistTimer);
+  // Hiding the app on the lock screen used to save blank data over the encrypted copy and delete it (no PIN asked next launch).
+  if (locked) return writing;
   const snapshot = data;
   writing = writing.then(async () => {
     try {
@@ -78,6 +82,7 @@ export async function boot(): Promise<Boot> {
     if (sealed) {
       const pet = await kv.get<string>("pet");
       if (pet) document.documentElement.dataset.pet = pet;
+      locked = true;
       return { kind: "locked", sealed };
     }
     let raw = await kv.get<unknown>("data");
@@ -103,6 +108,7 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   const r = await vaultOpen(pin, sealed);
   if (!r) return false;
   vaultKey = r.k;
+  locked = false;
   const result = normalizeWithReport(r.value);
   // As in boot, but the kept copy stays encrypted: it is the sealed blob, not the opened data.
   if (!result || result.report.invalid + result.report.orphaned > 0) await kv.set(`data.enc.unreadable.${Date.now()}`, sealed).catch(() => undefined);
@@ -395,6 +401,18 @@ export const actions = {
     commit({ ...data, settings: { ...data.settings, aiConsent: on } });
   },
 
+  /** Removes AI-written weekly summaries older than their 7 days. Local change, so sync clears them from the account too. */
+  pruneExpiredAi() {
+    const t = today();
+    const count = (s: AppData["summaries"]) => Object.values(s).reduce((a, w) => a + Object.keys(w).length, 0);
+    const summaries: AppData["summaries"] = {};
+    for (const [h, w] of Object.entries(data.summaries)) {
+      const kept = Object.fromEntries(Object.entries(w).filter(([week]) => !summaryExpired(week, t)));
+      if (Object.keys(kept).length) summaries[h] = kept;
+    }
+    if (count(summaries) !== count(data.summaries)) commit({ ...data, summaries });
+  },
+
   setSummary: (week: string, text: string, habitId?: string) => {
     const id = focused(habitId);
     if (data.habits.some((h) => h.id === id)) commit({ ...data, summaries: { ...data.summaries, [id]: { ...data.summaries[id], [week]: text } } });
@@ -413,7 +431,8 @@ export const actions = {
    */
   applyImport(text: string): ImportPlan | Refused {
     const plan = planImport(text, data);
-    if (plan.ok && total(plan.add) > 0) commit(plan.next);
+    // "import": synced like a local change, but never allowed to beat a newer version already on the account (sync.ts).
+    if (plan.ok && total(plan.add) > 0) commit(plan.next, "import");
     return plan;
   },
   /** Takes an import back: removes exactly the rows it added. */
@@ -747,6 +766,7 @@ export const actions = {
   async resetAll(opts: { keepLock?: boolean } = {}) {
     const lock = opts.keepLock && vaultKey ? { key: vaultKey, length: await vault.pinLength() } : null;
     vaultKey = lock?.key ?? null;
+    locked = false; // erasing replaces the vault, so saving is allowed again
     try {
       await kv.clear(); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY);
       if (lock) await kv.set("pinLength", lock.length);

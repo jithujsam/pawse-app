@@ -23,6 +23,18 @@ function load(entries: Entry[]) {
     entries,
   });
 }
+describe("AI-written weekly summaries are kept 7 days", () => {
+  it("one a week old is removed, one still inside its 7 days stays", () => {
+    load([]);
+    const [old, fresh] = [addDays(t0, -7), addDays(t0, -6)];
+    actions.applyRemote({ ...getData(), summaries: { [H]: { [old]: "Old week.", [fresh]: "Recent week." } } });
+    actions.pruneExpiredAi();
+    expect(getData().summaries[H]).toEqual({ [fresh]: "Recent week." });
+    actions.pruneExpiredAi();
+    expect(getData().summaries[H]).toEqual({ [fresh]: "Recent week." });
+  });
+});
+
 describe("AI has no say in the numbers", () => {
   it("there is no action that applies an AI adjustment to a slip", () => {
     expect("applyAi" in actions).toBe(false);

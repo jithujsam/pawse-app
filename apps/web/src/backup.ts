@@ -17,7 +17,10 @@ const zero = (): Counts => ({ tracks: 0, pets: 0, slips: 0, goalMetDays: 0, urge
 export const total = (c: Counts): number => Object.values(c).reduce((a, b) => a + b, 0);
 
 /** Exactly what an import added, so it can be taken back. */
-export interface AddedRows { companions: string[]; habits: string[]; entries: string[]; cleanDays: string[]; urges: string[]; journal: string[]; summaries: string[] }
+export interface AddedRows {
+  companions: AppData["companions"]; habits: AppData["habits"]; entries: AppData["entries"]; cleanDays: AppData["cleanDays"];
+  urges: AppData["urges"]; journal: AppData["journal"]; summaries: { h: string; week: string; text: string }[];
+}
 
 export type RefusalReason = "not_json" | "not_backup" | "newer_version" | "unfinished" | "too_many_tracks";
 export interface Refused { ok: false; reason: RefusalReason; message: string }
@@ -65,7 +68,7 @@ export function planImport(text: string, current: AppData): ImportPlan | Refused
   const added: AddedRows = { companions: [], habits: [], entries: [], cleanDays: [], urges: [], journal: [], summaries: [] };
 
   /** The records to add from one list: not already here, not repeated in the file. Counts what is new, identical and different. */
-  function merge<T>(here: T[], incoming: T[], key: (x: T) => string, kind: keyof Counts, log: string[]): T[] {
+  function merge<T>(here: T[], incoming: T[], key: (x: T) => string, kind: keyof Counts, log: T[]): T[] {
     const mine = new Map(here.map((x) => [key(x), x]));
     const seen = new Set<string>();
     const out: T[] = [];
@@ -74,7 +77,7 @@ export function planImport(text: string, current: AppData): ImportPlan | Refused
       if (seen.has(k)) { duplicates++; continue; }
       seen.add(k);
       const old = mine.get(k);
-      if (old === undefined) { out.push(x); add[kind]++; log.push(k); } else if (stable(old) === stable(x)) same[kind]++; else keep[kind]++;
+      if (old === undefined) { out.push(x); add[kind]++; log.push(x); } else if (stable(old) === stable(x)) same[kind]++; else keep[kind]++;
     }
     return out;
   }
@@ -99,25 +102,34 @@ export function planImport(text: string, current: AppData): ImportPlan | Refused
   };
 }
 
-/** Takes an import back: removes the rows it added, and anything that hangs off an added track or pet. */
+/**
+ * Takes an import back: removes the rows it added, but only those still exactly as imported. A row the person has edited since
+ * is theirs and stays, and so does a track or pet that has other records on it.
+ */
 export function withoutAdded(d: AppData, a: AddedRows): AppData {
-  const [pets, tracks, slips, days, urges, reflections, weeks] = [a.companions, a.habits, a.entries, a.cleanDays, a.urges, a.journal, a.summaries].map((x) => new Set(x));
+  const unchanged = <T>(added: T[], key: (x: T) => string) => {
+    const was = new Map(added.map((x) => [key(x), stable(x)]));
+    return (x: T) => was.get(key(x)) === stable(x);
+  };
+  const slip = unchanged(a.entries, (e) => e.id), day = unchanged(a.cleanDays, (c) => `${c.habitId}|${c.day}`);
+  const urge = unchanged(a.urges, (u) => u.id), note = unchanged(a.journal, (j) => j.day);
+  const entries = d.entries.filter((e) => !slip(e));
+  const cleanDays = d.cleanDays.filter((c) => !day(c));
+  const urges = d.urges.filter((u) => !urge(u));
+  const journal = d.journal.filter((j) => !note(j));
+  const track = unchanged(a.habits, (h) => h.id), pet = unchanged(a.companions, (c) => c.id);
+  const busy = new Set([...entries.map((e) => e.habitId), ...cleanDays.map((c) => c.habitId), ...urges.map((u) => u.habitId)]);
+  const habits = d.habits.filter((h) => !(track(h) && !busy.has(h.id)));
+  const used = new Set([...entries.map((e) => e.companionId), ...habits.map((h) => h.companionId)]);
+  const companions = d.companions.filter((c) => !(pet(c) && !used.has(c.id)));
+  const text = unchanged(a.summaries, (s) => `${s.h}|${s.week}`);
   const summaries: AppData["summaries"] = {};
   for (const [h, w] of Object.entries(d.summaries)) {
-    if (tracks.has(h)) continue;
-    const kept = Object.fromEntries(Object.entries(w).filter(([week]) => !weeks.has(`${h}|${week}`)));
+    if (!habits.some((x) => x.id === h)) continue;
+    const kept = Object.fromEntries(Object.entries(w).filter(([week, t]) => !text({ h, week, text: t })));
     if (Object.keys(kept).length) summaries[h] = kept;
   }
-  return {
-    ...d,
-    companions: d.companions.filter((c) => !pets.has(c.id)),
-    habits: d.habits.filter((h) => !tracks.has(h.id)),
-    entries: d.entries.filter((e) => !slips.has(e.id) && !tracks.has(e.habitId) && !pets.has(e.companionId)),
-    cleanDays: d.cleanDays.filter((c) => !days.has(`${c.habitId}|${c.day}`) && !tracks.has(c.habitId)),
-    urges: d.urges.filter((u) => !urges.has(u.id) && !tracks.has(u.habitId)),
-    journal: d.journal.filter((j) => !reflections.has(j.day)),
-    summaries,
-  };
+  return { ...d, companions, habits, entries, cleanDays, urges, journal, summaries };
 }
 
 /** "2 tracks", "14 slips"...: the non-zero parts of a count, in words for the person. */

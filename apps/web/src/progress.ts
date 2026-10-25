@@ -67,6 +67,10 @@ export function shiftMonth(month: string, n: number): string {
   return `${String(Math.floor(total / 12)).padStart(4, "0")}-${pad2((((total % 12) + 12) % 12) + 1)}`;
 }
 
+/** AI-written weekly summaries are kept 7 days from the start of their week. */
+export const AI_RETENTION_DAYS = 7;
+export const summaryExpired = (weekStart: string, day: string): boolean => daysFrom(weekStart, day) >= AI_RETENTION_DAYS;
+
 /** The local calendar day of an instant in a time zone (the phone's own when none is given). */
 export function localDay(at: Date | number, timeZone?: string): string {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(at);

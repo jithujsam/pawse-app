@@ -23,7 +23,7 @@ The OpenRouter key lives only in that secret. It must never be put in the app, i
 | `urges` | Urges noticed: strength, outcome, and (0005) the strategy used and what set it off |
 | `journal` | One short reflection per day |
 | `weekly_reports` | Written weekly summaries, per track |
-| `ai_usage`, `ai_cache` | Per-person daily AI cap and a per-person result cache (keyed by user and the exact request); service role only. Cache rows hold the AI's sentence, which can quote the pet's name and amounts. They go with the account, but **have no expiry**, so they accumulate until the account is deleted |
+| `ai_usage`, `ai_cache` | Per-person daily AI cap and a per-person result cache (keyed by user and the exact request); service role only. Cache rows hold the AI's sentence, which can quote the pet's name and amounts. They are kept **7 days**: the function ignores older rows and deletes expired ones on each cache write (no scheduler, no migration), and stamps `created_at` afresh when an answer is refreshed. Rows of people who stop using AI are only deleted when someone else next triggers a write, or with the account |
 
 - Row level security on every table: a person reads and writes only rows with their own `user_id`, and child rows must point at parents they own.
 - Ids are generated on the phone (UUIDs), so offline writes retry safely.
@@ -31,3 +31,24 @@ The OpenRouter key lives only in that secret. It must never be put in the app, i
 - Deletes are soft (`deleted_at`) so they reach other phones.
 - `delete_my_account()` removes the auth user; every table cascades.
 - Visible age is never stored. It is recomputed from entries, deductions and clean days, as the PRD requires.
+
+## Proposed, NOT applied: account deletion needs a recent password sign-in
+
+The app now asks for the password and signs in again before it calls `delete_my_account()` (`deleteAccount` in `apps/web/src/sync.ts`). That check lives in the app, so anyone holding a session token can still call the function directly. Real enforcement needs this change to the function, which is a database migration and so needs the owner's approval and a staging check first:
+
+```sql
+create or replace function public.delete_my_account()
+returns void language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not signed in'; end if;
+  -- the token must carry a password sign-in from the last 5 minutes (a refresh keeps the original sign-in time)
+  if not exists (
+    select 1 from jsonb_array_elements(coalesce(auth.jwt() -> 'amr', '[]'::jsonb)) a
+    where a ->> 'method' = 'password' and (a ->> 'timestamp')::bigint > extract(epoch from now())::bigint - 300
+  ) then raise exception 'recent password sign-in required'; end if;
+  delete from auth.users where id = uid;
+end; $$;
+```
+
+To verify on staging before applying: that the access token's `amr` claim holds the password sign-in time, that a token refresh keeps the original time, and that `supabase/tests/rls.sql` and `privacy.sql` (which call the function) still pass with a fresh sign-in. Until it is applied, deletion is protected against casual use of the app, not against a stolen session.

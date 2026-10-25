@@ -1,3 +1,8 @@
+/** AI answers are kept 7 days, then are neither served nor kept. */
+export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Rows created before this are expired. */
+export const cacheCutoff = (now = Date.now()): string => new Date(now - CACHE_TTL_MS).toISOString();
+
 /** Bumped when what the function answers changes. 2: a slip's answer is one sentence, so answers cached before it (which carry an adjustment) are never served again. */
 const VERSION = 2;
 

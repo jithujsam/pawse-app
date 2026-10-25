@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { kv } from "./db";
+import { addDays, today } from "./dates";
+import { AI_RETENTION_DAYS } from "./progress";
 import { actions, getData, onCommit } from "./store";
 import { supabase } from "./supabase";
 import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, TRACK_COLUMNS, type Pulled, type Table } from "./syncmap";
@@ -47,6 +49,7 @@ let failures = 0;
  * fresh state or apply the account's rows onto a phone that was just wiped or signed out.
  */
 let generation = 0;
+let purgedSummaries = false;
 /** What this phone last pushed, so its own rows coming back are not re-applied. */
 const echo = new Map<string, number>();
 
@@ -66,8 +69,10 @@ onCommit((prev, next, source) => {
     if (running) again = true; else schedule(0);
     return;
   }
-  if (source !== "local") return;
-  const t = Date.now();
+  if (source !== "local" && source !== "import") return;
+  // An import is stamped as old as can be: where the account already holds the record, its version wins in merge(), so a
+  // backup can never overwrite a newer edit made on another phone. Only records the account lacks are sent.
+  const t = source === "import" ? 1 : Date.now();
   const { changed, removed } = diff(prev, next);
   if (!changed.length && !removed.length) return;
   for (const k of changed) { meta.pending[k] = t; delete meta.removed[k]; delete meta.rejected[k]; }
@@ -86,6 +91,7 @@ export async function startSync(uid: string): Promise<void> {
   if (userId === uid && status.state !== "off") return;
   userId = uid;
   meta = { ...emptyMeta(), ...((await kv.get<Meta>(metaKey(uid)).catch(() => undefined)) ?? {}) };
+  purgedSummaries = false;
   retryRejected(); // the server's rules may have changed since: each launch gives refused rows another try
   setStatus({ state: "idle" });
   await syncNow();
@@ -99,6 +105,19 @@ export function stopSync() {
 
 /** Forgets this phone's sync position, used when the person signs out and wipes the phone. */
 export async function forgetSync(uid: string) { await kv.del(metaKey(uid)).catch(() => undefined); }
+
+/**
+ * Deletes the account after the password is typed again. Signing in afresh makes the access token carry a new password
+ * sign-in time, which delete_my_account must check itself (proposal in supabase/README.md): a check made only here can be
+ * skipped by anyone holding the session, so this is the client half. Returns an error message, or null when deleted.
+ */
+export async function deleteAccount(email: string, password: string): Promise<string | null> {
+  if (!supabase) return "Accounts aren't available in this build.";
+  const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+  if (authError) return authError.message;
+  const { error } = await supabase.rpc("delete_my_account");
+  return error ? error.message : null;
+}
 
 /**
  * Erases this phone's copy for someone who has forgotten the app-lock PIN. It signs this phone out of the account
@@ -215,6 +234,8 @@ async function cycle(uid: string) {
   const { data: merged, removed: overruled } = slipBeatsClean(mergedRows);
   if (overruled.length) { const t = Date.now(); for (const k of overruled) { delete meta.pending[k]; meta.removed[k] = t; } }
   if (merged !== getData() && (applied.length || overruled.length || local !== getData())) actions.applyRemote(merged);
+  // A refused item deleted elsewhere is gone here too: stop reporting it.
+  if (Object.keys(meta.rejected).length) { const have = indexRows(getData()); for (const k of Object.keys(meta.rejected)) if (!have.has(k)) delete meta.rejected[k]; }
 
   for (const t of PUSH_ORDER) if (seen[t]) meta.cursor[t] = seen[t];
   if (first) for (const t of PUSH_ORDER) meta.cursor[t] ??= new Date(0).toISOString();
@@ -232,6 +253,15 @@ async function cycle(uid: string) {
     if (error) throw new Error(`delete ${k}: ${error.message}`);
     if (meta.removed[k] === t) delete meta.removed[k];
     echo.set(k, t);
+  }
+
+  // AI-written summaries are kept 7 days: once per launch, blank older ones on the account (its row-level security limits this to
+  // the person's own rows). Local copies go in store.pruneExpiredAi, and merge never takes an expired one back.
+  if (!purgedSummaries) {
+    const { error } = await supabase!.from("weekly_reports").update({ summary: null, client_updated_at: Date.now() }).lte("week_start", addDays(today(), -AI_RETENTION_DAYS)).not("summary", "is", null);
+    if (stale()) return;
+    if (error) throw new Error(`weekly_reports: ${error.message}`);
+    purgedSummaries = true;
   }
 
   // 3. push changes, parents first
@@ -274,7 +304,7 @@ type PushError = { message: string; code?: string };
  * classes 22 and 23) or a row-level-security check on a row whose parent it doesn't have (42501). Anything else
  * (no network, an expired session, the server down) has no such code and is retried later as a whole.
  */
-export const isRowError = (e: PushError): boolean => /^(22|23)/.test(e.code ?? "") || e.code === "42501";
+export const isRowError = (e: PushError): boolean => /^(22|23)/.test(e.code ?? "") || (e.code === "42501" && /row-level security/i.test(e.message));
 
 async function upsertBatch(t: Table, rows: Row[]): Promise<{ error: PushError | null }> {
   let batch = rows;
