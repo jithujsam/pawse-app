@@ -8,59 +8,89 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Build;
+import android.provider.Settings;
+import android.view.View;
 import android.widget.RemoteViews;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
- * Shared behaviour of the home screen pet widgets: every pet the app has a track for, stacked. Each card shows the
- * pet's frames cycling, so it moves the way it does in the app. Tapping opens the check-in.
+ * Shared behaviour of the home screen pet widgets: one fixed slot per pet, up to four, top to bottom. Each slot shows
+ * its pet's frames cycling, so it moves the way it does in the app. Tapping opens the check-in.
  */
 public abstract class PetWidget extends AppWidgetProvider {
     static final String PREFS = "companion_widget";
     static final String PETS = "pets";
     static final String DAY = "day";
+    static final int FRAMES = 6;
+    static final int[] FRAME_IDS = {
+        R.id.widget_frame_0, R.id.widget_frame_1, R.id.widget_frame_2,
+        R.id.widget_frame_3, R.id.widget_frame_4, R.id.widget_frame_5,
+    };
+    /** The pet slots in the widget's layout. A pet past the last slot isn't shown. */
+    static final int[] SLOTS = { R.id.widget_slot_0, R.id.widget_slot_1, R.id.widget_slot_2, R.id.widget_slot_3 };
 
     /** The layout for this widget's size and background. */
     abstract int layout();
 
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
-        for (int id : ids) manager.updateAppWidget(id, render(context, layout(), id));
-        manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_stack);
+        manager.updateAppWidget(ids, render(context, layout()));
     }
 
-    static RemoteViews render(Context context, int layout, int widgetId) {
+    static RemoteViews render(Context context, int layout) {
         RemoteViews v = new RemoteViews(context.getPackageName(), layout);
-        Intent service = new Intent(context, PetStackService.class);
-        service.setData(Uri.parse("pawse-pets://" + widgetId));
-        v.setRemoteAdapter(R.id.widget_stack, service);
-        v.setEmptyView(R.id.widget_stack, R.id.widget_empty);
+        JSONArray pets = pets(context);
+        boolean today = moodsAreToday(context);
+        // "Remove animations" in the phone's settings: one still frame instead of the cycle.
+        boolean still = Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f;
+        int shown = Math.min(pets.length(), SLOTS.length);
+        for (int i = 0; i < SLOTS.length; i++) {
+            v.removeAllViews(SLOTS[i]);
+            if (i < shown) v.addView(SLOTS[i], petView(context, pets.optJSONObject(i), today, still));
+            v.setViewVisibility(SLOTS[i], i < shown ? View.VISIBLE : View.GONE);
+        }
+        v.setViewVisibility(R.id.widget_empty, shown == 0 ? View.VISIBLE : View.GONE);
+        // Any part of the widget opens the check-in.
         Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse("app.detoxcompanion://open/quick"), context, MainActivity.class);
         open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        // Items fill in their own click, so the stack's template must be mutable on Android 12 and later.
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
-        PendingIntent tap = PendingIntent.getActivity(context, 0, open, flags);
-        v.setPendingIntentTemplate(R.id.widget_stack, tap);
-        v.setOnClickPendingIntent(R.id.widget_empty, PendingIntent.getActivity(context, 1, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        PendingIntent tap = PendingIntent.getActivity(context, 1, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        for (int slot : SLOTS) v.setOnClickPendingIntent(slot, tap);
+        v.setOnClickPendingIntent(R.id.widget_empty, tap);
         return v;
     }
 
-    /** Called by WidgetPlugin when the app has new pet state: every pet widget reloads its stack. */
+    /** One pet, as its own view: its frames cycle here, or one still frame when animations are off. */
+    static RemoteViews petView(Context context, JSONObject pet, boolean today, boolean still) {
+        RemoteViews p = new RemoteViews(context.getPackageName(), still ? R.layout.widget_pet_still : R.layout.widget_pet_item);
+        if (pet == null) return p;
+        String species = pet.optString("species", "dog");
+        String mood = today ? pet.optString("mood", "idle") : "idle";
+        for (int i = 0; i < (still ? 1 : FRAMES); i++) {
+            int art = context.getResources().getIdentifier("widget_" + species + "_" + mood + "_" + i, "drawable", context.getPackageName());
+            if (art != 0) p.setImageViewResource(FRAME_IDS[i], art);
+        }
+        return p;
+    }
+
+    /** Called by WidgetPlugin when the app has new pet state: every pet widget redraws. */
     static void refresh(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
-        for (Class<?> c : new Class<?>[] { CompanionWidget.class, CompanionWidgetClear.class }) {
-            int[] ids = manager.getAppWidgetIds(new ComponentName(context, c));
-            if (ids.length > 0) manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_stack);
-        }
+        new CompanionWidget().onUpdate(context, manager, manager.getAppWidgetIds(new ComponentName(context, CompanionWidget.class)));
+        new CompanionWidgetClear().onUpdate(context, manager, manager.getAppWidgetIds(new ComponentName(context, CompanionWidgetClear.class)));
     }
 
     /** The stored pets as a JSON array of {species, mood}. Empty when nothing has been written yet. */
-    static String storedPets(Context context) {
+    static JSONArray pets(Context context) {
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        return p.getString(PETS, "[]");
+        try {
+            return new JSONArray(p.getString(PETS, "[]"));
+        } catch (Exception e) {
+            return new JSONArray();
+        }
     }
 
     /** Whether the stored moods are about today. After midnight they are yesterday's, so the pets show idle until the app opens. */

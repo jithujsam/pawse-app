@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One pet in the stack: its six frames cycle here, so the pet breathes and wags like it does in the app. -->
+<!-- One pet: its six frames cycle here, so the pet breathes and wags like it does in the app. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_item"
     android:layout_width="match_parent"
