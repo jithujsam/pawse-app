@@ -684,6 +684,10 @@ body.privacy #root { filter: blur(24px); }
 .pet-card-more .ico circle { fill: currentColor; stroke: none; }
 .pet-card[data-paused="true"] .pet-card-art { opacity: 0.7; }
 .pet-card-status[data-s="paused"] { color: var(--muted); }
+.track-menu { gap: 20px; }
+.track-menu-actions { display: grid; gap: 10px; }
+.track-menu-actions .muted.small { margin: 2px 0 0; text-align: center; }
+.track-menu-danger { border-top: 1px solid var(--line); padding-top: 16px; }
 .paused-card { gap: 12px; align-items: center; }
 .track-context { margin: 0; }
 button.plan-card { border: 0; font: inherit; color: var(--text); text-align: left; cursor: pointer; width: 100%; }

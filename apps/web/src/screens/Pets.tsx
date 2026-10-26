@@ -116,26 +116,31 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
     haptic.success();
     setConfirming(false);
     onClose();
-    toast(`${companion?.name ?? "Your pet"} and ${habit.name} are deleted`, { action: { label: "Undo", run: () => { actions.restoreTrack(backup); } } });
+    toast(`${companion?.name ?? "Your pet"} is deleted`, { action: { label: "Undo", run: () => { actions.restoreTrack(backup); } } });
   };
   const close = () => { setConfirming(false); onClose(); };
+  const name = companion?.name ?? "this pet";
   return (
-    <Sheet open={!!habit} onClose={close} label={habit ? `${habit.name} options` : "Track options"}>
+    <Sheet open={!!habit} onClose={close} label={habit ? `${name} options` : "Pet options"}>
       {habit && confirming && <div className="stack">
-        <h2>Delete {companion?.name}?</h2>
-        <p className="muted">This removes {companion?.name}, {habit.name} and every record, check-in and note for it. You can undo for a few seconds.</p>
-        <Button onClick={remove}>Delete {companion?.name}</Button>
-        <Button variant="secondary" onClick={() => setConfirming(false)}>Keep {companion?.name}</Button>
+        <h2>Delete {name}?</h2>
+        <p className="muted">This removes {name} and every record, check-in and note for {habit.name}. You can undo for a few seconds.</p>
+        <Button variant="danger" onClick={remove}>Yes, delete {name}</Button>
+        <Button variant="secondary" onClick={() => setConfirming(false)}>Keep {name}</Button>
       </div>}
-      {habit && !confirming && <div className="stack">
+      {habit && !confirming && <div className="stack track-menu">
         <div className="stack tight">
-          <h2>{habit.name}</h2>
-          <p className="muted small">{companion?.name}{paused ? " · Paused" : ""}</p>
+          <h2>{name}</h2>
+          <p className="muted small">{habit.name}{paused ? " · Paused" : ""}</p>
         </div>
-        <Button onClick={() => onOpen(habit.id)}>Open</Button>
-        <Button variant="secondary" onClick={toggle}>{paused ? "Resume tracking" : "Pause tracking"}</Button>
-        <p className="muted small">{paused ? resumeHint(tone) : pauseHint(tone)}</p>
-        <Button variant="text" onClick={() => setConfirming(true)}>Delete {companion?.name ?? "this pet"}</Button>
+        <div className="track-menu-actions">
+          <Button onClick={() => onOpen(habit.id)}>Open {name}</Button>
+          <Button variant="secondary" onClick={toggle}>{paused ? "Resume tracking" : "Pause tracking"}</Button>
+          <p className="muted small">{paused ? resumeHint(tone) : pauseHint(tone)}</p>
+        </div>
+        <div className="track-menu-danger">
+          <Button variant="danger" onClick={() => setConfirming(true)}>Delete {name}</Button>
+        </div>
       </div>}
     </Sheet>
   );
