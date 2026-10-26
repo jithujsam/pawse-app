@@ -188,7 +188,7 @@ interface Props { species: Species3D; coat?: string; stage: Stage; mood: Mood; a
 function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
   const gltf = useLoader(GLTFLoader, MODEL[species], (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
   useEffect(() => markPet3d("ok"), []);
-  const { scene, mixer, actions, head, neck, face, ears, tail } = useMemo(() => {
+  const { scene, mixer, actions, head, neck, face, ears, tail, catEyes } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene) as THREE.Group;
     const found: Record<string, THREE.Object3D> = {};
     scene.traverse((o) => { if (["Head", "Ear1.L", "Ear1.R", "Tail1", "Tail2"].includes(o.name)) found[o.name] = o; });
@@ -222,7 +222,17 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
     });
     const ears = [found["Ear1.L"], found["Ear1.R"]].filter(Boolean);
     const tail = [found.Tail1, found.Tail2].filter(Boolean);
-    return { scene, mixer, actions, head, neck, face, ears, tail };
+    // The cat's eyes are dark patches in its texture, so the tuxedo's black eyes are spheres on the face.
+    const catEyes: THREE.Mesh[] = [];
+    if (species === "cat") for (const [x, y] of [[-0.19, 0.57], [0.19, 0.54]]) {
+      // The scene is scaled, so the radius is divided by its world scale.
+      const radius = 0.05 / scene.getWorldScale(new THREE.Vector3()).x;
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), new THREE.MeshStandardMaterial({ color: "#0d0d10", roughness: 0.3 }));
+      scene.add(eye);
+      scene.worldToLocal(eye.position.set(x, y, 0.53));
+      catEyes.push(eye);
+    }
+    return { scene, mixer, actions, head, neck, face, ears, tail, catEyes };
   }, [gltf, species]);
 
   // Coat colour and age greying, applied to cloned materials so other instances are untouched.
@@ -245,9 +255,9 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
         m.roughness = 0.85; m.metalness = 0;
       }
     });
-    // The tuxedo's eyes are white; the other coats keep dark eyes.
-    face?.balls.forEach((m) => (m.material as THREE.MeshStandardMaterial).color.set(species === "cat" && coat === "tuxedo" ? "#ffffff" : "#1b1009"));
-  }, [scene, species, coat, stage, face]);
+    // After the coat pass above, which would otherwise tint the eyes white.
+    catEyes.forEach((e) => { e.visible = coat === "tuxedo"; (e.material as THREE.MeshStandardMaterial).color.set("#0d0d10"); });
+  }, [scene, species, coat, stage, catEyes]);
 
   // Cross-fade between clips whenever the state changes.
   const current = useRef<THREE.AnimationAction | null>(null);

@@ -15,6 +15,8 @@ vi.mock("@capacitor/core", () => ({
   }),
 }));
 vi.mock("../src/ui/Toast", () => ({ toast: vi.fn() }));
+const opened: string[] = [];
+vi.mock("../src/native", () => ({ openExternal: (u: string) => { opened.push(u); } }));
 
 const { canInstallInApp, installUpdate } = await import("../src/update");
 const sha = "ab".repeat(32);
@@ -36,7 +38,7 @@ describe("in-app update", () => {
     calls.length = 0;
     expect(await installUpdate(base)).toBe("browser");
     expect(calls).toEqual([]);
-    expect(window.location.href).toBe(base.url);
+    expect(opened).toEqual([base.url]);
   });
 
   it("reports the unknown-apps switch being off", async () => {
