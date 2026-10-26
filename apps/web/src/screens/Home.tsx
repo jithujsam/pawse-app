@@ -143,12 +143,15 @@ export function Home({ onBack }: { onBack?: () => void }) {
           <LiveCompanion species={companion.species} coat={companion.coat} personality={personality} accessory={track.wear}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} />
         </div>
-        <AnimatePresence mode="wait">
-          <motion.p key={line} className="speech" aria-live="polite"
-            initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
-            {line}
-          </motion.p>
-        </AnimatePresence>
+        {/* A fixed slot: the bubble can change its text without moving anything below it. */}
+        <div className="speech-slot">
+          <AnimatePresence mode="wait">
+            <motion.p key={line} className="speech" aria-live="polite"
+              initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
+              <span className="speech-text">{line}</span>
+            </motion.p>
+          </AnimatePresence>
+        </div>
         <div className="vitals" role="group" aria-label={`${companion.name}'s health`}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
