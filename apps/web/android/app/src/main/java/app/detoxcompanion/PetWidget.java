@@ -10,6 +10,9 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.widget.RemoteViews;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * Shared behaviour of the home screen pet widgets: every pet the app has a track for, stacked. Each card shows the
@@ -18,6 +21,7 @@ import android.widget.RemoteViews;
 public abstract class PetWidget extends AppWidgetProvider {
     static final String PREFS = "companion_widget";
     static final String PETS = "pets";
+    static final String DAY = "day";
 
     /** The layout for this widget's size and background. */
     abstract int layout();
@@ -40,7 +44,7 @@ public abstract class PetWidget extends AppWidgetProvider {
         int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
         PendingIntent tap = PendingIntent.getActivity(context, 0, open, flags);
         v.setPendingIntentTemplate(R.id.widget_stack, tap);
-        v.setOnClickPendingIntent(R.id.widget_empty, PendingIntent.getActivity(context, 0, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        v.setOnClickPendingIntent(R.id.widget_empty, PendingIntent.getActivity(context, 1, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         return v;
     }
 
@@ -57,5 +61,11 @@ public abstract class PetWidget extends AppWidgetProvider {
     static String storedPets(Context context) {
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         return p.getString(PETS, "[]");
+    }
+
+    /** Whether the stored moods are about today. After midnight they are yesterday's, so the pets show idle until the app opens. */
+    static boolean moodsAreToday(Context context) {
+        String day = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(DAY, "");
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()).equals(day);
     }
 }

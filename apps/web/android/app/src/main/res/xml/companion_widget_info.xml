@@ -5,8 +5,8 @@
     android:targetCellWidth="2"
     android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
-    android:updatePeriodMillis="0"
+    android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/companion_widget"
-    android:previewImage="@drawable/pet_dog"
+    android:previewImage="@drawable/widget_dog_happy_0"
     android:description="@string/widget_description"
     android:widgetCategory="home_screen" />

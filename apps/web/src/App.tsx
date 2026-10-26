@@ -170,7 +170,7 @@ function Shell() {
       const mood = locked || paused ? "idle" : status === "lapse" ? "sad" : status === "met" || status === "urge" ? "happy" : "idle";
       return [{ species: c.species, mood } as const];
     });
-    updateWidget(pets);
+    updateWidget(pets, t0);
   }, [data, pinTick]);
   // With no recovery track left (removed on another device, say), only the Pets grid makes sense.
   const hasTrack = !!view?.habit;

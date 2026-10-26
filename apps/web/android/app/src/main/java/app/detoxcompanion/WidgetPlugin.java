@@ -39,7 +39,15 @@ public class WidgetPlugin extends Plugin {
                 pets.put(clean);
             }
         }
-        c.getSharedPreferences(PetWidget.PREFS, Context.MODE_PRIVATE).edit().putString(PetWidget.PETS, pets.toString()).apply();
+        // The app's own today, so the widgets can tell when the moods are from an earlier day.
+        String day = call.getString("day", "");
+        if (day == null || !day.matches("\\d{4}-\\d{2}-\\d{2}")) day = "";
+        c.getSharedPreferences(PetWidget.PREFS, Context.MODE_PRIVATE).edit()
+            .putString(PetWidget.PETS, pets.toString())
+            .putString(PetWidget.DAY, day)
+            // Left over from the single-pet widget before 3.8.3.
+            .remove("species").remove("name").remove("line").remove("sad")
+            .apply();
         PetWidget.refresh(c);
         call.resolve();
     }
