@@ -33,11 +33,11 @@ export function QuickSheet({ open, onClose, onPick, onPlan }: { open: boolean; o
   // Rest or paused: today counts neither way, and a rest day can't be set over one.
   const resting = todayCtl.notTracking;
   const plan = () => { if (pets.length <= 1) { onPlan(habit.id); return; } haptic.select(); setChoosing(true); };
-  const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean; wide?: boolean }[] = [
-    { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `Pick a way through it. ${ridden} managed so far.` : "Pick a way through it, with your companion.", tone: "calm", wide: true },
-    { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "One tap. Helps your companion heal.", tone: "good", disabled: slipped || clean },
-    { id: "slip", icon: Icon.slip, title: "I slipped", hint: "Ten seconds. Honest is enough.", tone: "bad" },
-    { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? (progress.paused ? "Paused: today counts neither way" : "Today counts neither way") : !todayCtl.canRest ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: resting || !todayCtl.canRest, wide: true },
+  const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean }[] = [
+    { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `${ridden} managed today` : "Get through it", tone: "calm" },
+    { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "Helps your pet heal", tone: "good", disabled: slipped || clean },
+    { id: "slip", icon: Icon.slip, title: "I slipped", hint: "Log it in seconds", tone: "bad" },
+    { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? (progress.paused ? "Paused: today counts neither way" : "Today counts neither way") : !todayCtl.canRest ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: resting || !todayCtl.canRest },
   ];
   if (choosing) return (
     <Sheet open={open} onClose={onClose} label="Choose a pet for the plan">
@@ -59,17 +59,17 @@ export function QuickSheet({ open, onClose, onPick, onPlan }: { open: boolean; o
       {needsTrackContext(data, habit.id) && <TrackContext name={habit.name} pet={view.companion.name} paused={progress.paused} />}
       <motion.div className="quick-grid" variants={stagger} initial="hidden" animate="show">
         {tiles.map((t) => (
-          <motion.button key={t.id} className={`quick-tile${t.wide ? " wide" : ""}`} data-tone={t.tone} disabled={t.disabled} variants={rise}
-            whileTap={t.disabled ? undefined : { scale: 0.96 }} transition={spring.snappy} onClick={() => pick(t.id)}>
+          <motion.button key={t.id} className="quick-tile" data-tone={t.tone} disabled={t.disabled} variants={rise}
+            whileTap={t.disabled ? undefined : { scale: 0.98 }} transition={spring.snappy} onClick={() => pick(t.id)}>
             <span className="quick-ico" aria-hidden>{t.icon}</span>
             <b>{t.title}</b>
             <span className="muted small">{t.hint}</span>
           </motion.button>
         ))}
-        <motion.button className="quick-tile wide" data-tone="calm" variants={rise} whileTap={{ scale: 0.96 }} transition={spring.snappy} onClick={plan}>
+        <motion.button className="quick-tile" data-tone="calm" variants={rise} whileTap={{ scale: 0.98 }} transition={spring.snappy} onClick={plan}>
           <span className="quick-ico" aria-hidden>{Icon.list}</span>
           <b>Make or edit a plan</b>
-          <span className="muted small">Your goal, your reasons and what helps. Pick the pet it's for.</span>
+          <span className="muted small">Goal, reasons, what helps</span>
         </motion.button>
       </motion.div>
     </Sheet>
