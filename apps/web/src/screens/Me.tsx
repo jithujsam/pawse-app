@@ -24,7 +24,7 @@ import { toast } from "../ui/Toast";
 import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
-import { APP_VERSION, checkForUpdate, openDownload, RELEASES_PAGE, runUpdate } from "../update";
+import { APP_VERSION, checkUpdate, openDownload, RELEASES_PAGE, runUpdate } from "../update";
 import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -372,9 +372,10 @@ function AboutPage() {
   const [checking, setChecking] = useState(false);
   async function check() {
     setChecking(true);
-    const latest = await checkForUpdate();
+    const r = await checkUpdate();
     setChecking(false);
-    if (latest) toast(`Version ${latest.name} is ready`, { action: { label: "Update", run: () => void runUpdate(latest) }, ms: 8000 });
+    if (r.status === "available") toast(`Version ${r.latest.name} is ready`, { action: { label: "Update", run: () => void runUpdate(r.latest) }, ms: 8000 });
+    else if (r.status === "error") toast("Couldn't check for updates. Check your connection and try again", { kind: "bad" });
     else toast("You have the latest version", { kind: "good" });
   }
   return (<>

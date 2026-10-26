@@ -33,6 +33,7 @@ import { Icon } from "./ui/Controls";
 import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
+import { UpdateDialog } from "./ui/UpdateDialog";
 
 export type Tab = "pets" | "calendar" | "insights" | "you";
 const TABS: Tab[] = ["pets", "calendar", "insights", "you"];
@@ -225,6 +226,7 @@ function Shell() {
         })}
       </nav>
       <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} onPlan={(id) => { setQuick(false); setPlanHabit(id); }} />
+      <UpdateDialog />
       <SubPage open={planHabit !== null} title="Your plan" onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
     </div>
   );

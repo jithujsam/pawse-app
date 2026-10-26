@@ -219,3 +219,11 @@ export function pauseRefused(tone: Tone): string {
   if (tone === "brutal") return "Couldn't change that. Nothing was lost.";
   return "That couldn't be changed. Nothing was lost.";
 }
+
+/** The update popup. Plain and calm in every tone: it never pushes. */
+export const UPDATE_COPY: Record<Tone, { title: string; sub: string; now: string; later: string; skip: string; whatsNew: string }> = {
+  gentle: { title: "Update available", sub: "A new version is ready whenever you are", now: "Download & install", later: "Later", skip: "Don't remind", whatsNew: "What's new" },
+  honest: { title: "Update available", sub: "A new version is ready", now: "Download & install", later: "Later", skip: "Don't remind", whatsNew: "What's new" },
+  brutal: { title: "Update available", sub: "A new version is out. Your call", now: "Download & install", later: "Later", skip: "Don't remind", whatsNew: "What's new" },
+};
+export const updatePhase = (percent: number | null): string | null => percent === null ? null : percent >= 100 ? "Checking the download…" : percent > 0 ? `Downloading ${percent}%` : "Starting the download…";
