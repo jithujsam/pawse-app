@@ -105,7 +105,7 @@ export const calendarMonth = defineSection("calendar.month", { screen: "Journey"
   weekdays: "M T W T F S S",
   day_aria: "{date}: {status}",
   day_edit_aria: "{date}: {status}. Edit this day",
-  note: "Tap today or one of the two days before it to add or change what happened. A day with nothing recorded is just unknown. It never counts as a slip or as progress.",
+  note: "Tap a highlighted date from the last four days to add or change what happened. A day with nothing recorded is just unknown. It never counts as a slip or as progress.",
 });
 // @copy-section-end calendar.month
 

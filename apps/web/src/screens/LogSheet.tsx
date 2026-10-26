@@ -50,7 +50,7 @@ function answersConcern(habit: Habit, values: Entry["values"]): Concern | null {
   return found.includes("crisis") ? "crisis" : found.includes("restriction") ? "restriction" : null;
 }
 
-/** `day` presets the slip's date, e.g. from the calendar: today or one of the two days before it. */
+/** `day` presets the slip's date, e.g. from the calendar: one of the last four days. */
 interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void; day?: string }
 
 export function LogSheet(props: Props) {
@@ -67,7 +67,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const [day, setDay] = useState(presetDay ?? today());
   const [time, setTime] = useState("");
   const born = data.companions.find((c) => c.id === habit.companionId)?.bornOn;
-  // A slip can be logged for today or one of the EDIT_DAYS before it, as on the calendar, and not before the pet was born.
+  // A slip can be logged for any of the last four days (EDIT_DAYS before today, and today), as on the calendar, and not before the pet was born.
   const days = Array.from({ length: EDIT_DAYS + 1 }, (_, i) => addDays(today(), -i)).filter((x) => !born || x >= born);
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
@@ -127,7 +127,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
         <motion.h2 variants={rise}>{lapseHeadline(data.settings.tone, name)}</motion.h2>
-        <motion.p className="muted small" variants={rise}>{t("sheets.log.logged", { when: day === today() ? t("sheets.log.when_today") : day === addDays(today(), -1) ? t("sheets.log.when_yesterday") : fmtDay(day) })}{time ? t("sheets.log.logged_at", { time: fmtTime(time) }) : ""}</motion.p>
+        <motion.p className="muted small" variants={rise}>{t("sheets.log.logged", { when: fmtDay(day) })}{time ? t("sheets.log.logged_at", { time: fmtTime(time) }) : ""}</motion.p>
         <motion.div className="deduction" variants={rise}>
           <span>{shrugged ? t("sheets.log.shrugged", { name }) : t("sheets.log.cost", { name })}</span>
           <b className={shrugged ? "" : "neg"}>−<AnimatedNumber value={felt} from={0} decimals={1} /> {Math.round(felt * 10) / 10 === 1 ? t("sheets.log.month") : t("sheets.log.months")}</b>
@@ -158,7 +158,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
       <motion.div className="field" variants={rise}>
         <span className="field-label">{t("sheets.log.when")}</span>
         <Select label={t("sheets.log.day_aria")} value={day} onChange={setDay}
-          options={days.map((x, i) => ({ value: x, label: i === 0 ? t("sheets.log.today") : i === 1 ? t("sheets.log.yesterday") : fmtDay(x) }))} />
+          options={days.map((x) => ({ value: x, label: fmtDay(x) }))} />
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label">{t("sheets.log.time")}</span>

@@ -3421,7 +3421,7 @@
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 3,
-      "end": 48,
+      "end": 44,
       "entries": [
         {
           "id": "sheets.log.label",
@@ -3440,16 +3440,6 @@
         },
         {
           "id": "sheets.log.day_aria",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.log.today",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.log.yesterday",
           "kind": "text",
           "placeholders": []
         },
@@ -3587,16 +3577,6 @@
           ]
         },
         {
-          "id": "sheets.log.when_today",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.log.when_yesterday",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "sheets.log.shrugged",
           "kind": "text",
           "placeholders": [
@@ -3657,8 +3637,8 @@
       "title": "Reflection after a slip",
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 50,
-      "end": 66,
+      "start": 46,
+      "end": 62,
       "entries": [
         {
           "id": "sheets.reflection.back_to_plan",
@@ -3733,8 +3713,8 @@
       "title": "Urge support",
       "source": "src/screens/UrgeSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 68,
-      "end": 112,
+      "start": 64,
+      "end": 108,
       "entries": [
         {
           "id": "sheets.urge.label",
@@ -3968,8 +3948,8 @@
       "title": "The + menu",
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 114,
-      "end": 141,
+      "start": 110,
+      "end": 137,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4103,8 +4083,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 143,
-      "end": 165,
+      "start": 139,
+      "end": 161,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4220,8 +4200,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 167,
-      "end": 206,
+      "start": 163,
+      "end": 202,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4419,8 +4399,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 208,
-      "end": 233,
+      "start": 204,
+      "end": 229,
       "entries": [
         {
           "id": "sheets.memorial.life",
