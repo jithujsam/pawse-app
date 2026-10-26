@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { toast } from "./ui/Toast";
 import { t } from "./text";
+import { openExternal } from "./native";
 
 /** The build's own version, from version.json (see vite.config.ts). */
 export const APP_VERSION = { name: __APP_VERSION__, code: __APP_CODE__ };
@@ -41,8 +42,8 @@ export async function checkUpdate(): Promise<UpdateCheck> {
   }
 }
 
-/** Opens the download in the phone's browser, which hands the APK to the installer. */
-export const openDownload = (url: string) => { window.location.href = url; };
+/** Opens the download in the phone's browser (an in-app Custom Tab on Android), which hands the APK to the installer. */
+export const openDownload = (url: string) => { openExternal(url); };
 
 interface UpdaterPlugin {
   download(o: { url: string; sha256: string }): Promise<void>;

@@ -1,5 +1,10 @@
 import { kv } from "./db";
 import type { Settings } from "./types";
+import { setBarStyle } from "./native";
+
+let last: { theme: Settings["theme"]; accent: Settings["accent"] } | null = null;
+// With the system theme, the phone switching between light and dark while the app is open re-applies the look.
+if (typeof matchMedia !== "undefined") matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (last?.theme === "system") applyLook(last.theme, last.accent); });
 
 /** Applies the chosen theme and accent to the page, and remembers them for the lock screen. */
 export function applyLook(theme: Settings["theme"] = "system", accent: Settings["accent"] = "pet") {
@@ -12,6 +17,8 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
   const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
   paint();
   requestAnimationFrame(paint);
+  setBarStyle(dark);
+  last = { theme, accent };
   void kv.set("look", { theme, accent }).catch(() => undefined);
 }
 

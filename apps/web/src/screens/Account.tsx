@@ -39,6 +39,8 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
+  // Changes that hadn't backed up when the person tapped Sign out: the same block asks once more, in the app, not in a browser dialog.
+  const [unsynced, setUnsynced] = useState<number | null>(null);
   const [sent, setSent] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
 
@@ -55,19 +57,22 @@ export function Account({ compact = false }: { compact?: boolean }) {
           <AnimatePresence mode="wait" initial={false}>
             {confirm === null && (
               <motion.div key="btns" className="actions" exit={{ opacity: 0 }}>
-                <Button variant="secondary" onClick={() => setConfirm("signout")}>{t("account.signed_in.sign_out")}</Button>
+                <Button variant="secondary" onClick={() => { setUnsynced(null); setConfirm("signout"); }}>{t("account.signed_in.sign_out")}</Button>
                 <Button variant="danger" onClick={() => setConfirm("delete")}>{t("account.signed_in.delete")}</Button>
               </motion.div>
             )}
             {confirm === "signout" && (
               <motion.div key="so" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small">{t("account.signed_in.sign_out_body")}</p>
+                <p className="small" role={unsynced ? "alert" : undefined}>{unsynced ? (unsynced === 1 ? t("account.signed_in.pending_one") : t("account.signed_in.pending_other", { n: unsynced })) : t("account.signed_in.sign_out_body")}</p>
                 <Button variant="secondary" onClick={async () => {
-                  await syncNow();
-                  if (getSyncStatus().pending > 0 && !window.confirm(getSyncStatus().pending === 1 ? t("account.signed_in.pending_one") : t("account.signed_in.pending_other", { n: getSyncStatus().pending }))) return;
+                  if (unsynced === null) {
+                    await syncNow();
+                    const pending = getSyncStatus().pending;
+                    if (pending > 0) { haptic.warn(); setUnsynced(pending); return; }
+                  }
                   const uid = session.user.id; stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
                 }}>{t("account.signed_in.sign_out")}</Button>
-                <Button variant="text" onClick={() => setConfirm(null)}>{t("ui.common.cancel")}</Button>
+                <Button variant="text" onClick={() => { setUnsynced(null); setConfirm(null); }}>{t("ui.common.cancel")}</Button>
               </motion.div>
             )}
             {confirm === "delete" && (

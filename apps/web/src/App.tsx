@@ -229,6 +229,11 @@ function Shell() {
           </motion.div>
         </AnimatePresence>
       </div>
+      {sync.state === "offline" && (
+        <div className="offline-bar" role="status">
+          {sync.pending ? (sync.pending === 1 ? t("account.sync.offline_pending_one") : t("account.sync.offline_pending_other", { n: sync.pending })) : t("account.sync.offline")}
+        </div>
+      )}
       <nav className="tabbar" aria-label={t("nav.tabs.main")}>
         {TABS.flatMap((tabId, i) => {
           const button = (
