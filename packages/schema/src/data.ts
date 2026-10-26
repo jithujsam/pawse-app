@@ -116,7 +116,6 @@ export const SettingsSchema = z.object({
   riskNudge: z.boolean(),
   neglectFrom: day.nullable(),
   pet3d: z.boolean(),
-  style3d: z.array(z.enum(["dog", "cat", "fox"])),
   theme: z.enum(["system", "light", "dark"]),
   accent: z.enum(["pet", "coral", "ocean", "forest", "berry", "plum", "slate"]),
   petLife: z.enum(["continuity", "classic"]),

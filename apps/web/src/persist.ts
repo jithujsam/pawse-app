@@ -17,7 +17,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const defaultSettings = (): Settings => ({
   tone: "honest", userName: "", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false,
   haptics: true, remindersOn: false, coachSeen: false, autoLock: "1m",
-  careNotes: true, riskNudge: true, neglectFrom: null, style3d: ["dog"], theme: "system", accent: "pet",
+  careNotes: true, riskNudge: true, neglectFrom: null, theme: "system", accent: "pet",
   petLife: "continuity", activeHabit: null,
 });
 
@@ -97,8 +97,7 @@ export function normalizeWithReport(raw: unknown): { data: AppData; report: Load
   const up = loose.v === 1 ? upgradeV1(loose as V1) : (loose as Loose);
   // v2 settings keep unknown keys from newer versions, but never the old per-track ones: tracks own those now.
   const person = Object.fromEntries(Object.entries(up.settings).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k)));
-  // Before 3.8.6 one switch, pet3d, put only the dog in 3D; the cat and fox were always drawn.
-  if (!Array.isArray(person.style3d)) person.style3d = person.pet3d === false ? [] : ["dog"];
+  // Pets are always 3D now (the drawing is only the fallback), so the old style switch is dropped.
   delete person.pet3d;
   const d = repairTracks({ ...up, settings: { ...defaultSettings(), ...person } } as AppData);
   // Rows whose parents are gone can't be shown or synced; they're left out and counted.

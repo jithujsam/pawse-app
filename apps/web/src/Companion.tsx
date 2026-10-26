@@ -6,7 +6,6 @@ import { coatFor, mix } from "./pets";
 import { Burst } from "./ui/Controls";
 import { has3D, markPet3d, webglOk, type Species3D } from "./pet3d-support";
 const Pet3D = lazy(() => import("./Pet3D").then((m) => ({ default: m.Pet3D })));
-import { useData } from "./store";
 import type { Accessory, Personality, Species } from "./types";
 
 /** How the companion feels right now. "sad" is the hunger strike after a slip: low, not sick. */
@@ -296,9 +295,8 @@ function Wear({ kind, h, species }: { kind: Accessory; h: (typeof HEAD)[Species]
 
 /** Whether this species should be drawn in 3D right now: the setting is on, the phone can do it and it hasn't failed. */
 function use3d(species: Species) {
-  const allow = (useData().settings.style3d as Species[]).includes(species);
   const [failed, setFailed] = useState(false);
-  return { on: allow && !failed && has3D(species) && webglOk(), fail: () => { markPet3d("failed"); setFailed(true); } };
+  return { on: !failed && has3D(species) && webglOk(), fail: () => { markPet3d("failed"); setFailed(true); } };
 }
 
 /** A calm blank disc while the model loads, so the old drawing never flashes in before the 3D pet. */

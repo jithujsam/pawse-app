@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { CompanionArt, LiveCompanion, PetPortrait } from "../Companion";
 import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
-import { has3D, pet3dStatus, STYLE_3D, styleOptions, with3D } from "../pet3d-support";
+import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { fmtDay, fmtTime, today, uses12h } from "../dates";
@@ -146,17 +146,10 @@ function PetPage() {
         <input className="input" autoComplete="off" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={save} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
       <div className="field"><span className="field-label">Species</span>
-        <Select label="Species" value={companion.species} options={SPECIES.filter((sp) => !sp.off || sp.id === companion.species).map((sp) => ({ value: sp.id, label: sp.label }))}
+        <Select label="Species" value={companion.species} options={SPECIES.filter((sp) => !sp.off || sp.id === companion.species).map((sp) => ({ value: sp.id, label: has3D(sp.id) ? STYLE_3D[sp.id].label : sp.label }))}
           onChange={(id) => { if (id !== companion.species) { actions.setSpecies(companion.id, id); haptic.success(); toast(`${companion.name} is a ${SPECIES.find((x) => x.id === id)!.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }} />
       </div>
-      {!has3D(companion.species) && <span className="muted small">The dog, cat and fox also come in 3D.</span>}
-      {has3D(companion.species) && (() => {
-        const sp = companion.species, on = settings.style3d.includes(sp), status = pet3dStatus();
-        return <div className="field"><span className="field-label">Style</span>
-          <Select label="Pet style" value={on} onChange={(v) => actions.setSettings({ style3d: with3D(settings.style3d, sp, v) })} options={styleOptions(sp)} />
-          <span className="muted small">{!on ? "The soft drawn style." : status === "failed" ? "3D couldn't load on this phone, so the drawing is shown." : status === "unsupported" ? "This phone can't draw 3D, so the drawing is shown." : STYLE_3D[sp].note}</span>
-        </div>;
-      })()}
+      {has3D(companion.species) && <span className="muted small">{pet3dStatus() === "failed" ? "3D couldn't load on this phone, so a drawing is shown." : pet3dStatus() === "unsupported" ? "This phone can't draw 3D, so a drawing is shown." : STYLE_3D[companion.species].note}</span>}
       <div className="field"><span className="field-label">Coat</span>
         <Select label="Coat" value={companion.coat ?? COATS[companion.species][0].id} options={COATS[companion.species].map((c) => ({ value: c.id, label: c.label }))}
           onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, personality: companion.personality })} />

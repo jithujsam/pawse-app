@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
-import { CompanionArt, moodFor, PetPortrait } from "../Companion";
+import { moodFor, PetPortrait } from "../Companion";
+import { has3D, STYLE_3D } from "../pet3d-support";
 import { CRISIS_MESSAGE, pauseHint, pauseRefused, pauseToast, RESTRICTION_NOTE, resumeHint, resumeToast } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { today } from "../dates";
@@ -18,7 +19,7 @@ import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 
 /** Every 3D pet is its own graphics context, which phones cap, so only the first few cards are 3D. */
-const MAX_3D_CARDS = 4;
+const MAX_3D_CARDS = 8;
 
 /**
  * The Pets tab: one card per recovery track. Each track is a habit with its own companion, so the grid is
@@ -161,9 +162,9 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
           <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
             whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
             <motion.div animate={pet.species === s.id ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
-              <CompanionArt species={s.id} stage="baby" mood={pet.species === s.id ? "happy" : "idle"} age={2} size={68} />
+              <PetPortrait species={s.id} stage="baby" mood={pet.species === s.id ? "happy" : "idle"} age={2} size={68} />
             </motion.div>
-            <b>{s.label}</b>
+            <b>{has3D(s.id) ? STYLE_3D[s.id].label : s.label}</b>
           </motion.button>
         ))}
       </div>

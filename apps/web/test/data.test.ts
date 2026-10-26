@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blank, migrateIds, normalize } from "../src/persist";
-import { diff, merge, portableSettings, stripPhotos, toRemote, tombstone, type Pulled } from "../src/syncmap";
+import { diff, merge, stripPhotos, toRemote, tombstone, type Pulled } from "../src/syncmap";
 import { afterFailure, isWeakPin, newKey, open, seal } from "../src/vault";
 import type { AppData } from "../src/types";
 
@@ -55,18 +55,10 @@ describe("loading saved data", () => {
   });
 });
 
-describe("3D pet styles", () => {
-  it("carry over the old on/off switch: on meant only the dog in 3D", () => {
-    const withPet3d = (pet3d?: boolean) => normalize({ ...blank(), settings: { ...blank().settings, style3d: undefined, ...(pet3d === undefined ? {} : { pet3d }) } })!.settings;
-    expect(withPet3d(true).style3d).toEqual(["dog"]);
-    expect(withPet3d(false).style3d).toEqual([]);
-    expect(withPet3d().style3d).toEqual(["dog"]);
-    expect("pet3d" in withPet3d(true)).toBe(false);
-  });
-  it("keep a saved choice, and sync it with the person's settings", () => {
-    const d = normalize({ ...blank(), settings: { ...blank().settings, style3d: ["cat", "fox"] } })!;
-    expect(d.settings.style3d).toEqual(["cat", "fox"]);
-    expect(portableSettings(d.settings).style3d).toEqual(["cat", "fox"]);
+describe("3D pets", () => {
+  it("drop the old drawn/3D switch: every pet is 3D now", () => {
+    const d = normalize({ ...blank(), settings: { ...blank().settings, pet3d: false } as never })!;
+    expect("pet3d" in d.settings).toBe(false);
   });
 });
 

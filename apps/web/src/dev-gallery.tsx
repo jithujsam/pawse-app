@@ -13,6 +13,8 @@ export function Gallery() {
     return <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 8 }}>{rows.filter((_, i) => !parts[5] || String(i) === parts[5]).map(([l, m, g, st, a]) => (
       <figure key={l} style={{ margin: 0, textAlign: "center", font: "12px sans-serif" }}><Pet3D species={sp} coat={parts[3]} stage={st} mood={m} gesture={g} age={a} size={+parts[4] || 180} fallback={<b>fallback</b>} /><figcaption>{l}</figcaption></figure>))}</div>;
   }
+  // #gallery/solo3d/<species>/<mood>: one 3D pet alone on a clear background, for widget images.
+  if (parts[1] === "solo3d") return <div id="solo" style={{ width: 256, display: "inline-block" }}><Pet3D species={parts[2] as Species3D} stage="young" mood={(parts[3] as Mood) || "happy"} age={12} size={256} fallback={<b>fallback</b>} /></div>;
   // #gallery/pet/<species>/<mood>: one pet alone on a clear background, for widget images.
   const [, , sp, md] = location.hash.slice(1).split("/");
   if (sp) return <div id="solo" style={{ width: 256, display: "inline-block" }}><CompanionArt species={sp as never} stage="young" mood={(md as Mood) || "happy"} age={12} size={256} /></div>;

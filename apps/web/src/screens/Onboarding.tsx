@@ -1,21 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { HabitClass } from "@detox/engine";
-import { CompanionArt, LiveCompanion } from "../Companion";
+import { LiveCompanion, PetPortrait } from "../Companion";
 import { CRISIS_MESSAGE, DISCLAIMER, hatchLine, TONES, tonePreview, RESTRICTION_NOTE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, isRestrictionRelated, measureForLabel, NO_AMOUNT } from "../questions";
-import { actions, emptyPlan, useData } from "../store";
+import { actions, emptyPlan } from "../store";
 import { HelpSection, planHasCrisis, WhySection } from "./Plan";
 import { SITUATIONS } from "../recovery";
 import { PetStep } from "./Pets";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES } from "../pets";
-import { has3D, styleOptions, with3D } from "../pet3d-support";
 import { Burst, Button, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import type { Baseline, Personality, RecoveryPlan, Species, Tone } from "../types";
 
@@ -49,7 +48,6 @@ const LAST = 10;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
-  const { settings } = useData();
   const dir = useRef(1);
   const [adult, setAdult] = useState(false);
   const [ownTime, setOwnTime] = useState(() => !REMINDERS.some((r) => r.t === loadDraft().reminder));
@@ -89,10 +87,6 @@ export function Onboarding() {
               <motion.p className="muted" variants={rise}>Pick who they are and give them a name. They'll live on your home screen and change with you.</motion.p>
               <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, personality: d.personality, name: d.companionName }}
                 onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}) })} /></motion.div>
-              {has3D(d.species) && <motion.div className="field" variants={rise}>
-                <span className="field-label">Style</span>
-                <Select label="Pet style" value={settings.style3d.includes(d.species)} onChange={(v) => actions.setSettings({ style3d: with3D(settings.style3d, d.species as "dog" | "cat" | "fox", v) })} options={styleOptions(d.species)} />
-              </motion.div>}
               <motion.label className="field" variants={rise}><span className="field-label">What should {d.companionName.trim() || "they"} call you? <span className="muted">Optional</span></span>
                 <input className="input" autoComplete="given-name" value={d.userName} placeholder="Your first name" maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") go(2); }} />
               </motion.label>
@@ -161,7 +155,7 @@ export function Onboarding() {
             {d.step === 7 && (<>
               <motion.h1 variants={rise}>How should {name} talk to you?</motion.h1>
               <motion.div className="preview" variants={rise}>
-                <CompanionArt species={d.species} coat={d.coat} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
+                <PetPortrait species={d.species} coat={d.coat} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
                 <AnimatePresence mode="wait">
                   <motion.p key={d.tone} className="speech" initial={{ opacity: 0, scale: 0.92, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring.bouncy}>
                     {tonePreview(d.tone, name)}
