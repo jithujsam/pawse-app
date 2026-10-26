@@ -1,6 +1,7 @@
 import { useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { spring } from "../motion";
+import { t } from "../text";
 import { Button } from "./Controls";
 
 interface Step { target: string; title: string; body: string }
@@ -8,9 +9,9 @@ interface Step { target: string; title: string; body: string }
 /** First-run tips: a soft spotlight walks over the three things that matter on Home. */
 export function Coach({ name, onDone }: { name: string; onDone: () => void }) {
   const steps: Step[] = [
-    { target: ".live-pet", title: `This is ${name}`, body: "Tap to say hello. How they look is how things are going." },
-    { target: ".checkin", title: "Check in once a day", body: "Slip or goal met, it takes ten seconds. Honest logs are the whole point." },
-    { target: ".tabbar", title: "Patterns live here", body: "Your calendar and weekly report fill in as you log." },
+    { target: ".live-pet", title: t("home.coach.s1_title", { name }), body: t("home.coach.s1_body") },
+    { target: ".checkin", title: t("home.coach.s2_title"), body: t("home.coach.s2_body") },
+    { target: ".tabbar", title: t("home.coach.s3_title"), body: t("home.coach.s3_body") },
   ];
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -44,10 +45,10 @@ export function Coach({ name, onDone }: { name: string; onDone: () => void }) {
             <h2>{step.title}</h2>
             <p className="muted">{step.body}</p>
             <div className="row">
-              <span className="muted small">{i + 1} of {steps.length}</span>
+              <span className="muted small">{t("home.coach.of", { step: i + 1, total: steps.length })}</span>
               <div className="row" style={{ gap: 4 }}>
-                <Button variant="text" onClick={onDone}>Skip</Button>
-                <Button onClick={next}>{i < steps.length - 1 ? "Next" : "Got it"}</Button>
+                <Button variant="text" onClick={onDone}>{t("home.coach.skip")}</Button>
+                <Button onClick={next}>{i < steps.length - 1 ? t("home.coach.next") : t("home.coach.got_it")}</Button>
               </div>
             </div>
           </motion.div>

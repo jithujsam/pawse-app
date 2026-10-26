@@ -628,3 +628,12 @@ This builds on §19 and §20 and overrides §7.1, §7.2, §7.7, §7.9 and §12 w
 10. **Onboarding.** The plan step no longer asks for hard situations, because onboarding has just asked what sets it off. Situations stay editable in each track's plan.
 11. **Safety.** The urge sheet keeps the crisis check, the "contact local emergency services" line and no claim to replace care. The plan page keeps its "More support" section.
 
+## 22. Copy, safety and text architecture amendment (2026-10-26)
+
+This builds on §15, §19.4 and §21.9. It changes how words are kept and checked, not any recovery rule.
+
+1. **Safety on every field.** Crisis language is checked in any field, and food, calorie, weight and restriction language is refused in anything that defines what is tracked (names, counts, custom questions and answers, typed answers, plans, pet names). The same check runs on the screen and again where it is saved, so a backup file or another phone can't bring such a question in. §15 is met for every path, not only the slip sheet.
+2. **The pet never withholds.** No feeding, strike or treat dialogue and no "won't eat" notification. The pet is hurt by a slip's cost, never disappointed in or disgusted by the person. "Binge day" and "scar" become "heavy day" and "lasting mark".
+3. **Words match behaviour.** Privacy statements, reminder hints and status lines were checked against the code (docs/COPY_GLOSSARY.md). Photos stay on the phone; other records are saved privately to the account; AI wording sends only what the privacy page lists.
+4. **One vocabulary.** The tabs are Pets, Calendar, Insights and Me; the creature is a pet; a counted day is a goal-met day; the Voice setting is Gentle, Honest or Direct (`brutal` stays the stored id).
+5. **A keyed catalogue.** Screen text lives in `apps/web/src/text` under stable ids with section markers; every Voice line has all three versions; a read-only inspector (`/#copy` in a dev build) and a generated manifest list all of it.

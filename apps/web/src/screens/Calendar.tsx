@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { addDays, fmtDay, fmtMonth, fmtTime, today } from "../dates";
+import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
+import { lostMonths, money } from "../format";
+import { tt, t } from "../text";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData, type Deduction } from "../store";
@@ -11,7 +13,8 @@ import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
 import { trackState } from "../tracks";
-import type { Pause } from "../types";
+import type { Pause, Tone } from "../types";
+import { addDays } from "../dates";
 
 /** The pet's age this month, then the month grid. The top of the Calendar tab. */
 export function CalendarSections() {
@@ -46,23 +49,23 @@ export function CalendarSections() {
 
   return (
     <>
-      <motion.section className="card stack" aria-label="Age this month" variants={rise}>
-        <div className="row"><span className="muted small">{companion.name}'s age this month</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
+      <motion.section className="card stack" aria-label={t("calendar.age.aria")} variants={rise}>
+        <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
         {spark.length > 1
-          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Visible age over the month">
+          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>
               <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="var(--chart)" fillOpacity={0.12} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
               <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
             </svg>
-          : <p className="muted small">{spark.length === 1 ? `The curve starts drawing from ${companion.name}'s second day.` : "No age history for this month yet."}</p>}
+          : <p className="muted small">{spark.length === 1 ? t("calendar.age.one_point", { name: companion.name }) : t("calendar.age.none")}</p>}
       </motion.section>
 
       <motion.section className="card stack cal" variants={rise}>
         <div className="row">
-          <button className="icon-btn" aria-label="Previous month" onClick={() => monthShift(-1)}>{Icon.chevL}</button>
+          <button className="icon-btn" aria-label={t("calendar.month.previous")} onClick={() => monthShift(-1)}>{Icon.chevL}</button>
           <AnimatePresence mode="wait" initial={false}><motion.h2 key={cursor} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>{fmtMonth(`${cursor}-01`)}</motion.h2></AnimatePresence>
-          <button className="icon-btn" aria-label="Next month" onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
+          <button className="icon-btn" aria-label={t("calendar.month.next")} onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
         </div>
-        <div className="grid7" aria-hidden>{["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
+        <div className="grid7" aria-hidden>{t("calendar.month.weekdays").split(" ").map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={cursor} className="grid7" custom={dir.current}
             initial={{ opacity: 0, x: dir.current * 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir.current * -30 }} transition={spring.soft}
@@ -70,11 +73,11 @@ export function CalendarSections() {
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (editable(d)
               ? <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit aria-pressed={sel === d}
-                  aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}. Edit this day`} onClick={() => { haptic.select(); setSel(sel === d ? null : d); }}
+                  aria-label={t("calendar.month.day_edit_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(sel === d ? null : d); }}
                   initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
                   <span>{Number(d.slice(8))}</span>
                 </motion.button>
-              : <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`}
+              : <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={t("calendar.month.day_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })}
                   initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
                   <span>{Number(d.slice(8))}</span>
                 </motion.div>
@@ -88,7 +91,7 @@ export function CalendarSections() {
           <span><i data-s="rest" />{STATUS_LABEL.rest} · {month.rest + month.paused}</span>
           <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
-        <p className="muted small">Tap today or one of the three days before it to add or change what happened. A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
+        <p className="muted small">{t("calendar.month.note")}</p>
       </motion.section>
       {sel && editable(sel) && <DayDetail day={sel} />}
 
@@ -107,6 +110,7 @@ export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: s
   const { companion } = view;
   const habit = view.habit!;
   const track = trackState(data, habit.id);
+  const tone = data.settings.tone;
   const t0 = today();
   const ctl = dayControls(data, habit.id, sel, t0);
   const [logging, setLogging] = useState(false);
@@ -118,42 +122,42 @@ export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: s
     if (!e) return;
     haptic.warn();
     actions.deleteEntry(id);
-    toast("Slip deleted", { action: { label: "Undo", run: () => actions.restoreEntry(e) } });
+    toast(t("calendar.day.deleted"), { action: { label: t("ui.common.undo"), run: () => actions.restoreEntry(e) } });
   }
 
   return (
     <>
-      <motion.section className="card stack" aria-label={`Details for ${fmtDay(sel)}`} variants={rise}>
+      <motion.section className="card stack" aria-label={t("calendar.day.aria", { date: fmtDay(sel) })} variants={rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? "Goal met. A good day." : ctl.status === "rest" ? "You chose not to track this day. It counts neither way." : ctl.status === "paused" ? pausedDayLine(track.pauses, sel) : sel < companion.bornOn ? `${companion.name} wasn't born yet on this day.` : ctl.status === "urge" ? "No slip recorded, and an urge managed." : dayUrges.length ? "An urge was noted. No slip was logged, so this isn't counted as one." : "Nothing recorded."}</p>}
-            {dayUrges.length > 0 && <p className="small">{ctl.managedUrges} of {dayUrges.length} {dayUrges.length === 1 ? "urge" : "urges"} managed{dayUrges.some((u) => u.strategy) ? `, using ${[...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ")}` : ""}.</p>}
+            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? tt("calendar.note.met", tone) : ctl.status === "rest" ? tt("calendar.note.rest", tone) : ctl.status === "paused" ? pausedDayLine(tone, track.pauses, sel) : sel < companion.bornOn ? t("calendar.note.not_born", { name: companion.name }) : ctl.status === "urge" ? tt("calendar.note.urge_managed", tone) : dayUrges.length ? t("calendar.note.urge_noted") : tt("calendar.note.nothing", tone)}</p>}
+            {dayUrges.length > 0 && <p className="small">{t("calendar.day.urges_managed", { managed: ctl.managedUrges, total: dayUrges.length, urges: dayUrges.length === 1 ? t("calendar.day.urge_one") : t("calendar.day.urge_other") })}{dayUrges.some((u) => u.strategy) ? t("calendar.day.urges_using", { strategies: [...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ") }) : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
                   <motion.div layout className="item" key={e.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, marginTop: 0 }} transition={spring.soft}>
-                    <div className="row"><b className="neg">−{Math.round(e.months * 10) / 10} months</b>
-                      <button className="icon-btn danger" aria-label="Delete this slip" onClick={() => remove(e.id)}>{Icon.trash}</button></div>
-                    {e.amount !== null && <span>{habit.unit === "money" ? `${data.settings.currency} ${e.amount}` : habit.unit === "minutes" ? `${e.amount} min` : e.amount}</span>}
+                    <div className="row"><b className="neg">{lostMonths(e.months)}</b>
+                      <button className="icon-btn danger" aria-label={t("calendar.day.delete_aria")} onClick={() => remove(e.id)}>{Icon.trash}</button></div>
+                    {e.amount !== null && <span>{habit.unit === "money" ? money(data.settings.currency, e.amount) : habit.unit === "minutes" ? t("calendar.day.minutes", { n: e.amount }) : e.amount}</span>}
                     {Object.entries(e.values).filter(([k, v]) => typeof v === "string" && v && habit.fields.find((f) => f.id === k)?.type === "text").map(([k, v]) => <span key={k} className="muted small">{String(v)}</span>)}
                     {(() => {
                       const tags = habit.fields.flatMap((f) => f.type === "choice" || f.type === "multi" ? pickedLabels(f, e.values[f.id]) : f.type === "scale" && e.values[f.id] ? [`Urge ${e.values[f.id]}/5`] : []);
                       return tags.length ? <div className="tags">{tags.map((t) => <span key={t} className="tag">{t}</span>)}</div> : null;
                     })()}
                     {e.explanation && <span className="small">{e.explanation}</span>}
-                    {typeof e.values.lapse_before === "string" && e.values.lapse_before && <span className="small">Before: {e.values.lapse_before}</span>}
-                    {typeof e.values.lapse_adjust === "string" && e.values.lapse_adjust && <span className="small">Next time: {e.values.lapse_adjust}</span>}
-                    {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt="Photo attached to this slip" src={String(e.values[f.id])} className="entry-photo" width={640} height={480} loading="lazy" decoding="async" />)}
+                    {typeof e.values.lapse_before === "string" && e.values.lapse_before && <span className="small">{t("calendar.day.before", { text: e.values.lapse_before })}</span>}
+                    {typeof e.values.lapse_adjust === "string" && e.values.lapse_adjust && <span className="small">{t("calendar.day.next_time", { text: e.values.lapse_adjust })}</span>}
+                    {habit.fields.filter((f) => f.type === "photo" && typeof e.values[f.id] === "string" && e.values[f.id]).map((f) => <img key={f.id} alt={t("calendar.day.photo_alt")} src={String(e.values[f.id])} className="entry-photo" width={640} height={480} loading="lazy" decoding="async" />)}
                     {e.time && <span className="muted small">{fmtTime(e.time)}</span>}
                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
-            {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
-            {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove “goal met”</Button>}
-            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
-            {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
+            {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}>{t("calendar.day.mark_met")}</Button>}
+            {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}
+            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</Button>}
+            {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</Button>}
           </motion.div>
         </AnimatePresence>
       </motion.section>
@@ -163,9 +167,8 @@ export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: s
 }
 
 /** The calendar line for a paused day, with the pause it belongs to. Paused days count neither way. */
-function pausedDayLine(pauses: Pause[], day: string): string {
+function pausedDayLine(tone: Tone, pauses: Pause[], day: string): string {
   const p = pauses.find((x) => day >= x.from && (x.to === null || day < x.to));
-  if (!p) return "Not tracking: this track was paused. It counts neither way.";
-  const span = p.to === null ? `has been paused since ${fmtDay(p.from)}` : `was paused from ${fmtDay(p.from)} to ${fmtDay(addDays(p.to, -1))}`;
-  return `Not tracking: this track ${span}. It counts neither way.`;
+  if (!p) return tt("calendar.note.paused_unknown", tone);
+  return p.to === null ? tt("calendar.note.paused_open", tone, { from: fmtDay(p.from) }) : tt("calendar.note.paused_range", tone, { from: fmtDay(p.from), to: fmtDay(addDays(p.to, -1)) });
 }

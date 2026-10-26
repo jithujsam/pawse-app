@@ -38,7 +38,8 @@ describe("notification plan: at most two a day", async () => {
 
   it("after a slip: no guilt note from the pet, and any thank-you planned for that day is gone", () => {
     const plan = planNotifications({ ...base, now: at(0, 21), checkedToday: true, care: { kind: "slip", at: at(0, 21).getTime() } });
-    expect(plan.some((n) => n.kind === "strike" || n.kind === "thanks")).toBe(false);
+    expect(plan.some((n) => n.kind === "thanks")).toBe(false);
+    expect(plan.every((n) => !/eat|food|hungry/i.test(`${n.title} ${n.body}`))).toBe(true);
     expect(perDay(plan).get(at(1, 0).toDateString())).toEqual(["daily", "risk"]);
   });
 

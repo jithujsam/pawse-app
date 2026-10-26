@@ -25,6 +25,7 @@ import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
 import { ACCESSORIES } from "../pets";
+import { t } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
 export function Home({ onBack }: { onBack?: () => void }) {
@@ -82,7 +83,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
   function clean() {
     if (cleanToday) return;
-    if (!actions.markClean(habit.id)) { haptic.warn(); setNote("You already logged a slip today, so today can't be marked as goal met."); return; }
+    if (!actions.markClean(habit.id)) { haptic.warn(); setNote(t("home.today.slip_blocks_goal")); return; }
     haptic.success();
     setJust("clean"); setSparks((s) => s + 1);
     setNote(say("cleanThanks", personality, tone));
@@ -90,12 +91,12 @@ export function Home({ onBack }: { onBack?: () => void }) {
     const after = getData();
     const m = milestoneToCelebrate(trackSummary(after, habit.id, t0).care, celebratedFor(after, habit.id), MILESTONES);
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
-    else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, t0) } });
+    else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
   }
   function rest(on: boolean) {
     if (!actions.setRest(habit.id, t0, on)) return;
     haptic.select();
-    if (on) toast(restLine(tone), { action: { label: "Undo", run: () => actions.setRest(habit.id, t0, false) } });
+    if (on) toast(restLine(tone), { action: { label: t("ui.common.undo"), run: () => actions.setRest(habit.id, t0, false) } });
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
@@ -120,22 +121,22 @@ export function Home({ onBack }: { onBack?: () => void }) {
         {update && (
           <motion.button className="update-banner" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
-            <span><b>Update available</b><span className="small">Version {update.name}{update.notes ? ` · ${update.notes}` : ""}</span></span>
-            <span className="update-cta">{updating === null ? "Update" : updating > 0 ? `${updating}%` : "Downloading…"}</span>
+            <span><b>{t("home.header.update_title")}</b><span className="small">{update.notes ? t("home.header.update_version_notes", { version: update.name, notes: update.notes }) : t("home.header.update_version", { version: update.name })}</span></span>
+            <span className="update-cta">{updating === null ? t("home.header.update_cta") : updating > 0 ? `${updating}%` : t("home.header.update_downloading")}</span>
           </motion.button>
         )}
       </AnimatePresence>
-      {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>All pets</span></motion.button>}
+      {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></motion.button>}
       <motion.header className="greet" variants={rise}>
         <div>
           <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
         {streak > 0 && <motion.div className="streak-chip" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring.bouncy} key={streak}>
-          <span aria-hidden>●</span> <AnimatedNumber value={streak} /> {streak === 1 ? "day" : "days"}
+          <span aria-hidden>●</span> <AnimatedNumber value={streak} /> {streak === 1 ? t("home.header.streak_day") : t("home.header.streak_days")}
         </motion.div>}
       </motion.header>
 
-      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={`${companion.name}, age ${Math.round(age)}`} variants={rise}>
+      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, age: Math.round(age) })} variants={rise}>
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
@@ -149,18 +150,18 @@ export function Home({ onBack }: { onBack?: () => void }) {
             {line}
           </motion.p>
         </AnimatePresence>
-        <div className="vitals" role="group" aria-label={`${companion.name}'s health`}>
+        <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
-              aria-label={v.id === "health" ? `Health: ${report.title}, ${report.heart} of 100` : v.label}>
+              aria-label={v.id === "health" ? t("home.hero.health_aria", { title: report.title, heart: report.heart }) : v.label}>
               <span className="vital-ico">{v.id === "health" ? <Heart value={report.heart} level={report.level} size={24} /> : v.icon}
                 {v.id === "conditions" && conds.length > 0 && <i className="care-badge" data-tone={conds.some((c) => c.tone === "serious") ? "bad" : "warn"}>{conds.length}</i>}</span>
               <span className="small">{v.id === "health" ? `${report.heart}` : v.label}</span>
             </motion.button>
           ))}
         </div>
-        <div className="agetext"><span>Age <b><AnimatedNumber value={Math.round(age)} /></b></span><span className="muted">Life left <AnimatedNumber value={100 - Math.round(age)} /></span></div>
-        <div className={`agebar${danger ? " danger" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(age)} aria-label="Visible age">
+        <div className="agetext"><span>{t("home.hero.age")} <b><AnimatedNumber value={Math.round(age)} /></b></span><span className="muted">{t("home.hero.life_left")} <AnimatedNumber value={100 - Math.round(age)} /></span></div>
+        <div className={`agebar${danger ? " danger" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(age)} aria-label={t("home.hero.age_aria")}>
           <motion.i initial={false} animate={{ width: `${Math.max(1.5, age)}%` }} transition={spring.calm} />
           {plan && plan.lifeExpectancy < 100 && <span className="agebar-cap" style={{ left: `${plan.lifeExpectancy}%` }} aria-hidden />}
         </div>
@@ -169,20 +170,20 @@ export function Home({ onBack }: { onBack?: () => void }) {
       {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
       {trackPaused && (
-        <motion.section className="card row paused-card" aria-label="Paused" variants={rise}>
+        <motion.section className="card row paused-card" aria-label={t("home.paused.aria")} variants={rise}>
           <span className="small">{pauseHint(tone)}</span>
-          <Button variant="secondary" onClick={() => { if (actions.resumeTrack(habit.id)) { haptic.select(); toast(resumeToast(tone), { kind: "good" }); } }}>Resume</Button>
+          <Button variant="secondary" onClick={() => { if (actions.resumeTrack(habit.id)) { haptic.select(); toast(resumeToast(tone), { kind: "good" }); } }}>{t("home.paused.resume")}</Button>
         </motion.section>
       )}
 
       {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
       <DayDetail day={t0} onMarkMet={clean} onRest={rest} onSlipSaved={saved} />
 
-      <motion.section className="checkin" aria-label="Weekly summary" variants={rise}>
-        <div className="row"><h2>Weekly summary</h2><span className="muted small">{weekMet} goal-met {weekMet === 1 ? "day" : "days"}</span></div>
-        <div className="weekstrip" aria-label="This week">
+      <motion.section className="checkin" aria-label={t("home.week.title")} variants={rise}>
+        <div className="row"><h2>{t("home.week.title")}</h2><span className="muted small">{weekMet === 1 ? t("home.week.count_one", { n: weekMet }) : t("home.week.count_other", { n: weekMet })}</span></div>
+        <div className="weekstrip" aria-label={t("home.week.strip_aria")}>
           {strip.map((x) => (
-            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${STATUS_LABEL[x.s]}`}>
+            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={t("home.week.day_aria", { date: fmtDay(x.d), status: STATUS_LABEL[x.s] })}>
               <span className="muted small">{x.label}</span>
               <motion.i layout initial={false} animate={{ scale: x.s === "unrecorded" || x.s === "future" ? 0.7 : 1 }} transition={spring.bouncy} />
             </div>
@@ -200,9 +201,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
 }
 
 const VITALS: { id: HealthTab; label: string; icon: React.JSX.Element | null }[] = [
-  { id: "health", label: "Health", icon: null },
-  { id: "history", label: "History", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></svg> },
-  { id: "conditions", label: "Conditions", icon: <svg viewBox="0 0 24 24" className="ico"><path d="M6 3v6a4 4 0 0 0 8 0V3M10 13v2a5 5 0 0 0 10 0v-2" /><circle cx="20" cy="11" r="2" /></svg> },
+  { id: "health", label: t("home.hero.vital_health"), icon: null },
+  { id: "history", label: t("home.hero.vital_history"), icon: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></svg> },
+  { id: "conditions", label: t("home.hero.vital_conditions"), icon: <svg viewBox="0 0 24 24" className="ico"><path d="M6 3v6a4 4 0 0 0 8 0V3M10 13v2a5 5 0 0 0 10 0v-2" /><circle cx="20" cy="11" r="2" /></svg> },
 ];
 
 function Milestone({ days, name, onClose, view }: { days: number | null; name: string; onClose: () => void; view: NonNullable<ReturnType<typeof useActiveView>> }) {
@@ -214,7 +215,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
     <AnimatePresence>
       {days && (
         <motion.div className="scrim center" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <motion.div className="celebrate" role="dialog" aria-modal="true" aria-label="Milestone" onClick={(e) => e.stopPropagation()}
+          <motion.div className="celebrate" role="dialog" aria-modal="true" aria-label={t("home.milestone.aria")} onClick={(e) => e.stopPropagation()}
             initial={{ scale: 0.7, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} transition={spring.bouncy}>
             <Burst burst={days} kind="spark" count={14} />
             <motion.div className="big-num" initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ ...spring.bouncy, delay: 0.15 }}>{days}</motion.div>
@@ -222,7 +223,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
             <h2>{milestoneLine(tone, name, days).title}</h2>
             <p className="muted">{milestoneLine(tone, name, days).body}</p>
             <UnlockNote days={days} />
-            <Button onClick={onClose}>Keep going</Button>
+            <Button onClick={onClose}>{t("home.milestone.keep_going")}</Button>
           </motion.div>
         </motion.div>
       )}
@@ -234,5 +235,5 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
 function UnlockNote({ days }: { days: number }) {
   const a = ACCESSORIES.find((x) => x.days === days);
   if (!a) return null;
-  return <p className="unlock"><b>New:</b> {a.label}. Put it on in Me → your companion.</p>;
+  return <p className="unlock"><b>{t("home.milestone.unlock_prefix")}</b> {t("home.milestone.unlock", { item: a.label })}</p>;
 }

@@ -4,9 +4,9 @@ import { fmtDay, today } from "../dates";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions, useData } from "../store";
-import { CRISIS_MESSAGE } from "../copy";
-import { hasCrisisLanguage } from "../crisis";
-import { Button, Select } from "../ui/Controls";
+import { Button, ConcernNote, Select } from "../ui/Controls";
+import { concernIn } from "../guard";
+import { t } from "../text";
 import { toast } from "../ui/Toast";
 
 /**
@@ -14,14 +14,10 @@ import { toast } from "../ui/Toast";
  * and an if-then plan ("if I'm bored at 10pm, then I'll…") roughly doubles follow-through in studies
  * of implementation intentions. One entry per day; mood is required, words are optional.
  */
-const MOODS = [{ n: 1, e: "😞", l: "Rough" }, { n: 2, e: "😕", l: "Low" }, { n: 3, e: "😐", l: "Okay" }, { n: 4, e: "🙂", l: "Good" }, { n: 5, e: "😄", l: "Great" }];
+const MOODS = [{ n: 1, e: "😞", l: t("insights.reflect.mood_1") }, { n: 2, e: "😕", l: t("insights.reflect.mood_2") }, { n: 3, e: "😐", l: t("insights.reflect.mood_3") }, { n: 4, e: "🙂", l: t("insights.reflect.mood_4") }, { n: 5, e: "😄", l: t("insights.reflect.mood_5") }];
 const PROMPTS = [
-  "What made today easier or harder?",
-  "When the urge comes next, what will you do instead? \"If ___, then I'll ___.\"",
-  "One thing you're glad you did today.",
-  "What were you feeling right before the last urge?",
-  "What would you tell a friend in your place today?",
-  "What's one small thing that would make tomorrow go well?",
+  t("insights.reflect.prompt_1"), t("insights.reflect.prompt_2"), t("insights.reflect.prompt_3"),
+  t("insights.reflect.prompt_4"), t("insights.reflect.prompt_5"), t("insights.reflect.prompt_6"),
 ];
 
 export function Reflect() {
@@ -34,29 +30,28 @@ export function Reflect() {
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
   const recent = [...data.journal].filter((j) => j.day !== t0).slice(-1).reverse();
 
-  const [crisis, setCrisis] = useState(false);
+  // Same care as the slip sheet: distress comes first, and nothing is saved.
+  const concern = concernIn(body, "crisis");
   function save() {
-    // Same care as the slip sheet: distress comes first, and nothing is saved.
-    if (hasCrisisLanguage(body)) { setCrisis(true); return; }
-    setCrisis(false);
+    if (concern) return;
     actions.setJournal(t0, mood, body.trim());
     haptic.success();
     setOpen(false);
-    toast("Saved. Thanks for checking in with yourself.", { kind: "good" });
+    toast(t("insights.reflect.saved"), { kind: "good" });
   }
 
   return (
     <div className="stack tight reflect">
-      <div className="row"><b>How was today?</b>{existing && !open && <span className="muted small">Done today</span>}</div>
-      <Select label="Today's mood" value={mood || undefined} placeholder="Pick a mood"
+      <div className="row"><b>{t("insights.reflect.title")}</b>{existing && !open && <span className="muted small">{t("insights.reflect.done")}</span>}</div>
+      <Select label={t("insights.reflect.mood_aria")} value={mood || undefined} placeholder={t("insights.reflect.mood_placeholder")}
         options={MOODS.map((m) => ({ value: m.n, label: `${m.e}  ${m.l}` }))}
         onChange={(n) => { setMood(n); setOpen(true); }} />
       <AnimatePresence initial={false}>
         {open && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
-            <input className="input" autoComplete="off" value={body} maxLength={600} aria-label={prompt} placeholder="One line, if you like. Stays private." onChange={(e) => setBody(e.target.value)} />
-            {crisis && <p className="banner danger" role="alert">{CRISIS_MESSAGE}</p>}
-            <Button disabled={!mood} onClick={save}>Save</Button>
+            <input className="input" autoComplete="off" value={body} maxLength={600} aria-label={prompt} placeholder={t("insights.reflect.placeholder")} onChange={(e) => setBody(e.target.value)} />
+            <ConcernNote concern={concern} />
+            <Button disabled={!mood || concern !== null} onClick={save}>{t("ui.common.save")}</Button>
           </motion.div>
         )}
       </AnimatePresence>

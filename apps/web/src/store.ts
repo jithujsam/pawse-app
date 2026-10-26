@@ -7,7 +7,10 @@ import { addDays, iso, today, weekStart } from "./dates";
 import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
-import { countTriggers, pickedLabels, starterFields, type Intake } from "./questions";
+import { countTriggers, OTHER_PREFIX, pickedLabels, starterFields, type Intake } from "./questions";
+import { concernIn, concernInAny, type Concern } from "./guard";
+import { NAMES } from "./pets";
+import { money } from "./format";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, trackState } from "./tracks";
@@ -298,6 +301,40 @@ const focused = (habitId?: string) => habitId ?? focusedTrackId(data) ?? "";
 
 export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] });
 
+// ---------- the last line of defence for typed text ----------
+// The screens check what is typed as it is typed. These checks run again where it is saved, so no screen, edit flow,
+// restored backup or synced row can put crisis language, or something that tracks food or weight, into the data.
+
+/** A pet's name when none was given, fitting its species. */
+export const defaultPetName = (species: Species): string => NAMES[species]?.[0] ?? "Biscuit";
+
+const planTexts = (p: RecoveryPlan | null | undefined): string[] => (p ? [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName] : []);
+const fieldTexts = (fields: Habit["fields"]): string[] => fields.flatMap((f) => [f.label, ...(f.options ?? []).map((o) => o.label), ...(f.scaleLabels ?? [])]);
+
+/** What a slip's answers need: notes are checked for crisis language, typed answers to questions for food and weight too. Photos are skipped. */
+function valuesConcern(values: Entry["values"]): Concern | null {
+  let found: Concern | null = null;
+  for (const v of Object.values(values)) {
+    if (typeof v !== "string" || !v || v.startsWith("data:")) continue;
+    if (concernIn(v, "crisis")) return "crisis";
+    for (const part of v.split(",")) if (part.startsWith(OTHER_PREFIX) && concernIn(part.slice(OTHER_PREFIX.length))) found = "restriction";
+  }
+  return found;
+}
+
+/** Drops anything that would track food or weight (or carries crisis text) from track definitions that arrive from outside: a backup file or another phone. */
+export function scrubTracking(d: AppData): AppData {
+  let changed = false;
+  const habits = d.habits.map((h) => {
+    const nameBad = concernIn(h.name) !== null;
+    const fields = h.fields.filter((f) => concernInAny(fieldTexts([f])) === null);
+    if (!nameBad && fields.length === h.fields.length) return h;
+    changed = true;
+    return { ...h, name: nameBad ? "My habit" : h.name, fields };
+  });
+  return changed ? { ...d, habits } : d;
+}
+
 function cleanPlan(p: RecoveryPlan): RecoveryPlan {
   const list = (xs: string[], n: number, len: number) => [...new Set(xs.map((x) => x.trim().slice(0, len)).filter(Boolean))].slice(0, n);
   return {
@@ -345,11 +382,16 @@ export function recoveryPlan(v: CompanionView, day = today()): { undoToday: numb
 
 export const actions = {
   setTone: (tone: Tone) => commit({ ...data, settings: { ...data.settings, tone } }),
-  setSettings: (patch: Partial<AppData["settings"]>) => commit({ ...data, settings: { ...data.settings, ...patch } }),
+  setSettings: (patch: Partial<AppData["settings"]>) => {
+    const { userName, ...rest } = patch;
+    const safeName = userName !== undefined && concernIn(userName) === null ? { userName } : {};
+    commit({ ...data, settings: { ...data.settings, ...rest, ...safeName } });
+  },
 
-  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }) {
+  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }): boolean {
+    if (concernInAny([o.companionName, o.userName, o.intake.what, o.intake.amountLabel, ...o.intake.triggers, ...planTexts(o.plan)])) return false;
     const companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null };
     const habitId = uid();
     const habit: Habit = {
       id: habitId, name: o.intake.what.trim().slice(0, 60) || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
@@ -361,6 +403,7 @@ export const actions = {
       settings: { ...data.settings, userName: (o.userName ?? "").trim().slice(0, 30), neglectFrom: today(), currency: localCurrency(data.settings.currency), tone: o.tone, reminder: o.reminder, onboarded: true, activeHabit: habitId },
       companions: [{ ...companion, trackId: habitId }], habits: [habit],
     });
+    return true;
   },
 
   /**
@@ -390,7 +433,7 @@ export const actions = {
 
   /** Replace everything, used when an account's saved copy is newer than this phone's. */
   /** Applies rows that arrived from the account. Never marked as local changes, so they don't bounce back. */
-  applyRemote(next: AppData) { commit(next, "remote"); },
+  applyRemote(next: AppData) { commit(scrubTracking(next), "remote"); },
 
   /**
    * Restores a backup file. Everything in it is validated and v1 backups are migrated; returns false if it isn't a
@@ -401,7 +444,7 @@ export const actions = {
     try {
       const d = normalize(JSON.parse(text));
       if (!d || !d.settings.onboarded) return false;
-      commit(migrateIds(d));
+      commit(migrateIds(scrubTracking(d)));
       return true;
     } catch { return false; }
   },
@@ -414,12 +457,17 @@ export const actions = {
     commit({ ...data, habits: data.habits.map((x) => (x.id === habitId ? { ...x, fields: starterFields({ what: trackState(data, x.id).description || x.name, measure: x.unit, amountLabel, cls: x.cls, triggers: [] }) } : x)) });
   },
 
-  updateHabitFields: (habitId: string, fields: Habit["fields"]) =>
-    commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) }),
+  /** False when a question's wording or answers need the safety note: nothing is saved then. */
+  updateHabitFields(habitId: string, fields: Habit["fields"]): boolean {
+    if (concernInAny(fieldTexts(fields))) return false;
+    commit({ ...data, habits: data.habits.map((h) => (h.id === habitId ? { ...h, fields } : h)) });
+    return true;
+  },
 
   /** Null when the track can't take a record: it is archived (read-only) or gone. A pause never refuses one. */
   logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
     if (!canRecord(data, habitId)) return null;
+    if (valuesConcern(values)) return null; // the slip sheet shows the note before it ever gets here
     const habit = data.habits.find((h) => h.id === habitId)!;
     const companion = data.companions.find((c) => c.id === habit.companionId)!;
     const amountField = habit.fields.find((f) => f.amount);
@@ -481,13 +529,18 @@ export const actions = {
   },
 
   /** Saves a track's plan (the focused one by default). Text is trimmed and capped; empty items are dropped. */
-  savePlan(p: RecoveryPlan, habitId?: string) { const id = focused(habitId); if (data.habits.some((h) => h.id === id)) commit(withTrack(data, id, (s) => ({ ...s, plan: cleanPlan(p) }))); },
+  savePlan(p: RecoveryPlan, habitId?: string): boolean {
+    const id = focused(habitId);
+    if (!data.habits.some((h) => h.id === id) || concernInAny(planTexts(p))) return false;
+    commit(withTrack(data, id, (s) => ({ ...s, plan: cleanPlan(p) })));
+    return true;
+  },
 
   /** Adds one if-then plan (e.g. from a lapse reflection or weekly review) without duplicating it. */
   addIfThen(text: string, habitId?: string) {
     const t = text.trim().slice(0, 160);
     const id = focused(habitId);
-    if (!t || !data.habits.some((h) => h.id === id)) return;
+    if (!t || concernIn(t) || !data.habits.some((h) => h.id === id)) return;
     const plan = trackState(data, id).plan ?? emptyPlan();
     if (plan.ifThen.some((x) => x.toLowerCase() === t.toLowerCase())) return;
     commit(withTrack(data, id, (s) => ({ ...s, plan: { ...plan, ifThen: [...plan.ifThen, t].slice(-8) } })));
@@ -499,6 +552,7 @@ export const actions = {
    */
   reflectOnLapse(entryId: string, r: { before: string; adjust: string }) {
     const before = r.before.trim().slice(0, 160), adjust = r.adjust.trim().slice(0, 160);
+    if (concernIn(before, "crisis") || concernIn(adjust)) return;
     commit({ ...data, entries: data.entries.map((e) => (e.id === entryId ? { ...e, values: { ...e.values, lapse_before: before, lapse_adjust: adjust } } : e)) });
   },
 
@@ -506,7 +560,7 @@ export const actions = {
   setWeekFocus(week: string, text: string, habitId?: string) {
     const t = text.trim().slice(0, 160);
     const id = focused(habitId);
-    if (!data.habits.some((h) => h.id === id)) return;
+    if (concernIn(t) || !data.habits.some((h) => h.id === id)) return;
     commit(withTrack(data, id, (s) => {
       const rest = s.weekFocus.filter((w) => w.week !== week);
       return { ...s, weekFocus: (t ? [...rest, { week, text: t }] : rest).sort((a, b) => a.week.localeCompare(b.week)).slice(-60) };
@@ -523,6 +577,7 @@ export const actions = {
   resetCelebrations: (habitId?: string) => { const id = focused(habitId); if (trackState(data, id).celebrated.length) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [] }))); },
   /** Per-track settings that need no checks of their own (what the pet wears, the savings goal, milestones seen...). */
   setTrackSettings(habitId: string, patch: Partial<Pick<TrackState, "wear" | "savingsGoal" | "celebrated" | "baseline" | "treatsGiven" | "fedOn">>) {
+    if (patch.savingsGoal && concernIn(patch.savingsGoal.label)) return;
     if (data.habits.some((h) => h.id === habitId)) commit(withTrack(data, habitId, (s) => ({ ...s, ...patch })));
   },
 
@@ -533,13 +588,14 @@ export const actions = {
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       strength: Math.max(1, Math.min(5, Math.round(strength))), outcome, createdAt: Date.now(),
-      strategy: extra.strategy ?? null, trigger: extra.trigger?.trim().slice(0, 40) || null,
+      strategy: extra.strategy ?? null, trigger: extra.trigger && !concernIn(extra.trigger) ? extra.trigger.trim().slice(0, 40) || null : null,
     };
     commit({ ...data, urges: [...data.urges, urge] });
     return urge;
   },
   /** Saves today's (or another day's) reflection; an empty one is removed. */
   setJournal(day: string, mood: number, body: string) {
+    if (concernIn(body, "crisis")) return;
     const rest = data.journal.filter((j) => j.day !== day);
     const entry = { day, mood: Math.max(1, Math.min(5, Math.round(mood))), body: body.slice(0, 600) };
     commit({ ...data, journal: mood ? [...rest, entry].sort((a, b) => a.day.localeCompare(b.day)) : rest });
@@ -551,8 +607,12 @@ export const actions = {
   setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "personality">) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
 
-  renameCompanion: (id: string, name: string) =>
-    commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) }),
+  /** False when the name needs the safety note: the pet keeps its name then. */
+  renameCompanion(id: string, name: string): boolean {
+    if (concernIn(name)) return false;
+    commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, name: name.trim().slice(0, 20) || c.name } : c)) });
+    return true;
+  },
 
   /**
    * Opens a recovery track on this phone. It is device-only UI state (settings.activeHabit): never synced and
@@ -573,7 +633,7 @@ export const actions = {
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
     const habit = data.habits.find((h) => h.id === habitId)!;
-    const companion: Companion = { id: uid(), species, personality, name: name.trim() || "Biscuit", bornOn: today(), diedOn: null, finalAge: null, trackId: habit.id };
+    const companion: Companion = { id: uid(), species, personality, name: (concernIn(name) ? "" : name.trim()) || defaultPetName(species), bornOn: today(), diedOn: null, finalAge: null, trackId: habit.id };
     commit({
       ...data,
       companions: [...data.companions, companion],
@@ -593,8 +653,9 @@ export const actions = {
   }): string | null {
     const name = o.name.trim().slice(0, 60);
     if (!name || data.habits.length >= 50) return null;
+    if (concernInAny([o.name, o.description, o.amountLabel, o.companionName, ...(o.triggers ?? []), ...fieldTexts(o.fields ?? []), ...planTexts(o.plan)])) return null;
     const habitId = uid(), companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim().slice(0, 20) || "Biscuit", bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
     const habit: Habit = {
       id: habitId, name, cls: o.cls, classWeight: weightFor(o.cls), companionId, unit: o.unit,
       fields: o.fields ?? starterFields({ what: name, measure: o.unit, amountLabel: o.amountLabel, cls: o.cls, triggers: o.triggers ?? [] }),
@@ -611,6 +672,7 @@ export const actions = {
   updateTrack(habitId: string, patch: { name?: string; description?: string; startedOn?: string; baseline?: Baseline | null; plan?: RecoveryPlan | null }): boolean {
     const h = data.habits.find((x) => x.id === habitId);
     if (!h) return false;
+    if (concernInAny([patch.name, patch.description, ...planTexts(patch.plan)])) return false;
     const name = patch.name === undefined ? h.name : patch.name.trim().slice(0, 60);
     if (!name) return false;
     if (patch.startedOn !== undefined) {
@@ -750,7 +812,7 @@ export function slipRequest(entryId: string): SlipRequest | null {
       ...habit.fields.filter((f) => f.id === "mood" || f.id === "plan" || f.id === "who").flatMap((f) => pickedLabels(f, e.values[f.id])),
     ].map((t) => t.slice(0, 60)).slice(0, 8),
     texts: [
-      ...(habit.unit === "money" && e.amount !== null ? [`Spent ${data.settings.currency}${e.amount}`] : []),
+      ...(habit.unit === "money" && e.amount !== null ? [`Spent ${money(data.settings.currency, e.amount)}`] : []),
       ...habit.fields.filter((f) => f.type === "text").map((f) => String(e.values[f.id] ?? "").trim()).filter(Boolean),
       ...habit.fields.filter((f) => f.id === "what" || f.id === "where").flatMap((f) => pickedLabels(f, e.values[f.id]).map((l) => `${f.id === "where" ? "Where" : "What"}: ${l}`)),
       ...(typeof e.values.urge === "string" && e.values.urge ? [`Urge strength: ${e.values.urge} of 5`] : []),

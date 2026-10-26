@@ -6,6 +6,7 @@ import { spring } from "../motion";
 import { actions, unlockWith, vault } from "../store";
 import { Button, Icon } from "../ui/Controls";
 import { PinPad } from "../ui/PinPad";
+import { t } from "../text";
 import { afterFailure, type Lockout, type Sealed } from "../vault";
 
 /**
@@ -43,17 +44,17 @@ export function LockScreen({ sealed, pinLength, onUnlock }: { sealed?: Sealed; p
   return (
     <motion.main className="screen lock" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }} transition={spring.soft}>
       <motion.div className="lock-ico" initial={{ scale: 0.6, rotate: -10 }} animate={{ scale: 1, rotate: 0 }} transition={spring.bouncy}>{Icon.lock}</motion.div>
-      <h1>Welcome back</h1>
-      <p className="muted">{waiting ? `Too many tries. Wait ${waiting}s.` : busy ? "Checking…" : lock.fails ? "Wrong PIN. Try again." : "Enter your PIN"}</p>
-      <PinPad length={pinLength} onDone={tryPin} error={error} disabled={busy || waiting > 0} label="PIN" />
+      <h1>{t("lock.screen.title")}</h1>
+      <p className="muted">{waiting ? t("lock.screen.wait", { n: waiting }) : busy ? t("lock.screen.checking") : lock.fails ? t("lock.screen.wrong") : t("lock.screen.enter")}</p>
+      <PinPad length={pinLength} onDone={tryPin} error={error} disabled={busy || waiting > 0} label={t("lock.screen.label")} />
       <AnimatePresence mode="wait">
         {!forgot
-          ? <motion.div key="f"><Button variant="text" onClick={() => setForgot(true)}>Forgot PIN?</Button></motion.div>
+          ? <motion.div key="f"><Button variant="text" onClick={() => setForgot(true)}>{t("lock.screen.forgot")}</Button></motion.div>
           : <motion.div key="e" className="card stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="small">The PIN can't be recovered, because your data is encrypted with it. You can erase this phone's copy and start again. If you had an account, signing in brings your history back.</p>
+              <p className="small">{t("lock.screen.forgot_body")}</p>
               <div className="actions">
-                <Button variant="danger" onClick={async () => { await actions.resetAll(); onUnlock(); }}>Erase and start over</Button>
-                <Button variant="secondary" onClick={() => setForgot(false)}>Cancel</Button>
+                <Button variant="danger" onClick={async () => { await actions.resetAll(); onUnlock(); }}>{t("lock.screen.erase")}</Button>
+                <Button variant="secondary" onClick={() => setForgot(false)}>{t("ui.common.cancel")}</Button>
               </div>
             </motion.div>}
       </AnimatePresence>

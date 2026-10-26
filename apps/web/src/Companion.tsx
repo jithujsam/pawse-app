@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import type { Stage } from "@detox/engine";
+import { describePet } from "./pet-label";
+import { t } from "./text";
 import { haptic } from "./haptics";
 import { coatFor, mix } from "./pets";
 import { Burst } from "./ui/Controls";
@@ -245,7 +247,7 @@ export function CompanionArt({ species, coat, stage, mood, age, size = 280, look
   const whiskers = species === "cat" || species === "fox" || species === "rabbit";
 
   return (
-    <svg className={classes} viewBox="20 14 200 204" width={size} height={size * (204 / 200)} role="img" aria-label={`${species}, ${stage}, ${mood}`}>
+    <svg className={classes} viewBox="20 14 200 204" width={size} height={size * (204 / 200)} role="img" aria-label={describePet(species, stage, mood)}>
       <defs>
         <radialGradient id={`${id}-fur`} cx="38%" cy="28%" r="80%">
           <stop offset="0" stopColor={mix(fur, "#ffffff", 0.22)} />
@@ -408,7 +410,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
 
   return (
     <motion.div ref={ref} className="live-pet" role={interactive ? "button" : undefined}
-      aria-label={interactive ? "Pet your companion. Tap the head to pet, the belly to tickle, or stroke it." : undefined} tabIndex={interactive ? 0 : -1}
+      aria-label={interactive ? t("pet.look.interactive") : undefined} tabIndex={interactive ? 0 : -1}
       onPointerDown={(e) => { stroke.current = { x: e.clientX, dist: 0, down: true }; }}
       onPointerMove={(e) => {
         const s = stroke.current; if (!s.down) return;

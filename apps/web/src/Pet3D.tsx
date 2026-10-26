@@ -1,6 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
+import { describePet } from "./pet-label";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -364,7 +365,7 @@ export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { s
   const on = useOnScreen(ref);
   const fx = props.reduced ? null : fxFor(props.mood, props.gesture ?? "none");
   return (
-    <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={`${props.species}, ${props.stage}, ${props.mood}`} role="img">
+    <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={describePet(props.species, props.stage, props.mood)} role="img">
       <Guard fallback={fallback} onFail={onFail}>
         <Suspense fallback={loading ?? fallback}>
           <Canvas frameloop={on && !props.reduced ? "always" : "demand"} dpr={[1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}

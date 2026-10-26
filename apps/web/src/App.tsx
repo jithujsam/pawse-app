@@ -34,6 +34,7 @@ import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
+import { t } from "./text";
 
 export type Tab = "pets" | "calendar" | "insights" | "you";
 const TABS: Tab[] = ["pets", "calendar", "insights", "you"];
@@ -44,7 +45,7 @@ const ICONS: Record<Tab, React.JSX.Element> = {
   insights: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
   you: <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>,
 };
-const LABELS: Record<Tab, string> = { pets: "Home", calendar: "Journey", insights: "Insights", you: "Me" };
+const LABELS: Record<Tab, string> = { pets: t("nav.tabs.pets"), calendar: t("nav.tabs.calendar"), insights: t("nav.tabs.insights"), you: t("nav.tabs.me") };
 listenForBack();
 
 const LOCK_AFTER: Record<string, number> = { immediately: 0, "1m": 60_000, "5m": 300_000, never: Infinity };
@@ -216,24 +217,24 @@ function Shell() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <nav className="tabbar" aria-label="Main">
-        {TABS.flatMap((t, i) => {
+      <nav className="tabbar" aria-label={t("nav.tabs.main")}>
+        {TABS.flatMap((tabId, i) => {
           const button = (
-            <button key={t} className="tab" data-tab={t} aria-current={tab === t ? "page" : undefined} onClick={() => go(t)}>
-              <span className="tab-ico">{ICONS[t]}</span>
-              <span className="tab-label">{LABELS[t]}</span>
+            <button key={tabId} className="tab" data-tab={tabId} aria-current={tab === tabId ? "page" : undefined} onClick={() => go(tabId)}>
+              <span className="tab-ico">{ICONS[tabId]}</span>
+              <span className="tab-label">{LABELS[tabId]}</span>
             </button>
           );
           return i === 2 ? [
             <div key="fab" className="fab-slot">
-              <motion.button className="fab" aria-label="Log or check in" aria-haspopup="dialog" disabled={!view} onClick={() => { haptic.tap(); setQuick(true); }}
+              <motion.button className="fab" aria-label={t("nav.tabs.quick")} aria-haspopup="dialog" disabled={!view} onClick={() => { haptic.tap(); setQuick(true); }}
                 whileTap={{ scale: 0.9 }} animate={{ rotate: quick ? 45 : 0 }} transition={spring.bouncy}>{Icon.plus}</motion.button>
             </div>, button] : [button];
         })}
       </nav>
       <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} onPlan={(id) => { setQuick(false); setPlanHabit(id); }} />
       <UpdateDialog />
-      <SubPage open={planHabit !== null} title="Your plan" onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
+      <SubPage open={planHabit !== null} title={t("me.profile.row_plan")} onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
     </div>
   );
 }
@@ -245,5 +246,5 @@ function WithTrack({ children }: { children: React.ReactNode }) {
 
 /** While the app loads: the paw filling in, toe by toe. */
 function Loading() {
-  return <main className="screen center-screen" aria-busy="true" aria-label="Loading"><PawLoader /></main>;
+  return <main className="screen center-screen" aria-busy="true" aria-label={t("nav.loading.loading")}><PawLoader /></main>;
 }

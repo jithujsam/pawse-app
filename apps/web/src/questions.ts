@@ -51,10 +51,8 @@ export function inferMeasureFromLabel(label: string): Measure {
   return "count";
 }
 
-/** This product never tracks eating less, calories or weight. */
-export function isRestrictionRelated(text: string): boolean {
-  return /calori|weigh|diet\b|dieting|starv|purg|skip(ping)? (meals|food)|eat(ing)? less|fasting|too fat|binge/i.test(text);
-}
+/** This product never tracks eating less, calories or weight. One shared check (src/guard.ts) decides. */
+export { isRestrictionRelated } from "./guard";
 
 const AMOUNT_LABEL: Record<Measure, string | null> = {
   money: "How much did you spend?",

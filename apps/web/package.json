@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "android:sync": "vite build && cap sync android"
+    "android:sync": "vite build && cap sync android",
+    "copy:manifest": "UPDATE_COPY_MANIFEST=1 vitest run test/copy-catalogue.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",

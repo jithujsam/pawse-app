@@ -8,7 +8,8 @@ Read docs/PRD.md before any work. It is the source of truth.
 - AI output must be validated with Zod schemas and must fall back to the baseline on any failure.
 - Never expose the Anthropic API key to the client.
 - Never add calorie, weight or restriction tracking.
-- All user-facing copy must exist in all three tones (gentle, honest, brutal).
+- All user-facing copy must exist in all three tones (gentle, honest, brutal), except documented tone-neutral text (labels, errors, safety and privacy statements). UI text lives in `apps/web/src/text` with stable ids; see docs/COPY_GLOSSARY.md, and run `pnpm --filter web copy:manifest` after changing it.
+- Typed text goes through the one safety check in `apps/web/src/guard.ts`, on the screen and again in the store.
 - Respect prefers-color-scheme and prefers-reduced-motion.
 - Ask before adding a new dependency or creating large new files.
 

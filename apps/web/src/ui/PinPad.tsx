@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, useAnimationControls } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
+import { t } from "../text";
 
 /** Number pad with filling dots. Calls onDone once `length` digits are in; shakes on `error` changes. */
 export function PinPad({ length = 4, onDone, error, disabled, label }: { length?: number; onDone: (pin: string) => void; error: number; disabled?: boolean; label: string }) {
@@ -32,7 +33,7 @@ export function PinPad({ length = 4, onDone, error, disabled, label }: { length?
 
   return (
     <div className="pinpad" aria-label={label}>
-      <motion.div className="pin-dots" animate={shake} aria-live="polite" aria-label={`${pin.length} of ${length} digits`}>
+      <motion.div className="pin-dots" animate={shake} aria-live="polite" aria-label={t("ui.settings.digits", { count: pin.length, length })}>
         {Array.from({ length }, (_, i) => (
           <motion.i key={i} data-on={i < pin.length} animate={{ scale: i < pin.length ? 1.15 : 1 }} transition={spring.bouncy} />
         ))}
@@ -43,7 +44,7 @@ export function PinPad({ length = 4, onDone, error, disabled, label }: { length?
         ))}
         <span />
         <motion.button className="key" whileTap={{ scale: 0.86 }} transition={spring.snappy} onClick={() => press("0")} disabled={disabled}>0</motion.button>
-        <motion.button className="key key-back" whileTap={{ scale: 0.86 }} onClick={back} disabled={disabled} aria-label="Delete">⌫</motion.button>
+        <motion.button className="key key-back" whileTap={{ scale: 0.86 }} onClick={back} disabled={disabled} aria-label={t("ui.common.delete_key")}>⌫</motion.button>
       </div>
     </div>
   );

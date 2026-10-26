@@ -1,7 +1,10 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
+import { CRISIS_MESSAGE, RESTRICTION_NOTE } from "../copy";
+import { concernIn, type Concern, type Strictness } from "../guard";
+import { t } from "../text";
 
 /** Pill button with spring press feedback and a light haptic. */
 export function Button({ variant = "primary", children, onClick, disabled, type = "button", className = "", ...rest }:
@@ -32,7 +35,7 @@ export interface Opt<T> { value: T; label: string; disabled?: boolean }
 export const plainOpts = (xs: readonly string[]): Opt<string>[] => xs.map((x) => ({ value: x, label: x }));
 
 /** A dropdown. Shows `placeholder` until something is picked. Uses the phone's own picker, so it works with screen readers and large text. */
-export function Select<T extends string | number | boolean>({ value, options, onChange, label, placeholder = "Choose…", className = "", clearLabel, onClear }:
+export function Select<T extends string | number | boolean>({ value, options, onChange, label, placeholder = t("ui.select.choose"), className = "", clearLabel, onClear }:
   { value: T | undefined | null; options: Opt<T>[]; onChange: (v: T) => void; label: string; placeholder?: string; className?: string; clearLabel?: string; onClear?: () => void }) {
   const at = options.findIndex((o) => o.value === value);
   return (
@@ -58,8 +61,8 @@ const CLEAR = "__clear";
  * answer itself: one of the options' values, or whatever the person typed. With `commitLabel` the typed answer is only
  * passed on when they tap that button, for forms where each change is saved straight away.
  */
-export function SelectOther({ value, options, onChange, label, placeholder = "Choose…", otherLabel = "Something else…", otherPlaceholder = "Type your own", maxLength = 60, commitLabel, clearLabel }:
-  { value: string; options: Opt<string>[]; onChange: (v: string) => void; label: string; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; commitLabel?: string; clearLabel?: string }) {
+export function SelectOther({ value, options, onChange, label, placeholder = t("ui.select.choose"), otherLabel = t("ui.select.something_else"), otherPlaceholder = t("ui.select.type_your_own"), maxLength = 60, commitLabel, clearLabel, guard = "all" }:
+  { value: string; options: Opt<string>[]; onChange: (v: string) => void; label: string; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; commitLabel?: string; clearLabel?: string; guard?: Strictness }) {
   const known = options.some((o) => o.value === value);
   const [custom, setCustom] = useState(value !== "" && !known);
   const [draft, setDraft] = useState(value !== "" && !known ? value : "");
@@ -68,7 +71,8 @@ export function SelectOther({ value, options, onChange, label, placeholder = "Ch
   const text = commitLabel ? draft : value;
   const at = options.findIndex((o) => o.value === value);
   const shown = own ? OTHER : at < 0 ? "" : String(at);
-  const commit = () => { const t = draft.trim(); if (t) onChange(t); };
+  const concern = own ? concernIn(text, guard) : null;
+  const commit = () => { const v = draft.trim(); if (v && !concern) onChange(v); };
   return (
     <div className="stack tight">
       <select className="input dropdown" aria-label={label} value={shown} data-empty={shown === ""}
@@ -88,12 +92,13 @@ export function SelectOther({ value, options, onChange, label, placeholder = "Ch
       </select>
       {own && (
         <div className="other-row">
-          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={text} placeholder={otherPlaceholder} aria-label={`${label}: ${otherPlaceholder.toLowerCase()}`}
+          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={text} placeholder={otherPlaceholder} aria-label={t("ui.select.typed_suffix", { label, hint: otherPlaceholder.toLowerCase() })} aria-invalid={concern ? true : undefined}
             onChange={(e) => (commitLabel ? setDraft(e.target.value) : onChange(e.target.value))}
             onKeyDown={(e) => { if (commitLabel && e.key === "Enter") { e.preventDefault(); commit(); } }} />
-          {commitLabel && <Button variant="secondary" disabled={!draft.trim() || draft.trim() === value} onClick={commit}>{commitLabel}</Button>}
+          {commitLabel && <Button variant="secondary" disabled={!draft.trim() || draft.trim() === value || !!concern} onClick={commit}>{commitLabel}</Button>}
         </div>
       )}
+      <ConcernNote concern={concern} />
     </div>
   );
 }
@@ -102,8 +107,8 @@ export function SelectOther({ value, options, onChange, label, placeholder = "Ch
  * Pick any number of answers from a dropdown; each one appears below as a tag that a tap removes. "Something else…"
  * adds a typed answer. Values not in `options` (typed ones) are shown as they are.
  */
-export function MultiSelect({ value, options, onChange, label, max = 8, placeholder = "Add one…", otherLabel = "Something else…", otherPlaceholder = "Type your own", maxLength = 80, allowOther = true, ownPrefix = "" }:
-  { value: string[]; options: Opt<string>[]; onChange: (v: string[]) => void; label: string; max?: number; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; allowOther?: boolean; ownPrefix?: string }) {
+export function MultiSelect({ value, options, onChange, label, max = 8, placeholder = t("ui.select.add_one"), otherLabel = t("ui.select.something_else"), otherPlaceholder = t("ui.select.type_your_own"), maxLength = 80, allowOther = true, ownPrefix = "", guard = "all" }:
+  { value: string[]; options: Opt<string>[]; onChange: (v: string[]) => void; label: string; max?: number; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; allowOther?: boolean; ownPrefix?: string; guard?: Strictness }) {
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLInputElement>(null);
@@ -111,40 +116,59 @@ export function MultiSelect({ value, options, onChange, label, max = 8, placehol
   const left = options.filter((o) => !value.includes(o.value));
   const labelOf = (v: string) => options.find((o) => o.value === v)?.label ?? (ownPrefix && v.startsWith(ownPrefix) ? v.slice(ownPrefix.length).trim() : v);
   const add = (v: string) => { if (v && !value.includes(v) && !full) onChange([...value, v]); };
-  const addOwn = () => { const t = draft.trim(); if (t) add(ownPrefix ? ownPrefix + t.replace(/,/g, " ") : t); setDraft(""); setTyping(false); };
+  const concern = typing ? concernIn(draft, guard) : null;
+  const addOwn = () => { const v = draft.trim(); if (!v || concernIn(v, guard)) return; add(ownPrefix ? ownPrefix + v.replace(/,/g, " ") : v); setDraft(""); setTyping(false); };
   return (
     <div className="stack tight">
       {value.length > 0 && (
         <div className="chips" role="list" aria-label={label}>
           {value.map((v) => (
-            <button key={v} type="button" role="listitem" className="chip tag" aria-label={`Remove ${labelOf(v)}`} onClick={() => { haptic.select(); onChange(value.filter((x) => x !== v)); }}>
+            <button key={v} type="button" role="listitem" className="chip tag" aria-label={t("ui.select.remove", { item: labelOf(v) })} onClick={() => { haptic.select(); onChange(value.filter((x) => x !== v)); }}>
               {labelOf(v)}{Icon.close}
             </button>
           ))}
         </div>
       )}
       {!full && (
-        <select className="input dropdown" aria-label={`${label}: add`} value="" data-empty
+        <select className="input dropdown" aria-label={t("ui.select.add_suffix", { label })} value="" data-empty
           onChange={(e) => {
             haptic.select();
             if (e.target.value === OTHER) { setTyping(true); requestAnimationFrame(() => ref.current?.focus()); return; }
             const o = left[Number(e.target.value)];
             if (o) { setTyping(false); add(o.value); }
           }}>
-          <option value="" disabled>{value.length ? "Add another…" : placeholder}</option>
+          <option value="" disabled>{value.length ? t("ui.select.add_another") : placeholder}</option>
           {left.map((o, i) => <option key={o.value} value={i}>{o.label}</option>)}
           {allowOther && <option value={OTHER}>{otherLabel}</option>}
         </select>
       )}
       {typing && !full && (
         <div className="other-row">
-          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={draft} placeholder={otherPlaceholder} aria-label={`${label}: ${otherPlaceholder.toLowerCase()}`}
+          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={draft} placeholder={otherPlaceholder} aria-label={t("ui.select.typed_suffix", { label, hint: otherPlaceholder.toLowerCase() })} aria-invalid={concern ? true : undefined}
             onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addOwn(); } }} />
-          <Button variant="secondary" disabled={!draft.trim()} onClick={addOwn}>Add</Button>
+          <Button variant="secondary" disabled={!draft.trim() || !!concern} onClick={addOwn}>{t("ui.common.add")}</Button>
         </div>
       )}
+      <ConcernNote concern={concern} />
     </div>
   );
+}
+
+/** The note that appears under a field whose text needs the crisis message or the food and weight note. */
+export function ConcernNote({ concern }: { concern: Concern | null }) {
+  if (!concern) return null;
+  return concern === "crisis"
+    ? <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>
+    : <div className="banner" role="note">{RESTRICTION_NOTE}</div>;
+}
+
+/** A text box that shows the safety note as soon as what is typed needs it. Callers still stop the save (the store does too). */
+export function GuardedInput({ value, strict = "all", ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "value"> & { value: string; strict?: Strictness }) {
+  const concern = concernIn(value, strict);
+  return (<>
+    <input {...rest} value={value} aria-invalid={concern ? true : undefined} />
+    <ConcernNote concern={concern} />
+  </>);
 }
 
 /** A one-shot burst of hearts or sparkles. Keyed by `burst` so each change fires again. */
@@ -207,5 +231,5 @@ export const Icon = {
 
 /** Which track a screen is showing, where more than one could be meant. "Paused" is the approved track label. */
 export function TrackContext({ name, pet, paused }: { name: string; pet: string; paused?: boolean }) {
-  return <p className="track-context small"><span className="muted">Showing</span> <b>{name}</b> <span className="muted">· {pet}</span>{paused && <span className="tag">Paused</span>}</p>;
+  return <p className="track-context small"><span className="muted">{t("ui.select.showing")}</span> <b>{name}</b> <span className="muted">· {pet}</span>{paused && <span className="tag">{t("ui.select.paused_tag")}</span>}</p>;
 }

@@ -26,14 +26,17 @@ describe("health", () => {
     const slip = world("dog", 1, { clean: 9 });
     const r = healthReport(slip, viewCompanion(slip, "c1"), "honest");
     expect(r.heart).toBeLessThanOrEqual(80);
-    expect(r.body).toMatch(/eat/);
+    expect(r.body).toMatch(/today/);
+    expect(r.body).not.toMatch(/\b(eat|eating|food|hungry|appetite)\b/i); // a hard day never takes food away from the pet
   });
   it("conditions are species-specific and always say how many days fix them", () => {
-    for (const [sp, appetite, chest] of [["rabbit", /GI stasis/, /Snuffles/], ["dog", /Off their food/, /Kennel cough/], ["cat", /Skipping meals/, /asthma/]] as const) {
+    for (const [sp, chest] of [["rabbit", /Snuffles/], ["dog", /Kennel cough/], ["cat", /asthma/]] as const) {
       const d = world(sp, 3, { clean: 0 });
       const c = conditions(d, viewCompanion(d, "c1"));
-      expect(c.map((x) => x.name).join("|")).toMatch(appetite);
+      expect(c.map((x) => x.name).join("|")).toMatch(/Run down/);
       expect(c.map((x) => x.name).join("|")).toMatch(chest);
+      // No condition has the pet refusing food, and none says the days must come "in a row": gaps are neutral.
+      expect(c.map((x) => `${x.name} ${x.what} ${x.why} ${x.fix}`).join(" ")).not.toMatch(/\b(eat|eating|food|hungry|appetite|meals?)\b|in a row/i);
       expect(c.every((x) => x.fix.length > 5)).toBe(true);
       expect(c.find((x) => x.id === "smoking")!.days).toBeGreaterThan(0);
     }
@@ -51,8 +54,9 @@ describe("health", () => {
   it("history lists slips with what they cost, newest first, birth last", () => {
     const d = world("dog", 1, { clean: 3 });
     const h = history(d, viewCompanion(d, "c1"));
-    expect(h[0].text).toMatch(/lost .* months of lifespan/);
-    expect(h.some((x) => x.kind === "clean" && /3 clean days/.test(x.text))).toBe(true);
+    expect(h[0].text).toMatch(/lost .* of lifespan/);
+    expect(h[0].text).toMatch(/\d(\.\d)? months?\b/);
+    expect(h.some((x) => x.kind === "clean" && /^3 goal-met days/.test(x.text))).toBe(true);
     expect(h.filter((x) => x.day).pop()!.kind).toBe("born");
     expect(stats(d, viewCompanion(d, "c1")).slips).toBe(1);
   });

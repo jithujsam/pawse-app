@@ -8,7 +8,7 @@ import { defaultTrackState } from "../src/tracks";
 import { COATS, coatFor, mix } from "../src/pets";
 import type { AppData, Personality, Tone } from "../src/types";
 
-const EVENTS: Event[] = ["petted", "giggle", "dizzy", "stroke", "fed", "full", "strike", "treat", "noTreats", "cleanThanks", "shrug", "binge", "slip"];
+const EVENTS: Event[] = ["petted", "giggle", "dizzy", "stroke", "cleanThanks", "shrug", "binge", "slip", "rodeOut", "urgeStart"];
 const PERS: Personality[] = ["playful", "calm", "sassy", "wise"];
 const TONES: Tone[] = ["gentle", "honest", "brutal"];
 const SHAME = /\b(loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|addict)\b/i;
@@ -30,11 +30,21 @@ describe("companion voice", () => {
     expect(absorbedLine("honest", "Miso", 40, 2.5, false)).toContain("2.5 months");
     expect(dyingBanner("brutal", "Miso", 92.4)).toContain("92 of 100");
   });
+  it("no line makes the pet's care conditional, refuses food, or disapproves of the person", () => {
+    const CONDITIONAL = /\b(earn(ed)?|deserve|won'?t eat|refus\w*|hunger strike|on strike|disappoint\w*|disgust\w*|punish\w*|spoils? the meal|I saw that|not hungry|fast today|credit|forgave)\b/i;
+    for (const e of EVENTS) for (const p of PERS) for (const t of TONES) for (let i = 0; i < 6; i++) expect(say(e, p, t, 12), `${e}/${p}/${t}`).not.toMatch(CONDITIONAL);
+    for (const k of ["thanks", "morning", "risk"] as const) for (const p of PERS) for (const t of TONES) expect(careNote(k, p, t, "Miso").body).not.toMatch(CONDITIONAL);
+  });
+  it("an unknown tone or personality still gets a line, never undefined", () => {
+    expect(say("slip", "playful", "mystery" as Tone)).toMatch(/\w/);
+    expect(say("slip", "mystery" as Personality, "honest")).toMatch(/\w/);
+    expect(careNote("risk", "mystery" as Personality, "mystery" as Tone, "Miso").body).toMatch(/\w/);
+  });
   it("the shrug-off names the streak that earned it", () => {
     for (const p of PERS) for (const t of TONES) expect(say("shrug", p, t, 63)).toContain("63");
   });
   it("notifications speak as the pet, in every voice", () => {
-    for (const k of ["thanks", "strike", "morning"] as const) for (const p of PERS) for (const t of TONES) {
+    for (const k of ["thanks", "morning", "risk"] as const) for (const p of PERS) for (const t of TONES) {
       const n = careNote(k, p, t, "Miso");
       expect(n.title).toContain("Miso");
       expect(n.body.length).toBeGreaterThan(5);

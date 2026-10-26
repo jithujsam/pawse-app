@@ -7,6 +7,7 @@ import { PinPad } from "../ui/PinPad";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 import { isWeakPin } from "../vault";
+import { t } from "../text";
 import type { AutoLock } from "../types";
 
 type Flow = null | "set" | "remove" | "change";
@@ -18,23 +19,23 @@ export function SecurityCard() {
 
   return (
     <section className="card stack">
-      <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.lock}<h2>Privacy and lock</h2></div>
-      <Switch checked={on} onChange={(v) => setFlow(v ? "set" : "remove")} label="App lock"
-        hint={on ? "PIN on. Everything on this phone is encrypted." : "Ask for a PIN when the app opens"} />
+      <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.lock}<h2>{t("security.lock.title")}</h2></div>
+      <Switch checked={on} onChange={(v) => setFlow(v ? "set" : "remove")} label={t("security.lock.switch")}
+        hint={on ? t("security.lock.on_hint") : t("security.lock.off_hint")} />
       <AnimatePresence>
         {on && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-            <span className="field-label">Lock again after</span>
-            <Select<AutoLock> label="Auto-lock" value={settings.autoLock} onChange={(v) => actions.setSettings({ autoLock: v })}
-              options={[{ value: "immediately", label: "Right away" }, { value: "1m", label: "After 1 minute" }, { value: "5m", label: "After 5 minutes" }]} />
-            <Button variant="text" onClick={() => setFlow("change")}>Change PIN</Button>
+            <span className="field-label">{t("security.lock.again")}</span>
+            <Select<AutoLock> label={t("security.lock.auto_aria")} value={settings.autoLock} onChange={(v) => actions.setSettings({ autoLock: v })}
+              options={[{ value: "immediately", label: t("security.lock.immediately") }, { value: "1m", label: t("security.lock.one_minute") }, { value: "5m", label: t("security.lock.five_minutes") }]} />
+            <Button variant="text" onClick={() => setFlow("change")}>{t("security.lock.change")}</Button>
           </motion.div>
         )}
       </AnimatePresence>
-      <p className="muted small">Photos never leave this phone. Nothing is shared, and there are no ads or trackers.</p>
-      <Sheet open={flow !== null} onClose={() => setFlow(null)} label={flow === "remove" ? "Turn off app lock" : "Set a PIN"}>
+      <p className="muted small">{t("privacy.summary.line")}</p>
+      <Sheet open={flow !== null} onClose={() => setFlow(null)} label={flow === "remove" ? t("security.lock.sheet_off") : t("security.lock.sheet_set")}>
         {flow === "set" && <SetPin onDone={() => { setOn(true); setFlow(null); }} />}
-        {flow === "remove" && <CheckPin onOk={async () => { await vault.removePin(); toast("App lock is off"); setOn(false); setFlow(null); }} />}
+        {flow === "remove" && <CheckPin onOk={async () => { await vault.removePin(); toast(t("security.lock.is_off")); setOn(false); setFlow(null); }} />}
         {flow === "change" && <ChangePin onDone={() => setFlow(null)} />}
       </Sheet>
     </section>
@@ -50,24 +51,24 @@ function SetPin({ onDone }: { onDone: () => void }) {
 
   async function done(pin: string) {
     if (!first) {
-      if (isWeakPin(pin)) { setMsg("That one is easy to guess. Try something less obvious."); setError((e) => e + 1); return; }
+      if (isWeakPin(pin)) { setMsg(t("security.pin.weak")); setError((e) => e + 1); return; }
       setFirst(pin); setMsg(null); return;
     }
-    if (pin !== first) { setFirst(null); setMsg("Those didn't match. Start again."); setError((e) => e + 1); return; }
+    if (pin !== first) { setFirst(null); setMsg(t("security.pin.mismatch")); setError((e) => e + 1); return; }
     setBusy(true);
     await vault.setPin(pin);
     setBusy(false);
     haptic.success();
-    toast("App lock is on", { kind: "good" });
+    toast(t("security.lock.is_on"), { kind: "good" });
     onDone();
   }
 
   return (
     <div className="stack center-text">
-      <h2>{first ? "Enter it again" : "Choose a PIN"}</h2>
-      {!first && <Select label="PIN length" value={String(length)} onChange={(v) => setLength(v === "6" ? 6 : 4)} options={[{ value: "4", label: "4 digits" }, { value: "6", label: "6 digits" }]} />}
-      <p className="muted small" aria-live="polite">{busy ? "Encrypting your data…" : msg ?? "There's no way to recover it, so pick one you'll remember."}</p>
-      <PinPad key={`${length}-${first ? 2 : 1}`} length={length} onDone={done} error={error} disabled={busy} label="New PIN" />
+      <h2>{first ? t("security.pin.again") : t("security.pin.choose")}</h2>
+      {!first && <Select label={t("security.pin.length")} value={String(length)} onChange={(v) => setLength(v === "6" ? 6 : 4)} options={[{ value: "4", label: t("security.pin.four") }, { value: "6", label: t("security.pin.six") }]} />}
+      <p className="muted small" aria-live="polite">{busy ? t("security.pin.encrypting") : msg ?? t("security.pin.no_recovery")}</p>
+      <PinPad key={`${length}-${first ? 2 : 1}`} length={length} onDone={done} error={error} disabled={busy} label={t("security.pin.new_label")} />
     </div>
   );
 }
@@ -87,8 +88,8 @@ function CheckPin({ onOk }: { onOk: () => void }) {
   }
   return (
     <div className="stack center-text">
-      <h2>Enter your current PIN</h2>
-      <PinPad key={length} length={length} onDone={done} error={error} label="Current PIN" />
+      <h2>{t("security.lock.current")}</h2>
+      <PinPad key={length} length={length} onDone={done} error={error} label={t("security.lock.current_label")} />
     </div>
   );
 }

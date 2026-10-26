@@ -3,6 +3,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { reminderLine } from "./copy";
 import { actions } from "./store";
 import { careNote } from "./voice";
+import { t, tt } from "./text";
 import type { Personality, Tone } from "./types";
 
 const native = Capacitor.isNativePlatform();
@@ -23,8 +24,8 @@ const MANAGED_IDS = Array.from({ length: 100 }, (_, i) => FIRST_ID + i);
 /** Ids older versions used for repeating schedules (daily, care, risky hour, lapse). Cancelled so they can't add to the count. */
 const LEGACY_IDS = [1001, 2001, 2002, 2003, 2004, 2010, 2011, 2012, 2013];
 
-export type NoteKind = "daily" | "lapse" | "thanks" | "strike" | "risk" | "morning";
-const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, strike: 1, risk: 2, morning: 3 };
+export type NoteKind = "daily" | "lapse" | "thanks" | "risk" | "morning";
+const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, risk: 2, morning: 3 };
 
 export interface PlanInput {
   now: Date;
@@ -53,10 +54,9 @@ const atTime = (base: Date, dayOffset: number, hour: number, minute: number) => 
 
 /** If check-ins stop: two neutral notes, never implying the pet suffers from silence. A quiet day is missing data. */
 function lapseNotes(tone: Tone, n: string): [number, string, string][] {
-  const g = tone === "gentle", b = tone === "brutal";
   return [
-    [2, "A quick check-in?", g ? "Whenever you're ready. How have the last couple of days gone?" : b ? "Two days unrecorded. How did they go?" : "How have the last couple of days gone? It takes ten seconds."],
-    [7, `${n} is here when you're ready`, b ? "Unrecorded days don't count against you. Pick it up today." : "Days you don't record don't count against you. Pick up whenever it suits you."],
+    [2, t("notifications.quiet.two_title"), tt("notifications.quiet.two_body", tone)],
+    [7, t("notifications.quiet.week_title", { name: n }), tt("notifications.quiet.week_body", tone)],
   ];
 }
 
@@ -93,7 +93,7 @@ export function planNotifications(p: PlanInput): Planned[] {
       add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name));
       add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name));
     }
-    // After a slip nothing is scheduled: a "won't eat" note from the pet hours later is a guilt nudge, not help.
+    // After a slip nothing is scheduled: a note from the pet hours later would be a guilt nudge, not help.
     // Recording the slip still clears any thank-you planned for that day.
   }
 

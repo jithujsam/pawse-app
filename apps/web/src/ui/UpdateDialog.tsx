@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { APP_VERSION, runUpdate, useUpdatePrompt } from "../update";
-import { UPDATE_COPY, updatePhase } from "../copy";
+import { updatePhase } from "../copy";
+import { t, tt } from "../text";
 import { useData } from "../store";
 import { useBack } from "../back";
 import { haptic } from "../haptics";
@@ -12,7 +13,7 @@ import { Button, Icon } from "./Controls";
 /** Shown once the app has loaded when a newer version exists. Same look as the milestone dialog; Back and Escape mean Later. */
 export function UpdateDialog() {
   const { tone } = useData().settings;
-  const c = UPDATE_COPY[tone];
+  const c = { title: t("update.dialog.title"), sub: tt("update.dialog.sub", tone), now: t("update.dialog.now"), later: t("update.dialog.later"), skip: t("update.dialog.skip"), whatsNew: t("update.dialog.whats_new") };
   const { latest, later, skip } = useUpdatePrompt();
   const [percent, setPercent] = useState<number | null>(null);
   const busy = percent !== null;
@@ -49,10 +50,10 @@ export function UpdateDialog() {
               <span className="update-icon" aria-hidden>{Icon.phone}</span>
               <div><h2>{c.title}</h2><p className="muted">{c.sub}</p></div>
             </header>
-            <div className="update-versions" aria-label={`From ${APP_VERSION.name} to ${latest.name}`}>
-              <span><small>Current</small><b className="pill">v{APP_VERSION.name}</b></span>
+            <div className="update-versions" aria-label={t("update.dialog.from_to", { from: APP_VERSION.name, to: latest.name })}>
+              <span><small>{t("update.dialog.current")}</small><b className="pill">v{APP_VERSION.name}</b></span>
               <span className="update-arrow" aria-hidden>{Icon.chevR}</span>
-              <span><small>New</small><b className="pill on">v{latest.name}</b></span>
+              <span><small>{t("update.dialog.new")}</small><b className="pill on">v{latest.name}</b></span>
             </div>
             {notes.length > 0 && (
               <section className="update-notes" aria-label={c.whatsNew}>

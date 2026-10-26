@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { CRISIS_MESSAGE } from "../copy";
-import { hasCrisisLanguage } from "../crisis";
+import { concernIn } from "../guard";
+import { t } from "../text";
 import { addDays, fmtDay, today, weekStart } from "../dates";
 import { weekdayOf } from "../progress";
 import { haptic } from "../haptics";
@@ -28,8 +28,7 @@ export function WeeklyReview() {
   const r = weekReview(data, habit, week);
   const ideas = adjustmentIdeas(r, habit, trackState(data, habit.id).description || habit.name);
   const focusWeek = addDays(week, 7);
-  const [crisis, setCrisis] = useState(false);
-  const pick = (t: string) => { const bad = hasCrisisLanguage(t); setCrisis(bad); if (bad) return; actions.setWeekFocus(focusWeek, t, habit.id); haptic.success(); toast("Saved for the week ahead", { kind: "good" }); };
+  const pick = (text: string) => { if (concernIn(text)) return; actions.setWeekFocus(focusWeek, text, habit.id); haptic.success(); toast(t("insights.review.saved"), { kind: "good" }); };
   const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
   // Rest and paused days are both "Not tracking".
   const shown = { ...r.counts, rest: r.counts.rest + r.counts.paused };
@@ -37,26 +36,25 @@ export function WeeklyReview() {
   return (
     <div className="stack">
       <div className="field">
-        <span className="field-label">Which week?</span>
-        <Select label="Which week" value={which} onChange={setWhich} options={[{ value: "last", label: "Last week" }, { value: "this", label: "This week" }]} />
+        <span className="field-label">{t("insights.review.which")}</span>
+        <Select label={t("insights.review.which")} value={which} onChange={setWhich} options={[{ value: "last", label: t("insights.review.last_week") }, { value: "this", label: t("insights.review.this_week") }]} />
       </div>
-      <p className="muted small">From {fmtDay(week)}</p>
+      <p className="muted small">{t("insights.review.from", { date: fmtDay(week) })}</p>
       <p>{r.goalLine}</p>
-      {r.lastFocus && <p className="small">Your focus for this week was: <b>{r.lastFocus}</b></p>}
-      <dl className="review-days" aria-label="Days">
+      {r.lastFocus && <p className="small">{t("insights.review.last_focus")} <b>{r.lastFocus}</b></p>}
+      <dl className="review-days" aria-label={t("insights.review.days_aria")}>
         {order.filter((k) => shown[k] > 0).map((k) => (
-          <div className="row" key={k}><dt><i className="dot" data-s={k} aria-hidden />{STATUS_LABEL[k]}</dt><dd><b>{shown[k]}</b> {shown[k] === 1 ? "day" : "days"}</dd></div>
+          <div className="row" key={k}><dt><i className="dot" data-s={k} aria-hidden />{STATUS_LABEL[k]}</dt><dd><b>{shown[k]}</b> {shown[k] === 1 ? t("calendar.stats.day") : t("calendar.stats.days")}</dd></div>
         ))}
       </dl>
-      {r.urges.total > 0 && <p className="small">{r.urges.managed} of {r.urges.total} {r.urges.total === 1 ? "urge" : "urges"} managed.</p>}
-      {r.strategies.length > 0 && <p className="small">What you used: {r.strategies.map((s) => `${strategy(s.id).title.toLowerCase()} (${s.managed} of ${s.total} managed)`).join(", ")}.</p>}
-      {r.difficult.length > 0 && <p className="small">What came up most: {r.difficult.map(([l, n]) => `${l.toLowerCase()} (${n})`).join(", ")}.</p>}
+      {r.urges.total > 0 && <p className="small">{t("insights.review.urges", { managed: r.urges.managed, total: r.urges.total, urges: r.urges.total === 1 ? t("insights.review.urge_one") : t("insights.review.urge_other") })}</p>}
+      {r.strategies.length > 0 && <p className="small">{t("insights.review.used", { list: r.strategies.map((s) => t("insights.review.strategy_item", { title: strategy(s.id).title.toLowerCase(), managed: s.managed, total: s.total })).join(", ") })}</p>}
+      {r.difficult.length > 0 && <p className="small">{t("insights.review.hard", { list: r.difficult.map(([l, n]) => `${l.toLowerCase()} (${n})`).join(", ") })}</p>}
       <div className="field">
-        <span className="field-label">{r.focus ? "Your focus for next week" : "Pick one small change for next week"}</span>
+        <span className="field-label">{r.focus ? t("insights.review.focus_next") : t("insights.review.pick_focus")}</span>
         {r.focus && <p><b>{r.focus}</b></p>}
-        <SelectOther label="One small change for next week" options={plainOpts(ideas)} value={r.focus ?? ""} onChange={pick} maxLength={160} commitLabel="Save"
-          placeholder="Pick an idea" otherPlaceholder="Your own change" />
-        {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+        <SelectOther label={t("insights.review.focus_aria")} options={plainOpts(ideas)} value={r.focus ?? ""} onChange={pick} maxLength={160} commitLabel={t("ui.common.save")}
+          placeholder={t("insights.review.focus_placeholder")} otherPlaceholder={t("insights.review.focus_own")} />
       </div>
     </div>
   );
@@ -65,10 +63,10 @@ export function WeeklyReview() {
 /** A small check-in: one mood and an optional line. The weekly review folds away below it. */
 export function CheckIn() {
   return (
-    <motion.section className="card stack tight checkin-lite" aria-label="Check in with yourself" variants={rise}>
+    <motion.section className="card stack tight checkin-lite" aria-label={t("insights.review.check_in")} variants={rise}>
       <Reflect />
       <details className="fold">
-        <summary>Weekly review</summary>
+        <summary>{t("insights.review.fold")}</summary>
         <div className="fold-body"><WeeklyReview /></div>
       </details>
     </motion.section>
@@ -83,23 +81,23 @@ export function Observations() {
   const o = observations(data, habit);
   const tried = strategyResults(data, habit.id).filter((s) => s.total >= 2);
   return (
-    <motion.section className="card stack" aria-label="What your records show" variants={rise}>
-      <h2>What your records show</h2>
+    <motion.section className="card stack" aria-label={t("insights.patterns.aria")} variants={rise}>
+      <h2>{t("insights.patterns.title")}</h2>
       {o.items.length === 0
         ? <p className="muted">{o.needed > 0
-            ? `Not enough yet to see a pattern. ${o.needed} more ${o.needed === 1 ? "slip or urge" : "slips or urges"} logged and pawse will show what it notices. Until then, it won't guess.`
-            : "Nothing stands out yet. That's a real answer too: no single feeling, time or place dominates your records."}</p>
+            ? (o.needed === 1 ? t("insights.patterns.not_enough_one") : t("insights.patterns.not_enough_other", { n: o.needed }))
+            : t("insights.patterns.nothing")}</p>
         : <div className="list">{o.items.map((x) => (
             <div className="item" key={x.id}>
-              <div className="row"><b>{x.title}</b><span className="obs-strength" data-k={x.strength}>{x.strength === "pattern" ? "Pattern" : "Early hint"}</span></div>
+              <div className="row"><b>{x.title}</b><span className="obs-strength" data-k={x.strength}>{x.strength === "pattern" ? t("insights.patterns.pattern") : t("insights.patterns.hint")}</span></div>
               <span className="small">{x.detail}.</span>
             </div>
           ))}</div>}
-      {o.items.length > 0 && <p className="muted small">These describe what was going on around slips and urges you recorded, not what caused them. Small numbers can mislead.</p>}
+      {o.items.length > 0 && <p className="muted small">{t("insights.patterns.caveat")}</p>}
       {tried.length > 0 && (
         <div className="stack tight">
-          <span className="field-label">Strategies you've tried at least twice</span>
-          {tried.map((s) => <div className="row small" key={s.id}><span>{strategy(s.id).title}</span><span>{s.managed} of {s.total} managed</span></div>)}
+          <span className="field-label">{t("insights.patterns.tried")}</span>
+          {tried.map((s) => <div className="row small" key={s.id}><span>{strategy(s.id).title}</span><span>{t("insights.patterns.tried_row", { managed: s.managed, total: s.total })}</span></div>)}
         </div>
       )}
     </motion.section>

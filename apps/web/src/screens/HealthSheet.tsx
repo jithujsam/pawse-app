@@ -7,10 +7,11 @@ import { rise, spring, stagger } from "../motion";
 import { useActiveView, useData } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Sheet } from "../ui/Sheet";
+import { t } from "../text";
 
 export type HealthTab = "health" | "history" | "conditions";
 const TABS: { id: HealthTab; label: string }[] = [
-  { id: "health", label: "Health" }, { id: "history", label: "History" }, { id: "conditions", label: "Conditions" },
+  { id: "health", label: t("sheets.health.tab_health") }, { id: "history", label: t("sheets.health.tab_history") }, { id: "conditions", label: t("sheets.health.tab_conditions") },
 ];
 export const LEVEL_COLOR: Record<Level, string> = { thriving: "var(--positive)", healthy: "var(--positive)", okay: "var(--warning)", unwell: "var(--negative)", critical: "var(--negative)" };
 
@@ -27,7 +28,7 @@ export function Heart({ value, level, size = 22 }: { value: number; level: Level
 }
 
 export function HealthSheet({ open, tab, onClose }: { open: boolean; tab: HealthTab; onClose: () => void }) {
-  return <Sheet open={open} onClose={onClose} label="Health">{open && <Body initial={tab} />}</Sheet>;
+  return <Sheet open={open} onClose={onClose} label={t("sheets.health.label")}>{open && <Body initial={tab} />}</Sheet>;
 }
 
 function Body({ initial }: { initial: HealthTab }) {
@@ -42,7 +43,7 @@ function Body({ initial }: { initial: HealthTab }) {
 
   return (
     <div className="stack health">
-      <div className="segmented health-tabs" role="tablist" aria-label="Health sections">
+      <div className="segmented health-tabs" role="tablist" aria-label={t("sheets.health.tabs_aria")}>
         {TABS.map((t) => (
           <button key={t.id} role="tab" aria-selected={tab === t.id} className="seg" onClick={() => setTab(t.id)}>
             {tab === t.id && <motion.span layoutId="health-pill" className="seg-pill" transition={spring.snappy} />}
@@ -59,29 +60,29 @@ function Body({ initial }: { initial: HealthTab }) {
             </div>
             <p>{r.body}</p>
             <div className="stats">
-              <div className="stat item"><span className="muted small">Life expectancy</span><b className="v">{st.lifeExpectancy}</b></div>
-              <div className="stat item"><span className="muted small">Check-ins</span><b className="v">{st.checkInRate}<small>%</small></b></div>
+              <div className="stat item"><span className="muted small">{t("sheets.health.life_expectancy")}</span><b className="v">{st.lifeExpectancy}</b></div>
+              <div className="stat item"><span className="muted small">{t("sheets.health.check_ins")}</span><b className="v">{st.checkInRate}<small>%</small></b></div>
             </div>
             {conds.length > 0
-              ? <button className="link-card item" onClick={() => setTab("conditions")}><span className="row"><b>{conds.length} {conds.length === 1 ? "thing" : "things"} affecting {name}</b><span className="muted small">See why →</span></span></button>
-              : <p className="muted small">Nothing is troubling {name} right now. That's your doing.</p>}
+              ? <button className="link-card item" onClick={() => setTab("conditions")}><span className="row"><b>{conds.length === 1 ? t("sheets.health.things_one", { name }) : t("sheets.health.things_other", { n: conds.length, name })}</b><span className="muted small">{t("sheets.health.see_why")}</span></span></button>
+              : <p className="muted small">{t("sheets.health.nothing", { name })}</p>}
             {r.silent >= 2 && <p className="banner">{quietBanner(data.settings.tone, name)}</p>}
           </>)}
 
           {tab === "history" && <History />}
 
           {tab === "conditions" && (conds.length === 0
-            ? <div className="stack center-text"><Heart value={100} level="thriving" size={56} /><h2>All clear</h2><p className="muted">{name} has nothing to recover from. Keep it that way.</p></div>
+            ? <div className="stack center-text"><Heart value={100} level="thriving" size={56} /><h2>{t("sheets.health.all_clear")}</h2><p className="muted">{t("sheets.health.all_clear_body", { name })}</p></div>
             : <motion.div className="list" variants={stagger} initial="hidden" animate="show">
                 {conds.map((c) => (
                   <motion.div key={c.id} className="item cond" data-tone={c.tone} variants={rise}>
                     <div className="row"><b>{c.name}</b><span className="cond-tag">{c.tone}</span></div>
                     <span className="small">{c.what}</span>
-                    <span className="small muted"><b>Why:</b> {c.why}</span>
-                    <span className="small cond-fix"><b>Recovery:</b> {c.fix}</span>
+                    <span className="small muted"><b>{t("sheets.health.why")}</b> {c.why}</span>
+                    <span className="small cond-fix"><b>{t("sheets.health.recovery")}</b> {c.fix}</span>
                   </motion.div>
                 ))}
-                <p className="muted small">Pet conditions are illustrative. They reflect your logs, not anyone's real health.</p>
+                <p className="muted small">{t("safety.disclaimer.conditions")}</p>
               </motion.div>)}
 
         </motion.div>
@@ -96,7 +97,7 @@ function History() {
   const items = history(data, view).slice(0, 80);
   return (
     <div className="stack">
-      <span className="muted small">What changed {view.companion.name}'s health, newest first. The age chart is on the Journey tab.</span>
+      <span className="muted small">{t("sheets.health.history_intro", { name: view.companion.name })}</span>
       <ol className="timeline">
         {items.map((it, i) => (
           <li key={i} data-kind={it.kind}>

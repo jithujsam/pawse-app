@@ -8,9 +8,12 @@ import { haptic } from "../haptics";
 import { actions, useData, type CompanionView } from "../store";
 import { Button, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { NAMES, PICKABLE } from "../pets";
+import { concernIn } from "../guard";
+import { money } from "../format";
+import { t } from "../text";
 import type { Species } from "../types";
 
-const BABY: Record<Species, string> = { dog: "puppy", cat: "kitten", rabbit: "bunny", fox: "kit", owl: "owlet", panda: "cub" };
+const BABY: Record<Species, string> = { dog: t("sheets.memorial.kind_dog"), cat: t("sheets.memorial.kind_cat"), rabbit: t("sheets.memorial.kind_rabbit"), fox: t("sheets.memorial.kind_fox"), owl: t("sheets.memorial.kind_owl"), panda: t("sheets.memorial.kind_panda") };
 const slow = (delay: number) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.2, delay, ease: [0.22, 0.8, 0.3, 1] as const } });
 
 export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => void }) {
@@ -35,20 +38,20 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
       )}
       <motion.p {...slow(1.2)}>{deathLine(tone, companion.name)}</motion.p>
       <motion.section className="card stack memorial-card" {...slow(2)}>
-        <h2>A life in numbers</h2>
-        <div className="row"><span>Lived</span><b>{lived} {lived === 1 ? "day" : "days"}</b></div>
-        <div className="row"><span>Slips</span><b>{es.length}</b></div>
-        {habit?.unit === "money" && <div className="row"><span>Spent</span><b>{data.settings.currency} {Math.round(spend).toLocaleString()}</b></div>}
-        <div className="row"><span>Slips in the final month</span><b>{lastMonth}</b></div>
+        <h2>{t("sheets.memorial.life")}</h2>
+        <div className="row"><span>{t("sheets.memorial.lived")}</span><b>{lived} {lived === 1 ? t("sheets.memorial.day") : t("sheets.memorial.days")}</b></div>
+        <div className="row"><span>{t("sheets.memorial.slips")}</span><b>{es.length}</b></div>
+        {habit?.unit === "money" && <div className="row"><span>{t("sheets.memorial.spent")}</span><b>{money(data.settings.currency, Math.round(spend))}</b></div>}
+        <div className="row"><span>{t("sheets.memorial.final_month")}</span><b>{lastMonth}</b></div>
       </motion.section>
       <motion.section className="stack memorial-card" {...slow(2.8)}>
-        <h2>Start again</h2>
-        <p className="muted small">The new life begins at age 0. Your history stays in your reports, and {companion.name} stays in the Hall of Companions.</p>
-        <div className="field"><span className="field-label">Who comes next?</span>
-          <Select label="Species" value={species} onChange={setSpecies} options={PICKABLE.map((s) => ({ value: s.id, label: s.label }))} /></div>
-        <div className="field"><span className="field-label">New name</span>
-          <SelectOther label="New name" value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={`Pick a name, like ${NAMES[species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" /></div>
-        <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>Adopt a new {BABY[species]}</Button>
+        <h2>{t("sheets.memorial.start_again")}</h2>
+        <p className="muted small">{t("sheets.memorial.start_body", { name: companion.name })}</p>
+        <div className="field"><span className="field-label">{t("sheets.memorial.next")}</span>
+          <Select label={t("sheets.memorial.species")} value={species} onChange={setSpecies} options={PICKABLE.map((s) => ({ value: s.id, label: s.label }))} /></div>
+        <div className="field"><span className="field-label">{t("sheets.memorial.new_name")}</span>
+          <SelectOther label={t("sheets.memorial.new_name")} value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={t("sheets.memorial.name_placeholder", { name: NAMES[species][0] })} otherLabel={t("sheets.memorial.name_other")} otherPlaceholder={t("sheets.memorial.name_own")} /></div>
+        <Button disabled={concernIn(name) !== null} onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>{t("sheets.memorial.adopt", { kind: BABY[species] })}</Button>
       </motion.section>
     </main>
   );

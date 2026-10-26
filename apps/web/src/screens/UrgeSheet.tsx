@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { LiveCompanion } from "../Companion";
-import { CRISIS_MESSAGE } from "../copy";
-import { hasCrisisLanguage } from "../crisis";
+import { concernIn } from "../guard";
+import { t } from "../text";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { frictionIdeas, REPLACEMENTS, SITUATIONS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
@@ -22,14 +22,14 @@ import type { StrategyId } from "../types";
  * decides when it has eased. Managed urges are counted as wins; they never change the companion's age.
  */
 const BREATH: { label: string; secs: number; scale: number }[] = [
-  { label: "Breathe in", secs: 4, scale: 1.18 },
-  { label: "Hold", secs: 4, scale: 1.18 },
-  { label: "Breathe out", secs: 6, scale: 0.9 },
+  { label: t("sheets.urge.breathe_in"), secs: 4, scale: 1.18 },
+  { label: t("sheets.urge.hold"), secs: 4, scale: 1.18 },
+  { label: t("sheets.urge.breathe_out"), secs: 6, scale: 0.9 },
 ];
 const CYCLE = BREATH.reduce((a, b) => a + b.secs, 0);
 
 export function UrgeSheet({ open, onClose, onSlipped }: { open: boolean; onClose: () => void; onSlipped: () => void }) {
-  return <Sheet open={open} onClose={onClose} label="Support for an urge">{open && <UrgeBody onClose={onClose} onSlipped={onSlipped} />}</Sheet>;
+  return <Sheet open={open} onClose={onClose} label={t("sheets.urge.label")}>{open && <UrgeBody onClose={onClose} onSlipped={onSlipped} />}</Sheet>;
 }
 
 function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () => void }) {
@@ -49,7 +49,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [win, setWin] = useState("");
   const [helped, setHelped] = useState<StrategyId | null>(null);
   const managed = trackSummary(data, habit.id, today()).managedUrges;
-  const crisis = hasCrisisLanguage(trigger);
+  const crisis = concernIn(trigger) !== null;
   // The plan's own situations first, then common ones, so the list is never empty. Anything else can be typed.
   const situations = [...new Set([...(plan?.situations ?? []), ...SITUATIONS])];
 
@@ -69,27 +69,26 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
     const i = order.findIndex((s) => s.id === current);
     setCurrent(order[(i + 1) % order.length].id);
   }
-  const context = <p className="muted small track-context">For <b>{habit.name}</b> · {companion.name}</p>;
+  const context = <p className="muted small track-context">{t("sheets.urge.context", { track: habit.name, name: companion.name })}</p>;
 
   if (phase === "pause") return (
     <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
-      <motion.div className="stack tight" variants={rise}><h2>Having an urge?</h2>{context}</motion.div>
+      <motion.div className="stack tight" variants={rise}><h2>{t("sheets.urge.title")}</h2>{context}</motion.div>
       <motion.p className="muted" variants={rise}>{urgePauseLine(tone)}</motion.p>
       <motion.div className="field" variants={rise}>
-        <span className="field-label" id="urge-strength">How strong is it?</span>
-        <Select label="How strong is it?" value={String(strength)} onChange={(v) => setStrength(Number(v))}
-          options={[{ value: "1", label: "1 · A nudge" }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: "5 · Overwhelming" }]} />
+        <span className="field-label" id="urge-strength">{t("sheets.urge.strength")}</span>
+        <Select label={t("sheets.urge.strength")} value={String(strength)} onChange={(v) => setStrength(Number(v))}
+          options={[{ value: "1", label: t("sheets.urge.s1") }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: t("sheets.urge.s5") }]} />
       </motion.div>
       <motion.div className="field" variants={rise}>
-        <span className="field-label" id="urge-what">What's going on? (optional)</span>
-        <SelectOther label="What's going on?" options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder="Choose what fits" clearLabel="Not sure" otherPlaceholder="In your own words" />
-        {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+        <span className="field-label" id="urge-what">{t("sheets.urge.going_on")}</span>
+        <SelectOther label={t("sheets.urge.going_on_aria")} options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder={t("sheets.urge.choose_fit")} clearLabel={t("sheets.urge.not_sure")} otherPlaceholder={t("sheets.urge.own")} />
       </motion.div>
-      {plan?.reasons.length ? <motion.p className="small" variants={rise}>You said this matters because of: <b>{plan.reasons.slice(0, 3).join(", ")}</b>.</motion.p> : null}
+      {plan?.reasons.length ? <motion.p className="small" variants={rise}>{t("sheets.urge.reasons", { reasons: plan.reasons.slice(0, 3).join(", ") })}</motion.p> : null}
       <motion.div className="stack tight" variants={rise}>
-        <Button disabled={crisis} onClick={() => { haptic.tap(); setPhase("support"); }}>Help me through it</Button>
-        <Button variant="text" disabled={crisis} onClick={() => end("slipped")}>I already acted on it</Button>
-        <Button variant="text" onClick={onClose}>Close</Button>
+        <Button disabled={crisis} onClick={() => { haptic.tap(); setPhase("support"); }}>{t("sheets.urge.help")}</Button>
+        <Button variant="text" disabled={crisis} onClick={() => end("slipped")}>{t("sheets.urge.already")}</Button>
+        <Button variant="text" onClick={onClose}>{t("sheets.urge.close")}</Button>
       </motion.div>
     </motion.div>
   );
@@ -98,10 +97,10 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
     <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
       <motion.h2 variants={rise}>{urgeActedLine(tone)}</motion.h2>
       <motion.p className="muted" variants={rise}>{urgeActedNote(tone)}</motion.p>
-      {plan?.ifThen[0] && <motion.p className="small" variants={rise}>Your plan for next time: {plan.ifThen[0]}</motion.p>}
+      {plan?.ifThen[0] && <motion.p className="small" variants={rise}>{t("sheets.urge.plan_next", { text: plan.ifThen[0] })}</motion.p>}
       <motion.div className="stack tight" variants={rise}>
-        <Button variant="secondary" onClick={onSlipped}>Log it as a slip</Button>
-        <Button variant="text" onClick={onClose}>Not now</Button>
+        <Button variant="secondary" onClick={onSlipped}>{t("sheets.urge.log_slip")}</Button>
+        <Button variant="text" onClick={onClose}>{t("sheets.urge.not_now")}</Button>
       </motion.div>
     </motion.div>
   );
@@ -111,15 +110,15 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       <Burst burst={1} kind="spark" count={14} />
       <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
       <motion.h2 variants={rise}>{win}</motion.h2>
-      <motion.p className="muted" variants={rise}>{managed} {managed === 1 ? "urge" : "urges"} managed so far on this track. Each one is practice.</motion.p>
+      <motion.p className="muted" variants={rise}>{managed === 1 ? t("sheets.urge.managed_one") : t("sheets.urge.managed_other", { n: managed })}</motion.p>
       {helped && (
         <motion.div variants={rise}>
-          <Button variant="secondary" onClick={() => { actions.savePlan(withStrategyFirst(plan, helped), habit.id); haptic.success(); setHelped(null); toast("Added to your plan", { kind: "good" }); }}>
-            Offer "{strategy(helped).title}" first next time
+          <Button variant="secondary" onClick={() => { actions.savePlan(withStrategyFirst(plan, helped), habit.id); haptic.success(); setHelped(null); toast(t("sheets.urge.added"), { kind: "good" }); }}>
+            {t("sheets.urge.offer_first", { title: strategy(helped).title })}
           </Button>
         </motion.div>
       )}
-      <motion.div variants={rise}><Button onClick={onClose}>Back to {companion.name}</Button></motion.div>
+      <motion.div variants={rise}><Button onClick={onClose}>{t("sheets.urge.back_to", { name: companion.name })}</Button></motion.div>
     </motion.div>
   );
 
@@ -128,8 +127,8 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
     <div className="stack urge">
       {context}
       <div className="field">
-        <span className="field-label">Way through</span>
-        <Select label="Ways to get through it" value={current} onChange={(id) => setCurrent(id)} options={order.map((x) => ({ value: x.id, label: x.title }))} />
+        <span className="field-label">{t("sheets.urge.way")}</span>
+        <Select label={t("sheets.urge.way_aria")} value={current} onChange={(id) => setCurrent(id)} options={order.map((x) => ({ value: x.id, label: x.title }))} />
       </div>
       <AnimatePresence mode="wait" initial={false}>
         <motion.section key={current} className="stack" aria-label={s.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={spring.soft}>
@@ -138,23 +137,22 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
           {current === "breathe" && <Breathing />}
           {current === "name" && (
             <div className="field">
-              <SelectOther label="What set it off?" options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder="Choose what fits" clearLabel="Not sure" otherPlaceholder="In your own words" />
-              {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
+              <SelectOther label={t("sheets.urge.set_off")} options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder={t("sheets.urge.choose_fit")} clearLabel={t("sheets.urge.not_sure")} otherPlaceholder={t("sheets.urge.own")} />
             </div>
           )}
           {current === "friction" && <Checklist items={frictionIdeas(habit.cls, habit.name)} />}
           {current === "replace" && <Checklist items={REPLACEMENTS} />}
           {current === "reach" && (
-            <p>{plan?.supportName ? <>You named <b>{plan.supportName}</b> as someone you could message.</> : "Is there someone you could message? You can add a name to this track's plan."} If you ever feel unsafe, contact local emergency services.</p>
+            <p>{plan?.supportName ? t("sheets.urge.reach_named", { name: plan.supportName }) : t("sheets.urge.reach_none")}{t("sheets.urge.reach_safe")}</p>
           )}
-          {plan?.ifThen[0] && (current === "move" || current === "observe") && <p className="small">Your plan: {plan.ifThen[0]}</p>}
+          {plan?.ifThen[0] && (current === "move" || current === "observe") && <p className="small">{t("sheets.urge.your_plan", { text: plan.ifThen[0] })}</p>}
         </motion.section>
       </AnimatePresence>
       <div className="card stack tight urge-check">
-        <span className="field-label">How is it now?</span>
-        <Button disabled={crisis} onClick={() => end("rode_it_out")}>It's eased. I managed it</Button>
-        <Button variant="secondary" onClick={next}>Still strong. Try something else</Button>
-        <Button variant="text" disabled={crisis} onClick={() => end("slipped")}>I acted on it</Button>
+        <span className="field-label">{t("sheets.urge.how_now")}</span>
+        <Button disabled={crisis} onClick={() => end("rode_it_out")}>{t("sheets.urge.eased")}</Button>
+        <Button variant="secondary" onClick={next}>{t("sheets.urge.still_strong")}</Button>
+        <Button variant="text" disabled={crisis} onClick={() => end("slipped")}>{t("sheets.urge.acted")}</Button>
       </div>
     </div>
   );
@@ -163,7 +161,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
 /** Ideas for the next few minutes: pick one, or write your own. */
 function Checklist({ items }: { items: string[] }) {
   const [pick, setPick] = useState("");
-  return <SelectOther label="Ideas" options={plainOpts(items)} value={pick} onChange={(v) => { setPick(v); if (v) haptic.select(); }} maxLength={80} placeholder="Pick one to try" clearLabel="Not now" otherPlaceholder="Your own idea" />;
+  return <SelectOther label={t("sheets.urge.ideas")} options={plainOpts(items)} value={pick} onChange={(v) => { setPick(v); if (v) haptic.select(); }} maxLength={80} placeholder={t("sheets.urge.pick_try")} clearLabel={t("sheets.urge.not_now")} otherPlaceholder={t("sheets.urge.idea_own")} />;
 }
 
 /** Paced breathing, 4 in, 4 hold, 6 out, for as long as the person wants. Counts up, never down. */
@@ -187,7 +185,7 @@ function Breathing() {
         </motion.div>
       </div>
       <AnimatePresence mode="wait"><motion.p className="breath-label" aria-live="polite" key={step.label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>{step.label}</motion.p></AnimatePresence>
-      <p className="muted small">{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")} so far. Stop whenever you like.</p>
+      <p className="muted small">{t("sheets.urge.elapsed", { time: `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` })}</p>
     </div>
   );
 }

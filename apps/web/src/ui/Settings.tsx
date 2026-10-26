@@ -4,6 +4,7 @@ import { useBack } from "../back";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { Icon } from "./Controls";
+import { t } from "../text";
 
 /** A titled block of rows, like a phone's own settings. */
 export function Group({ title, children }: { title?: string; children: ReactNode }) {
@@ -38,7 +39,7 @@ export function SubPage({ open, title, onClose, children }: { open: boolean; tit
           drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0, right: 0.6 }} dragDirectionLock
           onDragEnd={(_, i) => { if (i.offset.x > 110 || i.velocity.x > 600) onClose(); }}>
           <header className="subpage-top">
-            <button className="icon-btn" aria-label="Back" onClick={onClose}>{Icon.back}</button>
+            <button className="icon-btn" aria-label={t("ui.common.back")} onClick={onClose}>{Icon.back}</button>
             <h2>{title}</h2>
           </header>
           <div className="screen subpage-body">{children}</div>

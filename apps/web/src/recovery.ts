@@ -5,6 +5,8 @@ import { pickedLabels } from "./questions";
 import { slipHour } from "./store";
 import { trackState } from "./tracks";
 import type { AppData, GoalKind, Habit, RecoveryPlan, StrategyId, Tone } from "./types";
+import { plural } from "./format";
+import { tt } from "./text";
 
 /**
  * The recovery layer: what each day was, what the person's own records show, and the weekly review.
@@ -42,7 +44,7 @@ export const STRATEGIES: Strategy[] = [
     steps: ["Move to another room, step outside, or put the phone in another room.", "Changing what's in front of you changes what you're reminded of."] },
   { id: "friction", title: "Make it harder to act", hint: "Add a step between you and it",
     steps: ["Put one extra step in the way, right now.", "Even a small delay gives you time to choose."] },
-  { id: "breathe", title: "Breathe slowly", hint: "Paced breathing with your companion",
+  { id: "breathe", title: "Breathe slowly", hint: "Paced breathing with your pet",
     steps: ["Breathe in for 4, hold for 4, out for 6.", "Stop whenever you like."] },
   { id: "replace", title: "Do something else", hint: "A short swap for the next few minutes",
     steps: ["Pick something small you can start right now.", "It doesn't have to be fun. It just has to take your hands and attention."] },
@@ -177,7 +179,7 @@ export interface WeekReview {
   lastFocus: string | null;
 }
 
-export function weekReview(d: AppData, habit: Habit, week: string, t0 = today()): WeekReview {
+export function weekReview(d: AppData, habit: Habit, week: string, t0 = today(), tone: Tone = d.settings.tone): WeekReview {
   const end = addDays(week, 6);
   const counts = countDays(trackIndex(d, habit.id, t0), week, end);
   const days = Object.values(counts).reduce((a, n) => a + n, 0);
@@ -193,13 +195,12 @@ export function weekReview(d: AppData, habit: Habit, week: string, t0 = today())
   const track = trackState(d, habit.id);
   const goal = track.plan?.goal ?? null;
   const goalLine = recorded === 0
-    ? end >= t0 ? "Nothing recorded yet this week. There's still time to check in."
-      : "Nothing was recorded that week, so there's nothing to go on. That's fine. Each week starts fresh."
-    : goal === "stop" ? `${counts.met + counts.urge} of ${recorded} recorded ${recorded === 1 ? "day" : "days"} without a slip.`
-      : goal === "understand" ? `${recorded} ${recorded === 1 ? "day" : "days"} recorded and ${urgeRows.length} ${urgeRows.length === 1 ? "urge" : "urges"} noticed. Every record adds to the picture.`
-        : lapses < lapsesBefore ? `${lapses} ${lapses === 1 ? "slip" : "slips"}, down from ${lapsesBefore} the week before.`
-          : lapses === lapsesBefore ? `${lapses} ${lapses === 1 ? "slip" : "slips"}, the same as the week before.`
-            : `${lapses} ${lapses === 1 ? "slip" : "slips"}, up from ${lapsesBefore} the week before. One week doesn't undo the ones before it.`;
+    ? tt(end >= t0 ? "insights.goal_line.nothing_open" : "insights.goal_line.nothing_past", tone)
+    : goal === "stop" ? tt("insights.goal_line.stop", tone, { met: counts.met + counts.urge, recorded: plural(recorded, "recorded day") })
+      : goal === "understand" ? tt("insights.goal_line.understand", tone, { days: plural(recorded, "day"), urges: plural(urgeRows.length, "urge") })
+        : lapses < lapsesBefore ? tt("insights.goal_line.down", tone, { slips: plural(lapses, "slip"), prev: lapsesBefore })
+          : lapses === lapsesBefore ? tt("insights.goal_line.same", tone, { slips: plural(lapses, "slip") })
+            : tt("insights.goal_line.up", tone, { slips: plural(lapses, "slip"), prev: lapsesBefore });
   const focusFor = (w: string) => track.weekFocus.find((f) => f.week === w)?.text ?? null;
   return {
     week, days, counts, lapses, lapsesBefore,

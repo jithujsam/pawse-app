@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { spring } from "../motion";
 import { useBack } from "../back";
+import { t } from "../text";
 
 /** Bottom sheet: drag the handle down to dismiss, Escape closes, focus stays inside. */
 export function Sheet({ open, onClose, label, children }: { open: boolean; onClose: () => void; label: string; children: ReactNode }) {
@@ -39,7 +40,7 @@ export function Sheet({ open, onClose, label, children }: { open: boolean; onClo
             transition={spring.soft}
             drag="y" dragListener={false} dragControls={controls} dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.04, bottom: 0.7 }}
             onDragEnd={(_, i) => { if (i.offset.y > 110 || i.velocity.y > 600) onClose(); }}>
-            <button className="sheet-handle" aria-label="Drag down or tap to close" onPointerDown={(e) => controls.start(e)} onClick={onClose}><i /></button>
+            <button className="sheet-handle" aria-label={t("ui.common.drag_to_close")} onPointerDown={(e) => controls.start(e)} onClick={onClose}><i /></button>
             {children}
           </motion.div>
         </motion.div>

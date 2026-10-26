@@ -3,13 +3,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { moodFor, PetPortrait } from "../Companion";
 import { has3D, STYLE_3D } from "../pet3d-support";
-import { CRISIS_MESSAGE, pauseHint, pauseRefused, pauseToast, RESTRICTION_NOTE, resumeHint, resumeToast } from "../copy";
-import { hasCrisisLanguage } from "../crisis";
+import { pauseHint, pauseRefused, pauseToast, resumeHint, resumeToast } from "../copy";
+import { concernIn, concernInAny } from "../guard";
+import { t } from "../text";
 import { today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES } from "../pets";
-import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, isRestrictionRelated, measureForLabel, NO_AMOUNT } from "../questions";
+import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
@@ -42,29 +43,29 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.header className="stack tight" variants={rise}>
-        <h1>Pets</h1>
-        <p className="muted small">Each pet looks after one recovery track.</p>
+        <h1>{t("pets.grid.title")}</h1>
+        <p className="muted small">{t("pets.grid.intro")}</p>
       </motion.header>
 
       {tracks.length === 0 ? (
         <motion.section className="card stack center-text" variants={rise}>
-          <h2>No recovery tracks yet</h2>
-          <p className="muted">Pick one behaviour you'd like to understand or change, and a pet will keep you company while you work on it.</p>
-          <Button onClick={() => setAdding(true)}>Add a recovery track</Button>
+          <h2>{t("pets.grid.empty_title")}</h2>
+          <p className="muted">{t("pets.grid.empty_body")}</p>
+          <Button onClick={() => setAdding(true)}>{t("pets.grid.add")}</Button>
         </motion.section>
       ) : (
-        <motion.section className="pet-grid" aria-label="Recovery tracks" variants={rise}>
+        <motion.section className="pet-grid" aria-label={t("pets.grid.tracks")} variants={rise}>
           {tracks.map(({ habit, view, status, paused }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
-            const day = status === "unrecorded" ? "Not checked in" : STATUS_LABEL[status];
-            const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? `Paused · ${day}` : "Paused") : `${STAGE_LABEL[view.stage]} · ${day}`;
+            const day = status === "unrecorded" ? t("pets.grid.not_checked_in") : STATUS_LABEL[status];
+            const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? t("pets.grid.paused_with", { day }) : t("pets.grid.paused")) : `${STAGE_LABEL[view.stage]} · ${day}`;
             return (
               <div key={habit.id} className="pet-card-wrap">
                 <motion.button className="pet-card" data-active={habit.id === focusedTrackId(data)} data-paused={paused}
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
-                  aria-label={`${view.companion.name}, ${habit.name}. ${line}. Open this track.`}>
+                  aria-label={t("pets.grid.card", { pet: view.companion.name, track: habit.name, line })}>
                   <span className="pet-card-art" aria-hidden>
                     <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
                   </span>
@@ -72,14 +73,14 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   <span className="pet-card-track small">{habit.name}</span>
                   <span className="pet-card-status small" data-s={paused ? "paused" : status}>{line}</span>
                 </motion.button>
-                <button className="icon-btn pet-card-more" aria-haspopup="dialog" aria-label={`More for ${habit.name}`} onClick={() => { haptic.tap(); setMenu(habit.id); }}>{Icon.more}</button>
+                <button className="icon-btn pet-card-more" aria-haspopup="dialog" aria-label={t("pets.grid.more", { track: habit.name })} onClick={() => { haptic.tap(); setMenu(habit.id); }}>{Icon.more}</button>
               </div>
             );
           })}
           {data.habits.length < 50 && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
             <span className="pet-card-plus" aria-hidden>{Icon.plus}</span>
-            <b className="pet-card-name">Add a recovery track</b>
-            <span className="pet-card-track small muted">A new pet for another habit</span>
+            <b className="pet-card-name">{t("pets.grid.add")}</b>
+            <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
           </motion.button>}
         </motion.section>
       )}
@@ -116,30 +117,30 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
     haptic.success();
     setConfirming(false);
     onClose();
-    toast(`${companion?.name ?? "Your pet"} is deleted`, { action: { label: "Undo", run: () => { actions.restoreTrack(backup); } } });
+    toast(t("pets.menu.deleted", { name: companion?.name ?? t("pets.menu.your_pet") }), { action: { label: t("ui.common.undo"), run: () => { actions.restoreTrack(backup); } } });
   };
   const close = () => { setConfirming(false); onClose(); };
-  const name = companion?.name ?? "this pet";
+  const name = companion?.name ?? t("pets.menu.this_pet");
   return (
-    <Sheet open={!!habit} onClose={close} label={habit ? `${name} options` : "Pet options"}>
+    <Sheet open={!!habit} onClose={close} label={habit ? t("pets.menu.label", { name }) : t("pets.menu.label_none")}>
       {habit && confirming && <div className="stack">
-        <h2>Delete {name}?</h2>
-        <p className="muted">This removes {name} and every record, check-in and note for {habit.name}. You can undo for a few seconds.</p>
-        <Button variant="danger" onClick={remove}>Yes, delete {name}</Button>
-        <Button variant="secondary" onClick={() => setConfirming(false)}>Keep {name}</Button>
+        <h2>{t("pets.menu.confirm_title", { name })}</h2>
+        <p className="muted">{t("pets.menu.confirm_body", { name, track: habit.name })}</p>
+        <Button variant="danger" onClick={remove}>{t("pets.menu.confirm_yes", { name })}</Button>
+        <Button variant="secondary" onClick={() => setConfirming(false)}>{t("pets.menu.keep", { name })}</Button>
       </div>}
       {habit && !confirming && <div className="stack track-menu">
         <div className="stack tight">
           <h2>{name}</h2>
-          <p className="muted small">{habit.name}{paused ? " · Paused" : ""}</p>
+          <p className="muted small">{habit.name}{paused ? t("pets.menu.paused_suffix") : ""}</p>
         </div>
         <div className="track-menu-actions">
-          <Button onClick={() => onOpen(habit.id)}>Open {name}</Button>
-          <Button variant="secondary" onClick={toggle}>{paused ? "Resume tracking" : "Pause tracking"}</Button>
+          <Button onClick={() => onOpen(habit.id)}>{t("pets.menu.open", { name })}</Button>
+          <Button variant="secondary" onClick={toggle}>{paused ? t("pets.menu.resume") : t("pets.menu.pause")}</Button>
           <p className="muted small">{paused ? resumeHint(tone) : pauseHint(tone)}</p>
         </div>
         <div className="track-menu-danger">
-          <Button variant="danger" onClick={() => setConfirming(true)}>Delete {name}</Button>
+          <Button variant="danger" onClick={() => setConfirming(true)}>{t("pets.menu.delete", { name })}</Button>
         </div>
       </div>}
     </Sheet>
@@ -157,7 +158,7 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
   const coat = pet.coat || COATS[pet.species][0].id;
   return (
     <div className="stack">
-      <div className="species-grid" role="radiogroup" aria-label="Pet">
+      <div className="species-grid" role="radiogroup" aria-label={t("pets.picker.group")}>
         {PICKABLE.map((s) => (
           <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
             whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
@@ -169,13 +170,13 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
         ))}
       </div>
       <p className="muted small center-text">{SPECIES.find((s) => s.id === pet.species)!.blurb}</p>
-      <div className="field"><span className="field-label">Name</span>
-        <SelectOther key={pet.species} label="Pet name" value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
-          placeholder={`Pick a name, like ${NAMES[pet.species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" /></div>
-      <div className="field"><span className="field-label">Coat</span>
-        <Select label="Coat" value={coat} options={COATS[pet.species].map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
-      <div className="field"><span className="field-label">Personality</span>
-        <Select label="Personality" value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>
+      <div className="field"><span className="field-label">{t("pets.picker.name")}</span>
+        <SelectOther key={pet.species} label={t("pets.picker.name_aria")} value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
+          placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
+      <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
+        <Select label={t("pets.picker.coat")} value={coat} options={COATS[pet.species].map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
+      <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
+        <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>
     </div>
   );
 }
@@ -186,8 +187,8 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   const [pet, setPet] = useState<PetPick>(() => firstPet("cat"));
   const [what, setWhat] = useState("");
   const [amountLabel, setAmountLabel] = useState("");
-  const crisis = hasCrisisLanguage(what) || hasCrisisLanguage(pet.name);
-  const restriction = isRestrictionRelated(what);
+  const nameConcern = concernIn(pet.name);
+  const whatConcern = concernInAny([what, amountLabel]);
   const [formKey, setFormKey] = useState(0);
   const reset = () => { setStep(1); setPet(firstPet("cat")); setWhat(""); setAmountLabel(""); setFormKey((k) => k + 1); };
   const close = () => { reset(); onClose(); };
@@ -196,39 +197,35 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
     const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, personality: pet.personality });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
-    toast(`${petName} is here for ${what.trim()}`, { kind: "good" });
+    toast(t("pets.add.added", { name: petName, what: what.trim() }), { kind: "good" });
     reset();
     onAdded(id);
   };
 
   return (
-    <Sheet open={open} onClose={close} label="Add a recovery track">
+    <Sheet open={open} onClose={close} label={t("pets.add.label")}>
       <div className="stack">
-        <div className="row"><h2>{step === 1 ? "Choose a pet" : "What is it for?"}</h2><span className="muted small">Step {step} of 2</span></div>
+        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : t("pets.add.step2")}</h2><span className="muted small">{t("pets.add.step_of", { step })}</span></div>
         {step === 1 && <>
           <PetStep pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
-          <Button disabled={hasCrisisLanguage(pet.name)} onClick={() => { haptic.select(); setStep(2); }}>Continue</Button>
+          <Button disabled={nameConcern !== null} onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.continue")}</Button>
         </>}
         {step === 2 && <>
           <div className="field">
-            <span className="field-label">What would you like to change?</span>
-            <SelectOther key={formKey} label="What you'd like to change" value={what} onChange={setWhat} options={plainOpts(HABIT_CHOICES)} placeholder="Pick the closest, or write your own" otherPlaceholder="In your own words" />
+            <span className="field-label">{t("onboarding.change.title")}</span>
+            <SelectOther key={formKey} label={t("onboarding.change.aria")} value={what} onChange={setWhat} options={plainOpts(HABIT_CHOICES)} placeholder={t("onboarding.change.field")} otherPlaceholder={t("onboarding.change.own")} />
           </div>
-          <AnimatePresence>
-            {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{CRISIS_MESSAGE}</motion.div>}
-            {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{RESTRICTION_NOTE}</motion.div>}
-          </AnimatePresence>
           <div className="field">
-            <span className="field-label">Count something each time? (optional)</span>
-            <SelectOther key={formKey} label="What to count each time" value={amountLabel} onChange={(v) => setAmountLabel(v === NO_AMOUNT ? "" : v)} maxLength={40}
-              options={[...plainOpts(AMOUNT_CHOICES.map((a) => a.label)), { value: NO_AMOUNT, label: "Nothing, just note that it happened" }]}
-              placeholder="Nothing, just note that it happened" otherPlaceholder="Name it, e.g. cups or episodes" />
+            <span className="field-label">{t("onboarding.count.field")}</span>
+            <SelectOther key={formKey} label={t("onboarding.count.aria")} value={amountLabel} onChange={(v) => setAmountLabel(v === NO_AMOUNT ? "" : v)} maxLength={40}
+              options={[...plainOpts(AMOUNT_CHOICES.map((a) => a.label)), { value: NO_AMOUNT, label: t("onboarding.count.none") }]}
+              placeholder={t("onboarding.count.none")} otherPlaceholder={t("onboarding.count.own")} />
           </div>
           <div className="actions">
-            <Button variant="secondary" onClick={() => { haptic.select(); setStep(1); }}>Back</Button>
-            <Button disabled={!what.trim() || crisis || restriction} onClick={save}>Add {pet.name.trim() || NAMES[pet.species][0]}</Button>
+            <Button variant="secondary" onClick={() => { haptic.select(); setStep(1); }}>{t("ui.common.back")}</Button>
+            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
           </div>
-          <p className="muted small">Each track has its own pet, plan, check-ins and history. Your voice and reminders stay shared.</p>
+          <p className="muted small">{t("pets.add.note")}</p>
         </>}
       </div>
     </Sheet>

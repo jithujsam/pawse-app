@@ -85,7 +85,7 @@ async function phone(b, name) {
   await a.getByRole('button', { name: /Back to/ }).click(); await a.waitForTimeout(600);
 
   // Reflection
-  await a.nav('Journey'); await a.waitForTimeout(800);
+  await a.nav('Calendar'); await a.waitForTimeout(800);
   await a.getByRole('radio', { name: 'Good' }).click();
   await a.locator('.reflect textarea').fill('E2E: walked instead of ordering.');
   await a.btn('Save reflection').click(); await a.waitForTimeout(500);
@@ -121,7 +121,7 @@ async function phone(b, name) {
   check('B restored fox, sassy personality', /Fox/.test(profile) && /Sassy/.test(profile), profile.trim());
   await p.nav('Insights'); await p.waitForTimeout(1200);
   check('B restored the urge', /Ridden out\s*1/.test(await p.locator('[aria-label="Urges"]').textContent()));
-  await p.nav('Journey'); await p.waitForTimeout(800);
+  await p.nav('Calendar'); await p.waitForTimeout(800);
   check('B restored the reflection', (await p.locator('.reflect').textContent()).includes('Done today'));
   await p.shot('5-restored');
 
