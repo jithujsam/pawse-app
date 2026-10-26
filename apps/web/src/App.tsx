@@ -29,7 +29,7 @@ import { listenForBack, useRootBack } from "./back";
 import { QuickSheet } from "./screens/QuickSheet";
 import { PlanPage } from "./screens/Plan";
 import { SubPage } from "./ui/Settings";
-import { Icon, PawLogo } from "./ui/Controls";
+import { Icon, PawLoader } from "./ui/Controls";
 import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
@@ -243,11 +243,7 @@ function WithTrack({ children }: { children: React.ReactNode }) {
   return useActiveView()?.habit ? <>{children}</> : null;
 }
 
-/** Picks up where the launch screen in index.html leaves off: the same paw, beating, easing in so a fast load never flashes. */
+/** While the app loads: the paw filling in, toe by toe. */
 function Loading() {
-  return (
-    <main className="screen center-screen loader" aria-busy="true" aria-label="Loading">
-      <PawLogo className="paw-beat" />
-    </main>
-  );
+  return <main className="screen center-screen" aria-busy="true" aria-label="Loading"><PawLoader /></main>;
 }

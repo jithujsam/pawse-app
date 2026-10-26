@@ -15,17 +15,9 @@ window.addEventListener("pagehide", () => { void flush(); });
 
 listenForAuthLinks();
 
-/** The launch screen in index.html stays up for a beat, so the paw is seen beating, then fades into the app. */
-const LAUNCH_MS = 1500;
-function dismissLaunch() {
-  const el = document.getElementById("launch");
-  if (!el) return;
-  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 900); }, Math.max(0, LAUNCH_MS - performance.now()));
-}
-
 const root = createRoot(document.getElementById("root")!);
-if (import.meta.env.DEV && location.hash.startsWith("#gallery")) { document.getElementById("launch")?.remove(); void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />)); }
-else void restoreLook().finally(() => boot().then((b) => { root.render(<StrictMode><App boot={b} /></StrictMode>); dismissLaunch(); }));
+if (import.meta.env.DEV && location.hash.startsWith("#gallery")) { void import("./dev-gallery").then(({ Gallery }) => root.render(<Gallery />)); }
+else void restoreLook().finally(() => boot().then((b) => { root.render(<StrictMode><App boot={b} /></StrictMode>); }));
 
 // Offline support for the installed web app. The Android app already ships its files.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && "serviceWorker" in navigator) {

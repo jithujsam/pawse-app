@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { rise, slide, stagger } from "../motion";
-import { Icon, PawLogo } from "../ui/Controls";
+import { Icon, PawLoader, PawLogo } from "../ui/Controls";
 import { Account } from "./Account";
 import { Story } from "./Onboarding";
 import { APP_NAME } from "../brand";
@@ -36,7 +36,7 @@ export function Welcome() {
 export function Restoring() {
   return (
     <main className="screen center-screen" aria-busy="true">
-      <motion.div className="lock-ico" animate={{ scale: [1, 0.9, 1] }} transition={{ repeat: Infinity, duration: 1.6 }}>{Icon.cloud}</motion.div>
+      <PawLoader />
       <h1>One moment</h1>
       <p className="muted">Checking your account for an existing companion…</p>
     </main>

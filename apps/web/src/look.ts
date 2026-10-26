@@ -9,15 +9,7 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   // The status bar follows the page's own ground colour, which in dark mode is tinted by the accent.
   const fallback = dark ? "#16110e" : "#faf7f2";
-  const paint = () => {
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
-    // The launch screen draws the paw before any script loads, in the accent it saw last.
-    const probe = document.body.appendChild(document.createElement("i"));
-    probe.style.color = "var(--accent)";
-    const accentHex = hex(getComputedStyle(probe).color);
-    probe.remove();
-    if (accentHex) try { localStorage.setItem("pawse-logo", accentHex); } catch { /* private mode: the default colour shows */ }
-  };
+  const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
   paint();
   requestAnimationFrame(paint);
   void kv.set("look", { theme, accent }).catch(() => undefined);
