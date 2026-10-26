@@ -47,8 +47,8 @@ export function UpdateDialog() {
           <motion.div ref={ref} className="celebrate update-dialog" role="dialog" aria-modal="true" aria-label={c.title} onClick={(e) => e.stopPropagation()}
             initial={{ scale: 0.92, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} transition={spring.soft}>
             <header className="update-head">
-              <span className="update-icon" aria-hidden>{Icon.phone}</span>
-              <div><h2>{c.title}</h2><p className="muted">{c.sub}</p></div>
+              <h2>{c.title}</h2>
+              <p className="muted">{c.sub}</p>
             </header>
             <div className="update-versions" aria-label={t("update.dialog.from_to", { from: APP_VERSION.name, to: latest.name })}>
               <span><small>{t("update.dialog.current")}</small><b className="pill">v{APP_VERSION.name}</b></span>
