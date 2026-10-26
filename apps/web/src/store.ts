@@ -4,7 +4,7 @@ import {
   type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
 import { addDays, iso, today, weekStart } from "./dates";
-import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
+import { dayStatus, EDIT_DAYS, outcomeDays, petDayInputs, quietDays, shiftDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { countTriggers, OTHER_PREFIX, pickedLabels, starterFields, type Intake } from "./questions";
@@ -218,6 +218,20 @@ export function riskyHour(d: AppData, habitId: string): number | null {
 export interface ReminderInputs {
   enabled: boolean; reminder: string; tone: Tone; name: string; personality?: Personality;
   checkedToday: boolean; lastCheckIn: string | null; riskHour: number | null; careNotes: boolean;
+  /** Pets with days in the editable window that nothing is recorded for, in any active track. */
+  catchup: { name: string; days: string[] }[];
+}
+
+/** Per living pet on an active track: the days of the last four that are still empty, so they can be filled in before they lock. */
+function catchupDays(d: AppData, t0: string): { name: string; days: string[] }[] {
+  const out: { name: string; days: string[] }[] = [];
+  for (const h of d.habits) {
+    const c = d.companions.find((x) => x.id === h.companionId);
+    if (!c || c.diedOn || trackState(d, h.id).status !== "active") continue;
+    const days = Array.from({ length: EDIT_DAYS + 1 }, (_, i) => shiftDays(t0, -i)).filter((x) => dayStatus(d, h.id, x, t0) === "unrecorded").sort();
+    if (days.length) out.push({ name: c.name, days });
+  }
+  return out;
 }
 
 /**
@@ -230,13 +244,14 @@ export function reminderInputs(d: AppData, t0 = today()): ReminderInputs {
   const id = focusedTrackId(d);
   const habit = id ? d.habits.find((h) => h.id === id) : undefined;
   const companion = habit && d.companions.find((c) => c.id === habit.companionId);
-  if (!habit || !companion) return { enabled: false, reminder, tone, name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false };
+  const catchup = remindersOn ? catchupDays(d, t0) : [];
+  if (!habit || !companion) return { enabled: false, reminder, tone, name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup };
   const idx = trackIndex(d, habit.id, t0);
   const lastCheckIn = [...idx.checkedIn].filter((x) => x <= t0).sort().pop() ?? idx.start;
   const status = trackState(d, habit.id).status;
   return {
     enabled: remindersOn && status === "active" && !companion.diedOn, reminder, tone, name: companion.name, personality: companion.personality,
-    checkedToday: idx.checkedIn.has(t0) || idx.rest.has(t0), lastCheckIn, riskHour: riskNudge ? riskyHour(d, habit.id) : null, careNotes,
+    checkedToday: idx.checkedIn.has(t0) || idx.rest.has(t0), lastCheckIn, riskHour: riskNudge ? riskyHour(d, habit.id) : null, careNotes, catchup,
   };
 }
 

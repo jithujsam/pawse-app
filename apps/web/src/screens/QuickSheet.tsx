@@ -32,14 +32,11 @@ export function QuickSheet({ open, onClose, onPick, onPlan }: { open: boolean; o
   const todayCtl = dayControls(data, habit.id, t0, t0);
   // Urges managed today (not on the whole track), which is what the tile says.
   const ridden = todayCtl.managedUrges;
-  // Rest or paused: today counts neither way, and a rest day can't be set over one.
-  const resting = todayCtl.notTracking;
   const plan = () => { if (pets.length <= 1) { onPlan(habit.id); return; } haptic.select(); setChoosing(true); };
   const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean }[] = [
     { id: "urge", icon: Icon.wave, title: t("sheets.quick.urge"), hint: ridden ? t("sheets.quick.urge_managed", { n: ridden }) : t("sheets.quick.urge_hint"), tone: "calm" },
     { id: "clean", icon: clean ? Icon.check : Icon.sun, title: t("sheets.quick.met"), hint: slipped ? t("sheets.quick.met_slipped") : clean ? (streak === 1 ? t("sheets.quick.met_streak_one") : t("sheets.quick.met_streak_other", { n: streak })) : t("sheets.quick.met_hint"), tone: "good", disabled: slipped || clean },
     { id: "slip", icon: Icon.slip, title: t("sheets.quick.slip"), hint: t("sheets.quick.slip_hint"), tone: "bad" },
-    { id: "rest", icon: resting ? Icon.check : Icon.info, title: t("sheets.quick.rest"), hint: resting ? (progress.paused ? t("sheets.quick.rest_paused") : t("sheets.quick.rest_resting")) : !todayCtl.canRest ? t("sheets.quick.rest_recorded") : t("sheets.quick.rest_hint"), tone: "calm", disabled: resting || !todayCtl.canRest },
   ];
   if (choosing) return (
     <Sheet open={open} onClose={onClose} label={t("sheets.quick.choose_label")}>

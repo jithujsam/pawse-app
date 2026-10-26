@@ -29,6 +29,27 @@ describe("notification plan: at most two a day", async () => {
     return m;
   };
 
+  it("with empty days still open: a morning and a bedtime note, naming the pets, until the days lock", () => {
+    const plan = planNotifications({ ...base, riskHour: null, careNotes: false, lastCheckIn: "2026-10-20", catchup: [{ name: "Biscuit", days: ["2026-10-18", "2026-10-19"] }, { name: "Pepper", days: ["2026-10-20"] }] });
+    const day = (d: number) => plan.filter((n) => n.at.toDateString() === at(d, 0).toDateString());
+    // Today: bedtime note only (9:00 has passed); it is the day's reminder, so no separate daily note.
+    expect(day(0).map((n) => n.kind)).toEqual(["catchup"]);
+    expect(day(0)[0].title).toBe("Biscuit and Pepper need an update");
+    expect(day(0)[0].body).toBe("2 open days. Update before they lock.");
+    // Tomorrow both are still open, with a morning note too. On the 22nd the 18th has locked: one day each.
+    expect(day(1).map((n) => n.kind)).toEqual(["catchup", "catchup"]);
+    expect(day(1)[0].at.getHours()).toBe(9);
+    expect(day(2)[0].body).toBe("1 open day. Update before they lock.");
+    // Once every day has locked, only the usual reminder remains.
+    expect(day(4).map((n) => n.kind)).toEqual(["daily"]);
+    expect(plan.every((n) => !/miss/i.test(`${n.title} ${n.body}`))).toBe(true);
+    const gentle = planNotifications({ ...base, tone: "gentle", riskHour: null, catchup: [{ name: "Biscuit", days: ["2026-10-20"] }] });
+    expect(gentle.find((n) => n.kind === "catchup")!.title).toBe("Biscuit is missing you");
+  });
+  it("nothing open means no catch-up notes", () => {
+    expect(planNotifications({ ...base, catchup: [] }).some((n) => n.kind === "catchup")).toBe(false);
+  });
+
   it("after a clean day: tonight's thank-you and the heads-up; no reminder for a day already checked in", () => {
     const plan = planNotifications({ ...base, checkedToday: true, care: { kind: "clean", at: at(0, 18).getTime() } });
     expect(perDay(plan).get(at(0, 0).toDateString())).toEqual(["thanks", "risk"]);

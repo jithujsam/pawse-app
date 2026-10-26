@@ -5,7 +5,7 @@ import { accountBlockers, accountCheckEmail, accountErrors, accountForm, account
 import { homeCoach, homeHeader, homeHero, homeMilestone, homePaused, homeToday, homeWeek, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
 import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice } from "./sections/me";
-import { notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
+import { notificationsCatchup, notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
 import { onboardingChange, onboardingChrome, onboardingCount, onboardingFinal, onboardingHatch, onboardingHelp, onboardingPet, onboardingReminders, onboardingTriggers, onboardingVoice, onboardingWhy } from "./sections/onboarding";
 import { petsAdd, petsGrid, petsMenu, petsPicker } from "./sections/pets";
 import { privacyFlows, privacySummary } from "./sections/privacy";
@@ -33,7 +33,7 @@ export const SECTIONS = [
   accountForm, accountBlockers, accountErrors, accountSignedIn, accountSync, accountCheckEmail, accountNewPassword,
   securityLock, securityPin, lockScreen,
   updateDialog, updateToasts,
-  notificationsPermission, notificationsDaily, notificationsQuiet,
+  notificationsPermission, notificationsDaily, notificationsQuiet, notificationsCatchup,
   safetyHelplines, safetyCrisis, safetyRestriction, safetyProfessional, safetyDisclaimer, safetySupport,
   privacyFlows, privacySummary,
 ] as const;

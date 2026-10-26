@@ -22,3 +22,11 @@ export const notificationsQuiet = defineSection("notifications.quiet", { screen:
   week_body: tones("Days you don't record don't count against you. Pick up whenever it suits you.", "Days you don't record don't count against you. Pick up whenever it suits you.", "Unrecorded days don't count against you. Pick it up today."),
 });
 // @copy-section-end notifications.quiet
+
+// @copy-section notifications.catchup
+export const notificationsCatchup = defineSection("notifications.catchup", { screen: "Notifications", title: "Days still open to fill in", source: "src/copy.ts, src/notify.ts" }, {
+  title_one: tones("{names} is missing you", "{names} needs an update", "{names}: update due"),
+  title_many: tones("{names} are missing you", "{names} need an update", "{names}: update due"),
+  body: tones("Please fill in the {n} open {days} before they lock.", "{n} open {days}. Update before they lock.", "{n} open {days}. Fill in before they lock."),
+});
+// @copy-section-end notifications.catchup

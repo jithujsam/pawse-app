@@ -209,6 +209,13 @@ export function reminderLine(tone: Tone, name: string): { title: string; body: s
   return { title: tt("notifications.daily.title", tone, { name }), body: tt("notifications.daily.body", tone) };
 }
 
+/** The morning and bedtime note while days can still be filled in. Names read as a list; the day count is the most any one pet has open. */
+export function catchupLine(tone: Tone, names: string[], n: number): { title: string; body: string } {
+  const list = names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  const vars = { names: list, n, days: n === 1 ? "day" : "days" };
+  return { title: tt(names.length > 1 ? "notifications.catchup.title_many" : "notifications.catchup.title_one", tone, { names: list }), body: tt("notifications.catchup.body", tone, vars) };
+}
+
 /** Shown when someone tries to track eating less, calories or weight (CLAUDE.md: never add restriction tracking). */
 export const RESTRICTION_NOTE = t("safety.restriction.note");
 /** The same note, for the copy inspector. */

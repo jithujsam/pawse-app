@@ -20,11 +20,43 @@ import java.security.MessageDigest;
 /**
  * Downloads the new APK from the releases repo, checks its SHA-256, and hands it to Android's installer.
  * Android always shows its own confirm screen; the update installs over the app only because it is signed with the same key.
+ * The file is kept in the app's private cache as Pawse-<sha256>.apk: if the person backs out of the installer and taps
+ * Update again, a copy that still matches its checksum is used instead of downloading it again. Any other update file,
+ * and any older than KEEP_DAYS, is deleted, so the downloads never pile up.
  */
 @CapacitorPlugin(name = "Updater")
 public class UpdaterPlugin extends Plugin {
     private static final String HOST = "raw.githubusercontent.com";
+    private static final long KEEP_MS = 3L * 24 * 60 * 60 * 1000;
     private volatile boolean busy = false;
+
+    private File updatesDir() { return new File(getContext().getCacheDir(), "updates"); }
+
+    private static String fileName(String sha) { return "Pawse-" + sha.toLowerCase() + ".apk"; }
+
+    private static String sha256Of(File f) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        try (InputStream in = new java.io.FileInputStream(f)) {
+            byte[] buf = new byte[64 * 1024]; int n;
+            while ((n = in.read(buf)) > 0) md.update(buf, 0, n);
+        }
+        StringBuilder hex = new StringBuilder();
+        for (byte b : md.digest()) hex.append(String.format("%02x", b));
+        return hex.toString();
+    }
+
+    /** Deletes update files older than KEEP_MS, and (when `keep` is given) every other update file too. */
+    private void tidy(String keep) {
+        File[] files = updatesDir().listFiles();
+        if (files == null) return;
+        long now = System.currentTimeMillis();
+        for (File f : files) if ((keep != null && !f.getName().equals(keep)) || now - f.lastModified() > KEEP_MS) f.delete();
+    }
+
+    @Override
+    public void load() {
+        new Thread(() -> tidy(null)).start();
+    }
 
     @PluginMethod
     public void download(PluginCall call) {
@@ -34,12 +66,19 @@ public class UpdaterPlugin extends Plugin {
         if (busy) { call.reject("busy"); return; }
         busy = true;
         new Thread(() -> {
-            File dir = new File(getContext().getCacheDir(), "updates");
-            File out = new File(dir, "Pawse-update.apk");
+            File dir = updatesDir();
+            File out = new File(dir, fileName(sha));
             try {
                 if (!dir.exists() && !dir.mkdirs()) throw new Exception("storage");
-                File[] old = dir.listFiles();
-                if (old != null) for (File f : old) f.delete();
+                tidy(out.getName());
+                // Already downloaded and still intact: use it.
+                if (out.exists() && sha256Of(out).equalsIgnoreCase(sha)) {
+                    JSObject p = new JSObject(); p.put("percent", 100); notifyListeners("progress", p);
+                    out.setLastModified(System.currentTimeMillis());
+                    call.resolve();
+                    return;
+                }
+                out.delete();
                 HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                 c.setConnectTimeout(15000);
                 c.setReadTimeout(30000);
@@ -73,7 +112,9 @@ public class UpdaterPlugin extends Plugin {
     /** Opens the installer for the downloaded file. Rejects with "permission" after opening the "install unknown apps" setting. */
     @PluginMethod
     public void install(PluginCall call) {
-        File apk = new File(new File(getContext().getCacheDir(), "updates"), "Pawse-update.apk");
+        String sha = call.getString("sha256", "");
+        if (sha == null || !sha.matches("[0-9a-fA-F]{64}")) { call.reject("bad-request"); return; }
+        File apk = new File(updatesDir(), fileName(sha));
         if (!apk.exists()) { call.reject("missing"); return; }
         if (Build.VERSION.SDK_INT >= 26 && !getContext().getPackageManager().canRequestPackageInstalls()) {
             Intent s = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));

@@ -46,7 +46,7 @@ export const openDownload = (url: string) => { window.location.href = url; };
 
 interface UpdaterPlugin {
   download(o: { url: string; sha256: string }): Promise<void>;
-  install(): Promise<void>;
+  install(o: { sha256: string }): Promise<void>;
   addListener(e: "progress", fn: (p: { percent: number }) => void): Promise<{ remove: () => Promise<void> }>;
 }
 const Updater = registerPlugin<UpdaterPlugin>("Updater");
@@ -57,7 +57,7 @@ export type InstallResult = "installing" | "permission" | "browser" | "failed" |
 export const canInstallInApp = (l: Latest): boolean => Capacitor.getPlatform() === "android" && /^[0-9a-f]{64}$/i.test(l.sha256 ?? "");
 
 /**
- * Downloads the APK inside the app, checks it against latest.json's SHA-256, then opens Android's installer.
+ * Downloads the APK inside the app (or reuses the copy already downloaded for this exact checksum), checks it against latest.json's SHA-256, then opens Android's installer.
  * "permission": Android's "install unknown apps" switch is off; its setting screen was opened, so call again after.
  */
 export async function installUpdate(l: Latest, onProgress?: (percent: number) => void): Promise<InstallResult> {
@@ -65,7 +65,7 @@ export async function installUpdate(l: Latest, onProgress?: (percent: number) =>
   const sub = await Updater.addListener("progress", (p) => onProgress?.(p.percent)).catch(() => null);
   try {
     await Updater.download({ url: l.url, sha256: l.sha256! });
-    await Updater.install();
+    await Updater.install({ sha256: l.sha256! });
     return "installing";
   } catch (e) {
     const msg = (e as { message?: string }).message;

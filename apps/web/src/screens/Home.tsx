@@ -47,7 +47,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
   const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
-  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); else if (a === "rest") rest(true); };
+  quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); };
   useEffect(() => { const run = () => quickRef.current(takeQuick()); run(); return onQuick(run); }, []);
 
   useEffect(() => { if (!just) return; const t = setTimeout(() => setJust(null), 3500); return () => clearTimeout(t); }, [just]);
@@ -102,11 +102,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
     const m = milestoneToCelebrate(trackSummary(after, habit.id, t0).care, celebratedFor(after, habit.id), MILESTONES);
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
     else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
-  }
-  function rest(on: boolean) {
-    if (!actions.setRest(habit.id, t0, on)) return;
-    haptic.select();
-    if (on) toast(restLine(tone), { action: { label: t("ui.common.undo"), run: () => actions.setRest(habit.id, t0, false) } });
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
@@ -190,7 +185,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
       )}
 
       {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
-      <DayDetail day={t0} onMarkMet={clean} onRest={rest} onSlipSaved={saved} />
+      <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />
 
       <motion.section className="checkin" aria-label={t("home.week.title")} variants={rise}>
         <div className="row"><h2>{t("home.week.title")}</h2><span className="muted small">{weekMet === 1 ? t("home.week.count_one", { n: weekMet }) : t("home.week.count_other", { n: weekMet })}</span></div>

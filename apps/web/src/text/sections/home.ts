@@ -125,8 +125,6 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
   marked_met: "Goal met",
   remove_met: "Undo goal met",
   removed_met: "Goal met removed",
-  not_tracking: "Skip day",
-  track_after_all: "Track day",
   log_slip: "Log slip",
   log_another: "Log another",
   locked: "Locked. Only the last 4 days can be changed.",

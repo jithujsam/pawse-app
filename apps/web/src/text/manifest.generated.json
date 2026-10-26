@@ -1545,7 +1545,7 @@
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
       "start": 112,
-      "end": 136,
+      "end": 134,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -1630,16 +1630,6 @@
           "placeholders": []
         },
         {
-          "id": "calendar.day.not_tracking",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "calendar.day.track_after_all",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "calendar.day.log_slip",
           "kind": "text",
           "placeholders": []
@@ -1674,8 +1664,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 138,
-      "end": 150,
+      "start": 136,
+      "end": 148,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -1730,8 +1720,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 152,
-      "end": 162,
+      "start": 150,
+      "end": 160,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -3991,7 +3981,7 @@
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 109,
-      "end": 136,
+      "end": 131,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4053,31 +4043,6 @@
           "placeholders": []
         },
         {
-          "id": "sheets.quick.rest",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.rest_paused",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.rest_resting",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.rest_recorded",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.rest_hint",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "sheets.quick.plan",
           "kind": "text",
           "placeholders": []
@@ -4125,8 +4090,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 138,
-      "end": 160,
+      "start": 133,
+      "end": 155,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4242,8 +4207,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 162,
-      "end": 201,
+      "start": 157,
+      "end": 196,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4441,8 +4406,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 203,
-      "end": 228,
+      "start": 198,
+      "end": 223,
       "entries": [
         {
           "id": "sheets.memorial.life",
@@ -5380,6 +5345,39 @@
           "id": "notifications.quiet.week_body",
           "kind": "voice",
           "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "notifications.catchup",
+      "screen": "Notifications",
+      "title": "Days still open to fill in",
+      "source": "src/copy.ts, src/notify.ts",
+      "file": "src/text/sections/notifications.ts",
+      "start": 26,
+      "end": 32,
+      "entries": [
+        {
+          "id": "notifications.catchup.title_one",
+          "kind": "voice",
+          "placeholders": [
+            "names"
+          ]
+        },
+        {
+          "id": "notifications.catchup.title_many",
+          "kind": "voice",
+          "placeholders": [
+            "names"
+          ]
+        },
+        {
+          "id": "notifications.catchup.body",
+          "kind": "voice",
+          "placeholders": [
+            "days",
+            "n"
+          ]
         }
       ]
     },

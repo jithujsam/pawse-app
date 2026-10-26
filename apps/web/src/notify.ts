@@ -1,6 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { reminderLine } from "./copy";
+import { catchupLine, reminderLine } from "./copy";
 import { actions } from "./store";
 import { careNote } from "./voice";
 import { t, tt } from "./text";
@@ -19,13 +19,15 @@ export const remindersSupported = native;
  */
 export const MAX_PER_DAY = 2;
 const HORIZON_DAYS = 14;
+/** The calendar edits today and the three days before it, so a day stays fillable for this many days from today. */
+const EDIT_WINDOW = 4;
 const FIRST_ID = 3000;
 const MANAGED_IDS = Array.from({ length: 100 }, (_, i) => FIRST_ID + i);
 /** Ids older versions used for repeating schedules (daily, care, risky hour, lapse). Cancelled so they can't add to the count. */
 const LEGACY_IDS = [1001, 2001, 2002, 2003, 2004, 2010, 2011, 2012, 2013];
 
-export type NoteKind = "daily" | "lapse" | "thanks" | "risk" | "morning";
-const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, thanks: 1, risk: 2, morning: 3 };
+export type NoteKind = "daily" | "lapse" | "catchup" | "thanks" | "risk" | "morning";
+const PRIORITY: Record<NoteKind, number> = { daily: 0, lapse: 0, catchup: 0, thanks: 1, risk: 2, morning: 3 };
 
 export interface PlanInput {
   now: Date;
@@ -46,6 +48,8 @@ export interface PlanInput {
   careNotes: boolean;
   /** The last good-day or slip event, which care notes respond to. */
   care: { kind: "clean" | "slip"; at: number } | null;
+  /** Pets with empty days that can still be filled in (the last four), as YYYY-MM-DD. */
+  catchup?: { name: string; days: string[] }[];
 }
 export interface Planned { id: number; kind: NoteKind; at: Date; title: string; body: string; extra: { open: string } }
 
@@ -76,10 +80,20 @@ export function planNotifications(p: PlanInput): Planned[] {
     }
   }
   const [rh, rm] = p.reminder.split(":").map(Number);
+  // Empty days still open to edit (the last four): a morning and a bedtime note, until each has locked. The bedtime note is that day's reminder.
+  const catchupDays = new Set<string>();
+  for (let i = 0; i < EDIT_WINDOW; i++) {
+    const open = (p.catchup ?? []).map((c) => ({ name: c.name, n: c.days.filter((x) => x >= dayKey(atTime(p.now, i - EDIT_WINDOW + 1, 0, 0))).length })).filter((c) => c.n > 0);
+    if (!open.length) continue;
+    const line = catchupLine(p.tone, open.map((c) => c.name), Math.max(...open.map((c) => c.n)));
+    catchupDays.add(dayKey(atTime(p.now, i, 0, 0)));
+    add("catchup", atTime(p.now, i, 9, 0), line, "checkin");
+    add("catchup", atTime(p.now, i, Number.isFinite(rh) ? Math.max(rh, 20) : 21, Number.isFinite(rh) && rh >= 20 ? rm : 30), line, "checkin");
+  }
   for (let i = 0; i < HORIZON_DAYS; i++) {
     if (Number.isFinite(rh) && Number.isFinite(rm) && !(i === 0 && p.checkedToday)) {
       const at = atTime(p.now, i, rh, rm);
-      if (!lapseDays.has(dayKey(at))) add("daily", at, reminderLine(p.tone, p.name), "checkin"); // the quiet-day note is that day's reminder
+      if (!lapseDays.has(dayKey(at)) && !catchupDays.has(dayKey(at))) add("daily", at, reminderLine(p.tone, p.name), "checkin"); // the quiet-day and catch-up notes are that day's reminder
     }
     if (p.riskHour !== null) {
       const minutes = (p.riskHour * 60 + 24 * 60 - 30) % (24 * 60);
@@ -107,7 +121,7 @@ export function planNotifications(p: PlanInput): Planned[] {
 
 const CARE_KEY = "companion/notify-care";
 const readCare = (): PlanInput["care"] => { try { return JSON.parse(localStorage.getItem(CARE_KEY) ?? "null"); } catch { return null; } };
-let inputs: Omit<PlanInput, "now" | "care"> = { enabled: false, reminder: "20:00", tone: "honest", name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false };
+let inputs: Omit<PlanInput, "now" | "care"> = { enabled: false, reminder: "20:00", tone: "honest", name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup: [] };
 let queue: Promise<void> = Promise.resolve();
 
 async function apply(): Promise<void> {

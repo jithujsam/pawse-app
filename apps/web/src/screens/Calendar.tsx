@@ -100,9 +100,9 @@ export function CalendarSections() {
 /**
  * One day's record and what can be done to it: marked goal met, not tracked, or given the slip that really
  * happened. What each day shows and allows comes from the shared rules (progress.ts dayControls). The pet screen
- * shows today's. `standalone` is for a sheet, where no parent screen fades the card in. `onMarkMet`, `onRest` and `onSlipSaved` let that screen run its own celebration and reactions.
+ * shows today's. `standalone` is for a sheet, where no parent screen fades the card in. `onMarkMet` and `onSlipSaved` let that screen run its own celebration and reactions.
  */
-export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved }: { day: string; standalone?: boolean; onMarkMet?: () => void; onRest?: (on: boolean) => void; onSlipSaved?: (d: Deduction) => void }) {
+export function DayDetail({ day: sel, standalone, onMarkMet, onSlipSaved }: { day: string; standalone?: boolean; onMarkMet?: () => void; onSlipSaved?: (d: Deduction) => void }) {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
@@ -158,15 +158,13 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved
               ? locked
                 ? <p className="muted">{sel > t0 ? t("calendar.day.future") : t("calendar.day.locked")}</p>
                 : <div className="quick-grid">
-                    {ctl.canLogSlip && <button type="button" className="quick-tile" data-tone="bad" onClick={() => setLogging(true)}><span className="quick-ico" aria-hidden>{Icon.slip}</span><b>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</b></button>}
                     {ctl.canMarkMet && <button type="button" className="quick-tile" data-tone="good" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.sun}</span><b>{t("calendar.day.mark_met")}</b></button>}
                     {ctl.canUnmarkMet && <button type="button" className="quick-tile" data-tone="calm" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.check}</span><b>{t("calendar.day.remove_met")}</b></button>}
-                    {ctl.canRest && <button type="button" className="quick-tile" data-tone="calm" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !ctl.resting); }}><span className="quick-ico" aria-hidden>{Icon.info}</span><b>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</b></button>}
+                    {ctl.canLogSlip && <button type="button" className="quick-tile" data-tone="bad" onClick={() => setLogging(true)}><span className="quick-ico" aria-hidden>{Icon.slip}</span><b>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</b></button>}
                   </div>
               : <>
             {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}>{t("calendar.day.mark_met")}</Button>}
               {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}
-              {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</Button>}
               {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</Button>}
               </>}
           </motion.div>
