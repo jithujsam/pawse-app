@@ -5,24 +5,42 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.Arrays;
+import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-/** Lets the web app hand the widget its latest state. Only short display strings are stored. */
+/** Lets the web app hand the pet widgets their latest state: each pet's species and mood, nothing else. */
 @CapacitorPlugin(name = "Widget")
 public class WidgetPlugin extends Plugin {
+    static final int MAX_PETS = 12;
+    static final List<String> SPECIES = Arrays.asList("dog", "cat", "rabbit", "fox", "owl", "panda");
+    static final List<String> MOODS = Arrays.asList("happy", "idle", "sad");
+
     @PluginMethod
     public void update(PluginCall call) {
         Context c = getContext();
-        String species = call.getString("species", "dog");
-        if (!species.matches("dog|cat|rabbit|fox|owl|panda")) species = "dog";
-        c.getSharedPreferences(CompanionWidget.PREFS, Context.MODE_PRIVATE).edit()
-            .putString("species", species)
-            .putString("name", trim(call.getString("name", "Companion"), 20))
-            .putString("line", trim(call.getString("line", ""), 60))
-            .putBoolean("sad", Boolean.TRUE.equals(call.getBoolean("sad", false)))
-            .apply();
-        CompanionWidget.refresh(c);
+        JSONArray input = call.getData().optJSONArray("pets");
+        JSONArray pets = new JSONArray();
+        if (input != null) {
+            for (int i = 0; i < input.length() && pets.length() < MAX_PETS; i++) {
+                JSONObject pet = input.optJSONObject(i);
+                if (pet == null) continue;
+                String species = pet.optString("species", "");
+                String mood = pet.optString("mood", "");
+                if (!SPECIES.contains(species) || !MOODS.contains(mood)) continue;
+                JSONObject clean = new JSONObject();
+                try {
+                    clean.put("species", species);
+                    clean.put("mood", mood);
+                } catch (Exception e) {
+                    continue;
+                }
+                pets.put(clean);
+            }
+        }
+        c.getSharedPreferences(PetWidget.PREFS, Context.MODE_PRIVATE).edit().putString(PetWidget.PETS, pets.toString()).apply();
+        PetWidget.refresh(c);
         call.resolve();
     }
-
-    private static String trim(String s, int max) { return s == null ? "" : s.length() > max ? s.substring(0, max) : s; }
 }

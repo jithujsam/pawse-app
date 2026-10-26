@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The clear widget: the same pets with no background, so they sit on the home screen wallpaper. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@null"
+    android:padding="8dp">
+
+    <StackView
+        android:id="@+id/widget_stack"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:loopViews="true" />
+
+    <ImageView
+        android:id="@+id/widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/app_name"
+        android:scaleType="centerInside"
+        android:src="@mipmap/ic_launcher" />
+</FrameLayout>

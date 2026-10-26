@@ -1,17 +1,19 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { Species } from "./types";
 
-/** The home screen widget's state: species, name and one short line. Android only. */
-interface WidgetPlugin { update(o: { species: Species; name: string; line: string; sad: boolean }): Promise<void> }
+/** What each home screen pet widget shows: one stacked card per pet, with its species and mood. Android only. */
+export type WidgetMood = "happy" | "idle" | "sad";
+export interface WidgetPet { species: Species; mood: WidgetMood }
+interface WidgetPlugin { update(o: { pets: WidgetPet[] }): Promise<void> }
 const Widget = registerPlugin<WidgetPlugin>("Widget");
 
 let last = "";
-export function updateWidget(o: { species: Species; name: string; line: string; sad: boolean }) {
+export function updateWidget(pets: WidgetPet[]) {
   if (Capacitor.getPlatform() !== "android") return;
-  const key = JSON.stringify(o);
+  const key = JSON.stringify(pets);
   if (key === last) return;
   last = key;
-  void Widget.update(o).catch(() => undefined);
+  void Widget.update({ pets }).catch(() => undefined);
 }
 
 /** The widget opens the app at app.detoxcompanion://open/quick; anyone interested listens for this. */

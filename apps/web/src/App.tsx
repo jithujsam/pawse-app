@@ -8,7 +8,7 @@ import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
 import { trackSummary } from "./progress";
 import { trackState } from "./tracks";
-import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, type Boot } from "./store";
+import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, viewCompanion, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -153,18 +153,20 @@ function Shell() {
   const [pinTick, setPinTick] = useState(0);
   useEffect(() => onPinChange(() => setPinTick((n) => n + 1)), []);
   useEffect(() => {
-    if (!view?.habit || !data.settings.onboarded) return;
+    if (!data.settings.onboarded) return;
     const t0 = today();
-    const progress = trackSummary(data, view.habit.id, t0);
-    const slipped = progress.today === "lapse";
-    const clean = progress.today === "met";
-    const streak = progress.current;
-    // With app lock on, the home screen widget shows nothing about today: it sits outside the PIN.
-    if (vault.hasPin()) { updateWidget({ species: view.companion.species, name: view.companion.name, line: "Tap to check in", sad: false }); return; }
-    const paused = trackState(data, view.habit.id).status === "paused";
-    const line = paused ? "Paused · tap to open" : slipped ? "Hasn't eaten today. A good day fixes that." : clean ? `${streak} ${streak === 1 ? "day" : "days"} on track · age ${Math.round(view.age)}` : `Waiting for today's check-in · age ${Math.round(view.age)}`;
-    updateWidget({ species: view.companion.species, name: view.companion.name, line, sad: slipped });
-  }, [data, view, pinTick]);
+    // With app lock on, the home screen widgets show each pet with no mood, so nothing about today sits outside the PIN.
+    const locked = vault.hasPin();
+    const pets = data.companions.flatMap((c) => {
+      const habit = data.habits.find((h) => h.companionId === c.id);
+      if (!habit || viewCompanion(data, c.id, t0).dead) return [];
+      const status = trackSummary(data, habit.id, t0).today;
+      const paused = trackState(data, habit.id).status === "paused";
+      const mood = locked || paused ? "idle" : status === "lapse" ? "sad" : status === "met" || status === "urge" ? "happy" : "idle";
+      return [{ species: c.species, mood } as const];
+    });
+    updateWidget(pets);
+  }, [data, pinTick]);
   // With no recovery track left (removed on another device, say), only the Pets grid makes sense.
   const hasTrack = !!view?.habit;
   useEffect(() => { if (!hasTrack) { setTab("pets"); setTrack(false); } }, [hasTrack]);
