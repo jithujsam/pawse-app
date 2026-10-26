@@ -103,6 +103,10 @@ p { text-wrap: pretty; }
 .item { background: var(--raised); border-radius: var(--radius-sm); padding: 16px 18px; display: grid; gap: 6px; overflow: hidden; }
 .wide { grid-column: 1 / -1; }
 
+/* ---------- offline bar ---------- */
+/* Sits above the tab bar while the phone has no network; everything keeps working and syncs on return. */
+.offline-bar { background: var(--raised); color: var(--muted); font-size: 13px; font-weight: 600; text-align: center; padding: 8px var(--pad); border-top: 1px solid var(--line); }
+
 /* ---------- tab bar ---------- */
 .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); position: relative; z-index: 5; }
 .tab { border: 0; background: none; min-height: 56px; display: grid; place-items: center; align-content: center; gap: 2px; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; position: relative; transition: color .25s; }
@@ -269,7 +273,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--raised); border-radius: 999px; padding: 4px; gap: 2px; }
 .segmented.big .seg { min-height: 48px; }
-.seg { position: relative; border: 0; background: none; min-height: 40px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); transition: color .2s; }
+.seg { position: relative; border: 0; background: none; min-height: 44px; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); transition: color .2s; }
 .seg[aria-checked="true"] { color: var(--text); }
 .seg-pill { position: absolute; inset: 0; border-radius: 999px; background: var(--surface); box-shadow: 0 2px 8px -2px rgba(0,0,0,.15); }
 .seg-label { position: relative; z-index: 1; }
@@ -413,7 +417,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .care-badge[data-tone="warn"] { background: var(--warning); color: var(--on-warning); }
 .care-badge[data-tone="bad"] { background: var(--negative); }
 .vital .care-badge { top: -2px; right: -4px; }
-.health-tabs .seg { font-size: 13px; min-height: 40px; padding: 0 4px; }
+.health-tabs .seg { font-size: 13px; min-height: 44px; padding: 0 4px; }
 .health-hero { display: flex; align-items: center; gap: 16px; }
 .health-num { font: 600 34px/1 var(--serif); }
 .health-num small { font: 600 14px var(--font); color: var(--muted); }
@@ -695,7 +699,7 @@ svg.chart text { fill: var(--muted); font: 12px var(--font); }
 .link { border: 0; background: none; color: var(--accent); font-weight: 650; cursor: pointer; padding: 6px 0; }
 .pw-wrap { position: relative; display: block; }
 .pw-wrap .input { padding-right: 72px; }
-.pw-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--accent); font-weight: 650; min-height: 40px; padding: 0 10px; cursor: pointer; }
+.pw-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--accent); font-weight: 650; min-height: 44px; padding: 0 10px; cursor: pointer; }
 .meter { display: flex; align-items: center; gap: 12px; overflow: hidden; }
 .meter-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; flex: 1; }
 .meter-bar i { height: 6px; border-radius: 999px; background: var(--negative); display: block; }
