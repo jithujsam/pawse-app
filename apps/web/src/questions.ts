@@ -116,11 +116,39 @@ export function starterFields(intake: Intake): Field[] {
   return fields;
 }
 
-/** The labels picked for a choice or multi answer. */
+/** Marks a choice or multi answer the person typed themselves instead of picking from the list. */
+export const OTHER_PREFIX = "other:";
+/** Stored form of a typed answer. Commas are dropped because multi answers are comma-separated. */
+export const otherAnswer = (text: string) => `${OTHER_PREFIX}${text.replace(/,/g, " ").slice(0, 40)}`;
+
+/** The labels picked for a choice or multi answer, plus anything the person typed under "Other". */
 export function pickedLabels(f: Field, v: unknown): string[] {
-  if (typeof v !== "string" || !v || !f.options) return [];
+  if (typeof v !== "string" || !v) return [];
   const ids = f.type === "multi" ? v.split(",") : [v];
-  return f.options.filter((o) => ids.includes(o.id)).map((o) => o.label);
+  const known = (f.options ?? []).filter((o) => ids.includes(o.id)).map((o) => o.label);
+  const own = ids.filter((i) => i.startsWith(OTHER_PREFIX)).map((i) => i.slice(OTHER_PREFIX.length).trim()).filter(Boolean);
+  return [...known, ...own];
+}
+
+/** Common behaviours people want to change, in plain words. "Other" is always available in the form. */
+export const HABIT_CHOICES = [
+  "Smoking or vaping", "Drinking alcohol", "Scrolling on my phone or social media", "Online shopping or impulse buying",
+  "Ordering food or takeaway", "Betting or gambling", "Playing games", "Caffeine or energy drinks", "Biting nails or picking skin",
+];
+
+/** What to note each time. The measure is stated, not guessed, so "Minutes spent" can't be read as money. */
+export const AMOUNT_CHOICES: { label: string; measure: Measure }[] = [
+  { label: "How many", measure: "count" },
+  { label: "Money spent", measure: "money" },
+  { label: "Minutes spent", measure: "minutes" },
+];
+
+/** Chosen in an amount dropdown to mean "nothing to count"; it is stored as an empty label. */
+export const NO_AMOUNT = "__none";
+
+/** The measure for an amount label: a listed choice wins, anything the person typed is read from its words. */
+export function measureForLabel(label: string): Measure {
+  return AMOUNT_CHOICES.find((a) => a.label === label.trim())?.measure ?? inferMeasureFromLabel(label);
 }
 
 /** Trigger flags in one answer set: yes to a trigger question, or a picked trigger option. Late night counts too. */

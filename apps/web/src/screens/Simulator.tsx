@@ -5,7 +5,7 @@ import { LiveCompanion, moodFor } from "../Companion";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Button, Icon, Segmented } from "../ui/Controls";
+import { Button, Icon, Select } from "../ui/Controls";
 import type { Habit, Species } from "../types";
 
 /**
@@ -117,10 +117,10 @@ export function Simulator({ open, onClose, species, coat, name, habit }: { open:
 
             <section className="card stack">
               <span className="field-label">Pattern</span>
-              <Segmented label="Pattern" value={pattern} onChange={(p) => reset(p)} options={PATTERNS.map((p) => ({ value: p.value, label: p.label }))} />
+              <Select label="Pattern" value={pattern} onChange={(p) => reset(p)} options={PATTERNS.map((p) => ({ value: p.value, label: p.label }))} />
               <p className="muted small">{PATTERNS.find((p) => p.value === pattern)!.hint}. Days without a slip count as clean and heal, down to the scar floor.</p>
               <span className="field-label">One day every</span>
-              <Segmented label="Speed" value={speed} onChange={setSpeed} options={SPEEDS} />
+              <Select label="Speed" value={speed} onChange={setSpeed} options={SPEEDS} />
             </section>
 
             <section className="card stack">

@@ -1,5 +1,5 @@
-import { useId, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useRef, useState, type ReactNode } from "react";
+import { motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 
@@ -27,36 +27,123 @@ export function Switch({ checked, onChange, label, hint }: { checked: boolean; o
   );
 }
 
-/** Segmented control with a sliding highlight. */
-export function Segmented<T extends string | boolean>({ value, options, onChange, label }:
-  { value: T | undefined; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
-  const id = useId();
+export interface Opt<T> { value: T; label: string; disabled?: boolean }
+/** Options whose value and label are the same words. */
+export const plainOpts = (xs: readonly string[]): Opt<string>[] => xs.map((x) => ({ value: x, label: x }));
+
+/** A dropdown. Shows `placeholder` until something is picked. Uses the phone's own picker, so it works with screen readers and large text. */
+export function Select<T extends string | number | boolean>({ value, options, onChange, label, placeholder = "Choose…", className = "", clearLabel, onClear }:
+  { value: T | undefined | null; options: Opt<T>[]; onChange: (v: T) => void; label: string; placeholder?: string; className?: string; clearLabel?: string; onClear?: () => void }) {
+  const at = options.findIndex((o) => o.value === value);
   return (
-    <div className="segmented" role="radiogroup" aria-label={label}>
-      {options.map((o) => {
-        const on = value === o.value;
-        return (
-          <button key={String(o.value)} type="button" role="radio" aria-checked={on} className="seg" onClick={() => { haptic.select(); onChange(o.value); }}>
-            {on && <motion.span layoutId={`seg-${id}`} className="seg-pill" transition={spring.snappy} />}
-            <span className="seg-label">{o.label}</span>
-          </button>
-        );
-      })}
+    <select className={`input dropdown ${className}`} aria-label={label} value={at < 0 ? "" : String(at)} data-empty={at < 0}
+      onChange={(e) => {
+        haptic.select();
+        if (e.target.value === CLEAR) { onClear?.(); return; }
+        const o = options[Number(e.target.value)];
+        if (o) onChange(o.value);
+      }}>
+      {at < 0 && <option value="" disabled>{placeholder}</option>}
+      {at >= 0 && clearLabel && onClear && <option value={CLEAR}>{clearLabel}</option>}
+      {options.map((o, i) => <option key={String(o.value)} value={i} disabled={o.disabled}>{o.label}</option>)}
+    </select>
+  );
+}
+
+const OTHER = "__other";
+const CLEAR = "__clear";
+
+/**
+ * A dropdown of common answers that always ends with "Something else…", which opens a text box. The value is the
+ * answer itself: one of the options' values, or whatever the person typed. With `commitLabel` the typed answer is only
+ * passed on when they tap that button, for forms where each change is saved straight away.
+ */
+export function SelectOther({ value, options, onChange, label, placeholder = "Choose…", otherLabel = "Something else…", otherPlaceholder = "Type your own", maxLength = 60, commitLabel, clearLabel }:
+  { value: string; options: Opt<string>[]; onChange: (v: string) => void; label: string; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; commitLabel?: string; clearLabel?: string }) {
+  const known = options.some((o) => o.value === value);
+  const [custom, setCustom] = useState(value !== "" && !known);
+  const [draft, setDraft] = useState(value !== "" && !known ? value : "");
+  const ref = useRef<HTMLInputElement>(null);
+  const own = custom || (value !== "" && !known);
+  const text = commitLabel ? draft : known ? "" : value;
+  const at = options.findIndex((o) => o.value === value);
+  const shown = own ? OTHER : at < 0 ? "" : String(at);
+  const commit = () => { const t = draft.trim(); if (t) onChange(t); };
+  return (
+    <div className="stack tight">
+      <select className="input dropdown" aria-label={label} value={shown} data-empty={shown === ""}
+        onChange={(e) => {
+          haptic.select();
+          if (e.target.value === CLEAR) { setCustom(false); setDraft(""); onChange(""); return; }
+          if (e.target.value === OTHER) { setCustom(true); if (!commitLabel) onChange(""); requestAnimationFrame(() => ref.current?.focus()); return; }
+          const o = options[Number(e.target.value)];
+          if (!o) return;
+          setCustom(false); setDraft("");
+          onChange(o.value);
+        }}>
+        {shown === "" && <option value="" disabled>{placeholder}</option>}
+        {shown !== "" && clearLabel && <option value={CLEAR}>{clearLabel}</option>}
+        {options.map((o, i) => <option key={o.value} value={i} disabled={o.disabled}>{o.label}</option>)}
+        <option value={OTHER}>{otherLabel}</option>
+      </select>
+      {own && (
+        <div className="other-row">
+          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={text} placeholder={otherPlaceholder} aria-label={`${label}: ${otherPlaceholder.toLowerCase()}`}
+            onChange={(e) => (commitLabel ? setDraft(e.target.value) : onChange(e.target.value))}
+            onKeyDown={(e) => { if (commitLabel && e.key === "Enter") { e.preventDefault(); commit(); } }} />
+          {commitLabel && <Button variant="secondary" disabled={!draft.trim() || draft.trim() === value} onClick={commit}>{commitLabel}</Button>}
+        </div>
+      )}
     </div>
   );
 }
 
-export function Chip({ pressed, onClick, children, ...rest }: { pressed: boolean; onClick: () => void; children: ReactNode; "aria-label"?: string }) {
+/**
+ * Pick any number of answers from a dropdown; each one appears below as a tag that a tap removes. "Something else…"
+ * adds a typed answer. Values not in `options` (typed ones) are shown as they are.
+ */
+export function MultiSelect({ value, options, onChange, label, max = 8, placeholder = "Add one…", otherLabel = "Something else…", otherPlaceholder = "Type your own", maxLength = 80, allowOther = true, ownPrefix = "" }:
+  { value: string[]; options: Opt<string>[]; onChange: (v: string[]) => void; label: string; max?: number; placeholder?: string; otherLabel?: string; otherPlaceholder?: string; maxLength?: number; allowOther?: boolean; ownPrefix?: string }) {
+  const [typing, setTyping] = useState(false);
+  const [draft, setDraft] = useState("");
+  const ref = useRef<HTMLInputElement>(null);
+  const full = value.length >= max;
+  const left = options.filter((o) => !value.includes(o.value));
+  const labelOf = (v: string) => options.find((o) => o.value === v)?.label ?? (ownPrefix && v.startsWith(ownPrefix) ? v.slice(ownPrefix.length).trim() : v);
+  const add = (v: string) => { if (v && !value.includes(v) && !full) onChange([...value, v]); };
+  const addOwn = () => { const t = draft.trim(); if (t) add(ownPrefix ? ownPrefix + t.replace(/,/g, " ") : t); setDraft(""); setTyping(false); };
   return (
-    <motion.button type="button" className="chip" aria-pressed={pressed} whileTap={{ scale: 0.92 }} transition={spring.snappy}
-      onClick={() => { haptic.select(); onClick(); }} {...rest}>
-      <AnimatePresence initial={false}>
-        {pressed && <motion.svg className="chip-check" viewBox="0 0 24 24" initial={{ width: 0, opacity: 0 }} animate={{ width: 16, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={spring.snappy}>
-          <motion.path d="M5 12.5l4.5 4.5L19 7.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25 }} />
-        </motion.svg>}
-      </AnimatePresence>
-      {children}
-    </motion.button>
+    <div className="stack tight">
+      {value.length > 0 && (
+        <div className="chips" role="list" aria-label={label}>
+          {value.map((v) => (
+            <button key={v} type="button" role="listitem" className="chip tag" aria-label={`Remove ${labelOf(v)}`} onClick={() => { haptic.select(); onChange(value.filter((x) => x !== v)); }}>
+              {labelOf(v)}{Icon.close}
+            </button>
+          ))}
+        </div>
+      )}
+      {!full && (
+        <select className="input dropdown" aria-label={`${label}: add`} value="" data-empty
+          onChange={(e) => {
+            haptic.select();
+            if (e.target.value === OTHER) { setTyping(true); requestAnimationFrame(() => ref.current?.focus()); return; }
+            const o = left[Number(e.target.value)];
+            if (o) { setTyping(false); add(o.value); }
+          }}>
+          <option value="" disabled>{value.length ? "Add another…" : placeholder}</option>
+          {left.map((o, i) => <option key={o.value} value={i}>{o.label}</option>)}
+          {allowOther && <option value={OTHER}>{otherLabel}</option>}
+        </select>
+      )}
+      {typing && !full && (
+        <div className="other-row">
+          <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={draft} placeholder={otherPlaceholder} aria-label={`${label}: ${otherPlaceholder.toLowerCase()}`}
+            onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addOwn(); } }} />
+          <Button variant="secondary" disabled={!draft.trim()} onClick={addOwn}>Add</Button>
+        </div>
+      )}
+    </div>
   );
 }
 

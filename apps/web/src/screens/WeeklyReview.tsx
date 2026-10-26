@@ -9,7 +9,7 @@ import { rise } from "../motion";
 import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults, weekReview } from "../recovery";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { Button, Chip, Segmented } from "../ui/Controls";
+import { Button, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Reflect } from "./Reflect";
 
@@ -27,19 +27,18 @@ export function WeeklyReview() {
   const week = which === "this" ? ws : addDays(ws, -7);
   const r = weekReview(data, habit, week);
   const ideas = adjustmentIdeas(r, habit, trackState(data, habit.id).description || habit.name);
-  const [own, setOwn] = useState("");
-  const crisis = hasCrisisLanguage(own);
   const focusWeek = addDays(week, 7);
-  const pick = (t: string) => { if (hasCrisisLanguage(t)) return; actions.setWeekFocus(focusWeek, t, habit.id); haptic.success(); toast("Saved for the week ahead", { kind: "good" }); setOwn(""); };
+  const [crisis, setCrisis] = useState(false);
+  const pick = (t: string) => { const bad = hasCrisisLanguage(t); setCrisis(bad); if (bad) return; actions.setWeekFocus(focusWeek, t, habit.id); haptic.success(); toast("Saved for the week ahead", { kind: "good" }); };
   const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
   // Rest and paused days are both "Not tracking".
   const shown = { ...r.counts, rest: r.counts.rest + r.counts.paused };
 
   return (
     <div className="stack">
-      <div className="chips" role="group" aria-label="Which week">
-        <Chip pressed={which === "last"} onClick={() => setWhich("last")}>Last week</Chip>
-        <Chip pressed={which === "this"} onClick={() => setWhich("this")}>This week</Chip>
+      <div className="field">
+        <span className="field-label">Which week?</span>
+        <Select label="Which week" value={which} onChange={setWhich} options={[{ value: "last", label: "Last week" }, { value: "this", label: "This week" }]} />
       </div>
       <p className="muted small">From {fmtDay(week)}</p>
       <p>{r.goalLine}</p>
@@ -55,11 +54,8 @@ export function WeeklyReview() {
       <div className="field">
         <span className="field-label">{r.focus ? "Your focus for next week" : "Pick one small change for next week"}</span>
         {r.focus && <p><b>{r.focus}</b></p>}
-        <div className="chips" role="radiogroup" aria-label="Ideas">{ideas.map((x) => <Chip key={x} pressed={r.focus === x} onClick={() => pick(x)}>{x}</Chip>)}</div>
-        <div className="inline-add">
-          <input className="input" autoComplete="off" maxLength={160} value={own} placeholder="Or your own" aria-label="Your own change" onChange={(e) => setOwn(e.target.value)} />
-          <Button variant="secondary" disabled={!own.trim() || crisis} onClick={() => pick(own)}>Save</Button>
-        </div>
+        <SelectOther label="One small change for next week" options={plainOpts(ideas)} value={r.focus ?? ""} onChange={pick} maxLength={160} commitLabel="Save"
+          placeholder="Pick an idea" otherPlaceholder="Your own change" />
         {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       </div>
     </div>
@@ -74,7 +70,7 @@ export function CheckIn() {
   return (
     <motion.section className="card stack" aria-label="Check in with yourself" variants={rise}>
       <h2>Check in with yourself</h2>
-      <Segmented label="Check-in" value={part} onChange={setPart} options={[{ value: "today", label: "Today" }, { value: "week", label: "Weekly review" }]} />
+      <Select label="Check-in" value={part} onChange={setPart} options={[{ value: "today", label: "How was today?" }, { value: "week", label: "Weekly review" }]} />
       {part === "today" ? <Reflect /> : <WeeklyReview />}
     </motion.section>
   );

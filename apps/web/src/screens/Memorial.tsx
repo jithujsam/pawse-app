@@ -6,8 +6,8 @@ import { addDays } from "../dates";
 import { daysTogether } from "../progress";
 import { haptic } from "../haptics";
 import { actions, useData, type CompanionView } from "../store";
-import { Button, Chip } from "../ui/Controls";
-import { SPECIES } from "../pets";
+import { Button, plainOpts, Select, SelectOther } from "../ui/Controls";
+import { NAMES, SPECIES } from "../pets";
 import type { Species } from "../types";
 
 const BABY: Record<Species, string> = { dog: "puppy", cat: "kitten", rabbit: "bunny", fox: "kit", owl: "owlet", panda: "cub" };
@@ -44,10 +44,10 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
       <motion.section className="stack memorial-card" {...slow(2.8)}>
         <h2>Start again</h2>
         <p className="muted small">The new life begins at age 0. Your history stays in your reports, and {companion.name} stays in the Hall of Companions.</p>
-        <div className="chips">
-          {SPECIES.map((s) => <Chip key={s.id} pressed={species === s.id} onClick={() => setSpecies(s.id)}>{s.label}</Chip>)}
-        </div>
-        <label className="field"><span className="field-label">New name</span><input className="input" autoComplete="off" value={name} maxLength={20} placeholder="Biscuit" onChange={(e) => setName(e.target.value)} /></label>
+        <div className="field"><span className="field-label">Who comes next?</span>
+          <Select label="Species" value={species} onChange={setSpecies} options={SPECIES.map((s) => ({ value: s.id, label: s.label }))} /></div>
+        <div className="field"><span className="field-label">New name</span>
+          <SelectOther label="New name" value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={`Pick a name, like ${NAMES[species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" /></div>
         <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>Adopt a new {BABY[species]}</Button>
       </motion.section>
     </main>

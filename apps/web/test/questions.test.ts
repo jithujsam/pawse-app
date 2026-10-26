@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFields, countTriggers, inferClass, inferMeasure, inferMeasureFromLabel, isRestrictionRelated, pickedLabels, starterFields } from "../src/questions";
+import { AMOUNT_CHOICES, buildFields, countTriggers, HABIT_CHOICES, inferClass, inferMeasure, inferMeasureFromLabel, isRestrictionRelated, measureForLabel, otherAnswer, pickedLabels, starterFields } from "../src/questions";
 
 describe("questions", () => {
   it("infers the habit class from free text", () => {
@@ -66,5 +66,28 @@ describe("questions", () => {
     expect(inferMeasureFromLabel("₹ spent")).toBe("money");
     expect(inferMeasureFromLabel("minutes")).toBe("minutes");
     expect(inferMeasureFromLabel("cigarettes")).toBe("count");
+  });
+
+  it("reads a listed amount by its stated measure, and a typed one from its words", () => {
+    expect(AMOUNT_CHOICES.map((a) => measureForLabel(a.label))).toEqual(["count", "money", "minutes"]);
+    expect(measureForLabel("Minutes spent")).toBe("minutes"); // would read as money by its words alone
+    expect(measureForLabel("cups of coffee")).toBe("count");
+    expect(measureForLabel("")).toBe("none");
+  });
+  it("offers common habits that are classed and none that track eating less", () => {
+    expect(HABIT_CHOICES.length).toBeGreaterThan(5);
+    expect(HABIT_CHOICES.some(isRestrictionRelated)).toBe(false);
+    expect(inferClass("Smoking or vaping")).toBe("smoking");
+    expect(inferClass("Drinking alcohol")).toBe("alcohol");
+    expect(inferClass("Scrolling on my phone or social media")).toBe("doomscrolling");
+    expect(inferClass("Ordering food or takeaway")).toBe("food_spending");
+  });
+  it("keeps what someone typed under Other, in choice and multi answers", () => {
+    const f = buildFields({ what: "x", measure: "money", cls: "food_spending", triggers: ["stress", "bored"] });
+    const mood = f.find((x) => x.id === "mood")!, where = f.find((x) => x.id === "where")!;
+    expect(pickedLabels(mood, `stress,${otherAnswer("a bad meeting, again")}`)).toEqual(["Stressed", "a bad meeting  again"]);
+    expect(pickedLabels(where, otherAnswer("  at my sister's  "))).toEqual(["at my sister's"]);
+    expect(pickedLabels(where, otherAnswer("   "))).toEqual([]);
+    expect(otherAnswer("x".repeat(80)).length).toBe("other:".length + 40);
   });
 });
