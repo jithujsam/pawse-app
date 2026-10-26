@@ -31,6 +31,13 @@ const hooks = new Set<(prev: AppData, next: AppData, source: CommitSource) => vo
 /** Lets sync see exactly which rows changed in each commit. */
 export const onCommit = (fn: (prev: AppData, next: AppData, source: CommitSource) => void) => { hooks.add(fn); return () => { hooks.delete(fn); }; };
 
+/** Recording a day from before the pet was born (the calendar allows the last few days) moves the birth back to that day, so the record sits inside the pet's life. */
+function bornBy(d: AppData, companionId: string, day: string): AppData {
+  return d.companions.some((c) => c.id === companionId && day < c.bornOn)
+    ? { ...d, companions: d.companions.map((c) => (c.id === companionId && day < c.bornOn ? { ...c, bornOn: day } : c)) }
+    : d;
+}
+
 function commit(next: AppData, source: CommitSource = "local") {
   const prev = data;
   data = { ...next, updatedAt: Date.now() };
@@ -469,7 +476,8 @@ export const actions = {
     if (!canRecord(data, habitId)) return null;
     if (valuesConcern(values)) return null; // the slip sheet shows the note before it ever gets here
     const habit = data.habits.find((h) => h.id === habitId)!;
-    const companion = data.companions.find((c) => c.id === habit.companionId)!;
+    const base = bornBy(data, habit.companionId, day);
+    const companion = base.companions.find((c) => c.id === habit.companionId)!;
     const amountField = habit.fields.find((f) => f.amount);
     const raw = amountField ? Number(values[amountField.id]) : NaN;
     const amount = Number.isFinite(raw) && amountField ? raw : null;
@@ -480,7 +488,7 @@ export const actions = {
     const severity = computeSeverity({ amount: amount ?? undefined, median: med, classWeight: habit.classWeight, triggers });
     const nth = data.entries.filter((e) => e.habitId === habitId && e.day === day).length + 1;
     const months = baselineMonths(severity, nth);
-    const before = viewCompanion(data, companion.id, day);
+    const before = viewCompanion(base, companion.id, day);
     const effects = effectsFor(habit.cls, Math.min(100, before.age + months / 12));
     const tone = data.settings.tone;
     const streakBefore = cleanStreak(data, habitId);
@@ -490,7 +498,7 @@ export const actions = {
     };
     // A goal-met mark on this day stays as history: the slip wins while it exists, and deleting the slip brings
     // the goal-met day back. Milestones count days of care, which a slip doesn't take away, so they aren't reset.
-    let next: AppData = withoutRest({ ...data, entries: [...data.entries, entry] }, habitId, day);
+    let next: AppData = withoutRest({ ...base, entries: [...base.entries, entry] }, habitId, day);
     let died = false;
     const v = viewCompanion(next, companion.id);
     const deadState = v.states.find((s) => s.stage === "dead");
@@ -512,7 +520,8 @@ export const actions = {
     if (!canRecord(data, habitId)) return false;
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
-    commit(withoutRest({ ...data, cleanDays: [...data.cleanDays, { habitId, day }] }, habitId, day));
+    const owner = data.habits.find((h) => h.id === habitId)!.companionId;
+    commit(withoutRest({ ...bornBy(data, owner, day), cleanDays: [...data.cleanDays, { habitId, day }] }, habitId, day));
     return true;
   },
 
@@ -524,7 +533,8 @@ export const actions = {
     if (!canRecord(data, habitId)) return false;
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day)
       || data.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out"))) return false;
-    commit(withTrack(data, habitId, (s) => { const rest = s.restDays.filter((x) => x !== day); return { ...s, restDays: on ? [...rest, day].sort().slice(-4000) : rest }; }));
+    const base = on ? bornBy(data, data.habits.find((h) => h.id === habitId)!.companionId, day) : data;
+    commit(withTrack(base, habitId, (s) => { const rest = s.restDays.filter((x) => x !== day); return { ...s, restDays: on ? [...rest, day].sort().slice(-4000) : rest }; }));
     return true;
   },
 

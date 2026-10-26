@@ -5,10 +5,10 @@ import { absorbedLine, bingeLine, EFFECT_LABEL } from "../copy";
 import { t } from "../text";
 import { money } from "../format";
 import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
-import { EDIT_DAYS, trackSummary } from "../progress";
+import { trackSummary } from "../progress";
 import { concernIn, type Concern } from "../guard";
 import { OTHER_PREFIX, otherAnswer } from "../questions";
-import { addDays, fmtDay, fmtTime, today } from "../dates";
+import { fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
@@ -64,11 +64,9 @@ export function LogSheet(props: Props) {
 function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) {
   const data = useData();
   const [values, setValues] = useState<Entry["values"]>({});
-  const [day, setDay] = useState(presetDay ?? today());
+  // The date is fixed: the calendar is where another day is picked.
+  const day = presetDay ?? today();
   const [time, setTime] = useState("");
-  const born = data.companions.find((c) => c.id === habit.companionId)?.bornOn;
-  // A slip can be logged for any of the last four days (EDIT_DAYS before today, and today), as on the calendar, and not before the pet was born.
-  const days = Array.from({ length: EDIT_DAYS + 1 }, (_, i) => addDays(today(), -i)).filter((x) => !born || x >= born);
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
   const [ageBefore] = useState(age);
@@ -157,8 +155,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
       <motion.div className="row" variants={rise}><h2>{t("sheets.log.title")}</h2><Button variant="text" onClick={onClose}>{t("ui.common.cancel")}</Button></motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label">{t("sheets.log.when")}</span>
-        <Select label={t("sheets.log.day_aria")} value={day} onChange={setDay}
-          options={days.map((x) => ({ value: x, label: fmtDay(x) }))} />
+        <p>{fmtDay(day)}</p>
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label">{t("sheets.log.time")}</span>

@@ -4,8 +4,7 @@ import { defineSection } from "../core";
 export const sheetsLog = defineSection("sheets.log", { screen: "Log a slip", title: "Log a slip form", source: "src/screens/LogSheet.tsx" }, {
   label: "Log a slip",
   title: "Log a slip",
-  when: "When did it happen?",
-  day_aria: "Day",
+  when: "Date",
   time: "What time? (optional)",
   time_aria: "Time of day",
   time_none: "I'd rather not say",

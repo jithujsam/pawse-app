@@ -1545,7 +1545,7 @@
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
       "start": 112,
-      "end": 134,
+      "end": 136,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -1650,6 +1650,16 @@
           "placeholders": []
         },
         {
+          "id": "calendar.day.locked",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "calendar.day.future",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "calendar.day.minutes",
           "kind": "text",
           "placeholders": [
@@ -1664,8 +1674,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 136,
-      "end": 148,
+      "start": 138,
+      "end": 150,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -1720,8 +1730,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 150,
-      "end": 160,
+      "start": 152,
+      "end": 162,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -3458,7 +3468,7 @@
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 3,
-      "end": 44,
+      "end": 43,
       "entries": [
         {
           "id": "sheets.log.label",
@@ -3472,11 +3482,6 @@
         },
         {
           "id": "sheets.log.when",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.log.day_aria",
           "kind": "text",
           "placeholders": []
         },
@@ -3674,8 +3679,8 @@
       "title": "Reflection after a slip",
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 46,
-      "end": 62,
+      "start": 45,
+      "end": 61,
       "entries": [
         {
           "id": "sheets.reflection.back_to_plan",
@@ -3750,8 +3755,8 @@
       "title": "Urge support",
       "source": "src/screens/UrgeSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 64,
-      "end": 108,
+      "start": 63,
+      "end": 107,
       "entries": [
         {
           "id": "sheets.urge.label",
@@ -3985,8 +3990,8 @@
       "title": "The + menu",
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 110,
-      "end": 137,
+      "start": 109,
+      "end": 136,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4120,8 +4125,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 139,
-      "end": 161,
+      "start": 138,
+      "end": 160,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4237,8 +4242,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 163,
-      "end": 202,
+      "start": 162,
+      "end": 201,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4436,8 +4441,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 204,
-      "end": 229,
+      "start": 203,
+      "end": 228,
       "entries": [
         {
           "id": "sheets.memorial.life",

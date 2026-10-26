@@ -129,6 +129,8 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
   track_after_all: "Track day",
   log_slip: "Log slip",
   log_another: "Log another",
+  locked: "Locked. Only the last 4 days can be changed.",
+  future: "This day hasn't happened yet.",
   minutes: "{n} min",
 });
 // @copy-section-end calendar.day

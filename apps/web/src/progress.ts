@@ -382,12 +382,12 @@ export interface DayControls {
 /** How many days before today the calendar lets a day be filled in or corrected. */
 export const EDIT_DAYS = 3;
 
-/** Whether the calendar opens this day for editing: the last four days, today and the EDIT_DAYS before it, in the pet's life, on a track that isn't archived. */
+/** Whether the calendar opens this day for editing: the last four days, today and the EDIT_DAYS before it, on a track that isn't archived. A day before the pet was born is allowed: recording one moves the birth back to it. */
 export function editableInCalendar(d: AppData, habitId: string, day: string, today: string): boolean {
   const habit = d.habits.find((h) => h.id === habitId);
   const companion = d.companions.find((c) => c.id === habit?.companionId);
   if (!companion || trackState(d, habitId).status === "archived") return false;
-  return day <= today && day >= shiftDays(today, -EDIT_DAYS) && day >= companion.bornOn;
+  return day <= today && day >= shiftDays(today, -EDIT_DAYS);
 }
 
 /** The one set of rules for what a day shows and allows, so screens don't each work it out. */
@@ -399,7 +399,7 @@ export function dayControls(d: AppData, habitId: string, day: string, today: str
   const paused = pausedOn(idx.pauses, day);
   const resting = idx.rest.has(day) && !paused;
   const slips = idx.slips.get(day) ?? 0;
-  const inLife = !!companion && day <= today && day >= companion.bornOn;
+  const inLife = !!companion && day <= today && (day >= companion.bornOn || editableInCalendar(d, habitId, day, today));
   const recorded = slips > 0 || idx.met.has(day) || idx.managed.has(day);
   return {
     status, paused, resting, notTracking: (paused || idx.rest.has(day)) && !recorded, slips, managedUrges: idx.managed.get(day) ?? 0, inLife,

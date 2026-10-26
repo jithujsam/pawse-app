@@ -72,16 +72,12 @@ export function CalendarSections() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
-            {cells.map((d, i) => d ? (editable(d)
-              ? <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit aria-haspopup="dialog"
-                  aria-label={t("calendar.month.day_edit_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(d); setSheet(true); }}
-                  initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
-                  <span>{Number(d.slice(8))}</span>
-                </motion.button>
-              : <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={t("calendar.month.day_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })}
-                  initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
-                  <span>{Number(d.slice(8))}</span>
-                </motion.div>
+            {cells.map((d, i) => d ? (
+              <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit={editable(d) || undefined} aria-haspopup="dialog"
+                aria-label={t(editable(d) ? "calendar.month.day_edit_aria" : "calendar.month.day_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(d); setSheet(true); }}
+                initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
+                <span>{Number(d.slice(8))}</span>
+              </motion.button>
             ) : <span key={`b${i}`} />)}
           </motion.div>
         </AnimatePresence>
@@ -115,6 +111,8 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved
   const tone = data.settings.tone;
   const t0 = today();
   const ctl = dayControls(data, habit.id, sel, t0);
+  // In the calendar sheet, a day outside the last four can be read but not changed.
+  const locked = !!standalone && !editableInCalendar(data, habit.id, sel, t0);
   const [logging, setLogging] = useState(false);
   const dayEntries = data.entries.filter((e) => e.habitId === habit.id && e.day === sel);
   const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
@@ -129,18 +127,18 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved
 
   return (
     <>
-      <motion.section className="card stack" aria-label={t("calendar.day.aria", { date: fmtDay(sel) })} variants={standalone ? undefined : rise}>
+      <motion.section className={standalone ? "stack" : "card stack"} aria-label={t("calendar.day.aria", { date: fmtDay(sel) })} variants={standalone ? undefined : rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
-            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? tt("calendar.note.met", tone) : ctl.status === "rest" ? tt("calendar.note.rest", tone) : ctl.status === "paused" ? pausedDayLine(tone, track.pauses, sel) : sel < companion.bornOn ? t("calendar.note.not_born", { name: companion.name }) : ctl.status === "urge" ? tt("calendar.note.urge_managed", tone) : dayUrges.length ? t("calendar.note.urge_noted") : tt("calendar.note.nothing", tone)}</p>}
+            {dayEntries.length === 0 && <p className="muted">{ctl.status === "met" ? tt("calendar.note.met", tone) : ctl.status === "rest" ? tt("calendar.note.rest", tone) : ctl.status === "paused" ? pausedDayLine(tone, track.pauses, sel) : !locked && !ctl.inLife && sel < companion.bornOn ? t("calendar.note.not_born", { name: companion.name }) : ctl.status === "urge" ? tt("calendar.note.urge_managed", tone) : dayUrges.length ? t("calendar.note.urge_noted") : tt("calendar.note.nothing", tone)}</p>}
             {dayUrges.length > 0 && <p className="small">{t("calendar.day.urges_managed", { managed: ctl.managedUrges, total: dayUrges.length, urges: dayUrges.length === 1 ? t("calendar.day.urge_one") : t("calendar.day.urge_other") })}{dayUrges.some((u) => u.strategy) ? t("calendar.day.urges_using", { strategies: [...new Set(dayUrges.map((u) => u.strategy).filter(Boolean))].map((x) => strategy(x!).title.toLowerCase()).join(", ") }) : ""}.</p>}
             <div className="list">
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
                   <motion.div layout className="item" key={e.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, marginTop: 0 }} transition={spring.soft}>
                     <div className="row"><b className="neg">{lostMonths(e.months)}</b>
-                      <button className="icon-btn danger" aria-label={t("calendar.day.delete_aria")} onClick={() => remove(e.id)}>{Icon.trash}</button></div>
+                      {!locked && <button className="icon-btn danger" aria-label={t("calendar.day.delete_aria")} onClick={() => remove(e.id)}>{Icon.trash}</button>}</div>
                     {e.amount !== null && <span>{habit.unit === "money" ? money(data.settings.currency, e.amount) : habit.unit === "minutes" ? t("calendar.day.minutes", { n: e.amount }) : e.amount}</span>}
                     {Object.entries(e.values).filter(([k, v]) => typeof v === "string" && v && habit.fields.find((f) => f.id === k)?.type === "text").map(([k, v]) => <span key={k} className="muted small">{String(v)}</span>)}
                     {(() => {
@@ -156,10 +154,21 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved
                 ))}
               </AnimatePresence>
             </div>
+            {standalone
+              ? locked
+                ? <p className="muted">{sel > t0 ? t("calendar.day.future") : t("calendar.day.locked")}</p>
+                : <div className="quick-grid">
+                    {ctl.canLogSlip && <button type="button" className="quick-tile" data-tone="bad" onClick={() => setLogging(true)}><span className="quick-ico" aria-hidden>{Icon.slip}</span><b>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</b></button>}
+                    {ctl.canMarkMet && <button type="button" className="quick-tile" data-tone="good" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.sun}</span><b>{t("calendar.day.mark_met")}</b></button>}
+                    {ctl.canUnmarkMet && <button type="button" className="quick-tile" data-tone="calm" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.check}</span><b>{t("calendar.day.remove_met")}</b></button>}
+                    {ctl.canRest && <button type="button" className="quick-tile" data-tone="calm" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !ctl.resting); }}><span className="quick-ico" aria-hidden>{Icon.info}</span><b>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</b></button>}
+                  </div>
+              : <>
             {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}>{t("calendar.day.mark_met")}</Button>}
-            {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}
-            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</Button>}
-            {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</Button>}
+              {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}
+              {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? t("calendar.day.track_after_all") : t("calendar.day.not_tracking")}</Button>}
+              {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</Button>}
+              </>}
           </motion.div>
         </AnimatePresence>
       </motion.section>
