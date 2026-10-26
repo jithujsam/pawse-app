@@ -133,15 +133,3 @@ function useShared(): Latest | null {
 /** The newest version, for the Home banner. Phone app only; the web app updates itself. */
 export const useUpdate = (): Latest | null => useShared();
 
-/** Drives the launch popup: `latest` is set only while the popup should be showing. */
-export function useUpdatePrompt() {
-  const found = useShared();
-  const [hidden, setHidden] = useState(false);
-  const open = !!found && !hidden && shouldPrompt(found, readPrefs(), Date.now());
-  return {
-    latest: open ? found : null,
-    later: () => { writePrefs({ ...readPrefs(), snoozeUntil: Date.now() + SNOOZE_MS }); setHidden(true); },
-    skip: () => { if (found) writePrefs({ ...readPrefs(), skipped: found.code }); setHidden(true); },
-    close: () => setHidden(true),
-  };
-}
