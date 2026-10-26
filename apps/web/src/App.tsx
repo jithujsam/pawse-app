@@ -263,7 +263,7 @@ function Loading() {
 /** The app opening: the paw, with the name just below it. */
 function BootSplash() {
   return (
-    <main className="screen center-screen" aria-busy="true" aria-label={`Loading ${APP_NAME}`}>
+    <main className="screen center-screen boot" aria-busy="true" aria-label={`Loading ${APP_NAME}`}>
       <PawLoader />
       <div className="brand boot-brand">{APP_NAME}</div>
     </main>

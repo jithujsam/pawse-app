@@ -453,7 +453,8 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 @keyframes paw-5 { 0%, 59.1% { fill: var(--paw-off); } 72.7%, 88.6% { fill: var(--accent); } 95.5%, 100% { fill: var(--paw-off); } }
 @media (prefers-reduced-motion: reduce) { .paw-load > * { animation: none; fill: var(--accent); } }
 /* The boot splash: the paw, and the name just below it, fading in once the paw is moving. */
-.boot-brand { margin-top: 18px; animation: boot-in .6s .3s var(--ease) backwards; }
+.boot { gap: 8px; }
+.boot-brand { animation: boot-in .6s .3s var(--ease) backwards; }
 @keyframes boot-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .boot-brand { animation: none; } }
 @keyframes loader-breathe { 50% { transform: scale(.9); } }
