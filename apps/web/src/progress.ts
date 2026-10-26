@@ -379,6 +379,17 @@ export interface DayControls {
   canLogSlip: boolean;
 }
 
+/** How many days before today the calendar lets a day be filled in or corrected. */
+export const EDIT_DAYS = 3;
+
+/** Whether the calendar opens this day for editing: today and the EDIT_DAYS before it, in the pet's life, on a track that isn't archived. */
+export function editableInCalendar(d: AppData, habitId: string, day: string, today: string): boolean {
+  const habit = d.habits.find((h) => h.id === habitId);
+  const companion = d.companions.find((c) => c.id === habit?.companionId);
+  if (!companion || trackState(d, habitId).status === "archived") return false;
+  return day <= today && day >= shiftDays(today, -EDIT_DAYS) && day >= companion.bornOn;
+}
+
 /** The one set of rules for what a day shows and allows, so screens don't each work it out. */
 export function dayControls(d: AppData, habitId: string, day: string, today: string): DayControls {
   const idx = trackIndex(d, habitId, today);

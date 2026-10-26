@@ -6,7 +6,7 @@ import { rise, spring } from "../motion";
 import { actions, useActiveView, useData, type Deduction } from "../store";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
-import { countDays, dayControls, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
+import { countDays, dayControls, editableInCalendar, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
 import { Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
@@ -19,7 +19,6 @@ export function CalendarSections() {
   const view = useActiveView()!;
   const { companion } = view;
   const habit = view.habit!;
-  const track = trackState(data, habit.id);
   // The month shown, as YYYY-MM.
   const [cursor, setCursor] = useState(() => monthOf(today()));
   const dir = useRef(1);
@@ -29,6 +28,9 @@ export function CalendarSections() {
   const thisMonth = monthOf(t0);
 
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
+  // Today and the three days before it can be filled in or corrected from the calendar.
+  const editable = (d: string) => editableInCalendar(data, habit.id, d, t0);
+  const [sel, setSel] = useState<string | null>(null);
 
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
   const monthShift = (n: number) => {
@@ -67,11 +69,16 @@ export function CalendarSections() {
             initial={{ opacity: 0, x: dir.current * 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir.current * -30 }} transition={spring.soft}
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
-            {cells.map((d, i) => d ? (
-              <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`}
-                initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
-                <span>{Number(d.slice(8))}</span>
-              </motion.div>
+            {cells.map((d, i) => d ? (editable(d)
+              ? <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit aria-pressed={sel === d}
+                  aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}. Edit this day`} onClick={() => { haptic.select(); setSel(sel === d ? null : d); }}
+                  initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
+                  <span>{Number(d.slice(8))}</span>
+                </motion.button>
+              : <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`}
+                  initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
+                  <span>{Number(d.slice(8))}</span>
+                </motion.div>
             ) : <span key={`b${i}`} />)}
           </motion.div>
         </AnimatePresence>
@@ -82,8 +89,9 @@ export function CalendarSections() {
           <span><i data-s="rest" />{STATUS_LABEL.rest} · {month.rest + month.paused}</span>
           <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
-        <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
+        <p className="muted small">Tap today or one of the three days before it to add or change what happened. A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
       </motion.section>
+      {sel && editable(sel) && <DayDetail day={sel} />}
 
     </>
   );

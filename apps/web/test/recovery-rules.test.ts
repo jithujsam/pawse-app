@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CONTINUITY, simulate } from "@detox/engine";
 import {
-  checkIns, dayControls, dayStatus, monthGrid, petDayInputs, shiftDays, statusOf, streaks, trackIndex, trackSummary, weekdayOf,
+  checkIns, dayControls, dayStatus, EDIT_DAYS, editableInCalendar, monthGrid, petDayInputs, shiftDays, statusOf, streaks, trackIndex, trackSummary, weekdayOf,
 } from "../src/progress";
 import { addDays, today } from "../src/dates";
 import { actions, checkedInDays, getData, QUIET_DAYS_AGE, slipHour, viewCompanion } from "../src/store";
@@ -417,5 +417,17 @@ describe("10. edge cases", () => {
     expect([dayStatus(loaded, A, "2026-03-19", T0), dayStatus(loaded, B, "2026-03-19", T0)]).toEqual(["rest", "rest"]);
     expect([trackState(loaded, A).celebrated, trackState(loaded, B).celebrated]).toEqual([[3], []]);
     expect(["restDays", "celebrated", "trackRest", "pauses", "celebratedBy"].filter((k) => k in loaded.settings)).toEqual([]);
+  });
+});
+
+// ---------- calendar editing window ----------
+
+describe("the calendar edits today and the three days before it", () => {
+  it("opens exactly today and the EDIT_DAYS before it, never the future or before the pet was born", () => {
+    const d = data();
+    const open = days(shiftDays(T0, -6), 8).filter((x) => editableInCalendar(d, A, x, T0));
+    expect(EDIT_DAYS).toBe(3);
+    expect(open).toEqual(["2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20"]);
+    expect(editableInCalendar(data({ bornOn: "2026-03-19" }), A, "2026-03-18", T0)).toBe(false);
   });
 });
