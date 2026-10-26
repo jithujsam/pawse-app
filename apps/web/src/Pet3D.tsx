@@ -2,6 +2,7 @@ import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNo
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { describePet } from "./pet-label";
+import { tuxedoPixels } from "./pets";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -43,12 +44,33 @@ const STAGE_SPEED: Record<Stage, number> = { baby: 1.2, young: 1.1, adult: 1, mi
 const STAGE_GREY: Record<Stage, number> = { baby: 0, young: 0, adult: 0, middle: 0.18, old: 0.34, frail: 0.42, dead: 0.42 };
 const STAGE_DROOP: Record<Stage, number> = { baby: 0, young: 0, adult: 0, middle: 0.05, old: 0.16, frail: 0.26, dead: 0.26 };
 
-/** Coat colours for the fur material ("Main" on the dog and fox; a tint over the cat's texture). */
+/** Coat colours for the fur material ("Main" on the dog and fox; a tint over the cat's texture). The tuxedo is repainted, not tinted. */
 const COAT: Record<Species3D, Record<string, string>> = {
   dog: { golden: "#c8803f", cocoa: "#6b4126", cream: "#e8cfa5" },
   fox: { red: "#d8692c", arctic: "#eef0f4", silver: "#70737f" },
-  cat: { tabby: "#ffffff", ginger: "#ffc48a", tuxedo: "#55555c" },
+  cat: { tabby: "#ffffff", ginger: "#ffc48a", tuxedo: "#ffffff" },
 };
+
+/** The tuxedo's repainted atlas, built once per source texture. */
+const tuxedoMaps = new WeakMap<THREE.Texture, THREE.Texture>();
+function tuxedoMap(src: THREE.Texture): THREE.Texture {
+  let out = tuxedoMaps.get(src);
+  if (!out) {
+    const img = src.image as CanvasImageSource & { width: number; height: number };
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width; canvas.height = img.height;
+    const cx = canvas.getContext("2d")!;
+    cx.drawImage(img, 0, 0);
+    const data = cx.getImageData(0, 0, canvas.width, canvas.height);
+    tuxedoPixels(data.data);
+    cx.putImageData(data, 0, 0);
+    out = new THREE.CanvasTexture(canvas);
+    out.flipY = src.flipY;
+    out.colorSpace = src.colorSpace;
+    tuxedoMaps.set(src, out);
+  }
+  return out;
+}
 
 /** Turned a little toward the viewer, so the face reads. */
 const ROTATION: Record<Species3D, number> = { dog: -0.38, fox: -0.38, cat: -0.38 };
@@ -213,11 +235,13 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
       for (const m of (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) as THREE.MeshStandardMaterial[]) {
         if (!m.color) continue;
         m.userData.base ??= m.color.clone();
+        m.userData.map ??= m.map;
         const isFur = species === "cat" || m.name === "Main";
         const base = isFur ? tint.clone() : (m.userData.base as THREE.Color).clone();
         // Age: the coat loses colour and lightens a touch, like a greying muzzle, not a tint.
         if (isFur || m.name === "Main_Light") { const hsl = { h: 0, s: 0, l: 0 }; base.getHSL(hsl); base.setHSL(hsl.h, hsl.s * (1 - grey * 1.4), Math.min(0.9, hsl.l + grey * 0.12)); }
         m.color.copy(base);
+        if (species === "cat" && m.userData.map) { m.map = coat === "tuxedo" ? tuxedoMap(m.userData.map) : m.userData.map; m.needsUpdate = true; }
         m.roughness = 0.85; m.metalness = 0;
       }
     });

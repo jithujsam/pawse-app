@@ -74,6 +74,18 @@ export const NAMES: Record<Species, string[]> = {
   fox: ["Ember", "Rusty", "Juniper", "Maple"], owl: ["Hoot", "Sage", "Willow", "Nova"], panda: ["Bao", "Dumpling", "Momo", "Tofu"],
 };
 
+const TUXEDO = { dark: [0x2c, 0x2c, 0x36], light: [0xf4, 0xf4, 0xf4], lo: 0.5, hi: 0.7 };
+
+/** Repaints the 3D cat atlas for the tuxedo: dark fur goes charcoal, light areas (muzzle, bib, paws) stay white. sRGB RGBA bytes, edited in place. */
+export function tuxedoPixels(px: Uint8ClampedArray): void {
+  for (let i = 0; i < px.length; i += 4) {
+    const lum = (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
+    const x = Math.min(1, Math.max(0, (lum - TUXEDO.lo) / (TUXEDO.hi - TUXEDO.lo)));
+    const t = x * x * (3 - 2 * x);
+    for (let c = 0; c < 3; c++) px[i + c] = TUXEDO.dark[c] + (TUXEDO.light[c] - TUXEDO.dark[c]) * t;
+  }
+}
+
 /** Mixes two #rrggbb colours; t = 0 gives a, 1 gives b. */
 export function mix(a: string, b: string, t: number): string {
   const p = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
