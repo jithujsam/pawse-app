@@ -10,6 +10,7 @@ import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { countDays, dayControls, editableInCalendar, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
 import { Button, Icon } from "../ui/Controls";
+import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 import { LogSheet } from "./LogSheet";
 import { trackState } from "../tracks";
@@ -31,9 +32,10 @@ export function CalendarSections() {
   const thisMonth = monthOf(t0);
 
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
-  // Today and the two days before it can be filled in or corrected from the calendar.
+  // Today and the two days before it can be filled in or corrected from the calendar, in a sheet.
   const editable = (d: string) => editableInCalendar(data, habit.id, d, t0);
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState(t0);
+  const [sheet, setSheet] = useState(false);
 
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
   const monthShift = (n: number) => {
@@ -72,8 +74,8 @@ export function CalendarSections() {
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (editable(d)
-              ? <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit aria-pressed={sel === d}
-                  aria-label={t("calendar.month.day_edit_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(sel === d ? null : d); }}
+              ? <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit aria-haspopup="dialog"
+                  aria-label={t("calendar.month.day_edit_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(d); setSheet(true); }}
                   initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
                   <span>{Number(d.slice(8))}</span>
                 </motion.button>
@@ -93,8 +95,9 @@ export function CalendarSections() {
         </div>
         <p className="muted small">{t("calendar.month.note")}</p>
       </motion.section>
-      {sel && editable(sel) && <DayDetail day={sel} />}
-
+      <Sheet open={sheet} onClose={() => setSheet(false)} label={t("calendar.day.aria", { date: fmtDay(sel) })}>
+        <DayDetail day={sel} />
+      </Sheet>
     </>
   );
 }
