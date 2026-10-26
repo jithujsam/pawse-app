@@ -32,7 +32,7 @@ export function Reflect() {
   const [body, setBody] = useState(existing?.body ?? "");
   const [open, setOpen] = useState(false);
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
-  const recent = [...data.journal].filter((j) => j.day !== t0).slice(-4).reverse();
+  const recent = [...data.journal].filter((j) => j.day !== t0).slice(-1).reverse();
 
   const [crisis, setCrisis] = useState(false);
   function save() {
@@ -46,19 +46,17 @@ export function Reflect() {
   }
 
   return (
-    <div className="stack reflect">
-      <div className="row"><p className="muted small">How was today, honestly?</p>{existing && !open && <span className="muted small">Done today</span>}</div>
-      <Select label="Today's mood" value={mood || undefined} placeholder="Choose how you feel"
+    <div className="stack tight reflect">
+      <div className="row"><b>How was today?</b>{existing && !open && <span className="muted small">Done today</span>}</div>
+      <Select label="Today's mood" value={mood || undefined} placeholder="Pick a mood"
         options={MOODS.map((m) => ({ value: m.n, label: `${m.e}  ${m.l}` }))}
         onChange={(n) => { setMood(n); setOpen(true); }} />
       <AnimatePresence initial={false}>
         {open && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
-            <label className="field"><span className="field-label">{prompt}</span>
-              <textarea className="input" value={body} maxLength={600} rows={3} placeholder="A sentence is plenty. Stays private." onChange={(e) => setBody(e.target.value)} />
-            </label>
+            <input className="input" autoComplete="off" value={body} maxLength={600} aria-label={prompt} placeholder="One line, if you like. Stays private." onChange={(e) => setBody(e.target.value)} />
             {crisis && <p className="banner danger" role="alert">{CRISIS_MESSAGE}</p>}
-            <Button disabled={!mood} onClick={save}>Save reflection</Button>
+            <Button disabled={!mood} onClick={save}>Save</Button>
           </motion.div>
         )}
       </AnimatePresence>

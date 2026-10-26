@@ -62,16 +62,15 @@ export function WeeklyReview() {
   );
 }
 
-/** One place to check in with yourself: today's reflection and the weekly review. */
+/** A small check-in: one mood and an optional line. The weekly review folds away below it. */
 export function CheckIn() {
-  const data = useData();
-  const doneToday = data.journal.some((j) => j.day === today());
-  const [part, setPart] = useState<"today" | "week">(doneToday ? "week" : "today");
   return (
-    <motion.section className="card stack" aria-label="Check in with yourself" variants={rise}>
-      <h2>Check in with yourself</h2>
-      <Select label="Check-in" value={part} onChange={setPart} options={[{ value: "today", label: "How was today?" }, { value: "week", label: "Weekly review" }]} />
-      {part === "today" ? <Reflect /> : <WeeklyReview />}
+    <motion.section className="card stack tight checkin-lite" aria-label="Check in with yourself" variants={rise}>
+      <Reflect />
+      <details className="fold">
+        <summary>Weekly review</summary>
+        <div className="fold-body"><WeeklyReview /></div>
+      </details>
     </motion.section>
   );
 }

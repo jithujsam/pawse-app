@@ -14,10 +14,9 @@ import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
-import { recoveryLine, say } from "../voice";
+import { say } from "../voice";
 import { LogSheet } from "./LogSheet";
-import { PlanPage } from "./Plan";
-import { SubPage } from "../ui/Settings";
+import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
@@ -60,10 +59,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const cleanToday = progress.today === "met";
   const resting = progress.resting || progress.paused;
   const checked = slippedToday || cleanToday;
-  const myPlan = track.plan;
-  const weekFocus = track.weekFocus.find((w) => w.week === weekStart(t0))?.text;
-  const focus = weekFocus ? { kind: "week", text: weekFocus } : myPlan?.firstStep ? { kind: "first", text: myPlan.firstStep } : null;
-  const reasons = (myPlan?.reasons ?? []).slice(0, 3);
   // Any record today is a check-in (an urge too); a paused or not-tracked day isn't waiting for one.
   const checkedIn = checked || progress.today === "urge";
   const lonely = !checkedIn && !resting && progress.quiet >= 3;
@@ -74,9 +69,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
-  const [planOpen, setPlanOpen] = useState(false);
   const plan = recoveryPlan(view);
-  const showPlan = plan && (slippedToday || plan.stageBack !== null);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
@@ -121,6 +114,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
     return { d, s, label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
   });
 
+  const weekMet = strip.filter((x) => x.s === "met").length;
+
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
       <AnimatePresence>
@@ -135,7 +130,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
       {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>All pets</span></motion.button>}
       <motion.header className="greet" variants={rise}>
         <div>
-          <p className="muted small">{fmtDay(t0)}</p>
           <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
         {streak > 0 && <motion.div className="streak-chip" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring.bouncy} key={streak}>
@@ -176,28 +170,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
       {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
-      {/* This track's own plan, one tap away. A track without one gets a short invitation instead. */}
-      <motion.button className="card stack tight plan-card" aria-label={`Your plan for ${habit.name}`} variants={rise} onClick={() => { haptic.tap(); setPlanOpen(true); }}>
-        {focus || reasons.length > 0 ? <>
-          {focus && <><span className="muted small">{focus.kind === "week" ? "This week's focus" : "Your first step"}</span><b>{focus.text}</b></>}
-          {reasons.length > 0 && <span className="small plan-why"><span className="muted">Why you're doing this:</span> {reasons.join(", ")}</span>}
-        </> : <>
-          <b>Make a plan for {habit.name}</b>
-          <span className="muted small">Why it matters, what's hard and what helps. It shows up when an urge hits.</span>
-        </>}
-        <span className="plan-open small">Open your plan {Icon.chevR}</span>
-      </motion.button>
-      <SubPage open={planOpen} title="Your plan" onClose={() => setPlanOpen(false)}><PlanPage key={habit.id} habitId={habit.id} onSaved={() => setPlanOpen(false)} /></SubPage>
-
-      <AnimatePresence initial={false}>
-        {showPlan && plan && (
-          <motion.section key="plan" className="card stack plan" aria-label="The way back" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>
-            <h2>The way back</h2>
-            <p>{recoveryLine(tone, companion.name, plan.undoToday, plan.stageBack)}</p>
-          </motion.section>
-        )}
-      </AnimatePresence>
-
       {trackPaused && (
         <motion.section className="card row paused-card" aria-label="Paused" variants={rise}>
           <span className="small">{pauseHint(tone)}</span>
@@ -205,19 +177,11 @@ export function Home({ onBack }: { onBack?: () => void }) {
         </motion.section>
       )}
 
-      <motion.section className="checkin" aria-label="Today's check-in" variants={rise}>
-        <div className="row"><h2>Today</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : progress.paused ? "Paused" : resting ? "Not tracking" : "Not checked in yet"}</span></div>
-        <div className="actions">
-          <Button variant="secondary" className="slip-btn" onClick={() => setSheet(true)}>I slipped</Button>
-          <motion.button className="btn clean-btn" data-done={cleanToday} onClick={clean} aria-pressed={cleanToday} disabled={slippedToday}
-            whileTap={cleanToday || slippedToday ? undefined : { scale: 0.95 }} transition={spring.snappy} layout>
-            <AnimatePresence mode="wait" initial={false}>
-              {cleanToday
-                ? <motion.span key="done" className="btn-inner" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={spring.bouncy}>{Icon.check} Goal met</motion.span>
-                : <motion.span key="todo" className="btn-inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.8 }}>Goal met today</motion.span>}
-            </AnimatePresence>
-          </motion.button>
-        </div>
+      {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
+      <DayDetail day={t0} onMarkMet={clean} onRest={rest} onSlipSaved={saved} />
+
+      <motion.section className="checkin" aria-label="Weekly summary" variants={rise}>
+        <div className="row"><h2>Weekly summary</h2><span className="muted small">{weekMet} goal-met {weekMet === 1 ? "day" : "days"}</span></div>
         <div className="weekstrip" aria-label="This week">
           {strip.map((x) => (
             <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${STATUS_LABEL[x.s]}`}>

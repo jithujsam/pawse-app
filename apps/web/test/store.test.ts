@@ -191,6 +191,14 @@ describe("recovery tracks", () => {
     expect(d.entries.every((e) => e.habitId === H)).toBe(true);
   });
 
+  it("a track added in two steps keeps the pet's coat and personality", () => {
+    load([]);
+    const id = actions.addTrack({ what: "Gaming", cls: "custom", measure: "none", species: "fox", name: "Ember", coat: "arctic", personality: "wise" });
+    const d = getData();
+    const pet = d.companions.find((c) => c.id === d.habits.find((h) => h.id === id)!.companionId)!;
+    expect(pet).toMatchObject({ name: "Ember", species: "fox", coat: "arctic", personality: "wise" });
+  });
+
   it("the open track follows the choice on this phone and falls back to the first", () => {
     load([]);
     const id = actions.addTrack({ what: "Vaping", cls: "smoking", measure: "count", species: "fox", name: "" });

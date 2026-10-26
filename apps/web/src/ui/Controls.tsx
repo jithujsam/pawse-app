@@ -65,7 +65,7 @@ export function SelectOther({ value, options, onChange, label, placeholder = "Ch
   const [draft, setDraft] = useState(value !== "" && !known ? value : "");
   const ref = useRef<HTMLInputElement>(null);
   const own = custom || (value !== "" && !known);
-  const text = commitLabel ? draft : known ? "" : value;
+  const text = commitLabel ? draft : value;
   const at = options.findIndex((o) => o.value === value);
   const shown = own ? OTHER : at < 0 ? "" : String(at);
   const commit = () => { const t = draft.trim(); if (t) onChange(t); };

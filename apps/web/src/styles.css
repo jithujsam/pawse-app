@@ -581,7 +581,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 /* ---------- calendar ---------- */
 .grid7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; touch-action: pan-y; }
 .dow { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
-.day { aspect-ratio: 1; border: 0; border-radius: 14px; background: var(--raised); cursor: pointer; font-size: 14px; font-weight: 600; display: grid; place-items: center; position: relative; }
+.day { aspect-ratio: 1; border: 0; border-radius: 14px; background: var(--raised); font-size: 14px; font-weight: 600; display: grid; place-items: center; position: relative; }
 .day > span:not(.day-ring) { position: relative; z-index: 1; }
 .day[data-s="lapse"] { background: var(--negative); color: var(--on-status); }
 .day[data-s="met"] { background: var(--positive); color: var(--on-status); }
@@ -751,3 +751,11 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 /* In dark mode the selected segment needs to lift off its trough. */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg-pill { background: var(--control); box-shadow: 0 2px 8px rgba(0,0,0,.35); } }
 :root[data-theme="dark"] .seg-pill { background: var(--control); box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+
+.fold summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; justify-content: space-between; list-style: none; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin-right: 4px; transition: transform .2s; }
+.fold[open] summary::after { transform: rotate(-135deg); }
+.fold-body { padding-top: 8px; }
+.checkin-lite { padding: 16px; }
+@media (prefers-reduced-motion: reduce) { .fold summary::after { transition: none; } }
