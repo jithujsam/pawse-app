@@ -128,6 +128,10 @@ function Shell() {
   const { session, ready, recovering } = useSession();
   const [pwDone, setPwDone] = useState(false);
   const sync = useSyncStatus();
+  // The restore check waits for the first sync to settle, once. A retry after that (offline, say) must not swap
+  // onboarding out for it, or the person loses their place mid-step.
+  const restoreSettled = useRef(false);
+  if (sync.last !== null || sync.state === "error" || sync.state === "offline") restoreSettled.current = true;
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
@@ -191,7 +195,7 @@ function Shell() {
   if (!ready) return <div className="app"><Loading /></div>;
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
-  if (!data.settings.onboarded && sync.last === null && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
+  if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
   if (!data.settings.onboarded) return <div className="app"><Suspense fallback={<Loading />}><Onboarding /></Suspense></div>;
 
   if (view?.dead && memorialSeen !== view.companion.id) {
