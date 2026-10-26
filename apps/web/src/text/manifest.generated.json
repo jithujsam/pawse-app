@@ -3368,7 +3368,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 171,
-      "end": 182,
+      "end": 189,
       "entries": [
         {
           "id": "me.about.version",
@@ -3411,6 +3411,43 @@
           "id": "me.about.safety",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "me.about.tagline",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.what_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.what_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.pets_caption",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.contact_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.contact_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.about.contact_cta",
+          "kind": "text",
+          "placeholders": [
+            "email"
+          ]
         }
       ]
     },

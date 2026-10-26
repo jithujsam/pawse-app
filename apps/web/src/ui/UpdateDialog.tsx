@@ -62,11 +62,13 @@ export function UpdateDialog() {
               </section>
             )}
             <div className="update-actions">
+              <div className="update-pair">
+                <Button variant="secondary" disabled={busy} onClick={later}>{c.later}</Button>
+                <Button variant="secondary" disabled={busy} onClick={() => { haptic.select(); skip(); }}>{c.skip}</Button>
+              </div>
               <Button disabled={busy} onClick={() => { setPercent(0); void runUpdate(latest, setPercent).finally(() => setPercent(null)); }}>
                 {busy ? updatePhase(percent) : <>{Icon.download}<span>{c.now}</span></>}
               </Button>
-              <Button variant="secondary" disabled={busy} onClick={later}>{c.later}</Button>
-              <Button variant="text" disabled={busy} onClick={() => { haptic.select(); skip(); }}>{c.skip}</Button>
             </div>
           </motion.div>
         </motion.div>

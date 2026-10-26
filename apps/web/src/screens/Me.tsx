@@ -9,6 +9,7 @@ import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { concernIn } from "../guard";
 import { money } from "../format";
 import { t } from "../text";
+import { APP_NAME, CONTACT_EMAIL } from "../brand";
 import { Dropdown } from "../ui/Dropdown";
 import { fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
@@ -22,7 +23,7 @@ import { companionsOf, trackState } from "../tracks";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
-import { Button, ConcernNote, GuardedInput, Icon, Select, SelectOther, Switch } from "../ui/Controls";
+import { Button, ConcernNote, GuardedInput, Icon, PawLogo, Select, SelectOther, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
@@ -407,6 +408,24 @@ function AboutPage() {
     else toast(t("me.about.latest"), { kind: "good" });
   }
   return (<>
+    <section className="card stack about-hero">
+      <PawLogo size={72} />
+      <h2 className="brand">{APP_NAME}</h2>
+      <p className="muted">{t("me.about.tagline")}</p>
+    </section>
+    <section className="card stack">
+      <h2>{t("me.about.what_title")}</h2>
+      <p>{t("me.about.what_body")}</p>
+      <div className="about-pets" aria-hidden>
+        {(["dog", "cat", "fox"] as const).map((sp) => <PetPortrait key={sp} species={sp} stage="adult" mood="happy" age={4} size={96} />)}
+      </div>
+      <p className="muted small">{t("me.about.pets_caption")}</p>
+    </section>
+    <section className="card stack">
+      <h2>{t("me.about.contact_title")}</h2>
+      <p>{t("me.about.contact_body")}</p>
+      <Button variant="secondary" onClick={() => { window.location.href = `mailto:${CONTACT_EMAIL}`; }}>{t("me.about.contact_cta", { email: CONTACT_EMAIL })}</Button>
+    </section>
     <section className="card stack">
       <div className="row"><h2>{t("me.about.version")}</h2><span className="muted">{APP_VERSION.name}</span></div>
       <div className="actions">

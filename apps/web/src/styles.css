@@ -347,13 +347,15 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .update-versions .pill { border-radius: 999px; padding: 8px 18px; background: var(--control); font-weight: 700; }
 .update-versions .pill.on { background: var(--accent); color: var(--on-accent); }
 .update-arrow { color: var(--accent); display: grid; }
-.update-notes { background: var(--raised); border-radius: var(--radius-sm); padding: 18px; display: grid; gap: 12px; }
+.update-notes { display: grid; gap: 10px; text-align: left; }
+.update-notes h3 { text-align: center; }
 .update-notes h3 { font-size: 15px; font-weight: 700; margin: 0; }
-.update-notes > div { display: grid; gap: 8px; max-height: 28vh; overflow-y: auto; font-size: 15px; line-height: 1.55; overscroll-behavior: contain; }
+.update-notes > div { display: grid; gap: 8px; max-height: 24vh; overflow-y: auto; padding-right: 8px; font-size: 15px; line-height: 1.55; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--control) transparent; }
 .update-notes p { margin: 0; }
-.update-actions { display: grid; gap: 10px; }
+.update-actions { display: grid; gap: 10px; width: 100%; }
 .update-actions .btn { width: 100%; min-height: 54px; }
-.update-actions .btn.text { min-height: 44px; margin-top: 4px; }
+.update-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.update-pair .btn { padding-inline: 8px; white-space: nowrap; font-size: 16px; }
 
 /* ---------- home ---------- */
 .greet { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
@@ -799,3 +801,7 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 .fold-body { padding-top: 8px; }
 .checkin-lite { padding: 16px; }
 @media (prefers-reduced-motion: reduce) { .fold summary::after { transition: none; } }
+
+/* ---------- about ---------- */
+.about-hero { align-items: center; text-align: center; gap: 8px; }
+.about-pets { display: flex; justify-content: center; gap: 4px; }

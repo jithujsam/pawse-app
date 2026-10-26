@@ -178,5 +178,12 @@ export const meAbout = defineSection("me.about", { screen: "Me → About and hel
   error: "Couldn't check for updates. Check your connection and try again",
   latest: "You have the latest version",
   safety: "Safety",
+  tagline: "Pause the habit. Keep your pet happy.",
+  what_title: "What {app} does",
+  what_body: "{app} gives each habit you're changing a pet of its own. Check in each day and the pet stays bright. A slip costs it a little, a good day heals some back, and you can always see the way back. It's a self-awareness tool, not medical advice.",
+  pets_caption: "Look after them and they grow up happy.",
+  contact_title: "Get in touch",
+  contact_body: "{app} is made by one person. Questions, bugs and ideas are all welcome.",
+  contact_cta: "Email {email}",
 });
 // @copy-section-end me.about
