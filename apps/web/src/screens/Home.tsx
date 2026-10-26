@@ -8,7 +8,7 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare } from "../notify";
 import { actions, getData, recoveryPlan, useActiveView, useData, type Deduction } from "../store";
-import { celebratedFor, dayControls, milestoneToCelebrate, trackSummary } from "../progress";
+import { celebratedFor, milestoneToCelebrate, trackSummary } from "../progress";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -16,6 +16,7 @@ import { toast } from "../ui/Toast";
 import { Coach } from "../ui/Coach";
 import { say } from "../voice";
 import { LogSheet } from "./LogSheet";
+import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { conditions, healthReport } from "../health";
@@ -69,7 +70,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
   const plan = recoveryPlan(view);
-  const todayCtl = dayControls(data, habit.id, t0, t0);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
@@ -113,6 +113,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
     const s = dayStatus(data, habit.id, d, t0);
     return { d, s, label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
   });
+
+  const weekMet = strip.filter((x) => x.s === "met").length;
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
@@ -176,21 +178,11 @@ export function Home({ onBack }: { onBack?: () => void }) {
         </motion.section>
       )}
 
-      <motion.section className="checkin" aria-label="Today's check-in" variants={rise}>
-        <div className="row"><h2>Daily check-in</h2><span className="muted small">{cleanToday ? "Goal met" : slippedToday ? "Slip logged" : progress.paused ? "Paused" : resting ? "Not tracking" : progress.today === "urge" ? "Urge noted" : "Not checked in yet"}</span></div>
-        <div className="actions">
-          <Button variant="secondary" className="slip-btn" onClick={() => setSheet(true)}>I slipped</Button>
-          <motion.button className="btn clean-btn" data-done={cleanToday} onClick={clean} aria-pressed={cleanToday} disabled={slippedToday}
-            whileTap={cleanToday || slippedToday ? undefined : { scale: 0.95 }} transition={spring.snappy} layout>
-            <AnimatePresence mode="wait" initial={false}>
-              {cleanToday
-                ? <motion.span key="done" className="btn-inner" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={spring.bouncy}>{Icon.check} Goal met</motion.span>
-                : <motion.span key="todo" className="btn-inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.8 }}>Goal met today</motion.span>}
-            </AnimatePresence>
-          </motion.button>
-          <Button variant="secondary" onClick={() => setUrge(true)}>Having an urge</Button>
-          <Button variant="secondary" disabled={resting || !todayCtl.canRest} onClick={() => rest(true)}>{resting ? "Not tracking today ✓" : "Not tracking today"}</Button>
-        </div>
+      {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
+      <DayDetail day={t0} onMarkMet={clean} onRest={rest} onSlipSaved={saved} />
+
+      <motion.section className="checkin" aria-label="Weekly summary" variants={rise}>
+        <div className="row"><h2>Weekly summary</h2><span className="muted small">{weekMet} goal-met {weekMet === 1 ? "day" : "days"}</span></div>
         <div className="weekstrip" aria-label="This week">
           {strip.map((x) => (
             <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={`${fmtDay(x.d)}: ${STATUS_LABEL[x.s]}`}>

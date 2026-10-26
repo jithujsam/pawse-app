@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { addDays, fmtDay, fmtMonth, fmtTime, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
-import { actions, useActiveView, useData } from "../store";
+import { actions, useActiveView, useData, type Deduction } from "../store";
 import { pickedLabels } from "../questions";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { countDays, dayControls, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
@@ -13,7 +13,7 @@ import { LogSheet } from "./LogSheet";
 import { trackState } from "../tracks";
 import type { Pause } from "../types";
 
-/** The pet's age this month, the month grid, then the selected day. The top of the Calendar tab. */
+/** The pet's age this month, then the month grid. The top of the Calendar tab. */
 export function CalendarSections() {
   const data = useData();
   const view = useActiveView()!;
@@ -22,7 +22,6 @@ export function CalendarSections() {
   const track = trackState(data, habit.id);
   // The month shown, as YYYY-MM.
   const [cursor, setCursor] = useState(() => monthOf(today()));
-  const [sel, setSel] = useState(today());
   const dir = useRef(1);
   const { lead, days: monthDays } = monthGrid(cursor);
   const cells: (string | null)[] = [...Array<null>(lead).fill(null), ...monthDays];
@@ -32,30 +31,16 @@ export function CalendarSections() {
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
 
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
-  const dayEntries = data.entries.filter((e) => e.habitId === habit.id && e.day === sel);
   const monthShift = (n: number) => {
     dir.current = n; haptic.select();
     setCursor(shiftMonth(cursor, n));
   };
-  // Any past day can be corrected both ways: marked goal met, or given the slip that really happened.
-  // What each day shows and allows comes from the shared rules (progress.ts dayControls).
-  const ctl = dayControls(data, habit.id, sel, t0);
-  const [logging, setLogging] = useState(false);
-  const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
   const month = countDays(trackIndex(data, habit.id, t0), `${cursor}-01`, monthDays[monthDays.length - 1]);
 
   const W = 320, H = 56;
   const max = Math.max(10, ...spark);
   const pts = spark.map((v, i) => `${(i / Math.max(1, spark.length - 1)) * W},${H - (v / max) * (H - 6) - 3}`);
   const path = pts.length ? `M${pts.join(" L")}` : "";
-
-  function remove(id: string) {
-    const e = data.entries.find((x) => x.id === id);
-    if (!e) return;
-    haptic.warn();
-    actions.deleteEntry(id);
-    toast("Slip deleted", { action: { label: "Undo", run: () => actions.restoreEntry(e) } });
-  }
 
   return (
     <>
@@ -83,12 +68,10 @@ export function CalendarSections() {
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (
-              <motion.button key={d} className="day" data-s={status(d)} data-today={d === t0} disabled={d > t0}
-                onClick={() => { haptic.select(); setSel(d); }} aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`} aria-pressed={sel === d}
-                initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }} whileTap={{ scale: 0.88 }}>
-                {sel === d && <motion.span layoutId="day-ring" className="day-ring" transition={spring.snappy} />}
+              <motion.div key={d} className="day" data-s={status(d)} data-today={d === t0} role="img" aria-label={`${fmtDay(d)}: ${STATUS_LABEL[status(d)]}`}
+                initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
                 <span>{Number(d.slice(8))}</span>
-              </motion.button>
+              </motion.div>
             ) : <span key={`b${i}`} />)}
           </motion.div>
         </AnimatePresence>
@@ -102,6 +85,37 @@ export function CalendarSections() {
         <p className="muted small">A day with nothing recorded is just unknown. It never counts as a slip or as progress.</p>
       </motion.section>
 
+    </>
+  );
+}
+
+/**
+ * One day's record and what can be done to it: marked goal met, not tracked, or given the slip that really
+ * happened. What each day shows and allows comes from the shared rules (progress.ts dayControls). The pet screen
+ * shows today's. `onMarkMet`, `onRest` and `onSlipSaved` let that screen run its own celebration and reactions.
+ */
+export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: string; onMarkMet?: () => void; onRest?: (on: boolean) => void; onSlipSaved?: (d: Deduction) => void }) {
+  const data = useData();
+  const view = useActiveView()!;
+  const { companion } = view;
+  const habit = view.habit!;
+  const track = trackState(data, habit.id);
+  const t0 = today();
+  const ctl = dayControls(data, habit.id, sel, t0);
+  const [logging, setLogging] = useState(false);
+  const dayEntries = data.entries.filter((e) => e.habitId === habit.id && e.day === sel);
+  const dayUrges = data.urges.filter((u) => u.habitId === habit.id && u.day === sel);
+
+  function remove(id: string) {
+    const e = data.entries.find((x) => x.id === id);
+    if (!e) return;
+    haptic.warn();
+    actions.deleteEntry(id);
+    toast("Slip deleted", { action: { label: "Undo", run: () => actions.restoreEntry(e) } });
+  }
+
+  return (
+    <>
       <motion.section className="card stack" aria-label={`Details for ${fmtDay(sel)}`} variants={rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
@@ -129,14 +143,14 @@ export function CalendarSections() {
                 ))}
               </AnimatePresence>
             </div>
-            {ctl.canMarkMet && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
+            {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast("Marked as goal met", { kind: "good", action: { label: "Undo", run: () => actions.unmarkClean(habit.id, sel) } }); }}>Mark this day as goal met</Button>}
             {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast("Goal met removed", { action: { label: "Undo", run: () => actions.markClean(habit.id, sel) } }); }}>Remove “goal met”</Button>}
-            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
+            {ctl.canRest && <Button variant="text" onClick={() => { haptic.select(); if (onRest) onRest(!ctl.resting); else actions.setRest(habit.id, sel, !ctl.resting); }}>{ctl.resting ? "Track this day after all" : "I chose not to track this day"}</Button>}
             {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? "Log another slip for this day" : "Log a slip for this day"}</Button>}
           </motion.div>
         </AnimatePresence>
       </motion.section>
-      <LogSheet open={logging} day={sel} habit={habit} name={companion.name} age={view.age} onClose={() => setLogging(false)} onSaved={() => haptic.heavy()} />
+      <LogSheet open={logging} day={sel} habit={habit} name={companion.name} age={view.age} onClose={() => setLogging(false)} onSaved={(d) => { haptic.heavy(); onSlipSaved?.(d); }} />
     </>
   );
 }
