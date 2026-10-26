@@ -220,7 +220,7 @@ function Shell() {
       <div className="stage">
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
-            <Suspense fallback={<Loading />}>
+            <Suspense fallback={<GhostPage />}>
               {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
               {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
               {tab === "insights" && <WithTrack><Report /></WithTrack>}
@@ -254,6 +254,20 @@ function Shell() {
 /** Screens that show one recovery track render nothing once there is none, even mid-transition. */
 function WithTrack({ children }: { children: React.ReactNode }) {
   return useActiveView()?.habit ? <>{children}</> : null;
+}
+
+/** A tab's code is still loading: plain placeholder blocks in the page layout, no motion. */
+function GhostPage() {
+  return (
+    <main className="screen ghost-page" aria-busy="true" aria-label={t("nav.loading.loading")}>
+      <span className="ghost ghost-title" />
+      <span className="ghost ghost-line" />
+      <div className="ghost-grid">
+        <span className="ghost ghost-card" />
+        <span className="ghost ghost-card" />
+      </div>
+    </main>
+  );
 }
 
 /** While the app loads: the paw filling in, toe by toe. */

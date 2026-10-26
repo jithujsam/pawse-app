@@ -311,6 +311,15 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .shimmer-line.short { width: 60%; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+/* Ghost placeholders for a tab that is still loading. */
+.ghost { display: block; background: var(--raised); border-radius: var(--radius-sm); animation: ghost-pulse 1.4s ease-in-out infinite; }
+.ghost-title { height: 44px; width: 55%; border-radius: 12px; }
+.ghost-line { height: 14px; width: 75%; border-radius: 999px; margin-top: 12px; }
+.ghost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+.ghost-card { height: 240px; }
+@keyframes ghost-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .ghost { animation: none; } }
+
 /* ---------- update banner ---------- */
 .update-banner { border: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; background: var(--accent); color: var(--on-accent); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; }
 .update-banner > span:first-child { display: grid; gap: 2px; }

@@ -8,7 +8,7 @@ import { concernIn, concernInAny } from "../guard";
 import { t } from "../text";
 import { today } from "../dates";
 import { haptic } from "../haptics";
-import { rise, spring, stagger } from "../motion";
+import { spring } from "../motion";
 import { COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES } from "../pets";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
@@ -41,20 +41,20 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   const open = (id: string) => { haptic.tap(); actions.selectTrack(id); onOpen(id); };
 
   return (
-    <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.header className="stack tight" variants={rise}>
+    <main className="screen">
+      <header className="stack tight">
         <h1>{t("pets.grid.title")}</h1>
         <p className="muted small">{t("pets.grid.intro")}</p>
-      </motion.header>
+      </header>
 
       {tracks.length === 0 ? (
-        <motion.section className="card stack center-text" variants={rise}>
+        <section className="card stack center-text">
           <h2>{t("pets.grid.empty_title")}</h2>
           <p className="muted">{t("pets.grid.empty_body")}</p>
           <Button onClick={() => setAdding(true)}>{t("pets.grid.add")}</Button>
-        </motion.section>
+        </section>
       ) : (
-        <motion.section className="pet-grid" aria-label={t("pets.grid.tracks")} variants={rise}>
+        <section className="pet-grid" aria-label={t("pets.grid.tracks")}>
           {tracks.map(({ habit, view, status, paused }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
@@ -82,12 +82,12 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
             <b className="pet-card-name">{t("pets.grid.add")}</b>
             <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
           </motion.button>}
-        </motion.section>
+        </section>
       )}
 
       <TrackMenu habitId={menu} onClose={() => setMenu(null)} onOpen={(id) => { setMenu(null); open(id); }} />
       <AddTrack open={adding} onClose={() => setAdding(false)} onAdded={(id) => { setAdding(false); onOpen(id); }} />
-    </motion.main>
+    </main>
   );
 }
 
