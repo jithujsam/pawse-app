@@ -10,7 +10,7 @@ import { weightFor } from "./templates";
 import { countTriggers, pickedLabels, starterFields, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
-import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, trackState, type Track } from "./tracks";
+import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, trackState } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
 import type { AppData, Baseline, Companion, Entry, Habit, Measure, Personality, RecoveryPlan, Species, StrategyId, Tone, TrackState, Urge } from "./types";
@@ -125,7 +125,6 @@ export const vault = {
 
 export const useData = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => data);
 export const getData = () => data;
-export const subscribe = (cb: () => void) => { listeners.add(cb); return () => { listeners.delete(cb); }; };
 
 // ---------- derived ----------
 
@@ -180,13 +179,6 @@ export const activeCompanion = (d: AppData): Companion | undefined => {
   return habit ? d.companions.find((c) => c.id === habit.companionId) : undefined;
 };
 
-/** The focused track, with its state. Screens that show one pet read per-track settings from here. */
-export function useActiveTrack(): Track | undefined {
-  const d = useData();
-  return useMemo(() => { const id = focusedTrackId(d); return id ? getTrack(d, id) : undefined; }, [d]);
-}
-export const activeTrackId = (d: AppData = data) => focusedTrackId(d);
-
 /** The active companion's view, recomputed only when the data changes. */
 export function useActiveView(): CompanionView | undefined {
   const d = useData();
@@ -202,9 +194,6 @@ export function median(xs: number[]): number | undefined {
 
 /** Good days (goal met or an urge managed) since the last slip. Unrecorded, rest and paused days don't break it. */
 export const cleanStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).current;
-
-/** The longest streak ever, by the same rule as cleanStreak. */
-export const bestStreak = (d: AppData, habitId: string, t0 = today()) => streaks(trackIndex(d, habitId, t0)).best;
 
 /** The hour slips most often happen, once there's a clear pattern (at least 5 timed slips, 30% within an hour of the peak). */
 export function riskyHour(d: AppData, habitId: string): number | null {

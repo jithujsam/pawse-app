@@ -159,12 +159,6 @@ export function hatchLine(tone: Tone, name: string): string {
   return `${name} is here. Brand new, age 0.`;
 }
 
-export function slipKicker(tone: Tone, name: string): string {
-  if (tone === "gentle") return `Thank you for being honest. ${name} still loves you.`;
-  if (tone === "brutal") return `Logged. Owning it is the first step back.`;
-  return `Logged honestly. That's how change starts.`;
-}
-
 export function cleanToast(tone: Tone, name: string): string {
   if (tone === "gentle") return `A good day. ${name} is resting.`;
   if (tone === "brutal") return `Goal met. That's real progress.`;

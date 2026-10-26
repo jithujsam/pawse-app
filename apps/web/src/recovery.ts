@@ -22,9 +22,6 @@ export const STATUS_LABEL: Record<DayStatus, string> = {
 };
 
 /** Urges managed on a day, shown alongside its status (a goal-met day can have managed urges too). */
-export const urgesManaged = (d: AppData, habitId: string, day: string) =>
-  d.urges.filter((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out").length;
-
 /**
  * Days of care: days with the goal met (no slip) or with an urge managed, ever. Unlike a streak it only
  * grows, so a slip never takes away what was earned.

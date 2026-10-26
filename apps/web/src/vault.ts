@@ -43,8 +43,6 @@ export async function open(pin: string, s: Sealed): Promise<{ k: VaultKey; value
   }
 }
 
-export const isPinShaped = (pin: string) => /^\d{4,6}$/.test(pin);
-
 /** Too-easy PINs: repeated digits and straight runs. */
 export function isWeakPin(pin: string): boolean {
   if (/^(\d)\1+$/.test(pin)) return true;

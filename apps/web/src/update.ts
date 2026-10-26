@@ -40,11 +40,6 @@ export async function checkUpdate(): Promise<UpdateCheck> {
   }
 }
 
-export async function checkForUpdate(): Promise<Latest | null> {
-  const r = await checkUpdate();
-  return r.status === "available" ? r.latest : null;
-}
-
 /** Opens the download in the phone's browser, which hands the APK to the installer. */
 export const openDownload = (url: string) => { window.location.href = url; };
 

@@ -24,7 +24,6 @@ export const MOODS: { id: string; chip: string; label: string; trigger: boolean 
   { id: "autopilot", chip: "Out of pure habit", label: "On autopilot", trigger: false },
 ];
 /** Kept so habits created by earlier versions still read sensibly. */
-export const TRIGGERS = MOODS.map((m) => ({ id: m.id, chip: m.chip, question: m.label }));
 export const DEFAULT_MOODS = ["stress", "bored", "tired", "autopilot"];
 
 const RULES: [RegExp, HabitClass][] = [
