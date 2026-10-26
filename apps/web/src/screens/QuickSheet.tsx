@@ -35,7 +35,7 @@ export function QuickSheet({ open, onClose, onPick, onPlan }: { open: boolean; o
   const plan = () => { if (pets.length <= 1) { onPlan(habit.id); return; } haptic.select(); setChoosing(true); };
   const tiles: { id: QuickAction; icon: React.JSX.Element; title: string; hint: string; tone: string; disabled?: boolean }[] = [
     { id: "urge", icon: Icon.wave, title: "Having an urge", hint: ridden ? `${ridden} managed today` : "Get through it", tone: "calm" },
-    { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} in a row` : "Helps your pet heal", tone: "good", disabled: slipped || clean },
+    { id: "clean", icon: clean ? Icon.check : Icon.sun, title: "Goal met today", hint: slipped ? "Today already has a slip" : clean ? `${streak} ${streak === 1 ? "day" : "days"} so far` : "Helps your pet heal", tone: "good", disabled: slipped || clean },
     { id: "slip", icon: Icon.slip, title: "I slipped", hint: "Log it in seconds", tone: "bad" },
     { id: "rest", icon: resting ? Icon.check : Icon.info, title: "Not tracking today", hint: resting ? (progress.paused ? "Paused: today counts neither way" : "Today counts neither way") : !todayCtl.canRest ? "Today is already recorded" : "Counts neither way", tone: "calm", disabled: resting || !todayCtl.canRest },
   ];
@@ -55,7 +55,7 @@ export function QuickSheet({ open, onClose, onPick, onPlan }: { open: boolean; o
   );
   return (
     <Sheet open={open} onClose={onClose} label="Log or check in">
-      <h2>What’s going on?</h2>
+      <h2>What's going on?</h2>
       {needsTrackContext(data, habit.id) && <TrackContext name={habit.name} pet={view.companion.name} paused={progress.paused} />}
       <motion.div className="quick-grid" variants={stagger} initial="hidden" animate="show">
         {tiles.map((t) => (

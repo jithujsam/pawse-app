@@ -5,6 +5,7 @@ import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
 import { actions, useActiveView, useData, type Deduction } from "../store";
 import { pickedLabels } from "../questions";
+import { mo } from "../copy";
 import { dayStatus, STATUS_LABEL, strategy } from "../recovery";
 import { countDays, dayControls, editableInCalendar, monthGrid, monthOf, shiftMonth, trackIndex } from "../progress";
 import { Button, Icon } from "../ui/Controls";
@@ -133,7 +134,7 @@ export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: s
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
                   <motion.div layout className="item" key={e.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, marginTop: 0 }} transition={spring.soft}>
-                    <div className="row"><b className="neg">−{Math.round(e.months * 10) / 10} months</b>
+                    <div className="row"><b className="neg">−{mo(e.months)}</b>
                       <button className="icon-btn danger" aria-label="Delete this slip" onClick={() => remove(e.id)}>{Icon.trash}</button></div>
                     {e.amount !== null && <span>{habit.unit === "money" ? `${data.settings.currency} ${e.amount}` : habit.unit === "minutes" ? `${e.amount} min` : e.amount}</span>}
                     {Object.entries(e.values).filter(([k, v]) => typeof v === "string" && v && habit.fields.find((f) => f.id === k)?.type === "text").map(([k, v]) => <span key={k} className="muted small">{String(v)}</span>)}

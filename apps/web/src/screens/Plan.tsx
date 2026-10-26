@@ -90,7 +90,7 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       <section className="card stack" aria-label="More support">
         <h2>More support</h2>
-        <p className="small">pawse is a self-help tool, not treatment, and its AI is not a clinician. If this is affecting your health, work, money or relationships, a doctor, counsellor or support service can help, and asking is a strong move, not a failure.</p>
+        <p className="small">pawse is a self-help tool, not treatment, and its AI is not a clinician. If this is affecting your health, work, money or relationships, a doctor, counselor or support service can help, and asking is a strong move, not a failure.</p>
         <p className="small">If you drink heavily every day, don't stop suddenly without medical advice: withdrawal can be dangerous. A doctor can help you cut down safely.</p>
         <p className="small muted">Free helplines: India Tele-MANAS 14416 (mental health). US SAMHSA National Helpline 1-800-662-4357 (substance use), or call or text 988 in a crisis. UK Samaritans 116 123. Elsewhere, your local emergency number.</p>
       </section>

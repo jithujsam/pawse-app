@@ -58,7 +58,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
-            const day = status === "unrecorded" ? "Not checked in" : STATUS_LABEL[status];
+            const day = STATUS_LABEL[status];
             const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? `Paused · ${day}` : "Paused") : `${STAGE_LABEL[view.stage]} · ${day}`;
             return (
               <div key={habit.id} className="pet-card-wrap">

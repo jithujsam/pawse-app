@@ -52,7 +52,7 @@ describe("health", () => {
     const d = world("dog", 1, { clean: 3 });
     const h = history(d, viewCompanion(d, "c1"));
     expect(h[0].text).toMatch(/lost .* months of lifespan/);
-    expect(h.some((x) => x.kind === "clean" && /3 clean days/.test(x.text))).toBe(true);
+    expect(h.some((x) => x.kind === "clean" && /3 goal-met days/.test(x.text))).toBe(true);
     expect(h.filter((x) => x.day).pop()!.kind).toBe("born");
     expect(stats(d, viewCompanion(d, "c1")).slips).toBe(1);
   });

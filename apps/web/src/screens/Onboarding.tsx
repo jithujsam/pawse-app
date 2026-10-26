@@ -83,7 +83,7 @@ export function Onboarding() {
           <motion.div className="step-inner" variants={stagger} initial="hidden" animate="show">
 
             {d.step === 1 && (<>
-              <motion.h1 variants={rise}>Choose your companion</motion.h1>
+              <motion.h1 variants={rise}>Choose your pet</motion.h1>
               <motion.p className="muted" variants={rise}>Pick who they are and give them a name. They'll live on your home screen and change with you.</motion.p>
               <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, personality: d.personality, name: d.companionName }}
                 onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}) })} /></motion.div>
@@ -117,7 +117,7 @@ export function Onboarding() {
               <motion.div className="field" variants={rise}><span className="field-label">And how often, right now?</span>
                 <Select label="How often right now" value={d.baseline ?? undefined} placeholder="Choose one" options={BASELINES} onChange={(b) => up({ baseline: b === "unsure" ? null : b })} />
               </motion.div>
-              <motion.p className="muted small" variants={rise}>No judgement. It helps your report show how far you've come.</motion.p>
+              <motion.p className="muted small" variants={rise}>No judgement. It helps your Insights show how far you've come.</motion.p>
               <motion.div variants={rise}><Button onClick={() => go(4)}>Continue</Button></motion.div>
             </>)}
 

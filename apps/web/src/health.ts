@@ -36,7 +36,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const g = tone === "gentle", b = tone === "brutal";
   const lines: Record<Level, [string, string]> = {
     thriving: [`${name} is thriving`, streak > 1
-      ? `${streak} good days in a row and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
+      ? `${streak} good days so far and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
       : `Healthy, bright and happy. Keep the check-ins coming and it will stay that way.`],
     healthy: [`${name} is healthy`, slipped
       ? `${name} is strong enough to handle today, but won't eat until there's a good day. ${b ? "Make tomorrow count." : "Tomorrow is a good place to start."}`
@@ -134,13 +134,13 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
   if (week.length >= 2 || (week.length >= 1 && v.age >= 30)) {
     const [n, w] = pick(habit.cls as CondKey, s);
     const days = cleanDaysToUndo(weekDamage);
-    out.push({ id: habit.cls, name: n, what: w, why: `${week.length} ${week.length === 1 ? "slip" : "slips"} this week of ${habit.name.toLowerCase()}.`, fix: `${days} good days in a row clears it up.`, days, tone: week.length >= 5 ? "serious" : week.length >= 3 ? "moderate" : "mild" });
+    out.push({ id: habit.cls, name: n, what: w, why: `${week.length} ${week.length === 1 ? "slip" : "slips"} this week of ${habit.name.toLowerCase()}.`, fix: `${days} good days clear it up.`, days, tone: week.length >= 5 ? "serious" : week.length >= 3 ? "moderate" : "mild" });
   }
   if (v.stage === "middle" || v.stage === "old" || v.stage === "frail") {
     const [n, w] = pick("aging", s);
     const days = plan?.stageBack?.days ?? cleanDaysToAge(v.current!, 49.9);
     out.push({ id: "aging", name: n, what: w, why: `${name} has aged early: ${STAGE_LABEL[v.stage].toLowerCase()} at age ${Math.round(v.age)}.`,
-      fix: days ? `${days} good days in a row to feel younger again.` : "Some of this is permanent now, but good days still help.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
+      fix: days ? `${days} good days to feel younger again.` : "Good days still help bring them back.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
   }
   if (silent >= 2) {
     const [n, w] = pick("lonely", s);
@@ -148,7 +148,8 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
       fix: "Check in whenever you're ready. It only takes ten seconds, and nothing is held against the quiet days.", days: 0, tone: "mild" });
   }
   const scar = v.current ? Math.round(floorAge(v.current) * 10) / 10 : 0;
-  if (v.states.some((x) => x.binge)) {
+  // Scars only exist under classic rules; under continuity a binge day heals like any other.
+  if (d.settings.petLife === "classic" && v.states.some((x) => x.binge)) {
     out.push({ id: "scar", name: "Old scar", what: "A heavy day that left a lasting mark.", why: `A day with 3 or more slips. ${name}'s life expectancy is now ${Math.round(100 - scar)}.`, fix: "This part doesn't heal, but it doesn't have to grow. Avoid binge days.", days: null, tone: "moderate" });
   }
   return out;
@@ -162,14 +163,18 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
   const name = v.companion.name;
   const items: HistoryItem[] = [{ day: v.companion.bornOn, kind: "born", text: `${name} was born` }];
   let run: { from: string; to: string; healed: number; n: number } | null = null;
-  const flush = () => { if (run) items.push({ day: run.to, kind: "clean", text: `${run.n} clean ${run.n === 1 ? "day" : "days"}${run.healed > 0 ? `, ${Math.round(run.healed * 10) / 10} months of life back` : ""}`, months: run.healed }); run = null; };
+  const flush = () => { if (run) items.push({ day: run.to, kind: "clean", text: `${run.n} goal-met ${run.n === 1 ? "day" : "days"}${run.healed > 0 ? `, ${Math.round(run.healed * 10) / 10} months of life back` : ""}`, months: run.healed }); run = null; };
   for (const s of v.states) {
     // This companion's own slips: after a same-day adoption, the earlier companion's slips stay in its own story.
     const slips = d.entries.filter((e) => e.companionId === v.companion.id && e.day === s.day);
     if (slips.length) {
       flush();
       if (s.damageMonths < 0.05 && s.absorbedMonths > 0) items.push({ day: s.day, kind: "shrug", text: `A slip, but ${name} was strong enough to shrug it off` });
-      else items.push({ day: s.day, kind: s.binge ? "binge" : "slip", months: s.damageMonths, text: `${name} lost ${Math.round(s.damageMonths * 10) / 10} months of lifespan${slips.length > 1 ? ` (${slips.length} slips)` : ""}${s.binge ? ". A lasting scar" : ""}` });
+      else {
+        // Scars are a classic-rules idea only; under continuity a binge day is just a slip day.
+        const scarred = s.binge && d.settings.petLife === "classic";
+        items.push({ day: s.day, kind: scarred ? "binge" : "slip", months: s.damageMonths, text: `${name} lost ${Math.round(s.damageMonths * 10) / 10} months of lifespan${slips.length > 1 ? ` (${slips.length} slips)` : ""}${scarred ? ". A lasting scar" : ""}` });
+      }
     } else if (d.cleanDays.some((c) => c.habitId === habit.id && c.day === s.day)) {
       if (!run) run = { from: s.day, to: s.day, healed: 0, n: 0 };
       run.to = s.day; run.healed += s.healedMonths; run.n++;

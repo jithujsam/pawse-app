@@ -247,5 +247,5 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
 function UnlockNote({ days }: { days: number }) {
   const a = ACCESSORIES.find((x) => x.days === days);
   if (!a) return null;
-  return <p className="unlock"><b>New:</b> {a.label}. Put it on in Me → your companion.</p>;
+  return <p className="unlock"><b>New:</b> {a.label}. Put it on in Me → your pet.</p>;
 }

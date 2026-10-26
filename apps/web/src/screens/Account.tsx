@@ -91,7 +91,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
             )}
             {confirm === "delete" && (
               <motion.div key="del" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small">This permanently deletes your account, your companion and every log, here and in the cloud. It can't be undone.</p>
+                <p className="small">This permanently deletes your account, your pets and every log, here and in the cloud. It can't be undone.</p>
                 <Button variant="danger" onClick={async () => {
                   haptic.heavy();
                   const uid = session.user.id;

@@ -38,7 +38,7 @@ export function Restoring() {
     <main className="screen center-screen" aria-busy="true">
       <PawLoader />
       <h1>One moment</h1>
-      <p className="muted">Checking your account for an existing companion…</p>
+      <p className="muted">Checking your account for an existing pet…</p>
     </main>
   );
 }

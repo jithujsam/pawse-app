@@ -10,7 +10,7 @@ export function Coach({ name, onDone }: { name: string; onDone: () => void }) {
   const steps: Step[] = [
     { target: ".live-pet", title: `This is ${name}`, body: "Tap to say hello. How they look is how things are going." },
     { target: ".checkin", title: "Check in once a day", body: "Slip or goal met, it takes ten seconds. Honest logs are the whole point." },
-    { target: ".tabbar", title: "Patterns live here", body: "Your calendar and weekly report fill in as you log." },
+    { target: ".tabbar", title: "Patterns live here", body: "Your Journey and Insights fill in as you log." },
   ];
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);

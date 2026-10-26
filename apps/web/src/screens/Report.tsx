@@ -42,7 +42,7 @@ function SavingsGoal({ habitId, saved, goal, currency }: { habitId: string; save
     <div className="stack tight">
       <div className="row"><b>{goal.label}</b><span className="muted small">{currency} {Math.min(saved, goal.target).toLocaleString()} of {goal.target.toLocaleString()}</span></div>
       <div className="progress goal" aria-hidden><motion.i initial={{ width: 0 }} animate={{ width: `${Math.max(2, pct)}%` }} transition={spring.calm} /></div>
-      <div className="row"><span className="small">{pct >= 100 ? "You've kept enough. Treat yourself, guilt-free." : `${Math.round(pct)}% there.`}</span><Button variant="text" onClick={() => setEditing(true)}>Edit</Button></div>
+      <div className="row"><span className="small">{pct >= 100 ? "You've kept enough. Treat yourself." : `${Math.round(pct)}% there.`}</span><Button variant="text" onClick={() => setEditing(true)}>Edit</Button></div>
     </div>
   );
 }

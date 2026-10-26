@@ -27,7 +27,7 @@ export function Journey() {
 
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>Calendar</motion.h1>
+      <motion.h1 variants={rise}>Journey</motion.h1>
       {needsTrackContext(data, habit.id) && <motion.div variants={rise}><TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} /></motion.div>}
 
       <CalendarSections />

@@ -31,6 +31,7 @@ const TYPES: { value: FieldType; label: string }[] = [
   { value: "choice", label: "Pick one" }, { value: "multi", label: "Pick any" }, { value: "scale", label: "1 to 5" }, { value: "text", label: "Text" },
   { value: "number", label: "Number" }, { value: "money", label: "Money" }, { value: "yesno", label: "Yes / no" }, { value: "photo", label: "Photo" },
 ];
+const slipCount = (n: number) => `${n} ${n === 1 ? "slip" : "slips"}`;
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
 
 type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
@@ -54,7 +55,7 @@ export function Me() {
 
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>You</motion.h1>
+      <motion.h1 variants={rise}>Me</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
         <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
@@ -99,7 +100,7 @@ export function Me() {
       </motion.div>}
 
       <SubPage open={page === "plan"} title="Your plan" onClose={close}><PlanPage key={habit.id} habitId={habit.id} /></SubPage>
-      <SubPage open={page === "pet"} title="Your companion" onClose={close}><PetPage /></SubPage>
+      <SubPage open={page === "pet"} title="Your pet" onClose={close}><PetPage /></SubPage>
       <SubPage open={page === "voice"} title="Voice" onClose={close}><VoicePage /></SubPage>
       <SubPage open={page === "reminders"} title="Reminders" onClose={close}><RemindersPage /></SubPage>
       <SubPage open={page === "questions"} title="Check-in questions" onClose={close}><QuestionsPage /></SubPage>
@@ -131,7 +132,7 @@ function PetPage() {
     if (!n || n === companion.name) { setName(companion.name); return; }
     actions.renameCompanion(companion.id, n);
     haptic.success();
-    toast(`Say hi to ${n}`, { kind: "good" });
+    toast(`Renamed to ${n}`, { kind: "good" });
   };
   return (<>
     <section className="card stack">
@@ -168,7 +169,7 @@ function PetPage() {
     <section className="card stack">
       <h2>How {companion.name}'s health works</h2>
       <p className="small">Slips you log age {companion.name} a little. Days with your goal met heal them. Days you don't record change nothing. {settings.petLife === "classic"
-        ? "Classic rules are on: some damage is permanent, and at 100 a companion dies and you adopt a new one."
+        ? "Classic rules are on: some damage is permanent, and at 100 a pet dies and you adopt a new one."
         : `${companion.name} can get very frail but never dies, and every month can heal back with enough good days.`}</p>
       <Switch checked={settings.petLife === "classic"} onChange={(v) => { if (v && classicDead) return; actions.setSettings({ petLife: v ? "classic" : "continuity" }); }}
         label="Classic rules" hint={classicDead ? `Not available: under classic rules ${companion.name}'s history would already have ended. Some good days first, then try again.` : "Permanent scars and death at 100. Off by default."} />
@@ -181,7 +182,7 @@ function PetPage() {
           {hall.map((c) => (
             <div className="item hall-item" key={c.id}>
               <CompanionArt species={c.species} coat={c.coat} stage="frail" mood="dying" age={100} size={96} />
-              <b>{c.name}</b><span className="muted small">{data.entries.filter((e) => e.companionId === c.id).length} slips</span>
+              <b>{c.name}</b><span className="muted small">{slipCount(data.entries.filter((e) => e.companionId === c.id).length)}</span>
             </div>
           ))}
         </div>
@@ -231,7 +232,7 @@ function RemindersPage() {
       )}</AnimatePresence>
       <p className="muted small">One quiet nudge a day, in {companion.name}'s voice.</p>
       <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label="Risky-hour heads-up" hint="Once your pattern is clear, a note half an hour before your usual slip time" />
-      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint="A thank-you after good days, and a note when it won't eat" />
+      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={`Notes from ${companion.name}`} hint="A thank-you on the evening of a good day, and a morning note after it" />
     </section>
   );
 }
@@ -241,7 +242,7 @@ function QuestionsPage() {
   const habit = useActiveView()!.habit ?? data.habits[0];
   const [editing, setEditing] = useState(false);
   const setField = (id: string, patch: Partial<Field>) => actions.updateHabitFields(habit.id, habit.fields.map((f) => (f.id === id ? { ...f, ...patch } : f)));
-  const addField = () => { haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "New question", type: "choice", required: false, options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] }]); };
+  const addField = () => { haptic.tap(); actions.updateHabitFields(habit.id, [...habit.fields, { id: Math.random().toString(36).slice(2, 8), label: "Your question", type: "choice", required: false, options: [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }] }]); };
   const rmField = (id: string) => {
     const before = habit.fields;
     actions.updateHabitFields(habit.id, habit.fields.filter((f) => f.id !== id));
@@ -249,7 +250,7 @@ function QuestionsPage() {
   };
   return (
     <section className="card stack">
-      <div className="row"><p className="muted small">Asked after each slip. Short answers make your insights sharper.</p><Button variant="text" onClick={() => setEditing(!editing)}>{editing ? "Done" : "Edit"}</Button></div>
+      <div className="row"><p className="muted small">Asked each time you log a slip. Short answers keep your Insights easy to read.</p><Button variant="text" onClick={() => setEditing(!editing)}>{editing ? "Done" : "Edit"}</Button></div>
       <motion.div className="list" layout>
         <AnimatePresence initial={false}>
           {habit.fields.map((f) => (
@@ -315,8 +316,8 @@ function DataPage() {
           ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>Delete all data on this phone</Button></motion.div>
           : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
               <p className="small">{session
-                ? `This removes ${companion.name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.`
-                : `This removes ${companion.name}, every log and your settings from this phone. It can't be undone.`}</p>
+                ? "This removes all your pets, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup."
+                : "This removes all your pets, every log and your settings from this phone. It can't be undone."}</p>
               <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>Yes, delete</Button><Button variant="secondary" onClick={() => setConfirm(false)}>Cancel</Button></div>
             </motion.div>}
       </AnimatePresence>

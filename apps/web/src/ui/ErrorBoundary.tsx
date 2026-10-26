@@ -10,7 +10,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
     return (
       <main className="screen center-screen">
         <h1>Something went wrong</h1>
-        <p className="muted">Your companion and your logs are safe on this phone. Reloading usually fixes it.</p>
+        <p className="muted">Your pets and your logs are safe on this phone. Reloading usually fixes it.</p>
         <button className="btn" onClick={() => location.reload()}>Reload</button>
       </main>
     );

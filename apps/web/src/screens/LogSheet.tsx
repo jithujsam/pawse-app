@@ -120,7 +120,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
           {result.absorbed > 0 && <span className="small">{absorbedLine(data.settings.tone, name, result.streakBefore, result.absorbed, shrugged)}</span>}
           {result.binge && data.settings.petLife === "classic" && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
           {!shrugged && result.effectLine && <span>{result.effectLine}</span>}
-          <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} this week.</span>
+          <span className="muted small">{result.nthToday > 1 ? `Slip ${result.nthToday} today. ` : ""}{result.weekSlips} {result.weekSlips === 1 ? "slip" : "slips"} this week.</span>
         </motion.div>
         <AnimatePresence mode="wait">
           <motion.p key={result.line} className="bubble" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>

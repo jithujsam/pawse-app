@@ -2,7 +2,8 @@ import type { Stage } from "@detox/engine";
 import type { Tone } from "./types";
 
 const ordinal = (n: number) => (n === 1 ? "first" : n === 2 ? "second" : n === 3 ? "third" : `${n}th`);
-const mo = (m: number) => { const r = Math.round(m * 10) / 10; return `${r} ${r === 1 ? "month" : "months"}`; };
+/** A month amount in words: "1 month", "3.5 months". */
+export const mo = (m: number) => { const r = Math.round(m * 10) / 10; return `${r} ${r === 1 ? "month" : "months"}`; };
 
 export const TONES: { id: Tone; label: string; sample: string }[] = [
   { id: "gentle", label: "Gentle", sample: "Biscuit is a little tired today. Tomorrow is a fresh start, and you're not alone in it." },
@@ -19,7 +20,7 @@ export function slipLine(tone: Tone, name: string, months: number, nth: number):
 export function cleanLine(tone: Tone, name: string, streak: number): string {
   if (tone === "gentle") return `${name} wags once, slowly. A good day.`;
   if (tone === "brutal") return streak > 1 ? `${streak} good days. ${name} is noticing, and so should you.` : `One good day. That's how every streak starts.`;
-  return streak > 1 ? `${streak} good days in a row. ${name} is healing.` : `Goal met today. ${name} gets to rest.`;
+  return streak > 1 ? `${streak} good days so far. ${name} is healing.` : `Goal met today. ${name} gets to rest.`;
 }
 
 const STATUS: Record<Tone, Record<Stage, string>> = {
@@ -92,7 +93,7 @@ export function quietBanner(tone: Tone, name: string): string {
 
 export function verdict(tone: Tone, slips: number, prev: number): string {
   if (slips === 0 && prev === 0) return "Nothing logged in either week.";
-  if (slips === 0) return tone === "gentle" ? "A slip-free week. That counts for a lot." : "No slips this week. That is a slip-free week.";
+  if (slips === 0) return tone === "gentle" ? "A slip-free week. That counts for a lot." : "No slips this week. That's a slip-free week.";
   if (prev === 0) return `${slips} ${slips === 1 ? "slip" : "slips"} this week against none last week.`;
   if (slips < prev) return `Down from ${prev} to ${slips}. That is progress, and it is real.`;
   if (slips === prev) return `Level with last week at ${slips}. Nothing moved.`;
