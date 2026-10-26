@@ -146,7 +146,7 @@ function PetPage() {
         <input className="input" autoComplete="off" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={save} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
       <div className="field"><span className="field-label">Species</span>
-        <Select label="Species" value={companion.species} options={SPECIES.map((sp) => ({ value: sp.id, label: sp.label }))}
+        <Select label="Species" value={companion.species} options={SPECIES.filter((sp) => !sp.off || sp.id === companion.species).map((sp) => ({ value: sp.id, label: sp.label }))}
           onChange={(id) => { if (id !== companion.species) { actions.setSpecies(companion.id, id); haptic.success(); toast(`${companion.name} is a ${SPECIES.find((x) => x.id === id)!.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }} />
       </div>
       {!has3D(companion.species) && <span className="muted small">The dog, cat and fox also come in 3D.</span>}

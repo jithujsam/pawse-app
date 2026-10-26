@@ -3,14 +3,20 @@ import type { Accessory, Personality, Species } from "./types";
 /** One coat: the colours the art is painted with. `dark` is ear tips, socks, patches; `iris` the eye colour. */
 export interface Coat { id: string; label: string; fur: string; shade: string; belly: string; inner: string; dark: string; iris: string; marks?: string }
 
-export const SPECIES: { id: Species; label: string; blurb: string }[] = [
+export const SPECIES: { id: Species; label: string; blurb: string; off?: true }[] = [
   { id: "dog", label: "Dog", blurb: "Loyal, waits by the door" },
   { id: "cat", label: "Cat", blurb: "Quiet, notices everything" },
-  { id: "rabbit", label: "Rabbit", blurb: "Gentle, a little shy" },
+  { id: "rabbit", label: "Rabbit", blurb: "Gentle, a little shy", off: true },
   { id: "fox", label: "Fox", blurb: "Clever and curious" },
-  { id: "owl", label: "Owl", blurb: "Up late with you" },
-  { id: "panda", label: "Panda", blurb: "Slow, soft, unbothered" },
+  { id: "owl", label: "Owl", blurb: "Up late with you", off: true },
+  { id: "panda", label: "Panda", blurb: "Slow, soft, unbothered", off: true },
 ];
+
+/**
+ * The species a person can pick now: the dog, cat and fox, which also come in 3D. The rabbit, owl and panda are
+ * switched off for now but kept whole, so pets that already are one stay as they are.
+ */
+export const PICKABLE = SPECIES.filter((s) => !s.off);
 
 export const COATS: Record<Species, Coat[]> = {
   dog: [

@@ -7,7 +7,7 @@ import { daysTogether } from "../progress";
 import { haptic } from "../haptics";
 import { actions, useData, type CompanionView } from "../store";
 import { Button, plainOpts, Select, SelectOther } from "../ui/Controls";
-import { NAMES, SPECIES } from "../pets";
+import { NAMES, PICKABLE } from "../pets";
 import type { Species } from "../types";
 
 const BABY: Record<Species, string> = { dog: "puppy", cat: "kitten", rabbit: "bunny", fox: "kit", owl: "owlet", panda: "cub" };
@@ -17,7 +17,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
   const data = useData();
   const { companion, habit } = view;
   const [name, setName] = useState("");
-  const [species, setSpecies] = useState<Species>(companion.species);
+  const [species, setSpecies] = useState<Species>(PICKABLE.some((s) => s.id === companion.species) ? companion.species : "dog");
   const es = data.entries.filter((e) => e.companionId === companion.id);
   const lived = daysTogether(companion.bornOn, companion.diedOn ?? companion.bornOn);
   const spend = es.reduce((a, e) => a + (e.amount ?? 0), 0);
@@ -45,7 +45,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
         <h2>Start again</h2>
         <p className="muted small">The new life begins at age 0. Your history stays in your reports, and {companion.name} stays in the Hall of Companions.</p>
         <div className="field"><span className="field-label">Who comes next?</span>
-          <Select label="Species" value={species} onChange={setSpecies} options={SPECIES.map((s) => ({ value: s.id, label: s.label }))} /></div>
+          <Select label="Species" value={species} onChange={setSpecies} options={PICKABLE.map((s) => ({ value: s.id, label: s.label }))} /></div>
         <div className="field"><span className="field-label">New name</span>
           <SelectOther label="New name" value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={`Pick a name, like ${NAMES[species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" /></div>
         <Button onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>Adopt a new {BABY[species]}</Button>

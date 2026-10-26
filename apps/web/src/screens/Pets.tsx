@@ -7,7 +7,7 @@ import { hasCrisisLanguage } from "../crisis";
 import { today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
+import { COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES } from "../pets";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, isRestrictionRelated, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
@@ -157,7 +157,7 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
   return (
     <div className="stack">
       <div className="species-grid" role="radiogroup" aria-label="Pet">
-        {SPECIES.map((s) => (
+        {PICKABLE.map((s) => (
           <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
             whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
             <motion.div animate={pet.species === s.id ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
