@@ -27,6 +27,8 @@ import { ToastHost } from "./ui/Toast";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { listenForBack, useRootBack } from "./back";
 import { QuickSheet } from "./screens/QuickSheet";
+import { PlanPage } from "./screens/Plan";
+import { SubPage } from "./ui/Settings";
 import { Icon } from "./ui/Controls";
 import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
@@ -105,6 +107,8 @@ function Shell() {
   const [track, setTrack] = useState(false);
   const openTrack = () => { setTab("pets"); setTrack(true); };
   const [quick, setQuick] = useState(false);
+  // The plan page for the pet chosen in the + menu.
+  const [planHabit, setPlanHabit] = useState<string | null>(null);
   const dir = useRef(1);
   const appRef = useRef<HTMLDivElement>(null);
   // The shell eases in when the app opens and again when you come back to it after a while away.
@@ -220,7 +224,8 @@ function Shell() {
             </div>, button] : [button];
         })}
       </nav>
-      <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} />
+      <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} onPlan={(id) => { setQuick(false); setPlanHabit(id); }} />
+      <SubPage open={planHabit !== null} title="Your plan" onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
     </div>
   );
 }

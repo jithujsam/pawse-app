@@ -10,7 +10,7 @@ import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { TrackContext } from "../ui/Controls";
 import { CalendarSections } from "./Calendar";
 
-/** The Calendar tab: every day on the calendar, then milestones and how far you've come. Reflection lives in the check-in on Insights. */
+/** The Calendar tab: how the pet is ageing, every day on the calendar, how far you've come so far, then milestones. Reflection lives in the check-in on Insights. */
 export function Journey() {
   const data = useData();
   const view = useActiveView()!;
@@ -32,6 +32,13 @@ export function Journey() {
 
       <CalendarSections />
 
+      <motion.section className="stats" aria-label="So far" variants={rise}>
+        <div className="card stat"><div className="muted small">Days together</div><div className="v"><AnimatedNumber value={together} /></div></div>
+        <div className="card stat"><div className="muted small">Good days</div><div className="v"><AnimatedNumber value={cleanTotal} /></div></div>
+        <div className="card stat"><div className="muted small">Life healed</div><div className="v"><AnimatedNumber value={healed} decimals={1} /> <small>mo</small></div></div>
+        <div className="card stat"><div className="muted small">Best streak</div><div className="v"><AnimatedNumber value={best} /> <small>{best === 1 ? "day" : "days"}</small></div></div>
+      </motion.section>
+
       <motion.section className="card stack" aria-label="Milestones" variants={rise}>
         <div className="row"><h2>Milestones</h2>{next && <span className="muted small">{next - care} {next - care === 1 ? "day" : "days"} to go</span>}</div>
         <div className="milestones">
@@ -51,13 +58,6 @@ export function Journey() {
               <p className="muted small">{care} of {next} days of care: days with your goal met or an urge managed. They add up and never reset.</p>
             </>
           : <p className="muted small">Every milestone reached. {companion.name} is proud of you.</p>}
-      </motion.section>
-
-      <motion.section className="stats" aria-label="So far" variants={rise}>
-        <div className="card stat"><div className="muted small">Days together</div><div className="v"><AnimatedNumber value={together} /></div></div>
-        <div className="card stat"><div className="muted small">Good days</div><div className="v"><AnimatedNumber value={cleanTotal} /></div></div>
-        <div className="card stat"><div className="muted small">Life healed</div><div className="v"><AnimatedNumber value={healed} decimals={1} /> <small>mo</small></div></div>
-        <div className="card stat"><div className="muted small">Best streak</div><div className="v"><AnimatedNumber value={best} /> <small>{best === 1 ? "day" : "days"}</small></div></div>
       </motion.section>
 
     </motion.main>

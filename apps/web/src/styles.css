@@ -690,3 +690,11 @@ button.plan-card:focus-visible { outline: 2px solid var(--accent); outline-offse
 .plan-open { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); padding-top: 4px; font-weight: 600; }
 .plan-open .ico { width: 16px; height: 16px; }
 .track-context .tag { margin-left: 8px; }
+
+.fold summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; justify-content: space-between; list-style: none; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin-right: 4px; transition: transform .2s; }
+.fold[open] summary::after { transform: rotate(-135deg); }
+.fold-body { padding-top: 8px; }
+.checkin-lite { padding: 16px; }
+@media (prefers-reduced-motion: reduce) { .fold summary::after { transition: none; } }
