@@ -76,15 +76,15 @@ export const homeCoach = defineSection("home.coach", { screen: "Pet screen", tit
 
 // @copy-section calendar.note
 export const calendarNote = defineSection("calendar.note", { screen: "Journey", title: "What a day says about itself", source: "src/screens/Calendar.tsx" }, {
-  met: tones("Goal met. A lovely, quiet win.", "Goal met. A good day.", "Goal met. That counts."),
-  rest: tones("You chose not to track this day. That's allowed, and it counts neither way.", "You chose not to track this day. It counts neither way.", "Not tracked by choice. It counts neither way."),
-  paused_unknown: tones("Not tracking: this track was paused. It counts neither way, and that's fine.", "Not tracking: this track was paused. It counts neither way.", "Not tracking: paused. It counts neither way."),
-  paused_open: tones("Not tracking: this track has been paused since {from}. It counts neither way, and that's fine.", "Not tracking: this track has been paused since {from}. It counts neither way.", "Not tracking: paused since {from}. It counts neither way."),
-  paused_range: tones("Not tracking: this track was paused from {from} to {to}. It counts neither way, and that's fine.", "Not tracking: this track was paused from {from} to {to}. It counts neither way.", "Not tracking: paused {from} to {to}. It counts neither way."),
-  urge_managed: tones("No slip recorded, and an urge managed. Well done.", "No slip recorded, and an urge managed.", "No slip. Urge managed."),
-  nothing: tones("Nothing recorded for this day.", "Nothing recorded.", "Nothing recorded."),
-  not_born: "{name} wasn't born yet on this day.",
-  urge_noted: "An urge was noted. No slip was logged, so this isn't counted as one.",
+  met: tones("Goal met. Lovely.", "Goal met.", "Goal met. Counts."),
+  rest: tones("Not tracked. That's okay.", "Not tracked.", "Skipped."),
+  paused_unknown: tones("Paused. That's fine.", "Paused.", "Paused."),
+  paused_open: tones("Paused since {from}. That's fine.", "Paused since {from}.", "Paused since {from}."),
+  paused_range: tones("Paused {from} to {to}. That's fine.", "Paused {from} to {to}.", "Paused {from} to {to}."),
+  urge_managed: tones("Urge managed. Well done.", "Urge managed.", "Urge managed, no slip."),
+  nothing: tones("Nothing yet.", "Nothing recorded.", "Nothing logged."),
+  not_born: "{name} wasn't born yet.",
+  urge_noted: "Urge noted. No slip.",
 });
 // @copy-section-end calendar.note
 
@@ -104,8 +104,8 @@ export const calendarMonth = defineSection("calendar.month", { screen: "Journey"
   next: "Next month",
   weekdays: "M T W T F S S",
   day_aria: "{date}: {status}",
-  day_edit_aria: "{date}: {status}. Edit this day",
-  note: "Tap a highlighted date from the last four days to add or change what happened. A day with nothing recorded is just unknown. It never counts as a slip or as progress.",
+  day_edit_aria: "{date}: {status}. Tap to edit",
+  note: "Tap a highlighted date to add or change a day.",
 });
 // @copy-section-end calendar.month
 
@@ -121,14 +121,14 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
   before: "Before: {text}",
   next_time: "Next time: {text}",
   photo_alt: "Photo attached to this slip",
-  mark_met: "Mark this day as goal met",
-  marked_met: "Marked as goal met",
-  remove_met: "Remove \"goal met\"",
+  mark_met: "Goal met",
+  marked_met: "Goal met",
+  remove_met: "Undo goal met",
   removed_met: "Goal met removed",
-  not_tracking: "I chose not to track this day",
-  track_after_all: "Track this day after all",
-  log_slip: "Log a slip for this day",
-  log_another: "Log another slip for this day",
+  not_tracking: "Skip day",
+  track_after_all: "Track day",
+  log_slip: "Log slip",
+  log_another: "Log another",
   minutes: "{n} min",
 });
 // @copy-section-end calendar.day
