@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
 import { lostMonths, money } from "../format";
@@ -25,7 +25,6 @@ export function CalendarSections() {
   const habit = view.habit!;
   // The month shown, as YYYY-MM.
   const [cursor, setCursor] = useState(() => monthOf(today()));
-  const dir = useRef(1);
   const { lead, days: monthDays } = monthGrid(cursor);
   const cells: (string | null)[] = [...Array<null>(lead).fill(null), ...monthDays];
   const t0 = today();
@@ -39,7 +38,7 @@ export function CalendarSections() {
 
   const spark = monthDays.map((d) => view.states.find((s) => s.day === d)?.visibleAge).filter((x): x is number => x !== undefined);
   const monthShift = (n: number) => {
-    dir.current = n; haptic.select();
+    haptic.select();
     setCursor(shiftMonth(cursor, n));
   };
   const month = countDays(trackIndex(data, habit.id, t0), `${cursor}-01`, monthDays[monthDays.length - 1]);
@@ -68,9 +67,9 @@ export function CalendarSections() {
           <button className="icon-btn" aria-label={t("calendar.month.next")} onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
         </div>
         <div className="grid7" aria-hidden>{t("calendar.month.weekdays").split(" ").map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
-        <AnimatePresence mode="wait" initial={false} custom={dir.current}>
-          <motion.div key={cursor} className="grid7" custom={dir.current}
-            initial={{ opacity: 0, x: dir.current * 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir.current * -30 }} transition={spring.soft}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={cursor} className="grid7"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (editable(d)

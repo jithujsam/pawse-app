@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { rise, slide, stagger } from "../motion";
+import { fade, rise, stagger } from "../motion";
 import { Icon, PawLoader, PawLogo } from "../ui/Controls";
 import { Account } from "./Account";
 import { Story } from "./Onboarding";
@@ -12,8 +12,8 @@ export function Welcome() {
   const [stage, setStage] = useState<"story" | "auth">("story");
   return (
     <div className="screen onboard">
-      <AnimatePresence mode="wait" initial={false} custom={1}>
-        <motion.div key={stage} className="step" custom={1} variants={slide} initial="enter" animate="center" exit="exit">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={stage} className="step" variants={fade} initial="enter" animate="center" exit="exit">
           {stage === "story"
             ? <div className="step-inner">
                 <div className="brand"><PawLogo size={34} /><b>{APP_NAME}</b></div>

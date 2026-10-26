@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { HabitClass } from "@detox/engine";
 import { LiveCompanion, PetPortrait } from "../Companion";
@@ -8,7 +8,7 @@ import { t } from "../text";
 import { haptic } from "../haptics";
 import { remindersSupported, requestReminders } from "../notify";
 import { toast } from "../ui/Toast";
-import { rise, slide, spring, stagger } from "../motion";
+import { fade, rise, spring, stagger } from "../motion";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { actions, emptyPlan } from "../store";
 import { HelpSection, planConcern, WhySection } from "./Plan";
@@ -50,14 +50,13 @@ const LAST = 10;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
-  const dir = useRef(1);
   const [adult, setAdult] = useState(false);
   const [ownTime, setOwnTime] = useState(() => !REMINDERS.some((r) => r.time === loadDraft().reminder));
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
   useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
 
-  const go = (n: number) => { dir.current = n > d.step ? 1 : -1; haptic.select(); up({ step: n }); };
+  const go = (n: number) => { haptic.select(); up({ step: n }); };
   const name = d.companionName.trim() || NAMES[d.species][0];
   // Every typed field is checked as it is typed; Continue waits until none of them needs the safety note.
   const nameConcern = concernIn(d.companionName) ?? concernIn(d.userName);
@@ -82,8 +81,8 @@ export function Onboarding() {
         <span className="small muted">{t("onboarding.chrome.progress", { step: Math.min(d.step, LAST - 1), total: LAST - 1 })}</span>
       </div>
 
-      <AnimatePresence mode="wait" custom={dir.current} initial={false}>
-        <motion.div key={d.step} className="step" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={d.step} className="step" variants={fade} initial="enter" animate="center" exit="exit">
           <motion.div className="step-inner" variants={stagger} initial="hidden" animate="show">
 
             {d.step === 1 && (<>

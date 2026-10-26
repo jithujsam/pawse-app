@@ -12,7 +12,7 @@ import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, vi
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
-import { slide, spring } from "./motion";
+import { fade, spring } from "./motion";
 import { Home } from "./screens/Home";
 import { Pets } from "./screens/Pets";
 
@@ -218,8 +218,8 @@ function Shell() {
   return (
     <div className="app app-wake" ref={appRef}>
       <div className="stage">
-        <AnimatePresence mode="wait" initial={false} custom={dir.current}>
-          <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" variants={fade} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<GhostPage />}>
               {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
               {tab === "calendar" && <WithTrack><Journey /></WithTrack>}

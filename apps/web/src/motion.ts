@@ -14,11 +14,11 @@ export const spring = {
 
 export const ease = [0.22, 0.8, 0.3, 1] as const;
 
-/** Direction-aware horizontal slide, for tabs and onboarding steps. */
-export const slide: Variants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * 28 }),
-  center: { opacity: 1, x: 0, transition: { ...spring.soft, opacity: { duration: 0.2 } } },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -20, transition: { duration: 0.14, ease: "easeIn" } }),
+/** Screens and steps: a plain fade in and out, the same everywhere. */
+export const fade: Variants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: { duration: 0.2, ease: "easeOut" } },
+  exit: { opacity: 0, transition: { duration: 0.15, ease: "easeIn" } },
 };
 
 /** Children arrive one after another. */
@@ -26,9 +26,10 @@ export const stagger: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.05, delayChildren: 0.04 } },
 };
+/** Sections and cards: a plain fade in. */
 export const rise: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: spring.soft },
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.25, ease: "easeOut" } },
 };
 
 /** Press feedback for anything tappable. */
