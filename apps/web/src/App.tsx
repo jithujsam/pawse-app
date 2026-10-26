@@ -181,7 +181,7 @@ function Shell() {
       const status = trackSummary(data, habit.id, t0).today;
       const paused = trackState(data, habit.id).status === "paused";
       const mood = locked || paused ? "idle" : status === "lapse" ? "sad" : status === "met" || status === "urge" ? "happy" : "idle";
-      return [{ species: c.species, mood } as const];
+      return [{ species: c.species, mood, ...(locked ? {} : { name: c.name }) } as const];
     });
     updateWidget(pets, t0);
   }, [data, pinTick]);

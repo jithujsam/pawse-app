@@ -10,10 +10,11 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Lets the web app hand the pet widgets their latest state: each pet's species and mood, nothing else. */
+/** Lets the web app hand the pet widgets their latest state: each pet's species, mood and, when unlocked, name. */
 @CapacitorPlugin(name = "Widget")
 public class WidgetPlugin extends Plugin {
     static final int MAX_PETS = 12;
+    static final int MAX_NAME = 24;
     static final List<String> SPECIES = Arrays.asList("dog", "cat", "rabbit", "fox", "owl", "panda");
     static final List<String> MOODS = Arrays.asList("happy", "idle", "sad");
 
@@ -33,6 +34,11 @@ public class WidgetPlugin extends Plugin {
                 try {
                     clean.put("species", species);
                     clean.put("mood", mood);
+                    String name = pet.optString("name", "").trim();
+                    if (name.codePointCount(0, name.length()) > MAX_NAME) {
+                        name = name.substring(0, name.offsetByCodePoints(0, MAX_NAME));
+                    }
+                    if (!name.isEmpty()) clean.put("name", name);
                 } catch (Exception e) {
                     continue;
                 }

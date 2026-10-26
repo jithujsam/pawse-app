@@ -7,9 +7,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.provider.Settings;
 import android.view.View;
+import androidx.core.content.ContextCompat;
 import android.widget.RemoteViews;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,7 +21,7 @@ import org.json.JSONObject;
 
 /**
  * Shared behaviour of the home screen pet widgets: one fixed slot per pet, up to four, top to bottom. Each slot shows
- * its pet's frames cycling, so it moves the way it does in the app. Tapping opens the check-in.
+ * its pet's frames cycling, with the pet's name under it when the app has sent one. Tapping opens the check-in.
  */
 public abstract class PetWidget extends AppWidgetProvider {
     static final String PREFS = "companion_widget";
@@ -47,10 +49,14 @@ public abstract class PetWidget extends AppWidgetProvider {
         boolean today = moodsAreToday(context);
         // "Remove animations" in the phone's settings: one still frame instead of the cycle.
         boolean still = Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f;
+        // The solid card is light or dark with the theme, so its name follows that; the clear one sits on the wallpaper.
+        int nameColor = layout == R.layout.companion_widget
+            ? ContextCompat.getColor(context, R.color.widget_name)
+            : Color.WHITE;
         int shown = Math.min(pets.length(), SLOTS.length);
         for (int i = 0; i < SLOTS.length; i++) {
             v.removeAllViews(SLOTS[i]);
-            if (i < shown) v.addView(SLOTS[i], petView(context, pets.optJSONObject(i), today, still));
+            if (i < shown) v.addView(SLOTS[i], petView(context, pets.optJSONObject(i), today, still, nameColor));
             v.setViewVisibility(SLOTS[i], i < shown ? View.VISIBLE : View.GONE);
         }
         v.setViewVisibility(R.id.widget_empty, shown == 0 ? View.VISIBLE : View.GONE);
@@ -63,8 +69,8 @@ public abstract class PetWidget extends AppWidgetProvider {
         return v;
     }
 
-    /** One pet, as its own view: its frames cycle here, or one still frame when animations are off. */
-    static RemoteViews petView(Context context, JSONObject pet, boolean today, boolean still) {
+    /** One pet, as its own view: its frames cycle here, or one still frame when animations are off, then its name. */
+    static RemoteViews petView(Context context, JSONObject pet, boolean today, boolean still, int nameColor) {
         RemoteViews p = new RemoteViews(context.getPackageName(), still ? R.layout.widget_pet_still : R.layout.widget_pet_item);
         if (pet == null) return p;
         String species = pet.optString("species", "dog");
@@ -73,6 +79,10 @@ public abstract class PetWidget extends AppWidgetProvider {
             int art = context.getResources().getIdentifier("widget_" + species + "_" + mood + "_" + i, "drawable", context.getPackageName());
             if (art != 0) p.setImageViewResource(FRAME_IDS[i], art);
         }
+        String name = pet.optString("name", "");
+        p.setTextViewText(R.id.widget_name, name);
+        p.setTextColor(R.id.widget_name, nameColor);
+        p.setViewVisibility(R.id.widget_name, name.isEmpty() ? View.GONE : View.VISIBLE);
         return p;
     }
 
