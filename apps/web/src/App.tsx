@@ -235,12 +235,11 @@ function WithTrack({ children }: { children: React.ReactNode }) {
   return useActiveView()?.habit ? <>{children}</> : null;
 }
 
-/** Picks up where the launch screen in index.html leaves off: the same icon, then a ring and dots, easing in so a fast load never flashes. */
+/** Picks up where the launch screen in index.html leaves off: the same paw, beating, easing in so a fast load never flashes. */
 function Loading() {
   return (
     <main className="screen center-screen loader" aria-busy="true" aria-label="Loading">
-      <div className="loader-mark" aria-hidden><span className="loader-ring" /><img src="./icon-192.png" alt="" width="88" height="88" /></div>
-      <div className="loader-dots" aria-hidden><i /><i /><i /></div>
+      <img className="paw-beat" src="./logo-mark.svg" alt="" width="96" height="96" aria-hidden />
     </main>
   );
 }

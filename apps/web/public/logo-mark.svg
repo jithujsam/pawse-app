@@ -1,14 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Pawse mark: a pet face whose eyes are two pause bars. -->
-  <path d="M136 214 L118 92 Q120 80 132 84 L232 150 Z" fill="#f7e2c8"/>
-  <path d="M376 214 L394 92 Q392 80 380 84 L280 150 Z" fill="#f7e2c8"/>
-  <path d="M146 182 L136 116 L196 156 Z" fill="#e9a07a"/>
-  <path d="M366 182 L376 116 L316 156 Z" fill="#e9a07a"/>
-  <ellipse cx="256" cy="282" rx="152" ry="134" fill="#fff6ea"/>
-  <rect x="190" y="228" width="26" height="70" rx="13" fill="#2a2320"/>
-  <rect x="296" y="228" width="26" height="70" rx="13" fill="#2a2320"/>
-  <path d="M240 318 h32 l-16 14 Z" fill="#2a2320" stroke="#2a2320" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M226 344 q15 16 30 0 q15 16 30 0" stroke="#2a2320" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <ellipse cx="170" cy="318" rx="22" ry="12" fill="#f2a08a" opacity=".55"/>
-  <ellipse cx="342" cy="318" rx="22" ry="12" fill="#f2a08a" opacity=".55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 265 850 710">
+  <!-- Pawse paw: one pad and four toes, no background. -->
+  <g fill="#FC7837">
+      <ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/>
+    <ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/>
+    <ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/>
+    <ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/>
+    <path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/>
+  </g>
 </svg>

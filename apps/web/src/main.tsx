@@ -15,7 +15,7 @@ window.addEventListener("pagehide", () => { void flush(); });
 
 listenForAuthLinks();
 
-/** The launch screen in index.html stays up for a beat, so the mark and name are seen, then fades into the app. */
+/** The launch screen in index.html stays up for a beat, so the paw is seen beating, then fades into the app. */
 const LAUNCH_MS = 1500;
 function dismissLaunch() {
   const el = document.getElementById("launch");

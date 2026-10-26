@@ -429,18 +429,10 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 
 /* ---------- opening and loading ---------- */
-.loader { gap: 26px; animation: loader-in .4s .12s var(--ease) both; }
-.loader-mark { position: relative; width: 88px; height: 88px; display: grid; place-items: center; }
-.loader-mark img { width: 88px; height: 88px; border-radius: 24px; animation: loader-breathe 1.8s ease-in-out infinite; }
-.loader-ring { position: absolute; inset: -14px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--accent); border-right-color: color-mix(in srgb, var(--accent) 35%, transparent); animation: loader-spin 1.1s linear infinite; }
-.loader-dots { display: flex; gap: 8px; }
-.loader-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: .35; animation: loader-hop 1.1s ease-in-out infinite; }
-.loader-dots i:nth-child(2) { animation-delay: .15s; }
-.loader-dots i:nth-child(3) { animation-delay: .3s; }
+/* The loader is the paw alone; its beat (.paw-beat) is defined in index.html so the launch screen has it first. */
+.loader { animation: loader-in .4s .12s var(--ease) both; }
 @keyframes loader-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
 @keyframes loader-breathe { 50% { transform: scale(.9); } }
-@keyframes loader-spin { to { transform: rotate(360deg); } }
-@keyframes loader-hop { 0%, 60%, 100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-7px); opacity: 1; } }
 .app-wake { animation: app-in .55s var(--ease) both; }
 .app-wake .tabbar { animation: bar-in .6s .1s var(--ease) both; }
 @keyframes app-in { from { opacity: 0; transform: translateY(12px) scale(.985); } }
