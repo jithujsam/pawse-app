@@ -5,12 +5,12 @@ import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { frictionIdeas, REPLACEMENTS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
+import { frictionIdeas, REPLACEMENTS, SITUATIONS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
 import { trackSummary } from "../progress";
 import { today } from "../dates";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { Burst, Button, Chip } from "../ui/Controls";
+import { Burst, Button, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 import type { StrategyId } from "../types";
@@ -50,7 +50,8 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [helped, setHelped] = useState<StrategyId | null>(null);
   const managed = trackSummary(data, habit.id, today()).managedUrges;
   const crisis = hasCrisisLanguage(trigger);
-  const situations = plan?.situations ?? [];
+  // The plan's own situations first, then common ones, so the list is never empty. Anything else can be typed.
+  const situations = [...new Set([...(plan?.situations ?? []), ...SITUATIONS])];
 
   function end(outcome: "rode_it_out" | "slipped") {
     if (crisis) return;
@@ -76,23 +77,12 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       <motion.p className="muted" variants={rise}>{urgePauseLine(tone)}</motion.p>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-strength">How strong is it?</span>
-        <div className="scale-dots" role="radiogroup" aria-labelledby="urge-strength">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <motion.button key={n} type="button" role="radio" aria-checked={strength === n} aria-label={`${n} of 5`} className="scale-dot" data-on={n <= strength}
-              whileTap={{ scale: 0.85 }} transition={spring.snappy} onClick={() => { haptic.select(); setStrength(n); }}>
-              {strength === n && <motion.span layoutId="urge-scale" className="scale-pill" transition={spring.snappy} />}
-              <span>{n}</span>
-            </motion.button>
-          ))}
-        </div>
-        <div className="scale-ends muted small"><span>A nudge</span><span>Overwhelming</span></div>
+        <Select label="How strong is it?" value={String(strength)} onChange={(v) => setStrength(Number(v))}
+          options={[{ value: "1", label: "1 · A nudge" }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: "5 · Overwhelming" }]} />
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-what">What's going on? (optional)</span>
-        {situations.length > 0 && <div className="chips" role="group" aria-labelledby="urge-what">
-          {situations.map((l) => <Chip key={l} pressed={trigger === l} onClick={() => { haptic.select(); setTrigger(trigger === l ? "" : l); }}>{l}</Chip>)}
-        </div>}
-        <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="In your own words" aria-label="What's going on, in your own words" onChange={(e) => setTrigger(e.target.value)} />
+        <SelectOther label="What's going on?" options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder="Choose what fits" clearLabel="Not sure" otherPlaceholder="In your own words" />
         {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       </motion.div>
       {plan?.reasons.length ? <motion.p className="small" variants={rise}>You said this matters because of: <b>{plan.reasons.slice(0, 3).join(", ")}</b>.</motion.p> : null}
@@ -137,20 +127,18 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   return (
     <div className="stack urge">
       {context}
-      <div className="chips scroll-x" role="tablist" aria-label="Ways to get through it">
-        {order.map((x) => <Chip key={x.id} pressed={x.id === current} onClick={() => { haptic.select(); setCurrent(x.id); }}>{x.title}</Chip>)}
+      <div className="field">
+        <span className="field-label">Way through</span>
+        <Select label="Ways to get through it" value={current} onChange={(id) => setCurrent(id)} options={order.map((x) => ({ value: x.id, label: x.title }))} />
       </div>
       <AnimatePresence mode="wait" initial={false}>
-        <motion.section key={current} className="stack" role="tabpanel" aria-label={s.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={spring.soft}>
+        <motion.section key={current} className="stack" aria-label={s.title} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={spring.soft}>
           <h2>{s.title}</h2>
           {current !== "breathe" && <ul className="steps">{s.steps.map((t) => <li key={t}>{t}</li>)}</ul>}
           {current === "breathe" && <Breathing />}
           {current === "name" && (
             <div className="field">
-              <div className="chips" role="group" aria-label="What's going on">
-                {situations.map((l) => <Chip key={l} pressed={trigger === l} onClick={() => setTrigger(trigger === l ? "" : l)}>{l}</Chip>)}
-              </div>
-              <input className="input" autoComplete="off" maxLength={40} value={situations.includes(trigger) ? "" : trigger} placeholder="Or in your own words" aria-label="What set it off, in your own words" onChange={(e) => setTrigger(e.target.value)} />
+              <SelectOther label="What set it off?" options={plainOpts(situations)} value={trigger} onChange={setTrigger} maxLength={40} placeholder="Choose what fits" clearLabel="Not sure" otherPlaceholder="In your own words" />
               {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
             </div>
           )}
@@ -172,13 +160,10 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   );
 }
 
+/** Ideas for the next few minutes: pick one, or write your own. */
 function Checklist({ items }: { items: string[] }) {
-  const [done, setDone] = useState<string[]>([]);
-  return (
-    <div className="chips" role="group" aria-label="Ideas">
-      {items.map((t) => <Chip key={t} pressed={done.includes(t)} onClick={() => { haptic.select(); setDone(done.includes(t) ? done.filter((x) => x !== t) : [...done, t]); }}>{t}</Chip>)}
-    </div>
-  );
+  const [pick, setPick] = useState("");
+  return <SelectOther label="Ideas" options={plainOpts(items)} value={pick} onChange={(v) => { setPick(v); if (v) haptic.select(); }} maxLength={80} placeholder="Pick one to try" clearLabel="Not now" otherPlaceholder="Your own idea" />;
 }
 
 /** Paced breathing, 4 in, 4 hold, 6 out, for as long as the person wants. Counts up, never down. */

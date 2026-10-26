@@ -7,22 +7,26 @@ import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { requestReminders } from "../notify";
 import { rise, slide, spring, stagger } from "../motion";
-import { inferClass, inferMeasureFromLabel, isRestrictionRelated } from "../questions";
+import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, isRestrictionRelated, measureForLabel, NO_AMOUNT } from "../questions";
 import { actions, emptyPlan, useData } from "../store";
 import { HelpSection, planHasCrisis, WhySection } from "./Plan";
+import { SITUATIONS } from "../recovery";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
 import { has3D } from "../pet3d-support";
 import { say } from "../voice";
-import { Burst, Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
+import { Burst, Button, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import type { Baseline, Measure, Personality, RecoveryPlan, Species, Tone } from "../types";
 
-const BASELINES: { id: Baseline; label: string }[] = [
-  { id: "many_daily", label: "Several times a day" }, { id: "daily", label: "About once a day" },
-  { id: "few_weekly", label: "A few times a week" }, { id: "weekly", label: "Once a week or less" },
+const BASELINES: { value: Baseline | "unsure"; label: string }[] = [
+  { value: "many_daily", label: "Several times a day" }, { value: "daily", label: "About once a day" },
+  { value: "few_weekly", label: "A few times a week" }, { value: "weekly", label: "Once a week or less" },
+  { value: "unsure", label: "I'm not sure" },
 ];
+
 const REMINDERS = [{ t: "09:00", label: "Morning" }, { t: "13:00", label: "Midday" }, { t: "20:00", label: "Evening" }, { t: "22:00", label: "Late" }];
+const CUSTOM_TIME = "custom";
 const STORY = [
   { title: "Meet a friend who's rooting for you", body: "A little pet lives here. Good days keep them healthy and happy, and they notice every one." },
   { title: "Every slip has a way back", body: "You'll see what a slip cost, and exactly how many good days win it back. Nothing is hopeless." },
@@ -48,6 +52,7 @@ export function Onboarding() {
   const { settings } = useData();
   const dir = useRef(1);
   const [adult, setAdult] = useState(false);
+  const [ownTime, setOwnTime] = useState(() => !REMINDERS.some((r) => r.t === loadDraft().reminder));
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
   useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
@@ -62,7 +67,7 @@ export function Onboarding() {
   const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: inferMeasureFromLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planHasCrisis(d.plan) ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -82,20 +87,18 @@ export function Onboarding() {
             {d.step === 1 && (<>
               <motion.h1 variants={rise}>Choose your companion</motion.h1>
               <motion.p className="muted" variants={rise}>They'll live on your home screen and change with you.</motion.p>
-              <motion.div className="species-grid" variants={rise} role="radiogroup" aria-label="Species">
-                {SPECIES.map((s) => (
-                  <motion.button key={s.id} role="radio" aria-checked={d.species === s.id} className="species-card" data-on={d.species === s.id}
-                    whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); up({ species: s.id, coat: "" }); }}>
-                    <motion.div animate={d.species === s.id ? { y: [0, -10, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
-                      <CompanionArt species={s.id} stage="baby" mood={d.species === s.id ? "happy" : "idle"} age={2} size={84} />
-                    </motion.div>
-                    <b>{s.label}</b><span className="muted small">{s.blurb}</span>
-                  </motion.button>
-                ))}
+              <motion.div className="pet-stage" variants={rise}>
+                <motion.div key={d.species} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={spring.bouncy}>
+                  <CompanionArt species={d.species} stage="baby" mood="happy" age={2} size={140} />
+                </motion.div>
+              </motion.div>
+              <motion.div className="field" variants={rise}>
+                <span className="field-label">Who would you like?</span>
+                <Select label="Companion" value={d.species} options={SPECIES.map((s) => ({ value: s.id, label: `${s.label}: ${s.blurb}` }))} onChange={(species) => up({ species, coat: "" })} />
               </motion.div>
               {has3D(d.species) && <motion.div className="field" variants={rise}>
                 <span className="field-label">Style</span>
-                <Segmented label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
+                <Select label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
               </motion.div>}
               <motion.div variants={rise}><Button onClick={() => go(2)}>Continue</Button></motion.div>
             </>)}
@@ -107,9 +110,9 @@ export function Onboarding() {
             {d.step === 4 && (<>
               <motion.h1 variants={rise}>What would you like to change?</motion.h1>
               <motion.p className="muted" variants={rise}>Say it in your own words. This stays between you and {name}.</motion.p>
-              <motion.label className="field" variants={rise}><span className="field-label">In your own words</span>
-                <input className="input" autoComplete="off" value={d.what} maxLength={60} onChange={(e) => pickWhat(e.target.value)} />
-              </motion.label>
+              <motion.div className="field" variants={rise}><span className="field-label">Pick the closest, or write your own</span>
+                <SelectOther label="What you'd like to change" options={plainOpts(HABIT_CHOICES)} value={d.what} onChange={pickWhat} placeholder="Choose one" otherPlaceholder="In your own words" />
+              </motion.div>
               <AnimatePresence>
                 {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{CRISIS_MESSAGE}</motion.div>}
                 {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>{RESTRICTION_NOTE}</motion.div>}
@@ -120,12 +123,13 @@ export function Onboarding() {
             {d.step === 5 && (<>
               <motion.h1 variants={rise}>Anything you'd like to count?</motion.h1>
               <motion.p className="muted" variants={rise}>If there's a number you want to note each time, name it yourself. Leave it empty to just record that it happened.</motion.p>
-              <motion.label className="field" variants={rise}><span className="field-label">Count each time (optional)</span>
-                <input className="input" autoComplete="off" value={d.amountLabel} maxLength={40} onChange={(e) => up({ amountLabel: e.target.value })} />
-              </motion.label>
-              <motion.h2 variants={rise}>And how often, right now?</motion.h2>
-              <motion.div className="chips" variants={rise}>
-                {BASELINES.map((b) => <Chip key={b.id} pressed={d.baseline === b.id} onClick={() => up({ baseline: b.id })}>{b.label}</Chip>)}
+              <motion.div className="field" variants={rise}><span className="field-label">Count each time (optional)</span>
+                <SelectOther label="What to count each time" value={d.amountLabel} onChange={(v) => up({ amountLabel: v === NO_AMOUNT ? "" : v })} maxLength={40}
+                  options={[...plainOpts(AMOUNT_CHOICES.map((a) => a.label)), { value: NO_AMOUNT, label: "Nothing, just note that it happened" }]}
+                  placeholder="Nothing, just note that it happened" otherPlaceholder="Name it, e.g. cups or episodes" />
+              </motion.div>
+              <motion.div className="field" variants={rise}><span className="field-label">And how often, right now?</span>
+                <Select label="How often right now" value={d.baseline ?? undefined} placeholder="Choose one" options={BASELINES} onChange={(b) => up({ baseline: b === "unsure" ? null : b })} />
               </motion.div>
               <motion.p className="muted small" variants={rise}>No judgement. It helps your report show how far you've come.</motion.p>
               <motion.div variants={rise}><Button onClick={() => go(6)}>Continue</Button></motion.div>
@@ -133,10 +137,10 @@ export function Onboarding() {
 
             {d.step === 6 && (<>
               <motion.h1 variants={rise}>What tends to set it off?</motion.h1>
-              <motion.p className="muted" variants={rise}>In your own words, one or more. Pawse offers these back when an urge hits. All optional.</motion.p>
-              <motion.label className="field" variants={rise}><span className="field-label">Situations</span>
-                <input className="input" autoComplete="off" value={d.triggers.join(", ")} maxLength={120} onChange={(e) => up({ triggers: e.target.value.split(",").map((x) => x.trimStart()) })} />
-              </motion.label>
+              <motion.p className="muted" variants={rise}>Pick any that fit, or add your own. Pawse offers these back when an urge hits. All optional.</motion.p>
+              <motion.div className="field" variants={rise}><span className="field-label">Situations</span>
+                <MultiSelect label="Situations" options={plainOpts(SITUATIONS)} value={d.triggers} onChange={(triggers) => up({ triggers })} max={8} placeholder="Pick the ones that fit" />
+              </motion.div>
               <motion.div variants={rise}><Button onClick={() => { setPlan({ situations: [...new Set([...d.plan.situations, ...d.triggers.map((x) => x.trim()).filter(Boolean)])].slice(0, 12) }); up({ triggers: [] }); go(7); }}>{d.triggers.some((x) => x.trim()) ? "Continue" : "Skip for now"}</Button></motion.div>
             </>)}
 
@@ -172,13 +176,9 @@ export function Onboarding() {
                   </motion.p>
                 </AnimatePresence>
               </motion.div>
-              <motion.div className="segmented big" role="radiogroup" aria-label="Tone" variants={rise}>
-                {TONES.map((t) => (
-                  <button key={t.id} type="button" role="radio" aria-checked={d.tone === t.id} className="seg" onClick={() => { haptic.select(); up({ tone: t.id }); }}>
-                    {d.tone === t.id && <motion.span layoutId="tone-pill" className="seg-pill" transition={spring.snappy} />}
-                    <span className="seg-label">{t.label}</span>
-                  </button>
-                ))}
+              <motion.div className="field" variants={rise}>
+                <span className="field-label">Voice</span>
+                <Select label="Tone" value={d.tone} options={TONES.map((t) => ({ value: t.id, label: t.label }))} onChange={(tone) => up({ tone })} />
               </motion.div>
               <motion.p className="muted small" variants={rise}>Every tone is respectful. It describes what happened, never who you are. Change it any time.</motion.p>
               <motion.div variants={rise}><Button onClick={() => go(10)}>Continue</Button></motion.div>
@@ -188,11 +188,11 @@ export function Onboarding() {
               <motion.div className="bell" variants={rise} animate={{ rotate: [0, -14, 12, -8, 6, 0] }} transition={{ duration: 1, delay: 0.4 }}>{Icon.bell}</motion.div>
               <motion.h1 variants={rise}>A daily nudge</motion.h1>
               <motion.p className="muted" variants={rise}>One quiet reminder a day to check in, in {name}'s voice. You can turn any reminder off later.</motion.p>
-              <motion.div className="chips" variants={rise}>
-                {REMINDERS.map((r) => <Chip key={r.t} pressed={d.reminder === r.t} onClick={() => up({ reminder: r.t })}>{r.label} · {fmtTime(r.t)}</Chip>)}
-              </motion.div>
-              <motion.div className="field" variants={rise}><span className="field-label">Or pick a time</span>
-                <TimePicker label="Reminder time" value={d.reminder} onChange={(v) => up({ reminder: v })} />
+              <motion.div className="field" variants={rise}><span className="field-label">When suits you?</span>
+                <Select label="Reminder time" value={ownTime ? CUSTOM_TIME : d.reminder}
+                  options={[...REMINDERS.map((r) => ({ value: r.t, label: `${r.label} · ${fmtTime(r.t)}` })), { value: CUSTOM_TIME, label: "Another time…" }]}
+                  onChange={(t) => { if (t === CUSTOM_TIME) setOwnTime(true); else { setOwnTime(false); up({ reminder: t }); } }} />
+                {ownTime && <TimePicker label="Reminder time" value={d.reminder} onChange={(v) => up({ reminder: v })} />}
               </motion.div>
               <motion.div className="stack tight" variants={rise}>
                 <Button onClick={async () => { await requestReminders(d.reminder, d.tone, name); go(11); }}>Turn on reminders</Button>
@@ -256,19 +256,11 @@ function LookStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
       </AnimatePresence>
     </motion.div>
     <motion.div className="field" variants={rise}><span className="field-label">Coat</span>
-      <div className="chips" role="radiogroup" aria-label="Coat">
-        {COATS[d.species].map((c) => <Chip key={c.id} pressed={coat === c.id} onClick={() => up({ coat: c.id })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
-      </div>
+      <Select label="Coat" value={coat} options={COATS[d.species].map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => up({ coat: id })} />
     </motion.div>
     <motion.div className="field" variants={rise}><span className="field-label">Personality</span>
-      <div className="choice-grid" role="radiogroup" aria-label="Personality">
-        {PERSONALITIES.map((p) => (
-          <motion.button key={p.id} role="radio" aria-checked={d.personality === p.id} className="choice" whileTap={{ scale: 0.97 }}
-            onClick={() => { haptic.select(); up({ personality: p.id }); setLine(say("petted", p.id, d.tone)); }}>
-            <b>{p.label}</b><div className="small muted">{p.blurb}</div>
-          </motion.button>
-        ))}
-      </div>
+      <Select label="Personality" value={d.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))}
+        onChange={(id) => { up({ personality: id }); setLine(say("petted", id, d.tone)); }} />
     </motion.div>
     <motion.p className="muted small" variants={rise}>Tap or stroke them to say hello. Personality changes how they talk and play.</motion.p>
     <motion.div variants={rise}><Button onClick={onNext}>Continue</Button></motion.div>
@@ -291,10 +283,8 @@ function NameStep({ d, up, onNext }: { d: Draft; up: (p: Partial<Draft>) => void
       <AnimatePresence>{shown && <motion.span className="name-tag" initial={{ opacity: 0, y: 8, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={spring.bouncy}>{shown}</motion.span>}</AnimatePresence>
     </motion.div>
     <motion.h1 variants={rise}>What will you call them?</motion.h1>
-    <motion.input className="input big" autoComplete="off" variants={rise} value={d.companionName} placeholder={NAMES[d.species][0]} maxLength={20} aria-label="Companion name"
-      onChange={(e) => typed(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") onNext(); }} />
-    <motion.div className="chips" variants={rise}>
-      {NAMES[d.species].map((n) => <Chip key={n} pressed={d.companionName === n} onClick={() => typed(n)}>{n}</Chip>)}
+    <motion.div className="field" variants={rise}>
+      <SelectOther label="Companion name" value={d.companionName} onChange={typed} options={plainOpts(NAMES[d.species])} maxLength={20} placeholder={`Pick a name, like ${NAMES[d.species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" />
     </motion.div>
     <motion.label className="field" variants={rise}><span className="field-label">What should {shown || "they"} call you? <span className="muted">Optional</span></span>
       <input className="input" autoComplete="given-name" value={d.userName} placeholder="Your first name" maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") onNext(); }} />

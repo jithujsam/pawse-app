@@ -5,7 +5,7 @@ import { spring } from "../motion";
 import { actions } from "../store";
 import { AUTH_REDIRECT, configured, supabase, useSession } from "../supabase";
 import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
-import { Button, Segmented } from "../ui/Controls";
+import { Button, Select } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
 /** 0..4, rewarding length and variety. Good enough to nudge, not to gatekeep. */
@@ -149,7 +149,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
 
   return (
     <form className="stack" onSubmit={submit} noValidate>
-      <Segmented label="Account mode" value={mode} onChange={(m) => { setMode(m); setMsg(null); }} options={[{ value: "up", label: "Create account" }, { value: "in", label: "Sign in" }]} />
+      <div className="field"><span className="field-label">I want to</span><Select label="Account action" value={mode} onChange={(m) => { setMode(m); setMsg(null); }} options={[{ value: "up", label: "Create an account" }, { value: "in", label: "Sign in to my account" }]} /></div>
       <label className="field"><span className="field-label">Email</span><input className="input" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
       <div className="field"><label className="field-label" htmlFor="account-password">Password</label>
         <span className="pw-wrap">

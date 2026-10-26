@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { haptic } from "../haptics";
 import { actions, useData, vault } from "../store";
-import { Button, Icon, Segmented, Switch } from "../ui/Controls";
+import { Button, Icon, Select, Switch } from "../ui/Controls";
 import { PinPad } from "../ui/PinPad";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
@@ -25,8 +25,8 @@ export function SecurityCard() {
         {on && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
             <span className="field-label">Lock again after</span>
-            <Segmented<AutoLock> label="Auto-lock" value={settings.autoLock} onChange={(v) => actions.setSettings({ autoLock: v })}
-              options={[{ value: "immediately", label: "At once" }, { value: "1m", label: "1 min" }, { value: "5m", label: "5 min" }]} />
+            <Select<AutoLock> label="Auto-lock" value={settings.autoLock} onChange={(v) => actions.setSettings({ autoLock: v })}
+              options={[{ value: "immediately", label: "Right away" }, { value: "1m", label: "After 1 minute" }, { value: "5m", label: "After 5 minutes" }]} />
             <Button variant="text" onClick={() => setFlow("change")}>Change PIN</Button>
           </motion.div>
         )}
@@ -65,7 +65,7 @@ function SetPin({ onDone }: { onDone: () => void }) {
   return (
     <div className="stack center-text">
       <h2>{first ? "Enter it again" : "Choose a PIN"}</h2>
-      {!first && <Segmented label="PIN length" value={String(length)} onChange={(v) => setLength(v === "6" ? 6 : 4)} options={[{ value: "4", label: "4 digits" }, { value: "6", label: "6 digits" }]} />}
+      {!first && <Select label="PIN length" value={String(length)} onChange={(v) => setLength(v === "6" ? 6 : 4)} options={[{ value: "4", label: "4 digits" }, { value: "6", label: "6 digits" }]} />}
       <p className="muted small" aria-live="polite">{busy ? "Encrypting your data…" : msg ?? "There's no way to recover it, so pick one you'll remember."}</p>
       <PinPad key={`${length}-${first ? 2 : 1}`} length={length} onDone={done} error={error} disabled={busy} label="New PIN" />
     </div>

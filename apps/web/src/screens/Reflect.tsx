@@ -6,7 +6,7 @@ import { spring } from "../motion";
 import { actions, useData } from "../store";
 import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
-import { Button } from "../ui/Controls";
+import { Button, Select } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 
 /**
@@ -48,15 +48,9 @@ export function Reflect() {
   return (
     <div className="stack reflect">
       <div className="row"><p className="muted small">How was today, honestly?</p>{existing && !open && <span className="muted small">Done today</span>}</div>
-      <div className="moods" role="radiogroup" aria-label="Today's mood">
-        {MOODS.map((m) => (
-          <motion.button key={m.n} role="radio" aria-checked={mood === m.n} aria-label={m.l} className="mood" data-on={mood === m.n}
-            whileTap={{ scale: 0.85 }} animate={{ scale: mood === m.n ? 1.12 : 1 }} transition={spring.bouncy}
-            onClick={() => { haptic.select(); setMood(m.n); setOpen(true); }}>
-            <span aria-hidden>{m.e}</span><span className="small">{m.l}</span>
-          </motion.button>
-        ))}
-      </div>
+      <Select label="Today's mood" value={mood || undefined} placeholder="Choose how you feel"
+        options={MOODS.map((m) => ({ value: m.n, label: `${m.e}  ${m.l}` }))}
+        onChange={(n) => { setMood(n); setOpen(true); }} />
       <AnimatePresence initial={false}>
         {open && (
           <motion.div className="stack tight" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={spring.soft}>

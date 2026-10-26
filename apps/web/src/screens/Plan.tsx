@@ -5,11 +5,11 @@ import { CRISIS_MESSAGE } from "../copy";
 import { hasCrisisLanguage } from "../crisis";
 import { haptic } from "../haptics";
 import { rise } from "../motion";
-import { GOALS, STRATEGIES, strategy, trackLessons } from "../recovery";
+import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES, strategy, trackLessons } from "../recovery";
 import { fmtDay } from "../dates";
 import { actions, emptyPlan, useData } from "../store";
 import { trackState } from "../tracks";
-import { Button, Chip, Icon } from "../ui/Controls";
+import { Button, Icon, MultiSelect, plainOpts, Select, SelectOther, type Opt } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import type { RecoveryPlan } from "../types";
 
@@ -17,36 +17,11 @@ import type { RecoveryPlan } from "../types";
 export const planHasCrisis = (p: RecoveryPlan) =>
   [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName].some(hasCrisisLanguage);
 
-/** The person's own entries as chips (tap to remove), with a field to add one. `options` is for any suggestions a caller wants to offer; none by default. */
-function ChipList({ label, options, value, onChange, max, placeholder }: { label: string; options: string[]; value: string[]; onChange: (v: string[]) => void; max: number; placeholder: string }) {
-  const [own, setOwn] = useState("");
-  const all = [...options, ...value.filter((v) => !options.includes(v))];
-  const toggle = (x: string) => { haptic.select(); onChange(value.includes(x) ? value.filter((v) => v !== x) : [...value, x].slice(0, max)); };
-  const add = () => { const t = own.trim(); if (t && !value.includes(t)) onChange([...value, t].slice(0, max)); setOwn(""); };
-  return (
-    <div className="field">
-      <span className="field-label">{label}</span>
-      <div className="chips" role="group" aria-label={label}>{all.map((x) => <Chip key={x} pressed={value.includes(x)} onClick={() => toggle(x)}>{x}</Chip>)}</div>
-      <div className="inline-add">
-        <input className="input" autoComplete="off" maxLength={80} value={own} placeholder={placeholder} aria-label={`${label}: add your own`}
-          onChange={(e) => setOwn(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
-        <Button variant="secondary" onClick={add} disabled={!own.trim()}>Add</Button>
-      </div>
-    </div>
-  );
-}
+type GoalChoice = NonNullable<RecoveryPlan["goal"]> | "none";
+const GOAL_OPTIONS: Opt<GoalChoice>[] = [...GOALS.map((g) => ({ value: g.id, label: `${g.label}: ${g.hint}` })), { value: "none", label: "Not sure yet" }];
 
 export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; onChange: (g: RecoveryPlan["goal"]) => void }) {
-  return (
-    <div className="choice-grid" role="radiogroup" aria-label="Your goal">
-      {GOALS.map((g) => (
-        <motion.button key={g.id} type="button" role="radio" aria-checked={value === g.id} className="choice" whileTap={{ scale: 0.97 }}
-          onClick={() => { haptic.select(); onChange(value === g.id ? null : g.id); }}>
-          <b>{g.label}</b><div className="small muted">{g.hint}</div>
-        </motion.button>
-      ))}
-    </div>
-  );
+  return <Select label="Your goal" value={value ?? "none"} options={GOAL_OPTIONS} onChange={(g) => onChange(g === "none" ? null : g)} />;
 }
 
 /**
@@ -56,27 +31,27 @@ export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; o
 export function WhySection({ plan, set, situations = true }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; situations?: boolean }) {
   return (<>
     <div className="field"><span className="field-label">What are you aiming for?</span><GoalPicker value={plan.goal} onChange={(goal) => set({ goal })} /></div>
-    <ChipList label="Why it matters to you" options={[]} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder="Type one and tap Add" />
-    {situations && <ChipList label="Situations that tend to be hard" options={[]} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder="Type one and tap Add" />}
+    <div className="field"><span className="field-label">Why does this matter to you?</span>
+      <MultiSelect label="Reasons" options={plainOpts(REASONS)} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder="Pick the ones that fit" /></div>
+    {situations && <div className="field"><span className="field-label">When is it hardest?</span>
+      <MultiSelect label="Hard situations" options={plainOpts(SITUATIONS)} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder="Pick the ones that fit" /></div>}
   </>);
 }
 
 /** A first step and what helps. Onboarding step two of the plan. */
-export function HelpSection({ plan, set }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; cls?: HabitClass }) {
-  const toggle = (id: RecoveryPlan["strategies"][number]) => { haptic.select(); set({ strategies: plan.strategies.includes(id) ? plan.strategies.filter((s) => s !== id) : [...plan.strategies, id] }); };
+export function HelpSection({ plan, set, cls = "custom" }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; cls?: HabitClass }) {
   return (<>
     <div className="field">
       <span className="field-label">One small first step</span>
-      <input className="input" autoComplete="off" maxLength={140} value={plan.firstStep} aria-label="First step in your own words" onChange={(e) => set({ firstStep: e.target.value })} />
+      <SelectOther label="First step" options={plainOpts(FIRST_STEPS[cls])} value={plan.firstStep} onChange={(firstStep) => set({ firstStep })} maxLength={140} placeholder="Pick something small" otherPlaceholder="Write your own first step" />
     </div>
     <div className="field">
       <span className="field-label">When an urge hits, what would you like to try first?</span>
-      <div className="chips" role="group" aria-label="Preferred strategies">
-        {STRATEGIES.map((s) => <Chip key={s.id} pressed={plan.strategies.includes(s.id)} onClick={() => toggle(s.id)}>{s.title}</Chip>)}
-      </div>
+      <MultiSelect label="Preferred strategies" allowOther={false} options={STRATEGIES.map((s) => ({ value: s.id, label: `${s.title}: ${s.hint}` }))}
+        value={plan.strategies} onChange={(v) => set({ strategies: v as RecoveryPlan["strategies"] })} max={STRATEGIES.length} placeholder="Pick the ones you like" />
       <span className="muted small">All of them stay available. These just come first.</span>
     </div>
-    <label className="field"><span className="field-label">Someone you could message (optional)</span>
+    <label className="field"><span className="field-label">Someone you could reach out to (optional)</span>
       <input className="input" autoComplete="off" maxLength={40} value={plan.supportName} placeholder="A first name is enough" onChange={(e) => set({ supportName: e.target.value })} />
       <span className="muted small">Only the name is kept, to remind you. Pawse never contacts anyone.</span>
     </label>

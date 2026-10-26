@@ -9,12 +9,12 @@ import { today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { NAMES, SPECIES } from "../pets";
-import { inferClass, inferMeasureFromLabel, isRestrictionRelated } from "../questions";
+import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, isRestrictionRelated, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Measure, Species } from "../types";
-import { Button, Chip, Icon } from "../ui/Controls";
+import { Button, Icon, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 
@@ -149,10 +149,11 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   const [name, setName] = useState("");
   const crisis = hasCrisisLanguage(what) || hasCrisisLanguage(name);
   const restriction = isRestrictionRelated(what);
-  const reset = () => { setWhat(""); setAmountLabel(""); setName(""); };
+  const [formKey, setFormKey] = useState(0);
+  const reset = () => { setWhat(""); setAmountLabel(""); setName(""); setFormKey((k) => k + 1); };
   const save = () => {
     const petName = name.trim() || NAMES[species][0];
-    const id = actions.addTrack({ what, cls: inferClass(what), measure: inferMeasureFromLabel(amountLabel), amountLabel, species, name: petName });
+    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species, name: petName });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
     toast(`${petName} is here for ${what.trim()}`, { kind: "good" });
@@ -166,22 +167,22 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
         <h2>Add a recovery track</h2>
         <div className="field">
           <span className="field-label">What would you like to change?</span>
-          <input className="input" autoComplete="off" value={what} maxLength={60} aria-label="What you'd like to change, in your own words" onChange={(e) => setWhat(e.target.value)} />
+          <SelectOther key={formKey} label="What you'd like to change" value={what} onChange={setWhat} options={plainOpts(HABIT_CHOICES)} placeholder="Pick the closest, or write your own" otherPlaceholder="In your own words" />
         </div>
         <AnimatePresence>
           {crisis && <motion.div className="banner danger" role="alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{CRISIS_MESSAGE}</motion.div>}
           {restriction && <motion.div className="banner" role="note" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{RESTRICTION_NOTE}</motion.div>}
         </AnimatePresence>
-        <label className="field">
+        <div className="field">
           <span className="field-label">Count something each time? (optional)</span>
-          <input className="input" autoComplete="off" value={amountLabel} maxLength={40} onChange={(e) => setAmountLabel(e.target.value)} />
-        </label>
+          <SelectOther key={formKey} label="What to count each time" value={amountLabel} onChange={(v) => setAmountLabel(v === NO_AMOUNT ? "" : v)} maxLength={40}
+            options={[...plainOpts(AMOUNT_CHOICES.map((a) => a.label)), { value: NO_AMOUNT, label: "Nothing, just note that it happened" }]}
+            placeholder="Nothing, just note that it happened" otherPlaceholder="Name it, e.g. cups or episodes" />
+        </div>
         <div className="field">
           <span className="field-label">Its pet</span>
-          <div className="chips" role="radiogroup" aria-label="Species">
-            {SPECIES.map((s) => <Chip key={s.id} pressed={species === s.id} onClick={() => setSpecies(s.id)}>{s.label}</Chip>)}
-          </div>
-          <input className="input" autoComplete="off" value={name} maxLength={20} placeholder={NAMES[species][0]} aria-label="Pet name" onChange={(e) => setName(e.target.value)} />
+          <Select label="Species" value={species} onChange={setSpecies} options={SPECIES.map((s) => ({ value: s.id, label: `${s.label}: ${s.blurb}` }))} />
+          <SelectOther key={`${formKey}-${species}`} label="Pet name" value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={`Pick a name, like ${NAMES[species][0]}`} otherLabel="Another name…" otherPlaceholder="Type a name" />
         </div>
         <Button disabled={!what.trim() || crisis || restriction} onClick={save}>Add track</Button>
         <p className="muted small">Each track has its own pet, plan, check-ins and history. Your voice and reminders stay shared.</p>

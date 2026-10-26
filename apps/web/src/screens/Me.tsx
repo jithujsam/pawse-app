@@ -18,7 +18,7 @@ import { companionsOf, trackState } from "../tracks";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
-import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
+import { Button, Icon, Select, SelectOther, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
 import { Account } from "./Account";
@@ -146,46 +146,27 @@ function PetPage() {
         <input className="input" autoComplete="off" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} onBlur={save} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
       <div className="field"><span className="field-label">Species</span>
-        <div className="chips" role="radiogroup" aria-label="Species">
-          {SPECIES.map((sp) => <Chip key={sp.id} pressed={companion.species === sp.id} onClick={() => { if (sp.id !== companion.species) { actions.setSpecies(companion.id, sp.id); haptic.success(); toast(`${companion.name} is a ${sp.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }}>
-            {sp.label}</Chip>)}
-        </div>
+        <Select label="Species" value={companion.species} options={SPECIES.map((sp) => ({ value: sp.id, label: sp.label }))}
+          onChange={(id) => { if (id !== companion.species) { actions.setSpecies(companion.id, id); haptic.success(); toast(`${companion.name} is a ${SPECIES.find((x) => x.id === id)!.label.toLowerCase()} now. Same name, same history.`, { kind: "good" }); } }} />
       </div>
       {!has3D(companion.species) && <span className="muted small">Switch to a dog to see them in 3D.</span>}
       {has3D(companion.species) && <div className="field"><span className="field-label">Style</span>
-        <Segmented label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
+        <Select label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
         <span className="muted small">{settings.pet3d ? ({ ok: "Animated in 3D, with a face that shows how they feel.", failed: "3D couldn't load on this phone, so the drawing is shown.", unsupported: "This phone can't draw 3D, so the drawing is shown.", unused: "Animated in 3D, with a face that shows how they feel." } as const)[pet3dStatus()] : "The soft drawn style."}</span>
       </div>}
       <div className="field"><span className="field-label">Coat</span>
-        <div className="chips" role="radiogroup" aria-label="Coat">
-          {COATS[companion.species].map((c) => <Chip key={c.id} pressed={(companion.coat ?? COATS[companion.species][0].id) === c.id} onClick={() => actions.setCompanionLook(companion.id, { coat: c.id, personality: companion.personality })}><i className="coat-dot" style={{ background: c.fur }} />{c.label}</Chip>)}
-        </div>
+        <Select label="Coat" value={companion.coat ?? COATS[companion.species][0].id} options={COATS[companion.species].map((c) => ({ value: c.id, label: c.label }))}
+          onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, personality: companion.personality })} />
       </div>
       <div className="field"><span className="field-label">Personality</span>
-        <div className="choice-grid" role="radiogroup" aria-label="Personality">
-          {PERSONALITIES.map((p) => (
-            <motion.button key={p.id} role="radio" aria-checked={(companion.personality ?? "playful") === p.id} className="choice" whileTap={{ scale: 0.97 }}
-              onClick={() => { haptic.select(); actions.setCompanionLook(companion.id, { coat: companion.coat, personality: p.id }); toast(say("petted", p.id, settings.tone), { ms: 2500 }); }}>
-              <b>{p.label}</b><div className="small muted">{p.blurb}</div>
-            </motion.button>
-          ))}
-        </div>
+        <Select label="Personality" value={companion.personality ?? "playful"} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))}
+          onChange={(id) => { actions.setCompanionLook(companion.id, { coat: companion.coat, personality: id }); toast(say("petted", id, settings.tone), { ms: 2500 }); }} />
       </div>
     </section>
     <section className="card stack">
       <div className="row"><h2>Wardrobe</h2><span className="muted small">{care} {care === 1 ? "day" : "days"} of care</span></div>
-      <div className="wardrobe">
-        <motion.button className="ward" data-on={!track.wear} whileTap={{ scale: 0.94 }} onClick={() => { haptic.select(); actions.setTrackSettings(habit.id, { wear: null }); }}><b>None</b></motion.button>
-        {ACCESSORIES.map((a) => {
-          const open = Math.max(best, care) >= a.days;
-          return (
-            <motion.button key={a.id} className="ward" data-on={track.wear === a.id} disabled={!open} whileTap={open ? { scale: 0.94 } : undefined}
-              onClick={() => { haptic.select(); actions.setTrackSettings(habit.id, { wear: a.id }); }}>
-              <b>{a.label}</b><span className="small muted">{open ? "Unlocked" : `${a.days} days of care`}</span>
-            </motion.button>
-          );
-        })}
-      </div>
+      <Select label="Accessory" value={track.wear ?? "none"} onChange={(id) => actions.setTrackSettings(habit.id, { wear: id === "none" ? null : id })}
+        options={[{ value: "none", label: "None" }, ...ACCESSORIES.map((a) => ({ value: a.id as string, label: Math.max(best, care) >= a.days ? a.label : `${a.label} (unlocks at ${a.days} days of care)`, disabled: Math.max(best, care) < a.days }))] as { value: NonNullable<typeof track.wear> | "none"; label: string; disabled?: boolean }[]} />
       <p className="muted small">Days of care are days with your goal met or an urge managed. They add up and never reset, and every unlock stays yours.</p>
     </section>
     <section className="card stack">
@@ -224,7 +205,7 @@ function VoicePage() {
       <label className="field"><span className="field-label">What {companion.name} calls you</span>
         <input className="input" autoComplete="given-name" value={name} placeholder="Your first name (optional)" maxLength={30} onChange={(e) => setName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
       </label>
-      <Segmented label="Tone" value={settings.tone} onChange={(t) => { actions.setTone(t); if (settings.remindersOn) void scheduleDaily(settings.reminder, t, companion.name); }} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
+      <Select label="Tone" value={settings.tone} onChange={(t) => { actions.setTone(t); if (settings.remindersOn) void scheduleDaily(settings.reminder, t, companion.name); }} options={TONES.map((t) => ({ value: t.id, label: t.label }))} />
       <AnimatePresence mode="wait"><motion.p key={settings.tone} className="bubble" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>“{tonePreview(settings.tone, companion.name)}”</motion.p></AnimatePresence>
       <p className="muted small">Every tone is respectful. It describes what happened, never who you are.</p>
     </section>
@@ -280,7 +261,7 @@ function QuestionsPage() {
               {editing ? (<>
                 <input className="input" autoComplete="off" value={f.label} aria-label="Question" maxLength={80} onChange={(e) => setField(f.id, { label: e.target.value })} />
                 <div className="row">
-                  <select className="input select" value={f.type} aria-label="Type" onChange={(e) => setField(f.id, { type: e.target.value as FieldType })}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
+                  <select className="input select dropdown" value={f.type} aria-label="Type" onChange={(e) => setField(f.id, { type: e.target.value as FieldType })}>{TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
                   <button className="icon-btn danger" aria-label="Remove question" onClick={() => rmField(f.id)}>{Icon.trash}</button>
                 </div>
                 {(f.type === "choice" || f.type === "multi") && (
@@ -347,6 +328,8 @@ function DataPage() {
   </>);
 }
 
+/** Common currency symbols. Anything else, up to four characters, can be typed. */
+const CURRENCIES = [{ sym: "₹", name: "Indian rupee" }, { sym: "$", name: "Dollar" }, { sym: "€", name: "Euro" }, { sym: "£", name: "Pound" }, { sym: "¥", name: "Yen or yuan" }, { sym: "₩", name: "Won" }, { sym: "R$", name: "Brazilian real" }, { sym: "₦", name: "Naira" }];
 const THEME_LABEL = { system: "System", light: "Light", dark: "Dark" } as const;
 const ACCENT_OPTS: { id: Settings["accent"]; label: string; color: string }[] = [
   { id: "pet", label: "Match my pet", color: "conic-gradient(#c2572a, #2f7a52, #2f6aa3, #b03f6b, #c2572a)" },
@@ -359,28 +342,12 @@ function AppearancePage() {
   return (<>
     <section className="card stack">
       <h2>Theme</h2>
-      <div className="theme-grid" role="radiogroup" aria-label="Theme">
-        {(["system", "light", "dark"] as const).map((t) => (
-          <motion.button key={t} role="radio" aria-checked={settings.theme === t} className="theme-opt" data-on={settings.theme === t} whileTap={{ scale: 0.96 }}
-            onClick={() => { haptic.select(); actions.setSettings({ theme: t }); }}>
-            <span className={`theme-swatch ts-${t}`} aria-hidden><i /><i /></span>
-            <b>{THEME_LABEL[t]}</b>
-          </motion.button>
-        ))}
-      </div>
+      <Select label="Theme" value={settings.theme} onChange={(t) => actions.setSettings({ theme: t })} options={(["system", "light", "dark"] as const).map((t) => ({ value: t, label: THEME_LABEL[t] }))} />
       <p className="muted small">System follows your phone's light or dark setting.</p>
     </section>
     <section className="card stack">
       <h2>Colour</h2>
-      <div className="accent-grid" role="radiogroup" aria-label="Accent colour">
-        {ACCENT_OPTS.map((a) => (
-          <motion.button key={a.id} role="radio" aria-checked={settings.accent === a.id} aria-label={a.label} className="accent-opt" data-on={settings.accent === a.id} whileTap={{ scale: 0.92 }}
-            onClick={() => { haptic.select(); actions.setSettings({ accent: a.id }); }}>
-            <span className="accent-dot" style={{ background: a.color }}>{settings.accent === a.id && Icon.check}</span>
-            <span className="small">{a.label}</span>
-          </motion.button>
-        ))}
-      </div>
+      <Select label="Accent colour" value={settings.accent} onChange={(a) => actions.setSettings({ accent: a })} options={ACCENT_OPTS.map((a) => ({ value: a.id, label: a.label }))} />
       <p className="muted small">"Match my pet" picks a colour that suits your companion.</p>
     </section>
   </>);
@@ -392,7 +359,9 @@ function FeelPage() {
   return (
     <section className="card stack">
       <Switch checked={settings.haptics} onChange={(v) => actions.setSettings({ haptics: v })} label="Haptics" hint="Small vibrations when you tap" />
-      <label className="field"><span className="field-label">Currency</span><input className="input" autoComplete="off" value={settings.currency} maxLength={4} onChange={(e) => actions.setSettings({ currency: e.target.value })} /></label>
+      <div className="field"><span className="field-label">Currency symbol</span>
+        <SelectOther label="Currency" value={settings.currency} onChange={(c) => actions.setSettings({ currency: c })} maxLength={4}
+          options={CURRENCIES.map((c) => ({ value: c.sym, label: `${c.sym}  ${c.name}` }))} otherLabel="Another symbol…" otherPlaceholder="e.g. AED or Rs" /></div>
       <div className="row"><span className="small muted">Clock and region: {placeName()} ({timeZone()}), {uses12h() ? "12-hour" : "24-hour"} time</span>
         {localCurrency(settings.currency) !== settings.currency && <Button variant="text" onClick={() => actions.setSettings({ currency: localCurrency(settings.currency) })}>Use {localCurrency(settings.currency)}</Button>}</div>
     </section>

@@ -5,6 +5,7 @@ import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL } from "../copy";
 import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
 import { trackSummary } from "../progress";
 import { hasCrisisLanguage } from "../crisis";
+import { OTHER_PREFIX, otherAnswer } from "../questions";
 import { addDays, fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
@@ -12,7 +13,7 @@ import { rise, spring, stagger } from "../motion";
 import { actions, slipRequest, useData, type Deduction } from "../store";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Button, Chip, Icon, Segmented, Switch } from "../ui/Controls";
+import { Button, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import type { Entry, Habit } from "../types";
 
@@ -28,22 +29,9 @@ async function shrink(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-function Scale({ value, labels, label, onChange }: { value: number; labels: [string, string]; label: string; onChange: (n: number) => void }) {
-  return (
-    <div className="scale">
-      <div className="scale-dots" role="radiogroup" aria-label={label}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <motion.button key={n} type="button" role="radio" aria-checked={value === n} aria-label={`${n} of 5`} className="scale-dot" data-on={n <= value}
-            whileTap={{ scale: 0.85 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange(value === n ? 0 : n); }}>
-            {value === n && <motion.span layoutId={`scale-${label}`} className="scale-pill" transition={spring.snappy} />}
-            <span>{n}</span>
-          </motion.button>
-        ))}
-      </div>
-      <div className="scale-ends muted small"><span>{labels[0]}</span><span>{labels[1]}</span></div>
-    </div>
-  );
-}
+/** 1 to 5, with the ends named by the question ("Barely" to "Overwhelming"). */
+const scaleOptions = (labels: [string, string]): { value: string; label: string }[] =>
+  [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: n === 1 ? `1 · ${labels[0]}` : n === 5 ? `5 · ${labels[1]}` : String(n) }));
 
 /** `day` presets the slip's date, e.g. from the calendar, so a slip can be logged honestly for any past day. */
 interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void; day?: string }
@@ -62,6 +50,8 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const [day, setDay] = useState(presetDay ?? today());
   const older = presetDay && presetDay < addDays(today(), -1) ? presetDay : null;
   const [time, setTime] = useState("");
+  const [ownDay, setOwnDay] = useState(false);
+  const born = data.companions.find((c) => c.id === habit.companionId)?.bornOn;
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
   const [ageBefore] = useState(age);
@@ -147,13 +137,28 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   return (
     <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
       <motion.div className="row" variants={rise}><h2>Log a slip</h2><Button variant="text" onClick={onClose}>Cancel</Button></motion.div>
-      <motion.div className="chips" role="group" aria-label="Day" variants={rise}>
-        <Chip pressed={day === today()} onClick={() => setDay(today())}>Today</Chip>
-        <Chip pressed={day === addDays(today(), -1)} onClick={() => setDay(addDays(today(), -1))}>Yesterday</Chip>
-        {older && <Chip pressed={day === older} onClick={() => setDay(older)}>{fmtDay(older)}</Chip>}
-        <Chip pressed={!!time} onClick={() => { const n = new Date(); setTime(time ? "" : `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes() - (n.getMinutes() % 5)).padStart(2, "0")}`); }}>{time ? fmtTime(time) : "Add time"}</Chip>
+      <motion.div className="field" variants={rise}>
+        <span className="field-label">When did it happen?</span>
+        <Select label="Day" value={ownDay ? "other" : day === today() ? "today" : day === addDays(today(), -1) ? "yesterday" : "earlier"}
+          options={[
+            { value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" },
+            ...(older ? [{ value: "earlier", label: fmtDay(older) }] : []),
+            { value: "other", label: "Another day…" },
+          ]}
+          onChange={(v) => { setOwnDay(v === "other"); if (v === "today") setDay(today()); else if (v === "yesterday") setDay(addDays(today(), -1)); else if (v === "earlier" && older) setDay(older); }} />
+        {ownDay && <input className="input" type="date" aria-label="Date" max={today()} min={born} value={day}
+          onChange={(e) => { const v = e.target.value; if (v && v <= today() && (!born || v >= born)) setDay(v); }} />}
       </motion.div>
-      {time && <motion.div variants={rise}><TimePicker label="Time of the slip" value={time} onChange={setTime} /></motion.div>}
+      <motion.div className="field" variants={rise}>
+        <span className="field-label">What time? (optional)</span>
+        <Select label="Time of day" value={time ? "set" : "none"} options={[{ value: "none", label: "I'd rather not say" }, { value: "set", label: "Add a time" }]}
+          onChange={(v) => {
+            if (v === "none") { setTime(""); return; }
+            const n = new Date();
+            setTime(`${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes() - (n.getMinutes() % 5)).padStart(2, "0")}`);
+          }} />
+        {time && <TimePicker label="Time of the slip" value={time} onChange={setTime} />}
+      </motion.div>
       {habit.fields.map((f) => (
         <motion.div className="field" key={f.id} variants={rise}
           animate={missing.some((m) => m.id === f.id) && shake ? { x: [0, -8, 8, -5, 5, 0] } : undefined} transition={{ duration: 0.4 }}>
@@ -167,25 +172,31 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
               {f.type === "number" && habit.unit === "minutes" && <span className="suffix">min</span>}
             </div>
             {f.amount && recent.length > 0 && (
-              <div className="chips quick">{recent.map((a) => <Chip key={a} pressed={String(values[f.id]) === String(a)} onClick={() => set(f.id, String(a))}>{unitLabel && habit.unit === "money" ? `${unitLabel} ${a}` : `${a}${unitLabel ? ` ${unitLabel}` : ""}`}</Chip>)}</div>
+              <Select label="Use a recent amount" placeholder="Or pick a recent amount" value={String(values[f.id] ?? "")}
+                options={recent.map((a) => ({ value: String(a), label: unitLabel && habit.unit === "money" ? `${unitLabel} ${a}` : `${a}${unitLabel ? ` ${unitLabel}` : ""}` }))}
+                onChange={(v) => set(f.id, v)} />
             )}
           </>)}
           {f.type === "choice" && (
-            <div className="chips" role="radiogroup" aria-label={f.label}>
-              {(f.options ?? []).map((o) => <Chip key={o.id} pressed={values[f.id] === o.id} onClick={() => set(f.id, values[f.id] === o.id ? "" : o.id)}>{o.label}</Chip>)}
-            </div>
+            <SelectOther label={f.label} placeholder="Choose one" clearLabel="Skip this one" otherPlaceholder="Type your own" maxLength={40}
+              options={(f.options ?? []).map((o) => ({ value: o.id, label: o.label }))}
+              value={String(values[f.id] ?? "").startsWith(OTHER_PREFIX) ? String(values[f.id]).slice(OTHER_PREFIX.length) : String(values[f.id] ?? "")}
+              onChange={(t) => set(f.id, !t || (f.options ?? []).some((o) => o.id === t) ? t : otherAnswer(t))} />
           )}
           {f.type === "multi" && (
-            <div className="chips" role="group" aria-label={f.label}>
-              {(f.options ?? []).map((o) => {
-                const picked = String(values[f.id] ?? "").split(",").filter(Boolean);
-                const on = picked.includes(o.id);
-                return <Chip key={o.id} pressed={on} onClick={() => set(f.id, (on ? picked.filter((x) => x !== o.id) : [...picked, o.id]).join(","))}>{o.label}</Chip>;
-              })}
-            </div>
+            <MultiSelect label={f.label} placeholder="Pick any that fit" ownPrefix={OTHER_PREFIX} maxLength={40} max={8}
+              options={(f.options ?? []).map((o) => ({ value: o.id, label: o.label }))}
+              value={String(values[f.id] ?? "").split(",").filter(Boolean)}
+              onChange={(v) => set(f.id, v.join(","))} />
           )}
-          {f.type === "scale" && <Scale value={Number(values[f.id] ?? 0)} labels={f.scaleLabels ?? ["Low", "High"]} label={f.label} onChange={(n) => set(f.id, n ? String(n) : "")} />}
-          {f.type === "yesno" && <Segmented label={f.label} value={values[f.id] as boolean | undefined} onChange={(v) => set(f.id, v)} options={[{ value: true, label: "Yes" }, { value: false, label: "No" }]} />}
+          {f.type === "scale" && (
+            <Select label={f.label} placeholder="Choose 1 to 5" clearLabel="Skip this one" value={String(values[f.id] ?? "")}
+              options={scaleOptions(f.scaleLabels ?? ["Low", "High"])} onChange={(v) => set(f.id, v)} onClear={() => set(f.id, "")} />
+          )}
+          {f.type === "yesno" && (
+            <Select label={f.label} placeholder="Choose one" clearLabel="Skip this one" value={typeof values[f.id] === "boolean" ? (values[f.id] as boolean) : undefined}
+              options={[{ value: true, label: "Yes" }, { value: false, label: "No" }]} onChange={(v) => set(f.id, v)} onClear={() => set(f.id, "")} />
+          )}
           {f.type === "photo" && (
             <label className="photo-tile">
               {typeof values[f.id] === "string" && values[f.id]
@@ -234,8 +245,8 @@ function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: H
         <input className="input" autoComplete="off" maxLength={160} value={before} placeholder="e.g. long day, tired, phone in bed" onChange={(e) => setBefore(e.target.value)} />
       </label>
       <div className="field"><span className="field-label">One small thing to try next time</span>
-        <div className="chips" role="radiogroup" aria-label="Ideas">{ideas.map((x) => <Chip key={x} pressed={adjust === x} onClick={() => setAdjust(adjust === x ? "" : x)}>{x}</Chip>)}</div>
-        <input className="input" autoComplete="off" maxLength={160} value={adjust} placeholder="Or your own, e.g. If I'm home alone after 10, I'll make tea" onChange={(e) => setAdjust(e.target.value)} aria-label="Your own adjustment" />
+        <SelectOther label="One small thing to try next time" options={plainOpts(ideas)} value={adjust} onChange={setAdjust} maxLength={160} placeholder="Pick an idea" clearLabel="No idea right now"
+          otherPlaceholder="Your own, e.g. If I'm home alone after 10, I'll make tea" />
       </div>
       {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It shows up in You → Your plan, and when an urge hits." />}
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}

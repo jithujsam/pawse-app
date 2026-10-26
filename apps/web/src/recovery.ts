@@ -82,8 +82,8 @@ export const GOALS: { id: GoalKind; label: string; hint: string }[] = [
   { id: "reduce", label: "Cut down", hint: "Fewer times than before" },
   { id: "understand", label: "Understand it first", hint: "Notice when and why, no pressure to change yet" },
 ];
-export const REASONS = ["My health", "Money", "Sleep", "My relationships", "Feeling in control", "Time back", "Being there for someone", "How I feel after"];
-export const SITUATIONS = ["Late at night", "Alone at home", "After work or college", "When I get paid", "With certain people", "In bed with my phone", "Weekends", "After an argument"];
+export const REASONS = ["My health", "Money", "Sleep", "My relationships", "Feeling in control", "Time back", "Being there for someone", "How I feel after", "My work or studies", "Being proud of myself"];
+export const SITUATIONS = ["Feeling stressed", "Feeling bored", "Feeling lonely", "Feeling tired", "Late at night", "Alone at home", "After work or study", "When I get paid", "With certain people", "In bed with my phone", "Weekends", "After an argument", "When I'm celebrating"];
 export const FIRST_STEPS: Record<HabitClass, string[]> = {
   food_spending: ["Check in every evening this week", "Log out of one delivery app", "Plan tomorrow's dinner tonight"],
   impulse_buying: ["Wait 24 hours before any non-essential buy", "Remove one saved card", "Check in every evening this week"],

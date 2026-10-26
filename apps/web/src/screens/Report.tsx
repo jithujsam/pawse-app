@@ -11,10 +11,12 @@ import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
 import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
-import { Button, Icon, TrackContext } from "../ui/Controls";
+import { Button, Icon, plainOpts, SelectOther, TrackContext } from "../ui/Controls";
 import { CheckIn, Observations } from "./WeeklyReview";
 import type { Baseline } from "../types";
 
+/** Common things to save for. Anything else can be typed. */
+const SAVING_FOR = ["An emergency fund", "A trip", "Something for my home", "A gift for someone", "Paying off a debt", "Something I've wanted for a while", "My future"];
 const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: "several times a day", daily: "about once a day", few_weekly: "a few times a week", weekly: "once a week or less" };
 
@@ -25,7 +27,8 @@ function SavingsGoal({ habitId, saved, goal, currency }: { habitId: string; save
   const [target, setTarget] = useState(goal ? String(goal.target) : "");
   if (editing) return (
     <div className="stack tight">
-      <label className="field"><span className="field-label">Saving toward</span><input className="input" autoComplete="off" maxLength={40} placeholder="New headphones" value={label} onChange={(e) => setLabel(e.target.value)} /></label>
+      <div className="field"><span className="field-label">Saving toward</span>
+        <SelectOther label="Saving toward" value={label} onChange={setLabel} options={plainOpts(SAVING_FOR)} maxLength={40} placeholder="Choose what it's for" otherPlaceholder="e.g. New headphones" /></div>
       <label className="field"><span className="field-label">It costs</span><input className="input" inputMode="decimal" type="number" min="1" placeholder="5000" value={target} onChange={(e) => setTarget(e.target.value)} /></label>
       <div className="actions">
         <Button disabled={!label.trim() || !(Number(target) > 0)} onClick={() => { actions.setTrackSettings(habitId, { savingsGoal: { label: label.trim(), target: Math.round(Number(target)) } }); setEditing(false); }}>Save goal</Button>
