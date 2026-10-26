@@ -298,7 +298,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .toast-action { border: 0; background: color-mix(in srgb, var(--ground) 16%, transparent); color: inherit; font-weight: 700; border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; }
 
 /* ---------- sheet ---------- */
-.scrim { position: fixed; inset: 0; background: rgba(36,28,22,.42); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.scrim { position: fixed; inset: 0; background: rgba(36,28,22,.5); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
 .scrim.center { align-items: center; padding: var(--pad); }
 .sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 32px 32px 0 0; padding: 4px var(--pad) calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 22px; box-shadow: var(--shadow-sheet); overscroll-behavior: contain; }
 .sheet-handle { position: sticky; top: 0; border: 0; background: var(--surface); padding: 10px 0 6px; cursor: grab; display: grid; place-items: center; touch-action: none; z-index: 2; margin: 0 calc(var(--pad) * -1); }
