@@ -1,41 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The solid widget: the pets stacked on the app's surface colour. -->
+<!-- The solid widget: the pets on the app's surface colour, one page at a time. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:padding="4dp">
 
-    <!-- One fixed slot per pet, top to bottom. Slots without a pet are hidden, so the pets share the height. -->
-    <LinearLayout
+    <!-- One page per pet. The pages slide on their own; the arrows step through them. -->
+    <ViewFlipper
+        android:id="@+id/widget_pages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:autoStart="true"
+        android:flipInterval="6000" />
 
-        <FrameLayout
-            android:id="@+id/widget_slot_0"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+    <TextView
+        android:id="@+id/widget_prev"
+        android:layout_width="44dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start|center_vertical"
+        android:gravity="center"
+        android:text="&#8249;"
+        android:textSize="32sp"
+        android:contentDescription="@string/widget_previous_pet"
+        android:visibility="gone" />
 
-        <FrameLayout
-            android:id="@+id/widget_slot_1"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <FrameLayout
-            android:id="@+id/widget_slot_2"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <FrameLayout
-            android:id="@+id/widget_slot_3"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-    </LinearLayout>
+    <TextView
+        android:id="@+id/widget_next"
+        android:layout_width="44dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end|center_vertical"
+        android:gravity="center"
+        android:text="&#8250;"
+        android:textSize="32sp"
+        android:contentDescription="@string/widget_next_pet"
+        android:visibility="gone" />
 
     <ImageView
         android:id="@+id/widget_empty"

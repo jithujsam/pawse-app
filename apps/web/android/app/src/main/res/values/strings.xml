@@ -5,4 +5,6 @@
     <string name="package_name">app.detoxcompanion</string>
     <string name="custom_url_scheme">app.detoxcompanion</string>
     <string name="widget_description">Your pets, each in its mood today</string>
+    <string name="widget_previous_pet">Previous pet</string>
+    <string name="widget_next_pet">Next pet</string>
 </resources>
