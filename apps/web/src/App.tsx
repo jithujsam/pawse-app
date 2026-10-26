@@ -35,6 +35,12 @@ import { today } from "./dates";
 import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
 import { t } from "./text";
+import { APP_NAME } from "./brand";
+
+/** One run of the loading paw (.paw-load in styles.css). The boot splash lifts only at the end of a run. */
+const PAW_RUN_MS = 2200;
+/** The splash never waits on a slow network for longer than this; the sync carries on in the background. */
+const BOOT_WAIT_MS = 12_000;
 
 export type Tab = "pets" | "calendar" | "insights" | "you";
 const TABS: Tab[] = ["pets", "calendar", "insights", "you"];
@@ -133,6 +139,12 @@ function Shell() {
   // onboarding out for it, or the person loses their place mid-step.
   const restoreSettled = useRef(false);
   if (sync.last !== null || sync.state === "error" || sync.state === "offline") restoreSettled.current = true;
+  // The boot splash holds until the session check and the first sync have settled (or the wait runs out), then
+  // until the paw has finished a whole run, so nothing is cut off mid-animation.
+  const [waited, setWaited] = useState(false);
+  useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
+  const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
+  const lifted = useRunLift(ready && (!session || syncSettled || waited));
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
@@ -193,7 +205,7 @@ function Shell() {
 
   useEffect(() => { if (data.settings.onboarded) { const t = setTimeout(prefetch, 1500); return () => clearTimeout(t); } }, [data.settings.onboarded]);
 
-  if (!ready) return <div className="app"><Loading /></div>;
+  if (!ready || !lifted) return <div className="app"><BootSplash /></div>;
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
   if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
@@ -247,4 +259,28 @@ function WithTrack({ children }: { children: React.ReactNode }) {
 /** While the app loads: the paw filling in, toe by toe. */
 function Loading() {
   return <main className="screen center-screen" aria-busy="true" aria-label={t("nav.loading.loading")}><PawLoader /></main>;
+}
+
+/** The app opening: the paw, with the name just below it. */
+function BootSplash() {
+  return (
+    <main className="screen center-screen boot" aria-busy="true" aria-label={t("nav.loading.boot")}>
+      <PawLoader />
+      <div className="brand boot-brand">{APP_NAME}</div>
+    </main>
+  );
+}
+
+/** True once `loaded` has been true and the paw has reached the end of a run. Once true it stays true. */
+function useRunLift(loaded: boolean): boolean {
+  const [started] = useState(() => performance.now());
+  const [lift, setLift] = useState(false);
+  useEffect(() => {
+    if (!loaded) return;
+    const elapsed = performance.now() - started;
+    const runs = Math.max(1, Math.ceil(elapsed / PAW_RUN_MS));
+    const timer = setTimeout(() => setLift(true), runs * PAW_RUN_MS - elapsed);
+    return () => clearTimeout(timer);
+  }, [loaded, started]);
+  return lift;
 }

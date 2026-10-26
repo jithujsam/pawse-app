@@ -49,10 +49,15 @@
       "source": "src/App.tsx, src/ui/ErrorBoundary.tsx",
       "file": "src/text/sections/system.ts",
       "start": 14,
-      "end": 21,
+      "end": 22,
       "entries": [
         {
           "id": "nav.loading.loading",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "nav.loading.boot",
           "kind": "text",
           "placeholders": []
         },
@@ -75,12 +80,12 @@
     },
     {
       "id": "pet.look",
-      "screen": "Pets",
+      "screen": "Home",
       "title": "How a pet is described to a screen reader",
       "source": "src/pet-label.ts, src/Companion.tsx, src/Pet3D.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 65,
-      "end": 77,
+      "start": 66,
+      "end": 78,
       "entries": [
         {
           "id": "pet.look.label",
@@ -139,8 +144,8 @@
       "title": "Common words",
       "source": "src/ui/*.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 23,
-      "end": 42,
+      "start": 24,
+      "end": 43,
       "entries": [
         {
           "id": "ui.common.back",
@@ -230,8 +235,8 @@
       "title": "Dropdowns",
       "source": "src/ui/Controls.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 44,
-      "end": 57,
+      "start": 45,
+      "end": 58,
       "entries": [
         {
           "id": "ui.select.choose",
@@ -298,8 +303,8 @@
       "title": "Photos and pin pad",
       "source": "src/screens/LogSheet.tsx, src/ui/PinPad.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 59,
-      "end": 63,
+      "start": 60,
+      "end": 64,
       "entries": [
         {
           "id": "ui.settings.digits",
@@ -803,7 +808,7 @@
     },
     {
       "id": "pets.grid",
-      "screen": "Pets",
+      "screen": "Home",
       "title": "Pets grid",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
@@ -882,7 +887,7 @@
     },
     {
       "id": "pets.menu",
-      "screen": "Pets",
+      "screen": "Home",
       "title": "Pet menu",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
@@ -980,7 +985,7 @@
     },
     {
       "id": "pets.picker",
-      "screen": "Pets",
+      "screen": "Home",
       "title": "Pet picker",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
@@ -1033,7 +1038,7 @@
     },
     {
       "id": "pets.add",
-      "screen": "Pets",
+      "screen": "Home",
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
@@ -1385,7 +1390,7 @@
     },
     {
       "id": "calendar.note",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
@@ -1448,7 +1453,7 @@
     },
     {
       "id": "calendar.age",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
@@ -1488,7 +1493,7 @@
     },
     {
       "id": "calendar.month",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
@@ -1535,7 +1540,7 @@
     },
     {
       "id": "calendar.day",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
@@ -1655,7 +1660,7 @@
     },
     {
       "id": "calendar.stats",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
@@ -1711,7 +1716,7 @@
     },
     {
       "id": "calendar.milestones",
-      "screen": "Calendar",
+      "screen": "Journey",
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
@@ -3189,16 +3194,12 @@
         {
           "id": "me.data.delete_body",
           "kind": "text",
-          "placeholders": [
-            "name"
-          ]
+          "placeholders": []
         },
         {
           "id": "me.data.delete_body_signed_in",
           "kind": "text",
-          "placeholders": [
-            "name"
-          ]
+          "placeholders": []
         },
         {
           "id": "me.data.yes_delete",
@@ -3420,7 +3421,7 @@
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 3,
-      "end": 47,
+      "end": 48,
       "entries": [
         {
           "id": "sheets.log.label",
@@ -3617,7 +3618,12 @@
           ]
         },
         {
-          "id": "sheets.log.this_week",
+          "id": "sheets.log.this_week_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.log.this_week_other",
           "kind": "text",
           "placeholders": [
             "n"
@@ -3651,8 +3657,8 @@
       "title": "Reflection after a slip",
       "source": "src/screens/LogSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 49,
-      "end": 65,
+      "start": 50,
+      "end": 66,
       "entries": [
         {
           "id": "sheets.reflection.back_to_plan",
@@ -3727,8 +3733,8 @@
       "title": "Urge support",
       "source": "src/screens/UrgeSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 67,
-      "end": 111,
+      "start": 68,
+      "end": 112,
       "entries": [
         {
           "id": "sheets.urge.label",
@@ -3962,8 +3968,8 @@
       "title": "The + menu",
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 113,
-      "end": 140,
+      "start": 114,
+      "end": 141,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4097,8 +4103,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 142,
-      "end": 161,
+      "start": 143,
+      "end": 165,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4163,6 +4169,21 @@
           ]
         },
         {
+          "id": "sheets.health.cond_mild",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.health.cond_moderate",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.health.cond_serious",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "sheets.health.all_clear",
           "kind": "text",
           "placeholders": []
@@ -4199,8 +4220,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 163,
-      "end": 202,
+      "start": 167,
+      "end": 206,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4398,8 +4419,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 204,
-      "end": 229,
+      "start": 208,
+      "end": 233,
       "entries": [
         {
           "id": "sheets.memorial.life",

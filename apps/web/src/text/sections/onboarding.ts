@@ -9,7 +9,7 @@ export const onboardingChrome = defineSection("onboarding.chrome", { screen: "On
 // @copy-section onboarding.pet
 export const onboardingPet = defineSection("onboarding.pet", { screen: "Onboarding", title: "Step 1: choose your pet", source: "src/screens/Onboarding.tsx" }, {
   title: "Choose your pet",
-  intro: "Pick who they are and give them a name. They'll live in your Pets tab and change with you.",
+  intro: "Pick who they are and give them a name. They'll live on your Home tab and change with you.",
   call_you: "What should {name} call you? (optional)",
   call_you_placeholder: "Your first name",
 });
@@ -37,7 +37,7 @@ export const onboardingCount = defineSection("onboarding.count", { screen: "Onbo
   often_field: "And how often, right now?",
   often_aria: "How often right now",
   choose: "Choose one",
-  note: "No judgement. It helps your report show how far you've come.",
+  note: "No judgement. It helps your Insights show how far you've come.",
 });
 // @copy-section-end onboarding.count
 

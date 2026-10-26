@@ -37,7 +37,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const g = tone === "gentle", b = tone === "brutal";
   const lines: Record<Level, [string, string]> = {
     thriving: [`${name} is thriving`, streak > 1
-      ? `${streak} good days in a row and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
+      ? `${streak} good days so far and it shows. This is what good care looks like${reserve >= 4 ? `, and ${name} has strength saved up for a rough day` : ""}.`
       : `Healthy, bright and happy. Keep the check-ins coming and it will stay that way.`],
     healthy: [`${name} is healthy`, slipped
       ? `${name} is strong enough to handle today. ${b ? "Make tomorrow count." : "Tomorrow is a good place to start."}`
@@ -141,7 +141,7 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
     const [n, w] = pick("aging", s);
     const days = plan?.stageBack?.days ?? cleanDaysToAge(v.current!, 49.9);
     out.push({ id: "aging", name: n, what: w, why: `${name} has aged early: ${STAGE_LABEL[v.stage].toLowerCase()} at age ${Math.round(v.age)}.`,
-      fix: days ? `Needs ${plural(days, "goal-met day")} to feel younger again.` : "Some of this is permanent now, but goal-met days still help.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
+      fix: days ? `Needs ${plural(days, "goal-met day")} to feel younger again.` : "Goal-met days still help bring them back.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
   }
   if (silent >= 2) {
     const [n, w] = pick("lonely", s);
@@ -149,7 +149,8 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
       fix: "Check in whenever you're ready. It only takes ten seconds, and nothing is held against the quiet days.", days: 0, tone: "mild" });
   }
   const scar = v.current ? Math.round(floorAge(v.current) * 10) / 10 : 0;
-  if (v.states.some((x) => x.binge)) {
+  // Scars only exist under classic rules; under continuity a heavy day heals like any other.
+  if (d.settings.petLife === "classic" && v.states.some((x) => x.binge)) {
     out.push({ id: "scar", name: "Lasting mark", what: "A heavy day that left a lasting mark.", why: `A day with 3 or more slips. ${name}'s life expectancy is now ${Math.round(100 - scar)}.`, fix: "This part doesn't heal, but it doesn't have to grow.", days: null, tone: "moderate" });
   }
   return out;
@@ -170,7 +171,11 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
     if (slips.length) {
       flush();
       if (s.damageMonths < 0.05 && s.absorbedMonths > 0) items.push({ day: s.day, kind: "shrug", text: `A slip, but ${name} was strong enough to shrug it off` });
-      else items.push({ day: s.day, kind: s.binge ? "binge" : "slip", months: s.damageMonths, text: `${name} lost ${monthsText(s.damageMonths)} of lifespan${slips.length > 1 ? ` (${slips.length} slips)` : ""}${s.binge ? ". A lasting mark" : ""}` });
+      else {
+        // A lasting mark is a classic-rules idea only; under continuity a heavy day is just a slip day.
+        const marked = s.binge && d.settings.petLife === "classic";
+        items.push({ day: s.day, kind: marked ? "binge" : "slip", months: s.damageMonths, text: `${name} lost ${monthsText(s.damageMonths)} of lifespan${slips.length > 1 ? ` (${slips.length} slips)` : ""}${marked ? ". A lasting mark" : ""}` });
+      }
     } else if (d.cleanDays.some((c) => c.habitId === habit.id && c.day === s.day)) {
       if (!run) run = { from: s.day, to: s.day, healed: 0, n: 0 };
       run.to = s.day; run.healed += s.healedMonths; run.n++;

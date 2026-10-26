@@ -520,7 +520,7 @@ This product deals with sensitive behavior and uses a blunt emotional mechanic. 
 | AI inconsistency | Deterministic baseline, strict schema, clamped adjustments, caching |
 | Death mechanic feels punishing for slow recovery | Playtest scar floor and healing rate; consider a "grace week" for new users |
 
-Disclaimer text (draft): "Detox Companion is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counselor."
+Disclaimer text (draft): "Detox Companion is a self-awareness tool. It is not medical advice, diagnosis or treatment. If your habit is affecting your health or safety, please talk to a doctor or a counsellor."
 
 ## 16. Positioning and validation notes
 
@@ -635,5 +635,5 @@ This builds on §15, §19.4 and §21.9. It changes how words are kept and checke
 1. **Safety on every field.** Crisis language is checked in any field, and food, calorie, weight and restriction language is refused in anything that defines what is tracked (names, counts, custom questions and answers, typed answers, plans, pet names). The same check runs on the screen and again where it is saved, so a backup file or another phone can't bring such a question in. §15 is met for every path, not only the slip sheet.
 2. **The pet never withholds.** No feeding, strike or treat dialogue and no "won't eat" notification. The pet is hurt by a slip's cost, never disappointed in or disgusted by the person. "Binge day" and "scar" become "heavy day" and "lasting mark".
 3. **Words match behaviour.** Privacy statements, reminder hints and status lines were checked against the code (docs/COPY_GLOSSARY.md). Photos stay on the phone; other records are saved privately to the account; AI wording sends only what the privacy page lists.
-4. **One vocabulary.** The tabs are Pets, Calendar, Insights and Me; the creature is a pet; a counted day is a goal-met day; the Voice setting is Gentle, Honest or Direct (`brutal` stays the stored id).
+4. **One vocabulary.** The tabs are Home, Journey, Insights and Me (each screen heading matches its tab, as the PRD names them); the creature is a pet; a counted day is a goal-met day; the Voice setting is Gentle, Honest or Direct (`brutal` stays the stored id).
 5. **A keyed catalogue.** Screen text lives in `apps/web/src/text` under stable ids with section markers; every Voice line has all three versions; a read-only inspector (`/#copy` in a dev build) and a generated manifest list all of it.

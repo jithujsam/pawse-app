@@ -95,7 +95,7 @@ export function buildFields(intake: Intake): Field[] {
   fields.push({ id: "plan", label: "Was it planned?", type: "choice", required: false, trigger: true, options: [opt("planned", "Planned"), opt("spur", "Spur of the moment", true), opt("more", "More than I planned", true)] });
   fields.push({ id: "where", label: "Where were you?", type: "choice", required: false, options: [opt("home", "Home"), opt("work", "Work or college"), opt("out", "Out"), opt("moving", "On the move")] });
   fields.push({ id: "who", label: "Who were you with?", type: "choice", required: false, trigger: true, options: [opt("alone", "Alone", true), opt("partner", "Partner or family"), opt("friends", "Friends"), opt("others", "Other people")] });
-  fields.push({ id: "after", label: "How do you feel now?", type: "choice", required: false, options: [opt("better", "Better"), opt("same", "About the same"), opt("worse", "Worse"), opt("regret", "I regret it")] });
+  fields.push({ id: "after", label: "How do you feel now?", type: "choice", required: false, options: [opt("better", "Better"), opt("same", "About the same"), opt("worse", "Worse"), opt("regret", "Not happy about it")] });
   fields.push({ id: "photo", label: "Photo (optional)", type: "photo", required: false });
   return fields;
 }

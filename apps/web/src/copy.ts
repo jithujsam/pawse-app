@@ -30,7 +30,7 @@ export function slipLine(tone: Tone, name: string, months: number, nth: number):
 export function cleanLine(tone: Tone, name: string, streak: number): string {
   return byTone(tone, {
     gentle: `${name} wags once, slowly. A good day.`,
-    honest: streak > 1 ? `${streak} good days in a row. ${name} is healing.` : `Goal met today. ${name} gets to rest.`,
+    honest: streak > 1 ? `${streak} good days so far. ${name} is healing.` : `Goal met today. ${name} gets to rest.`,
     brutal: streak > 1 ? `${streak} good days. ${name} is noticing, and so should you.` : `One good day. That's how every streak starts.`,
   });
 }

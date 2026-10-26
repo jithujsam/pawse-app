@@ -2,8 +2,8 @@ import { defineSection } from "../core";
 
 // @copy-section nav.tabs
 export const navTabs = defineSection("nav.tabs", { screen: "Tab bar", title: "Tabs", source: "src/App.tsx" }, {
-  pets: "Pets",
-  calendar: "Calendar",
+  pets: "Home",
+  calendar: "Journey",
   insights: "Insights",
   me: "Me",
   main: "Main",
@@ -14,6 +14,7 @@ export const navTabs = defineSection("nav.tabs", { screen: "Tab bar", title: "Ta
 // @copy-section nav.loading
 export const navLoading = defineSection("nav.loading", { screen: "Loading and errors", title: "Loading and error screens", source: "src/App.tsx, src/ui/ErrorBoundary.tsx" }, {
   loading: "Loading",
+  boot: "Loading {app}",
   error_title: "Something went wrong",
   error_body: "Your pets and your logs are safe on this phone. Reloading usually fixes it.",
   reload: "Reload",
@@ -63,7 +64,7 @@ export const uiSettings = defineSection("ui.settings", { screen: "Shared control
 // @copy-section-end ui.settings
 
 // @copy-section pet.look
-export const petLook = defineSection("pet.look", { screen: "Pets", title: "How a pet is described to a screen reader", source: "src/pet-label.ts, src/Companion.tsx, src/Pet3D.tsx" }, {
+export const petLook = defineSection("pet.look", { screen: "Home", title: "How a pet is described to a screen reader", source: "src/pet-label.ts, src/Companion.tsx, src/Pet3D.tsx" }, {
   label: "{species}, {stage}, {mood}",
   interactive: "Your pet. Tap the head to pet, the belly to tickle, or stroke it.",
   mood_idle: "relaxed",

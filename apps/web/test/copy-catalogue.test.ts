@@ -143,7 +143,7 @@ describe("words and style", () => {
     [/\b(counselor|behavior|favorite|color|organize|recognize|center|gray|program)\b/i, "UK spelling is used throughout (counsellor, behaviour, favourite, colour, grey...)"],
     [/[‘’“”]/, "straight quotes and apostrophes only"],
     [/\.\.\./, "use the ellipsis character … , not three dots"],
-    [/\bJourney\b/, "the tab and screen are called Calendar"],
+    [/\bCalendar tab\b|\bPets tab\b|\bweekly report tab\b/i, "the tabs are Home, Journey, Insights and Me (PRD section 7)"],
     [/\bHall of Companions\b|\bYour companion\b|\bchoose your companion\b/i, "the creature is a pet, in the UI"],
     [/\bclean days?\b/i, "say goal-met day (or goal met), not clean day"],
     [/\bbinge\b/i, "say heavy day"],

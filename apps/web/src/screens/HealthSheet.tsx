@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { conditions, healthReport, history, stats, type Level } from "../health";
+import { conditions, healthReport, history, stats, type Condition, type Level } from "../health";
 import { fmtDay } from "../dates";
 import { quietBanner } from "../copy";
 import { rise, spring, stagger } from "../motion";
@@ -8,6 +8,8 @@ import { useActiveView, useData } from "../store";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Sheet } from "../ui/Sheet";
 import { t } from "../text";
+
+const COND_TONE_LABEL: Record<Condition["tone"], string> = { mild: t("sheets.health.cond_mild"), moderate: t("sheets.health.cond_moderate"), serious: t("sheets.health.cond_serious") };
 
 export type HealthTab = "health" | "history" | "conditions";
 const TABS: { id: HealthTab; label: string }[] = [
@@ -76,7 +78,7 @@ function Body({ initial }: { initial: HealthTab }) {
             : <motion.div className="list" variants={stagger} initial="hidden" animate="show">
                 {conds.map((c) => (
                   <motion.div key={c.id} className="item cond" data-tone={c.tone} variants={rise}>
-                    <div className="row"><b>{c.name}</b><span className="cond-tag">{c.tone}</span></div>
+                    <div className="row"><b>{c.name}</b><span className="cond-tag">{COND_TONE_LABEL[c.tone]}</span></div>
                     <span className="small">{c.what}</span>
                     <span className="small muted"><b>{t("sheets.health.why")}</b> {c.why}</span>
                     <span className="small cond-fix"><b>{t("sheets.health.recovery")}</b> {c.fix}</span>

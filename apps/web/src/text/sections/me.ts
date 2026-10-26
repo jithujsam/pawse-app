@@ -62,7 +62,7 @@ export const mePet = defineSection("me.pet", { screen: "Me → Your pet", title:
   hall_empty: "Nobody yet. {name} is still here.",
   hall_slips_one: "{n} slip",
   hall_slips_other: "{n} slips",
-  hi: "Say hi to {name}",
+  hi: "Renamed to {name}",
   species_changed: "{name} is a {species} now. Same name, same history.",
 });
 // @copy-section-end me.pet
@@ -88,14 +88,14 @@ export const meReminders = defineSection("me.reminders", { screen: "Me → Remin
   risk: "Risky-hour heads-up",
   risk_hint: "Once your pattern is clear, a note half an hour before your usual slip time",
   care: "Notes from {name}",
-  care_hint: "A thank-you in the evening after a day with your goal met, and a good-morning note the next day",
+  care_hint: "A thank-you on the evening of a good day, and a morning note after it",
 });
 // @copy-section-end me.reminders
 
 // @copy-section me.questions
 export const meQuestions = defineSection("me.questions", { screen: "Me → Check-in questions", title: "Check-in questions", source: "src/screens/Me.tsx" }, {
-  intro: "Asked after each slip. Short answers make your insights sharper.",
-  new_question: "New question",
+  intro: "Asked each time you log a slip. Short answers keep your Insights easy to read.",
+  new_question: "Your question",
   question_aria: "Question",
   type_aria: "Type",
   remove_aria: "Remove question",
@@ -127,8 +127,8 @@ export const meData = defineSection("me.data", { screen: "Me → Your data", tit
   not_backup: "That file isn't a {app} backup",
   start_over: "Start over",
   delete_all: "Delete all data on this phone",
-  delete_body: "This removes {name}, every log and your settings from this phone. It can't be undone.",
-  delete_body_signed_in: "This removes {name}, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.",
+  delete_body: "This removes all your pets, every log and your settings from this phone. It can't be undone.",
+  delete_body_signed_in: "This removes all your pets, every log and your settings from this phone only. Your account keeps its copy, so it comes back here while you're signed in. To remove it everywhere, delete your account in Account and backup.",
   yes_delete: "Yes, delete",
 });
 // @copy-section-end me.data

@@ -346,7 +346,7 @@ function DataPage() {
         {!confirm
           ? <motion.div key="a" exit={{ opacity: 0 }}><Button variant="danger" onClick={() => setConfirm(true)}>{t("me.data.delete_all")}</Button></motion.div>
           : <motion.div key="b" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="small">{session ? t("me.data.delete_body_signed_in", { name: companion.name }) : t("me.data.delete_body", { name: companion.name })}</p>
+              <p className="small">{session ? t("me.data.delete_body_signed_in") : t("me.data.delete_body")}</p>
               <div className="actions"><Button variant="danger" onClick={() => { haptic.heavy(); void actions.resetAll(); }}>{t("me.data.yes_delete")}</Button><Button variant="secondary" onClick={() => setConfirm(false)}>{t("ui.common.cancel")}</Button></div>
             </motion.div>}
       </AnimatePresence>

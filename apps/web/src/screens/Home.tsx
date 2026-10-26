@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
@@ -78,6 +78,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = "none";
+  const speechRef = useRef<HTMLParagraphElement>(null);
+  // The whole line always shows: if it doesn't fit the speech slot at this size, the font steps down until it does.
+  useLayoutEffect(() => {
+    const el = speechRef.current;
+    const slot = el?.parentElement;
+    if (!el || !slot) return;
+    el.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.offsetHeight > slot.clientHeight && size > 11) { size -= 1; el.style.fontSize = `${size}px`; }
+  }, [line]);
 
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
@@ -144,12 +154,15 @@ export function Home({ onBack }: { onBack?: () => void }) {
           <LiveCompanion species={companion.species} coat={companion.coat} personality={personality} accessory={track.wear}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} />
         </div>
-        <AnimatePresence mode="wait">
-          <motion.p key={line} className="speech" aria-live="polite"
-            initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
-            {line}
-          </motion.p>
-        </AnimatePresence>
+        {/* A fixed slot: the bubble can change its text without moving anything below it. */}
+        <div className="speech-slot">
+          <AnimatePresence mode="wait">
+            <motion.p key={line} ref={speechRef} className="speech" aria-live="polite"
+              initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
+              {line}
+            </motion.p>
+          </AnimatePresence>
+        </div>
         <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}

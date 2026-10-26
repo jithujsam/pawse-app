@@ -349,6 +349,9 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 @keyframes drift { to { transform: translate(40px, 30px) scale(1.15); } }
 .speech { position: relative; background: var(--surface); border-radius: 18px; padding: 10px 16px; max-width: 92%; text-align: center; font-weight: 550; box-shadow: var(--shadow); }
 .speech::before { content: ""; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; background: inherit; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+/* The speech slot has a fixed height, so the vitals and age below never shift. A long line steps its font down to fit (see Home). */
+.speech-slot { width: 100%; height: 96px; display: grid; place-items: center; }
+.speech-slot .speech { max-width: 100%; }
 .agebar { width: 100%; height: 12px; background: color-mix(in srgb, var(--surface) 70%, transparent); border-radius: 999px; overflow: hidden; }
 .agebar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--pet), color-mix(in srgb, var(--pet) 70%, var(--negative))); border-radius: 999px; }
 .agebar.danger > i { background: var(--negative); animation: pulse 1.6s ease-in-out infinite; }
@@ -452,6 +455,11 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 @keyframes paw-4 { 0%, 45.5% { fill: var(--paw-off); } 59.1%, 88.6% { fill: var(--accent); } 95.5%, 100% { fill: var(--paw-off); } }
 @keyframes paw-5 { 0%, 59.1% { fill: var(--paw-off); } 72.7%, 88.6% { fill: var(--accent); } 95.5%, 100% { fill: var(--paw-off); } }
 @media (prefers-reduced-motion: reduce) { .paw-load > * { animation: none; fill: var(--accent); } }
+/* The boot splash: the paw, and the name just below it, fading in once the paw is moving. */
+.boot { gap: 8px; }
+.boot-brand { animation: boot-in .6s .3s var(--ease) backwards; }
+@keyframes boot-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .boot-brand { animation: none; } }
 @keyframes loader-breathe { 50% { transform: scale(.9); } }
 /* backwards, not both: a transform held after the entrance would make .app the box for every fixed layer inside it */
 .app-wake { animation: app-in .55s var(--ease) backwards; }

@@ -49,7 +49,7 @@ export const insightsMoney = defineSection("insights.money", { screen: "Insights
   save_goal: "Save goal",
   remove: "Remove",
   progress: "{saved} of {target}",
-  enough: "You've kept enough. Treat yourself, guilt-free.",
+  enough: "You've kept enough. Treat yourself.",
   percent: "{pct}% there.",
 });
 // @copy-section-end insights.money

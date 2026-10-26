@@ -33,7 +33,7 @@ Every entry has a stable id, `screen.section.key` (for example `onboarding.pet.t
 | **heavy day** | binge day | Three or more slips in a day. |
 | **lasting mark** | scar | Permanent damage under Classic rules. |
 | **Voice** (Gentle, Honest, **Direct**) | Tone, Brutal | `brutal` is the stored id for Direct and never shows on screen. |
-| **Pets**, **Calendar**, **Insights**, **Me** | Home, Journey, You | The four tabs; each screen heading matches its tab. "Me → Your plan" style references use these names. |
+| **Home**, **Journey**, **Insights**, **Me** | Pets, Calendar, You | The four tabs, as the PRD names them (section 7); each screen heading matches its tab. "Me → Your plan" style references use these names. The month grid on Journey is still a calendar. |
 | **Skip for now** | Skip the plan for now | For optional steps. **Not now** declines an offer or permission. **Skip** is for short tours. |
 
 ## Style

@@ -66,7 +66,7 @@ export const homeCoach = defineSection("home.coach", { screen: "Pet screen", tit
   s2_title: "Check in once a day",
   s2_body: "Slip or goal met, it takes ten seconds. Honest logs are the whole point.",
   s3_title: "Patterns live here",
-  s3_body: "Your calendar and weekly report fill in as you log.",
+  s3_body: "Your Journey and Insights fill in as you log.",
   of: "{step} of {total}",
   skip: "Skip",
   next: "Next",
@@ -75,7 +75,7 @@ export const homeCoach = defineSection("home.coach", { screen: "Pet screen", tit
 // @copy-section-end home.coach
 
 // @copy-section calendar.note
-export const calendarNote = defineSection("calendar.note", { screen: "Calendar", title: "What a day says about itself", source: "src/screens/Calendar.tsx" }, {
+export const calendarNote = defineSection("calendar.note", { screen: "Journey", title: "What a day says about itself", source: "src/screens/Calendar.tsx" }, {
   met: tones("Goal met. A lovely, quiet win.", "Goal met. A good day.", "Goal met. That counts."),
   rest: tones("You chose not to track this day. That's allowed, and it counts neither way.", "You chose not to track this day. It counts neither way.", "Not tracked by choice. It counts neither way."),
   paused_unknown: tones("Not tracking: this track was paused. It counts neither way, and that's fine.", "Not tracking: this track was paused. It counts neither way.", "Not tracking: paused. It counts neither way."),
@@ -89,7 +89,7 @@ export const calendarNote = defineSection("calendar.note", { screen: "Calendar",
 // @copy-section-end calendar.note
 
 // @copy-section calendar.age
-export const calendarAge = defineSection("calendar.age", { screen: "Calendar", title: "Age this month", source: "src/screens/Calendar.tsx" }, {
+export const calendarAge = defineSection("calendar.age", { screen: "Journey", title: "Age this month", source: "src/screens/Calendar.tsx" }, {
   aria: "Age this month",
   label: "{name}'s age this month",
   one_point: "The curve starts drawing from {name}'s second day.",
@@ -99,7 +99,7 @@ export const calendarAge = defineSection("calendar.age", { screen: "Calendar", t
 // @copy-section-end calendar.age
 
 // @copy-section calendar.month
-export const calendarMonth = defineSection("calendar.month", { screen: "Calendar", title: "Month grid", source: "src/screens/Calendar.tsx" }, {
+export const calendarMonth = defineSection("calendar.month", { screen: "Journey", title: "Month grid", source: "src/screens/Calendar.tsx" }, {
   previous: "Previous month",
   next: "Next month",
   weekdays: "M T W T F S S",
@@ -110,7 +110,7 @@ export const calendarMonth = defineSection("calendar.month", { screen: "Calendar
 // @copy-section-end calendar.month
 
 // @copy-section calendar.day
-export const calendarDay = defineSection("calendar.day", { screen: "Calendar", title: "Day detail", source: "src/screens/Calendar.tsx" }, {
+export const calendarDay = defineSection("calendar.day", { screen: "Journey", title: "Day detail", source: "src/screens/Calendar.tsx" }, {
   aria: "Details for {date}",
   urges_managed: "{managed} of {total} {urges} managed",
   urges_using: ", using {strategies}",
@@ -134,8 +134,8 @@ export const calendarDay = defineSection("calendar.day", { screen: "Calendar", t
 // @copy-section-end calendar.day
 
 // @copy-section calendar.stats
-export const calendarStats = defineSection("calendar.stats", { screen: "Calendar", title: "Calendar totals", source: "src/screens/Journey.tsx" }, {
-  title: "Calendar",
+export const calendarStats = defineSection("calendar.stats", { screen: "Journey", title: "Calendar totals", source: "src/screens/Journey.tsx" }, {
+  title: "Journey",
   so_far: "So far",
   together: "Days together",
   goal_met_days: "Goal-met days",
@@ -148,7 +148,7 @@ export const calendarStats = defineSection("calendar.stats", { screen: "Calendar
 // @copy-section-end calendar.stats
 
 // @copy-section calendar.milestones
-export const calendarMilestones = defineSection("calendar.milestones", { screen: "Calendar", title: "Milestones", source: "src/screens/Journey.tsx" }, {
+export const calendarMilestones = defineSection("calendar.milestones", { screen: "Journey", title: "Milestones", source: "src/screens/Journey.tsx" }, {
   title: "Milestones",
   to_go_one: "{n} day to go",
   to_go_other: "{n} days to go",
