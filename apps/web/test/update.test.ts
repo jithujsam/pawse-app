@@ -44,3 +44,27 @@ describe("in-app update", () => {
     expect(await installUpdate({ ...base, sha256: sha })).toBe("permission");
   });
 });
+
+const { parseLatest, shouldPrompt, SNOOZE_MS } = await import("../src/update");
+
+describe("update manifest and popup rules", () => {
+  it("accepts a good manifest and rejects malformed ones", () => {
+    expect(parseLatest({ ...base, sha256: sha })?.code).toBe(99);
+    expect(parseLatest({ ...base, code: "99" })).toBeNull();
+    expect(parseLatest({ ...base, code: 1.5 })).toBeNull();
+    expect(parseLatest({ ...base, url: "http://raw.githubusercontent.com/jithujsam/pawse-releases/main/a.apk" })).toBeNull();
+    expect(parseLatest({ ...base, url: "https://evil.example/a.apk" })).toBeNull();
+    expect(parseLatest({ ...base, sha256: "abc" })).toBeNull();
+    expect(parseLatest(null)).toBeNull();
+  });
+
+  it("shows the popup unless the version was skipped or snoozed", () => {
+    const l = { ...base, code: 20 };
+    const now = 1_000_000;
+    expect(shouldPrompt(l, {}, now)).toBe(true);
+    expect(shouldPrompt(l, { skipped: 20 }, now)).toBe(false);
+    expect(shouldPrompt({ ...l, code: 21 }, { skipped: 20 }, now)).toBe(true);
+    expect(shouldPrompt(l, { snoozeUntil: now + SNOOZE_MS }, now)).toBe(false);
+    expect(shouldPrompt(l, { snoozeUntil: now - 1 }, now)).toBe(true);
+  });
+});
