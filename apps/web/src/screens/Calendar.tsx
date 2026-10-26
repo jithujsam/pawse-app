@@ -95,7 +95,7 @@ export function CalendarSections() {
         <p className="muted small">{t("calendar.month.note")}</p>
       </motion.section>
       <Sheet open={sheet} onClose={() => setSheet(false)} label={t("calendar.day.aria", { date: fmtDay(sel) })}>
-        <DayDetail day={sel} />
+        <DayDetail day={sel} standalone />
       </Sheet>
     </>
   );
@@ -104,9 +104,9 @@ export function CalendarSections() {
 /**
  * One day's record and what can be done to it: marked goal met, not tracked, or given the slip that really
  * happened. What each day shows and allows comes from the shared rules (progress.ts dayControls). The pet screen
- * shows today's. `onMarkMet`, `onRest` and `onSlipSaved` let that screen run its own celebration and reactions.
+ * shows today's. `standalone` is for a sheet, where no parent screen fades the card in. `onMarkMet`, `onRest` and `onSlipSaved` let that screen run its own celebration and reactions.
  */
-export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: string; onMarkMet?: () => void; onRest?: (on: boolean) => void; onSlipSaved?: (d: Deduction) => void }) {
+export function DayDetail({ day: sel, standalone, onMarkMet, onRest, onSlipSaved }: { day: string; standalone?: boolean; onMarkMet?: () => void; onRest?: (on: boolean) => void; onSlipSaved?: (d: Deduction) => void }) {
   const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
@@ -129,7 +129,7 @@ export function DayDetail({ day: sel, onMarkMet, onRest, onSlipSaved }: { day: s
 
   return (
     <>
-      <motion.section className="card stack" aria-label={t("calendar.day.aria", { date: fmtDay(sel) })} variants={rise}>
+      <motion.section className="card stack" aria-label={t("calendar.day.aria", { date: fmtDay(sel) })} variants={standalone ? undefined : rise}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={sel} className="stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={spring.soft}>
             <h2>{fmtDay(sel)}</h2>
