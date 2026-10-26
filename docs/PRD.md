@@ -203,11 +203,11 @@ The companion fills roughly the top 55 percent of the screen. Everything else is
 +--------------------------------+
 ```
 
-Tabs: **Pets**, **Calendar** (the month grid first, then milestones), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **You** (settings). The centre **+** opens the quick check-in.
+Tabs: **Home** (the pets grid; code id `pets`), **Journey** (the calendar: the month grid first, then milestones; code id `calendar`), **Insights** (named "Report" in earlier drafts; it holds patterns and the weekly review rather than a report card), and **Me** (settings; code id `you`). The centre **+** opens the quick check-in.
 
 Each number and action has one home. The open recovery track (the screen sketched above, reached from Pets) keeps the pet, today's check-in (slip / goal met, one tap each) and the person's first step and reasons; weekly numbers live in Insights, lifetime totals and milestones in Calendar. Urges and "not tracking today" are in the + sheet. Reflection and the weekly review are one "Check in with yourself" card on Insights. The pet's Health sheet has Health, History (a timeline) and Conditions.
 
-**Pets and recovery tracks.** A recovery track is one habit with its own companion (5.1): its own entries, clean days, urges, age and history. The Pets tab is a two-column grid with one card per track (the pet, its name, the habit in the person's words, and its stage and today's check-in status) plus an "Add a recovery track" card; with no tracks it shows an empty state with the same action. Tapping a card opens that track's screen, with "All pets" to go back; Calendar, Insights and You show the open track. Which track is open is remembered per phone and never synced. Adding a track asks what to change, how it shows up and which pet, reusing the onboarding suggestions and safety checks. The grid shows active and paused tracks; archived ones are read-only and left out. Each track has its own plan and goal, starting pace, "not tracking today" days, pauses, milestones, accessory and weekly AI summary (§20). Deliberately shared across tracks: the voice, reminders, pet rules and reflections. Reminders follow the track opened last.
+**Pets and recovery tracks.** A recovery track is one habit with its own companion (5.1): its own entries, clean days, urges, age and history. The Home tab is a two-column grid with one card per track (the pet, its name, the habit in the person's words, and its stage and today's check-in status) plus an "Add a recovery track" card; with no tracks it shows an empty state with the same action. Tapping a card opens that track's screen, with "All pets" to go back; Journey, Insights and Me show the open track. Which track is open is remembered per phone and never synced. Adding a track asks what to change, how it shows up and which pet, reusing the onboarding suggestions and safety checks. The grid shows active and paused tracks; archived ones are read-only and left out. Each track has its own plan and goal, starting pace, "not tracking today" days, pauses, milestones, accessory and weekly AI summary (§20). Deliberately shared across tracks: the voice, reminders, pet rules and reflections. Reminders follow the track opened last.
 
 States the companion must express:
 
@@ -266,7 +266,7 @@ Design intent: the death should land emotionally but must not end the user's jou
 4. Set a daily check-in reminder time.
 5. A short, honest disclaimer: this is not medical advice or treatment.
 
-### 7.8 Settings and "You" tab
+### 7.8 Settings and "Me" tab
 
 Addictions and their questions, tone, reminder time, companion list and Hall of Companions, data export, delete all data, safety resources.
 

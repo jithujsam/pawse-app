@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://*.supabase.co wss://*.supabase.co https://raw.githubusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
     <meta name="referrer" content="no-referrer" />
-    <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16110e" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <title>Pawse</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #f2f4f7; }
-      @media (prefers-color-scheme: dark) { html, body { background: #0f1012; } }
+      html, body { margin: 0; height: 100%; background: #faf7f2; }
+      @media (prefers-color-scheme: dark) { html, body { background: #16110e; } }
 
       /* Launch screen: the mark and the name, nothing else. Sits above the app until it is ready, then fades away. */
       #launch { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; overflow: hidden;
-        background: radial-gradient(90% 60% at 50% 38%, #fffaf3 0%, #f7ece0 46%, #f2f4f7 100%);
+        background: radial-gradient(90% 60% at 50% 38%, #fffaf3 0%, #f7ece0 46%, #faf7f2 100%);
         transition: opacity .7s cubic-bezier(.22,.8,.3,1), visibility .7s; }
       #launch.out { opacity: 0; visibility: hidden; }
       .launch-in { display: grid; justify-items: center; gap: 26px; transform: translateY(-4%); }
@@ -38,7 +38,7 @@
       @keyframes l-halo { 50% { transform: scale(1.12); opacity: .75; } }
       @keyframes l-sheen { from { background-position: 130% 0; } to { background-position: -30% 0; } }
       @media (prefers-color-scheme: dark) {
-        #launch { background: radial-gradient(90% 60% at 50% 38%, #2b1d14 0%, #17120f 48%, #0f1012 100%); }
+        #launch { background: radial-gradient(90% 60% at 50% 38%, #2b1d14 0%, #17120f 48%, #16110e 100%); }
         .launch-name { color: #f4ece3; }
         .launch-mark img { box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 22px 50px -12px rgba(226,115,58,.5), 0 4px 14px rgba(0,0,0,.5); }
       }

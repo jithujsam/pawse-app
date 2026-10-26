@@ -43,7 +43,7 @@ const ICONS: Record<Tab, React.JSX.Element> = {
   insights: <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>,
   you: <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>,
 };
-const LABELS: Record<Tab, string> = { pets: "Pets", calendar: "Calendar", insights: "Insights", you: "You" };
+const LABELS: Record<Tab, string> = { pets: "Home", calendar: "Journey", insights: "Insights", you: "Me" };
 listenForBack();
 
 const LOCK_AFTER: Record<string, number> = { immediately: 0, "1m": 60_000, "5m": 300_000, never: Infinity };
