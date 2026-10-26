@@ -245,7 +245,9 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
         m.roughness = 0.85; m.metalness = 0;
       }
     });
-  }, [scene, species, coat, stage]);
+    // The tuxedo's eyes are white; the other coats keep dark eyes.
+    face?.balls.forEach((m) => (m.material as THREE.MeshStandardMaterial).color.set(species === "cat" && coat === "tuxedo" ? "#ffffff" : "#1b1009"));
+  }, [scene, species, coat, stage, face]);
 
   // Cross-fade between clips whenever the state changes.
   const current = useRef<THREE.AnimationAction | null>(null);
