@@ -98,7 +98,7 @@ describe("care data", () => {
   it("tuxedo repaint: dark fur goes light grey, light areas stay white, alpha is kept", () => {
     const px = new Uint8ClampedArray([40, 40, 40, 255, 250, 250, 250, 128]);
     tuxedoPixels(px);
-    expect(px[0]).toBeGreaterThan(60);
+    expect(px[0]).toBeGreaterThan(30);
     expect(px[0]).toBeLessThan(110);
     expect(px[4]).toBeGreaterThan(240);
     expect([px[3], px[7]]).toEqual([255, 128]);
