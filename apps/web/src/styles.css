@@ -438,19 +438,15 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 /* ---------- opening and loading ---------- */
 .logo { color: var(--accent); display: block; }
-/* Loading: a pale paw; toes 1 to 4, then the palm, take the accent in turn; all hold, then fade back together. */
+/* Loading: a pale paw; toes 1 to 4, then the palm, take the accent in turn, and it stays filled. */
 .paw-load { --paw-off: color-mix(in srgb, var(--accent) 16%, var(--ground)); }
-.paw-load > * { fill: var(--paw-off); animation: 2.6s cubic-bezier(.45,0,.55,1) infinite; }
-.paw-load > :nth-child(1) { animation-name: paw-1; }
-.paw-load > :nth-child(2) { animation-name: paw-2; }
-.paw-load > :nth-child(3) { animation-name: paw-3; }
-.paw-load > :nth-child(4) { animation-name: paw-4; }
-.paw-load > :nth-child(5) { animation-name: paw-5; }
-@keyframes paw-1 { 0%, 4% { fill: var(--paw-off); } 12%, 80% { fill: var(--accent); } 95%, 100% { fill: var(--paw-off); } }
-@keyframes paw-2 { 0%, 15% { fill: var(--paw-off); } 23%, 80% { fill: var(--accent); } 95%, 100% { fill: var(--paw-off); } }
-@keyframes paw-3 { 0%, 26% { fill: var(--paw-off); } 34%, 80% { fill: var(--accent); } 95%, 100% { fill: var(--paw-off); } }
-@keyframes paw-4 { 0%, 37% { fill: var(--paw-off); } 45%, 80% { fill: var(--accent); } 95%, 100% { fill: var(--paw-off); } }
-@keyframes paw-5 { 0%, 48% { fill: var(--paw-off); } 58%, 80% { fill: var(--accent); } 95%, 100% { fill: var(--paw-off); } }
+.paw-load > * { fill: var(--paw-off); animation: paw-on .35s cubic-bezier(.45,0,.55,1) forwards; }
+.paw-load > :nth-child(1) { animation-delay: .1s; }
+.paw-load > :nth-child(2) { animation-delay: .4s; }
+.paw-load > :nth-child(3) { animation-delay: .7s; }
+.paw-load > :nth-child(4) { animation-delay: 1s; }
+.paw-load > :nth-child(5) { animation-delay: 1.3s; }
+@keyframes paw-on { from { fill: var(--paw-off); } to { fill: var(--accent); } }
 @media (prefers-reduced-motion: reduce) { .paw-load > * { animation: none; fill: var(--accent); } }
 @keyframes loader-breathe { 50% { transform: scale(.9); } }
 /* backwards, not both: a transform held after the entrance would make .app the box for every fixed layer inside it */

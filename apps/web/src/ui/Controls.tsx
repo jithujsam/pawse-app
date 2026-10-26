@@ -171,7 +171,7 @@ export function PawLogo({ size = 96, className = "" }: { size?: number; classNam
   return <svg className={`logo ${className}`} viewBox="200 265 850 710" width={size} height={size} aria-hidden fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)" /><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)" /><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)" /><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)" /><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z" /></svg>;
 }
 
-/** The loading paw: pale, then each toe and the palm fill with the accent in turn, and it starts again. */
+/** The loading paw: pale, then each toe and the palm fill with the accent in turn, and it stays filled. */
 export const PawLoader = ({ size = 88 }: { size?: number }) => <PawLogo size={size} className="paw-load" />;
 
 export const Icon = {
