@@ -7,7 +7,7 @@ import { addDays, iso, today, weekStart } from "./dates";
 import { outcomeDays, petDayInputs, quietDays, streaks, trackIndex, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
-import { buildFields, countTriggers, pickedLabels, starterFields, type Intake } from "./questions";
+import { countTriggers, pickedLabels, starterFields, type Intake } from "./questions";
 import { kv, idbAvailable } from "./db";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, getTrack, trackState, type Track } from "./tracks";

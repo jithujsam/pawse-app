@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
-import type { HabitClass } from "@detox/engine";
 import { CompanionArt, moodFor, PetPortrait } from "../Companion";
 import { CRISIS_MESSAGE, pauseHint, pauseRefused, pauseToast, RESTRICTION_NOTE, resumeHint, resumeToast } from "../copy";
 import { hasCrisisLanguage } from "../crisis";

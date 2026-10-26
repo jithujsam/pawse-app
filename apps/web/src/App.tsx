@@ -29,7 +29,7 @@ import { listenForBack, useRootBack } from "./back";
 import { QuickSheet } from "./screens/QuickSheet";
 import { PlanPage } from "./screens/Plan";
 import { SubPage } from "./ui/Settings";
-import { Icon } from "./ui/Controls";
+import { Icon, PawLogo } from "./ui/Controls";
 import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
@@ -247,7 +247,7 @@ function WithTrack({ children }: { children: React.ReactNode }) {
 function Loading() {
   return (
     <main className="screen center-screen loader" aria-busy="true" aria-label="Loading">
-      <img className="paw-beat" src="./logo-mark.svg" alt="" width="96" height="96" aria-hidden />
+      <PawLogo className="paw-beat" />
     </main>
   );
 }

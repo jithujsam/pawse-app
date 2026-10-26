@@ -9,7 +9,15 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   // The status bar follows the page's own ground colour, which in dark mode is tinted by the accent.
   const fallback = dark ? "#16110e" : "#faf7f2";
-  const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
+  const paint = () => {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
+    // The launch screen draws the paw before any script loads, in the accent it saw last.
+    const probe = document.body.appendChild(document.createElement("i"));
+    probe.style.color = "var(--accent)";
+    const accentHex = hex(getComputedStyle(probe).color);
+    probe.remove();
+    if (accentHex) try { localStorage.setItem("pawse-logo", accentHex); } catch { /* private mode: the default colour shows */ }
+  };
   paint();
   requestAnimationFrame(paint);
   void kv.set("look", { theme, accent }).catch(() => undefined);
@@ -21,13 +29,16 @@ export async function restoreLook() {
   if (l) applyLook(l.theme, l.accent);
 }
 
-/** The resolved --ground colour as #rrggbb, read back through a canvas so any CSS colour syntax works. */
-function groundHex(): string | null {
+/** The resolved --ground colour as #rrggbb. */
+const groundHex = () => hex(getComputedStyle(document.body).backgroundColor);
+
+/** Any CSS colour as #rrggbb, read back through a canvas so any colour syntax works. */
+function hex(colour: string): string | null {
   try {
     const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
-    if (!ctx) return null;
+    if (!ctx || !colour.trim()) return null;
     ctx.fillStyle = "#000";
-    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+    ctx.fillStyle = colour.trim();
     ctx.fillRect(0, 0, 1, 1);
     const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
     return a ? `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}` : null;

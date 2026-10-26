@@ -41,8 +41,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [note, setNote] = useState<string | null>(null);
   const [sparks, setSparks] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
-  const [act, setAct] = useState<Gesture>("none");
-  const actTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const update = useUpdate();
   const [updating, setUpdating] = useState<number | null>(null);
 
@@ -78,9 +76,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
-  const gesture: Gesture = act;
+  const gesture: Gesture = "none";
 
-  const perform = (g: Gesture, ms: number) => { clearTimeout(actTimer.current); setAct(g); actTimer.current = setTimeout(() => setAct("none"), ms); };
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
   function clean() {

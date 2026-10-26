@@ -9,7 +9,7 @@ import { rise } from "../motion";
 import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults, weekReview } from "../recovery";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { Button, plainOpts, Select, SelectOther } from "../ui/Controls";
+import { plainOpts, Select, SelectOther } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Reflect } from "./Reflect";
 

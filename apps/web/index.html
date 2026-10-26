@@ -17,13 +17,13 @@
       @media (prefers-color-scheme: dark) { html, body { background: #16110e; } }
 
       /* Launch screen: the paw alone, beating until the app is ready, then it fades away. */
-      #launch { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #faf7f2;
+      #launch { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #faf7f2; color: #c2572a;
         transition: opacity .7s cubic-bezier(.22,.8,.3,1), visibility .7s; }
       #launch.out { opacity: 0; visibility: hidden; }
       .paw-beat { width: 96px; height: 96px; display: block; animation: paw-beat 1.2s cubic-bezier(.45,0,.55,1) infinite; }
       @keyframes paw-beat { 0%, 100% { transform: scale(.9); opacity: .45; } 50% { transform: scale(1); opacity: 1; } }
       @media (prefers-color-scheme: dark) {
-        #launch { background: #16110e; }
+        #launch { background: #16110e; color: #e8875a; }
       }
       @media (prefers-reduced-motion: reduce) {
         .paw-beat { animation: none; }
@@ -32,7 +32,8 @@
     </style>
   </head>
   <body>
-    <div id="launch" role="img" aria-label="Pawse"><img class="paw-beat" src="./logo-mark.svg" alt="" width="96" height="96" /></div>
+    <div id="launch" role="img" aria-label="Pawse"><svg class="paw-beat" viewBox="200 265 850 710" width="96" height="96" fill="currentColor" aria-hidden="true"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></svg></div>
+    <script>try { var c = localStorage.getItem("pawse-logo"); if (c && /^#[0-9a-f]{6}$/.test(c)) document.getElementById("launch").style.color = c; } catch (e) {}</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

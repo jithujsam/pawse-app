@@ -17,7 +17,7 @@ import { fmtTime } from "../dates";
 import { COATS, NAMES } from "../pets";
 import { has3D } from "../pet3d-support";
 import { Burst, Button, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
-import type { Baseline, Measure, Personality, RecoveryPlan, Species, Tone } from "../types";
+import type { Baseline, Personality, RecoveryPlan, Species, Tone } from "../types";
 
 const BASELINES: { value: Baseline | "unsure"; label: string }[] = [
   { value: "many_daily", label: "Several times a day" }, { value: "daily", label: "About once a day" },

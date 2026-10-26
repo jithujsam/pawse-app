@@ -438,6 +438,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 /* ---------- opening and loading ---------- */
 /* The loader is the paw alone; its beat (.paw-beat) is defined in index.html so the launch screen has it first. */
 .loader { animation: loader-in .4s .12s var(--ease) both; }
+.logo { color: var(--accent); display: block; }
 @keyframes loader-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
 @keyframes loader-breathe { 50% { transform: scale(.9); } }
 /* backwards, not both: a transform held after the entrance would make .app the box for every fixed layer inside it */
