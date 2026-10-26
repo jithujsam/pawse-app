@@ -222,12 +222,12 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
     });
     const ears = [found["Ear1.L"], found["Ear1.R"]].filter(Boolean);
     const tail = [found.Tail1, found.Tail2].filter(Boolean);
-    // The cat's eyes are dark patches in its texture, so the tuxedo's white eyes are spheres on the face.
+    // The cat's eyes are dark patches in its texture, so the tuxedo's black eyes are spheres on the face.
     const catEyes: THREE.Mesh[] = [];
     if (species === "cat") for (const [x, y] of [[-0.19, 0.57], [0.19, 0.54]]) {
       // The scene is scaled, so the radius is divided by its world scale.
       const radius = 0.05 / scene.getWorldScale(new THREE.Vector3()).x;
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.3 }));
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), new THREE.MeshStandardMaterial({ color: "#0d0d10", roughness: 0.3 }));
       scene.add(eye);
       scene.worldToLocal(eye.position.set(x, y, 0.53));
       catEyes.push(eye);
@@ -255,7 +255,8 @@ function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y:
         m.roughness = 0.85; m.metalness = 0;
       }
     });
-    catEyes.forEach((e) => (e.visible = coat === "tuxedo"));
+    // After the coat pass above, which would otherwise tint the eyes white.
+    catEyes.forEach((e) => { e.visible = coat === "tuxedo"; (e.material as THREE.MeshStandardMaterial).color.set("#0d0d10"); });
   }, [scene, species, coat, stage, catEyes]);
 
   // Cross-fade between clips whenever the state changes.

@@ -74,7 +74,7 @@ export const NAMES: Record<Species, string[]> = {
   fox: ["Ember", "Rusty", "Juniper", "Maple"], owl: ["Hoot", "Sage", "Willow", "Nova"], panda: ["Bao", "Dumpling", "Momo", "Tofu"],
 };
 
-const TUXEDO = { dark: [0x2c, 0x2c, 0x36], light: [0xf4, 0xf4, 0xf4], lo: 0.5, hi: 0.7 };
+const TUXEDO = { dark: [0x4a, 0x4a, 0x55], light: [0xf4, 0xf4, 0xf4], lo: 0.5, hi: 0.7 };
 
 /** Repaints the 3D cat atlas for the tuxedo: dark fur goes charcoal, light areas (muzzle, bib, paws) stay white. sRGB RGBA bytes, edited in place. */
 export function tuxedoPixels(px: Uint8ClampedArray): void {
