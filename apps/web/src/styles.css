@@ -1,12 +1,13 @@
 /* One palette. The only colour that changes is the accent, and it comes from the pet. Light by day, warm charcoal by night. */
 :root {
-  --accent: #c2572a; --accent-dark: #f09a6c;
-  --ground: color-mix(in srgb, var(--accent) 5%, #f4f6f8); --surface: #ffffff; --raised: color-mix(in srgb, var(--accent) 6%, #eef1f4); --control: color-mix(in srgb, var(--accent) 12%, #d3d9e0);
-  --hero-a: color-mix(in srgb, var(--accent) 17%, #ffffff); --hero-b: color-mix(in srgb, var(--accent) 6%, #ffffff);
-  --text: #16202b; --muted: #5d6874; --on-accent: #ffffff; --soft: color-mix(in srgb, var(--accent) 14%, #ffffff);
-  --negative: #b8473f; --negative-soft: rgba(184,71,63,.12); --positive: #2f7d5b; --positive-soft: rgba(47,125,91,.12); --warning: #d9a531; --on-status: #ffffff; --on-warning: #1f1600; --pet: #c98a4b; --chart: var(--accent); --glow: color-mix(in srgb, var(--accent) 28%, transparent);
-  --line: rgba(22,32,43,.06);
-  --shadow: 0 1px 2px rgba(22,32,43,.04), 0 8px 24px -12px rgba(22,32,43,.16);
+  --accent: #c45a2a; --accent-dark: #e88b60;
+  --ground: #faf7f2; --surface: #ffffff; --raised: #f5f0e8; --control: #ddd3c5;
+  --hero-a: color-mix(in srgb, var(--accent) 14%, #fffaf3); --hero-b: color-mix(in srgb, var(--accent) 5%, #faf7f2);
+  --text: #24211e; --muted: #736b63; --on-accent: #ffffff; --soft: color-mix(in srgb, var(--accent) 14%, #ffffff);
+  --negative: #b85c47; --negative-soft: rgba(217,125,100,.14); --positive: #4e8752; --positive-soft: rgba(78,135,82,.12); --warning: #d99b26; --on-status: #ffffff; --on-warning: #1f1600; --pet: #c98a4b; --chart: var(--accent); --glow: color-mix(in srgb, var(--accent) 28%, transparent);
+  --line: rgba(36,33,30,.06);
+  --shadow: 0 0 0 1px rgba(36,33,30,.04), 0 2px 4px rgba(36,33,30,.03), 0 10px 24px -4px rgba(78,64,53,.08);
+  --shadow-sheet: 0 -16px 36px -6px rgba(60,48,38,.14);
   --radius: 24px; --radius-sm: 16px; --gap: 16px; --pad: 20px;
   --ease: cubic-bezier(.22,.8,.3,1);
   --font: "Geist Variable", Geist, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -25,28 +26,28 @@
 :root[data-pet="panda"] { --accent: #4b7a37; --accent-dark: #a3d68c; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #0f1012; --surface: #18191c; --raised: #222327; --control: #393b41;
-    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #18191c); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #141517);
-    --text: #eceae6; --muted: #a3a09a; --on-accent: #121212; --soft: color-mix(in srgb, var(--accent-dark) 16%, #18191c);
-    --negative: #f08a80; --negative-soft: rgba(240,138,128,.13); --positive: #74cf9c; --positive-soft: rgba(116,207,156,.13); --warning: #e3b552; --on-status: #121212; --chart: var(--accent-dark);
+    --ground: #1c1a18; --surface: #262320; --raised: #322e2a; --control: #4a443e;
+    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #262320); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #1c1a18);
+    --text: #f6f3ee; --muted: #a8a199; --on-accent: #1c1a18; --soft: color-mix(in srgb, var(--accent-dark) 16%, #262320);
+    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #1c1a18; --chart: var(--accent-dark);
     --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: rgba(255,255,255,.06);
-    --shadow: 0 0 0 1px rgba(255,255,255,.045), 0 10px 28px -16px rgba(0,0,0,.7);
+    --shadow: 0 0 0 1px rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.25), 0 12px 28px -4px rgba(0,0,0,.45); --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
   }
   /* The accent swap is its own rule so it can read the pet's dark tone set above. */
   :root:not([data-theme="light"]) body { --accent: var(--accent-dark); }
 }
 
 :root[data-theme="dark"] {
-    --ground: #0f1012; --surface: #18191c; --raised: #222327; --control: #393b41;
-    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #18191c); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #141517);
-    --text: #eceae6; --muted: #a3a09a; --on-accent: #121212; --soft: color-mix(in srgb, var(--accent-dark) 16%, #18191c);
-    --negative: #f08a80; --negative-soft: rgba(240,138,128,.13); --positive: #74cf9c; --positive-soft: rgba(116,207,156,.13); --warning: #e3b552; --on-status: #121212; --chart: var(--accent-dark);
+    --ground: #1c1a18; --surface: #262320; --raised: #322e2a; --control: #4a443e;
+    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #262320); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #1c1a18);
+    --text: #f6f3ee; --muted: #a8a199; --on-accent: #1c1a18; --soft: color-mix(in srgb, var(--accent-dark) 16%, #262320);
+    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #1c1a18; --chart: var(--accent-dark);
     --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: rgba(255,255,255,.06);
-    --shadow: 0 0 0 1px rgba(255,255,255,.045), 0 10px 28px -16px rgba(0,0,0,.7);
+    --shadow: 0 0 0 1px rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.25), 0 12px 28px -4px rgba(0,0,0,.45); --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
 }
 :root[data-theme="dark"] body { --accent: var(--accent-dark); }
 /* A fixed accent chosen in Appearance overrides the pet's. */
-:root[data-accent="coral"] { --accent: #c2572a; --accent-dark: #f09a6c; }
+:root[data-accent="coral"] { --accent: #c45a2a; --accent-dark: #e88b60; }
 :root[data-accent="ocean"] { --accent: #2f6aa3; --accent-dark: #8dbbec; }
 :root[data-accent="forest"] { --accent: #2f7a52; --accent-dark: #86d3a6; }
 :root[data-accent="berry"] { --accent: #b03f6b; --accent-dark: #f29dbf; }
@@ -295,9 +296,9 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .toast-action { border: 0; background: color-mix(in srgb, var(--ground) 16%, transparent); color: inherit; font-weight: 700; border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; }
 
 /* ---------- sheet ---------- */
-.scrim { position: fixed; inset: 0; background: rgba(8,9,11,.48); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.scrim { position: fixed; inset: 0; background: rgba(36,28,22,.42); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
 .scrim.center { align-items: center; padding: var(--pad); }
-.sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 28px 28px 0 0; padding: 4px var(--pad) calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 18px; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.35); overscroll-behavior: contain; }
+.sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 32px 32px 0 0; padding: 4px var(--pad) calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 18px; box-shadow: var(--shadow-sheet); overscroll-behavior: contain; }
 .sheet-handle { position: sticky; top: 0; border: 0; background: var(--surface); padding: 10px 0 6px; cursor: grab; display: grid; place-items: center; touch-action: none; z-index: 2; margin: 0 calc(var(--pad) * -1); }
 .sheet-handle i { width: 40px; height: 5px; border-radius: 999px; background: var(--control); display: block; }
 .sheet-handle:active { cursor: grabbing; }
@@ -690,3 +691,45 @@ button.plan-card:focus-visible { outline: 2px solid var(--accent); outline-offse
 .plan-open { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); padding-top: 4px; font-weight: 600; }
 .plan-open .ico { width: 16px; height: 16px; }
 .track-context .tag { margin-left: 8px; }
+
+
+/* ---------- warm clay finish ---------- */
+.card, .group-body, .pet-card, .choice, .species-card { border: 1px solid var(--line); }
+.btn { box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255,255,255,.18); transition: background .3s, color .3s, opacity .2s, transform .15s var(--ease), box-shadow .15s; }
+.btn:not(:disabled):active { transform: translateY(1.5px) scale(.98); box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--accent) 60%, transparent); }
+.btn.secondary { box-shadow: inset 0 0 0 1px var(--line); }
+.card, .quick-tile, .pet-card, .choice, .species-card { transition: transform .15s var(--ease), box-shadow .15s, background .3s, border-color .25s; }
+.quick-tile:not(:disabled):active, .pet-card:active, .choice:active, .species-card:active { transform: translateY(1.5px) scale(.985); }
+.quick-tile { border: 1px solid var(--line); }
+.quick-ico { box-shadow: var(--shadow); }
+.seg-pill { box-shadow: 0 2px 8px rgba(36,33,30,.08); }
+.segmented { background: color-mix(in srgb, var(--raised) 100%, var(--control) 25%); border-radius: var(--radius-sm); }
+.seg, .seg-pill { border-radius: 12px; }
+.progress { height: 8px; }
+.tabbar { padding-top: 8px; }
+.tab { font-size: 11px; letter-spacing: .02em; }
+.tab[aria-current="page"] .tab-ico { background: var(--soft); border-radius: 999px; width: 52px; height: 30px; margin-bottom: 2px; }
+.tab .tab-ico { width: 52px; height: 30px; transition: background .25s; margin-bottom: 2px; }
+.fab { width: 58px; height: 58px; border-radius: 50%; margin-top: -26px; box-shadow: 0 0 0 5px var(--ground), 0 10px 24px -4px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent); transition: transform .15s var(--ease); }
+.fab:active { transform: translateY(1.5px) scale(.96); }
+h1 { font-weight: 500; letter-spacing: -.02em; }
+.sheet-handle i { background: var(--control); width: 44px; }
+.chip[aria-pressed="true"], .chip { box-shadow: inset 0 0 0 1px var(--line); }
+.chip[aria-pressed="true"] { box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--accent) 70%, transparent); }
+.input { border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--line); }
+.input:focus { box-shadow: 0 0 0 4px var(--soft); }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .card, .quick-tile, .pet-card, .choice, .species-card, .fab { transition: none; }
+  .btn:not(:disabled):active, .quick-tile:not(:disabled):active, .pet-card:active, .choice:active, .species-card:active, .fab:active { transform: none; }
+}
+
+/* ---------- onboarding polish ---------- */
+.story { gap: 24px; justify-content: space-between; padding-bottom: 8px; }
+.story-art { flex: 1; min-height: 260px; }
+.story-art::before { content: ""; position: absolute; width: 300px; height: 300px; max-width: 86%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 68%); pointer-events: none; }
+.story-text { min-height: 130px; gap: 12px; padding: 0 4px; }
+.pager { margin: 4px 0 8px; }
+.pager i { background: var(--accent); }
+.brand { padding-top: 4px; }
+/* Disabled stays legible: a muted clay fill with dark text instead of faded white on pale. */
+.btn:disabled:not(.secondary):not(.text):not(.ghost):not(.danger) { opacity: 1; background: var(--control); color: var(--muted); box-shadow: none; }
