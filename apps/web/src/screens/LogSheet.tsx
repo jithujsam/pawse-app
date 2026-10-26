@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { aiForSlip } from "../ai";
 import { absorbedLine, bingeLine, CRISIS_MESSAGE, EFFECT_LABEL } from "../copy";
 import { frictionIdeas, lapseHeadline, progressKept } from "../recovery";
-import { trackSummary } from "../progress";
+import { EDIT_DAYS, trackSummary } from "../progress";
 import { hasCrisisLanguage } from "../crisis";
 import { OTHER_PREFIX, otherAnswer } from "../questions";
 import { addDays, fmtDay, fmtTime, today } from "../dates";
@@ -33,7 +33,7 @@ async function shrink(file: File): Promise<string> {
 const scaleOptions = (labels: [string, string]): { value: string; label: string }[] =>
   [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: n === 1 ? `1 · ${labels[0]}` : n === 5 ? `5 · ${labels[1]}` : String(n) }));
 
-/** `day` presets the slip's date, e.g. from the calendar, so a slip can be logged honestly for any past day. */
+/** `day` presets the slip's date, e.g. from the calendar: today or one of the three days before it. */
 interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void; day?: string }
 
 export function LogSheet(props: Props) {
@@ -48,10 +48,10 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
   const data = useData();
   const [values, setValues] = useState<Entry["values"]>({});
   const [day, setDay] = useState(presetDay ?? today());
-  const older = presetDay && presetDay < addDays(today(), -1) ? presetDay : null;
   const [time, setTime] = useState("");
-  const [ownDay, setOwnDay] = useState(false);
   const born = data.companions.find((c) => c.id === habit.companionId)?.bornOn;
+  // A slip can be logged for today or one of the EDIT_DAYS before it, as on the calendar, and not before the pet was born.
+  const days = Array.from({ length: EDIT_DAYS + 1 }, (_, i) => addDays(today(), -i)).filter((x) => !born || x >= born);
   const [crisis, setCrisis] = useState(false);
   const [result, setResult] = useState<Deduction | null>(null);
   const [ageBefore] = useState(age);
@@ -139,15 +139,8 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
       <motion.div className="row" variants={rise}><h2>Log a slip</h2><Button variant="text" onClick={onClose}>Cancel</Button></motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label">When did it happen?</span>
-        <Select label="Day" value={ownDay ? "other" : day === today() ? "today" : day === addDays(today(), -1) ? "yesterday" : "earlier"}
-          options={[
-            { value: "today", label: "Today" }, { value: "yesterday", label: "Yesterday" },
-            ...(older ? [{ value: "earlier", label: fmtDay(older) }] : []),
-            { value: "other", label: "Another day…" },
-          ]}
-          onChange={(v) => { setOwnDay(v === "other"); if (v === "today") setDay(today()); else if (v === "yesterday") setDay(addDays(today(), -1)); else if (v === "earlier" && older) setDay(older); }} />
-        {ownDay && <input className="input" type="date" aria-label="Date" max={today()} min={born} value={day}
-          onChange={(e) => { const v = e.target.value; if (v && v <= today() && (!born || v >= born)) setDay(v); }} />}
+        <Select label="Day" value={day} onChange={setDay}
+          options={days.map((x, i) => ({ value: x, label: i === 0 ? "Today" : i === 1 ? "Yesterday" : fmtDay(x) }))} />
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label">What time? (optional)</span>
