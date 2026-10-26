@@ -296,7 +296,7 @@ function Wear({ kind, h, species }: { kind: Accessory; h: (typeof HEAD)[Species]
 
 /** Whether this species should be drawn in 3D right now: the setting is on, the phone can do it and it hasn't failed. */
 function use3d(species: Species) {
-  const allow = useData().settings.pet3d;
+  const allow = (useData().settings.style3d as Species[]).includes(species);
   const [failed, setFailed] = useState(false);
   return { on: allow && !failed && has3D(species) && webglOk(), fail: () => { markPet3d("failed"); setFailed(true); } };
 }

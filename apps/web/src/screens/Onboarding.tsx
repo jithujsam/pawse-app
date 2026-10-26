@@ -15,7 +15,7 @@ import { PetStep } from "./Pets";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { COATS, NAMES } from "../pets";
-import { has3D } from "../pet3d-support";
+import { has3D, styleOptions, with3D } from "../pet3d-support";
 import { Burst, Button, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import type { Baseline, Personality, RecoveryPlan, Species, Tone } from "../types";
 
@@ -91,7 +91,7 @@ export function Onboarding() {
                 onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}) })} /></motion.div>
               {has3D(d.species) && <motion.div className="field" variants={rise}>
                 <span className="field-label">Style</span>
-                <Select label="Pet style" value={settings.pet3d} onChange={(v) => actions.setSettings({ pet3d: v })} options={[{ value: false, label: "Drawn" }, { value: true, label: "3D" }]} />
+                <Select label="Pet style" value={settings.style3d.includes(d.species)} onChange={(v) => actions.setSettings({ style3d: with3D(settings.style3d, d.species as "dog" | "cat" | "fox", v) })} options={styleOptions(d.species)} />
               </motion.div>}
               <motion.label className="field" variants={rise}><span className="field-label">What should {d.companionName.trim() || "they"} call you? <span className="muted">Optional</span></span>
                 <input className="input" autoComplete="given-name" value={d.userName} placeholder="Your first name" maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") go(2); }} />

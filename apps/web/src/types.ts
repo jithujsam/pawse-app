@@ -192,8 +192,8 @@ export interface Settings {
   theme: "system" | "light" | "dark";
   /** The app's accent colour: the pet's own, or a fixed choice. */
   accent: "pet" | "coral" | "ocean" | "forest" | "berry" | "plum" | "slate";
-  /** Show the 3D pet where one exists (dog, fox). Off means the 2D art everywhere. */
-  pet3d: boolean;
+  /** The species shown in 3D: each has its own model, named in pet3d-support STYLE_3D. The rest are drawn. */
+  style3d: ("dog" | "cat" | "fox")[];
   /** Missed check-ins only count from this day on (when the rule arrived), never retroactively. */
   neglectFrom: string | null;
   /**
