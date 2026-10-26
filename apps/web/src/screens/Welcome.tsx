@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { rise, slide, stagger } from "../motion";
-import { Icon } from "../ui/Controls";
+import { Icon, PawLogo } from "../ui/Controls";
 import { Account } from "./Account";
 import { Story } from "./Onboarding";
 import { APP_NAME } from "../brand";
@@ -15,7 +15,7 @@ export function Welcome() {
         <motion.div key={stage} className="step" custom={1} variants={slide} initial="enter" animate="center" exit="exit">
           {stage === "story"
             ? <div className="step-inner">
-                <div className="brand"><img src="./icon-192.png" alt="" width="40" height="40" /><b>{APP_NAME}</b></div>
+                <div className="brand"><PawLogo size={34} /><b>{APP_NAME}</b></div>
                 <Story species="dog" onStart={() => setStage("auth")} />
               </div>
             : (
