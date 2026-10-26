@@ -53,7 +53,7 @@ export function HelpSection({ plan, set, cls = "custom" }: { plan: RecoveryPlan;
     </div>
     <label className="field"><span className="field-label">Someone you could reach out to (optional)</span>
       <input className="input" autoComplete="off" maxLength={40} value={plan.supportName} placeholder="A first name is enough" onChange={(e) => set({ supportName: e.target.value })} />
-      <span className="muted small">Only the name is kept, to remind you. Pawse never contacts anyone.</span>
+      <span className="muted small">Only the name is kept, to remind you. pawse never contacts anyone.</span>
     </label>
   </>);
 }
@@ -74,7 +74,7 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
   return (
     <div className="stack">
       <p className="track-context small"><span className="muted">For</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
-      <p className="muted">Your plan, in your words. Everything is optional and you can change it any time. It shapes what Pawse offers you when an urge hits and after a slip.</p>
+      <p className="muted">Your plan, in your words. Everything is optional and you can change it any time. It shapes what pawse offers you when an urge hits and after a slip.</p>
       <section className="card stack"><WhySection plan={plan} set={set} /></section>
       <section className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
       <section className="card stack" aria-label="If-then plans">
@@ -90,7 +90,7 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       <section className="card stack" aria-label="More support">
         <h2>More support</h2>
-        <p className="small">Pawse is a self-help tool, not treatment, and its AI is not a clinician. If this is affecting your health, work, money or relationships, a doctor, counsellor or support service can help, and asking is a strong move, not a failure.</p>
+        <p className="small">pawse is a self-help tool, not treatment, and its AI is not a clinician. If this is affecting your health, work, money or relationships, a doctor, counsellor or support service can help, and asking is a strong move, not a failure.</p>
         <p className="small">If you drink heavily every day, don't stop suddenly without medical advice: withdrawal can be dangerous. A doctor can help you cut down safely.</p>
         <p className="small muted">Free helplines: India Tele-MANAS 14416 (mental health). US SAMHSA National Helpline 1-800-662-4357 (substance use), or call or text 988 in a crisis. UK Samaritans 116 123. Elsewhere, your local emergency number.</p>
       </section>

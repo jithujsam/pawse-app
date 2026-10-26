@@ -87,7 +87,7 @@ export function Observations() {
       <h2>What your records show</h2>
       {o.items.length === 0
         ? <p className="muted">{o.needed > 0
-            ? `Not enough yet to see a pattern. ${o.needed} more ${o.needed === 1 ? "slip or urge" : "slips or urges"} logged and Pawse will show what it notices. Until then, it won't guess.`
+            ? `Not enough yet to see a pattern. ${o.needed} more ${o.needed === 1 ? "slip or urge" : "slips or urges"} logged and pawse will show what it notices. Until then, it won't guess.`
             : "Nothing stands out yet. That's a real answer too: no single feeling, time or place dominates your records."}</p>
         : <div className="list">{o.items.map((x) => (
             <div className="item" key={x.id}>

@@ -304,7 +304,7 @@ function DataPage() {
           if (!f) return;
           if (f.size > 50_000_000) { toast("That file is too big to be a backup", { kind: "bad" }); return; }
           const ok = actions.importJson(await f.text());
-          toast(ok ? "Backup restored" : "That file isn't a Pawse backup", { kind: ok ? "good" : "bad" });
+          toast(ok ? "Backup restored" : "That file isn't a pawse backup", { kind: ok ? "good" : "bad" });
         }} /></label>
       </div>
     </section>

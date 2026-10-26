@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Pawse</string>
-    <string name="title_activity_main">Pawse</string>
+    <string name="app_name">pawse</string>
+    <string name="title_activity_main">pawse</string>
     <string name="package_name">app.detoxcompanion</string>
     <string name="custom_url_scheme">app.detoxcompanion</string>
     <string name="widget_description">Your pets, each in its mood today</string>

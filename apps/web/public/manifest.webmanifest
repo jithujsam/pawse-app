@@ -1,6 +1,6 @@
 {
-  "name": "Pawse",
-  "short_name": "Pawse",
+  "name": "pawse",
+  "short_name": "pawse",
   "description": "A small companion that shows how your habit is going.",
   "start_url": "./",
   "scope": "./",

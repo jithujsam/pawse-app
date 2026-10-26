@@ -123,7 +123,7 @@ export function Onboarding() {
 
             {d.step === 4 && (<>
               <motion.h1 variants={rise}>What tends to set it off?</motion.h1>
-              <motion.p className="muted" variants={rise}>Pick any that fit, or add your own. Pawse offers these back when an urge hits. All optional.</motion.p>
+              <motion.p className="muted" variants={rise}>Pick any that fit, or add your own. pawse offers these back when an urge hits. All optional.</motion.p>
               <motion.div className="field" variants={rise}><span className="field-label">Situations</span>
                 <MultiSelect label="Situations" options={plainOpts(SITUATIONS)} value={d.triggers} onChange={(triggers) => up({ triggers })} max={8} placeholder="Pick the ones that fit" />
               </motion.div>
@@ -132,7 +132,7 @@ export function Onboarding() {
 
             {d.step === 5 && (<>
               <motion.h1 variants={rise}>Why it matters</motion.h1>
-              <motion.p className="muted" variants={rise}>Your goal and your reasons, in your words. Pawse shows them back to you when things get hard. All optional.</motion.p>
+              <motion.p className="muted" variants={rise}>Your goal and your reasons, in your words. pawse shows them back to you when things get hard. All optional.</motion.p>
               <motion.div className="stack" variants={rise}><WhySection plan={d.plan} set={setPlan} situations={false} /></motion.div>
               {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
               <motion.div className="stack tight" variants={rise}>

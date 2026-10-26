@@ -1,6 +1,6 @@
 {
   "appId": "app.detoxcompanion",
-  "appName": "Pawse",
+  "appName": "pawse",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false,

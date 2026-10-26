@@ -77,7 +77,7 @@ export async function installUpdate(l: Latest, onProgress?: (percent: number) =>
 /** Install with plain-language feedback. Returns true if Android's installer opened (or the browser took over). */
 export async function runUpdate(l: Latest, onProgress?: (percent: number) => void): Promise<boolean> {
   const r = await installUpdate(l, onProgress);
-  if (r === "permission") toast("Allow Pawse to install updates, then tap Update again", { ms: 8000 });
+  if (r === "permission") toast("Allow pawse to install updates, then tap Update again", { ms: 8000 });
   else if (r === "mismatch") toast("The download didn't match its checksum, so it was discarded", { kind: "bad", ms: 8000 });
   else if (r === "failed") toast("The download didn't finish. Check your connection and try again", { kind: "bad" });
   return r === "installing" || r === "browser";
