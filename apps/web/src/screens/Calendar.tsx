@@ -31,7 +31,7 @@ export function CalendarSections() {
   const thisMonth = monthOf(t0);
 
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
-  // Today and the three days before it can be filled in or corrected from the calendar.
+  // Today and the two days before it can be filled in or corrected from the calendar.
   const editable = (d: string) => editableInCalendar(data, habit.id, d, t0);
   const [sel, setSel] = useState<string | null>(null);
 
