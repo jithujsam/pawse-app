@@ -4,6 +4,7 @@
   --ground: #faf7f2; --surface: #ffffff; --raised: #f5f0e8; --control: #ddd3c5;
   --hero-a: color-mix(in srgb, var(--accent) 14%, #fffaf3); --hero-b: color-mix(in srgb, var(--accent) 5%, #faf7f2);
   --text: #24211e; --muted: #675f57; --on-accent: #ffffff; --soft: color-mix(in srgb, var(--accent) 14%, #ffffff);
+  --slip: #d42a2a; --slip-soft: rgba(212,42,42,.10);
   --negative: #b85c47; --negative-soft: rgba(217,125,100,.14); --positive: #4e8752; --positive-soft: rgba(78,135,82,.12); --warning: #d99b26; --on-status: #ffffff; --on-warning: #1f1600; --pet: #c98a4b; --chart: var(--accent);
   --line: rgba(36,33,30,.09);
   --shadow: 0 0 transparent; /* nothing at rest casts a shadow: a 1px line or a tone step separates it */
@@ -30,6 +31,7 @@
     --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
     --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
     --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    --slip: #ff6b64; --slip-soft: rgba(255,107,100,.14);
     --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
     --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
     --shadow: 0 0 transparent; --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
@@ -43,6 +45,7 @@
     --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
     --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
     --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    --slip: #ff6b64; --slip-soft: rgba(255,107,100,.14);
     --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
     --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
     --shadow: 0 0 transparent; --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
@@ -444,7 +447,10 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .wday { display: grid; justify-items: center; gap: 6px; }
 .wday i { width: 22px; height: 22px; border-radius: 50%; background: var(--raised); display: block; }
 /* Five day states. Shape as well as colour, so they read without colour vision: filled, filled, ring, dashed, small. */
-.wday[data-s="lapse"] i { background: var(--negative); }
+.wday[data-s="lapse"] i { background: var(--slip); }
+/* Home's day card only: slips read as a true red, not the orange-leaning --negative the calendar keeps. */
+.home-day .neg, .home-day .icon-btn.danger { color: var(--slip); }
+.home-day .item { background: var(--slip-soft); }
 .wday[data-s="met"] i { background: var(--positive); }
 .wday[data-s="urge"] i { background: transparent; border: 4px solid var(--positive); }
 .wday[data-s="rest"] i, .wday[data-s="paused"] i { background: transparent; border: 2px dashed var(--muted); }

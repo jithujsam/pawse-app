@@ -101,7 +101,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
     const after = getData();
     const m = milestoneToCelebrate(trackSummary(after, habit.id, t0).care, celebratedFor(after, habit.id), MILESTONES);
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
-    else toast(cleanToast(tone, companion.name), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
+    else toast(cleanToast(tone, companion.name), { kind: "good", ms: 1000, action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
