@@ -50,8 +50,7 @@ export function CalendarSections() {
         <div className="row"><span className="muted small">{companion.name}'s age this month</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
         {spark.length > 1
           ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Visible age over the month">
-              <defs><linearGradient id="sparkfill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="var(--chart)" stopOpacity=".25" /><stop offset="1" stopColor="var(--chart)" stopOpacity="0" /></linearGradient></defs>
-              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="url(#sparkfill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
+              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="var(--chart)" fillOpacity={0.12} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
               <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
             </svg>
           : <p className="muted small">{spark.length === 1 ? `The curve starts drawing from ${companion.name}'s second day.` : "No age history for this month yet."}</p>}
