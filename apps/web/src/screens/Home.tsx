@@ -130,7 +130,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
       {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>All pets</span></motion.button>}
       <motion.header className="greet" variants={rise}>
         <div>
-          <p className="muted small">{fmtDay(t0)}</p>
           <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
         {streak > 0 && <motion.div className="streak-chip" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring.bouncy} key={streak}>
