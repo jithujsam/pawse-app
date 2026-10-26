@@ -78,9 +78,9 @@ export function Dropdown({ items, selected, onPick, label, placeholder = "", cla
         onKeyDown={(e) => { if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) { e.preventDefault(); show(); } }}>
         <span className="dd-text">{shown?.label ?? placeholder}</span>
       </button>
-      {createPortal(
+      {place && createPortal(
         <AnimatePresence>
-          {open && place && (
+          {open && (
             <motion.div ref={menu} className={`dd-menu${place.up ? " up" : ""}`} style={place.style} role="listbox" aria-label={label} onKeyDown={onMenuKey}
               initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} transition={spring.soft}>
               {items.map((i) => (

@@ -157,11 +157,11 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onSlipSaved }: { da
             {standalone
               ? locked
                 ? <p className="muted">{sel > t0 ? t("calendar.day.future") : t("calendar.day.locked")}</p>
-                : <div className="quick-grid">
-                    {ctl.canMarkMet && <button type="button" className="quick-tile" data-tone="good" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.sun}</span><b>{t("calendar.day.mark_met")}</b></button>}
-                    {ctl.canUnmarkMet && <button type="button" className="quick-tile" data-tone="calm" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}><span className="quick-ico" aria-hidden>{Icon.check}</span><b>{t("calendar.day.remove_met")}</b></button>}
-                    {ctl.canLogSlip && <button type="button" className="quick-tile" data-tone="bad" onClick={() => setLogging(true)}><span className="quick-ico" aria-hidden>{Icon.slip}</span><b>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</b></button>}
-                  </div>
+                : <>
+                    {ctl.canMarkMet && <Button variant="secondary" onClick={() => { actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}>{t("calendar.day.mark_met")}</Button>}
+                    {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}
+                    {ctl.canLogSlip && <Button variant="text" onClick={() => setLogging(true)}>{dayEntries.length ? t("calendar.day.log_another") : t("calendar.day.log_slip")}</Button>}
+                  </>
               : <>
             {ctl.canMarkMet && <Button variant="secondary" onClick={() => { if (onMarkMet) { onMarkMet(); return; } actions.markClean(habit.id, sel); haptic.success(); toast(t("calendar.day.marked_met"), { kind: "good", action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, sel) } }); }}>{t("calendar.day.mark_met")}</Button>}
               {ctl.canUnmarkMet && <Button variant="text" onClick={() => { actions.unmarkClean(habit.id, sel); toast(t("calendar.day.removed_met"), { action: { label: t("ui.common.undo"), run: () => actions.markClean(habit.id, sel) } }); }}>{t("calendar.day.remove_met")}</Button>}

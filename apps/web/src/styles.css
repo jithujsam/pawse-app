@@ -811,7 +811,3 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 /* ---------- about ---------- */
 .about-hero { align-items: center; text-align: center; gap: 8px; }
 .about-pets { display: flex; justify-content: center; gap: 4px; }
-
-/* the day sheet's choices are colour-coded: good days green, slips red */
-.quick-tile[data-tone="good"] { background: color-mix(in srgb, var(--positive) 16%, var(--surface)); }
-.quick-tile[data-tone="bad"] { background: color-mix(in srgb, var(--negative) 12%, var(--surface)); }
