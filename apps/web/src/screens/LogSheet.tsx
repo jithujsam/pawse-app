@@ -248,7 +248,7 @@ function LapseReflection({ entryId, habit, onDone }: { entryId: string; habit: H
         <SelectOther label="One small thing to try next time" options={plainOpts(ideas)} value={adjust} onChange={setAdjust} maxLength={160} placeholder="Pick an idea" clearLabel="No idea right now"
           otherPlaceholder="Your own, e.g. If I'm home alone after 10, I'll make tea" />
       </div>
-      {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It shows up in You → Your plan, and when an urge hits." />}
+      {adjust.trim() && <Switch checked={keep} onChange={setKeep} label="Add it to my plan" hint="It shows up in Me → Your plan, and when an urge hits." />}
       {crisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
       <Button onClick={save} disabled={crisis}>Save and go back</Button>
       <Button variant="text" onClick={onDone}>Skip</Button>

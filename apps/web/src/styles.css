@@ -26,11 +26,12 @@
 :root[data-pet="panda"] { --accent: #4b7a37; --accent-dark: #a3d68c; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #1c1a18; --surface: #262320; --raised: #322e2a; --control: #4a443e;
-    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #262320); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #1c1a18);
-    --text: #f6f3ee; --muted: #a8a199; --on-accent: #1c1a18; --soft: color-mix(in srgb, var(--accent-dark) 16%, #262320);
-    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #1c1a18; --chart: var(--accent-dark);
-    --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: rgba(255,255,255,.06);
+    --ink: color-mix(in oklab, var(--accent-dark) 16%, #0b0b0d);
+    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
+    --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
+    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
+    --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
     --shadow: 0 0 0 1px rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.25), 0 12px 28px -4px rgba(0,0,0,.45); --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
   }
   /* The accent swap is its own rule so it can read the pet's dark tone set above. */
@@ -38,11 +39,12 @@
 }
 
 :root[data-theme="dark"] {
-    --ground: #1c1a18; --surface: #262320; --raised: #322e2a; --control: #4a443e;
-    --hero-a: color-mix(in srgb, var(--accent-dark) 16%, #262320); --hero-b: color-mix(in srgb, var(--accent-dark) 5%, #1c1a18);
-    --text: #f6f3ee; --muted: #a8a199; --on-accent: #1c1a18; --soft: color-mix(in srgb, var(--accent-dark) 16%, #262320);
-    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #1c1a18; --chart: var(--accent-dark);
-    --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: rgba(255,255,255,.06);
+    --ink: color-mix(in oklab, var(--accent-dark) 16%, #0b0b0d);
+    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
+    --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
+    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
+    --glow: color-mix(in srgb, var(--accent-dark) 18%, transparent); --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
     --shadow: 0 0 0 1px rgba(255,255,255,.06), 0 2px 6px rgba(0,0,0,.25), 0 12px 28px -4px rgba(0,0,0,.45); --shadow-sheet: 0 -18px 40px -6px rgba(0,0,0,.65);
 }
 :root[data-theme="dark"] body { --accent: var(--accent-dark); }

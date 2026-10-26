@@ -96,7 +96,7 @@ function History() {
   const items = history(data, view).slice(0, 80);
   return (
     <div className="stack">
-      <span className="muted small">What changed {view.companion.name}'s health, newest first. The age chart is on the Calendar tab.</span>
+      <span className="muted small">What changed {view.companion.name}'s health, newest first. The age chart is on the Journey tab.</span>
       <ol className="timeline">
         {items.map((it, i) => (
           <li key={i} data-kind={it.kind}>

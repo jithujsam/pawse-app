@@ -7,7 +7,11 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
   if (theme === "system") delete root.dataset.theme; else root.dataset.theme = theme;
   if (accent === "pet") delete root.dataset.accent; else root.dataset.accent = accent;
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", dark ? "#0f1012" : "#f2f4f7"));
+  // The status bar follows the page's own ground colour, which in dark mode is tinted by the accent.
+  const fallback = dark ? "#16110e" : "#faf7f2";
+  const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
+  paint();
+  requestAnimationFrame(paint);
   void kv.set("look", { theme, accent }).catch(() => undefined);
 }
 
@@ -15,4 +19,17 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
 export async function restoreLook() {
   const l = await kv.get<{ theme: Settings["theme"]; accent: Settings["accent"] }>("look").catch(() => undefined);
   if (l) applyLook(l.theme, l.accent);
+}
+
+/** The resolved --ground colour as #rrggbb, read back through a canvas so any CSS colour syntax works. */
+function groundHex(): string | null {
+  try {
+    const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.fillStyle = "#000";
+    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+    return a ? `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}` : null;
+  } catch { return null; }
 }

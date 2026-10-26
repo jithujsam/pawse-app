@@ -157,7 +157,7 @@ export function Onboarding() {
 
             {d.step === 8 && (<>
               <motion.h1 variants={rise}>A first step, and what helps</motion.h1>
-              <motion.p className="muted" variants={rise}>Something small and realistic is enough. You can change all of this later from your pet's screen or in You → Your plan.</motion.p>
+              <motion.p className="muted" variants={rise}>Something small and realistic is enough. You can change all of this later from your pet's screen or in Me → Your plan.</motion.p>
               <motion.div className="stack" variants={rise}><HelpSection plan={d.plan} set={setPlan} cls={d.cls} /></motion.div>
               {planCrisis && <div className="banner danger" role="alert">{CRISIS_MESSAGE}</div>}
               <motion.div className="stack tight" variants={rise}>
