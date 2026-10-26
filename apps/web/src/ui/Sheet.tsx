@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { spring } from "../motion";
 import { useBack } from "../back";
@@ -26,7 +27,8 @@ export function Sheet({ open, onClose, label, children }: { open: boolean; onClo
     return () => { clearTimeout(t); document.removeEventListener("keydown", onKey); prev?.focus?.({ preventScroll: true }); };
   }, [open, onClose]);
 
-  return (
+  // On <body>, so no transformed or filtered ancestor can shrink the scrim or break its blur.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div className="scrim" onClick={onClose}
@@ -42,6 +44,7 @@ export function Sheet({ open, onClose, label, children }: { open: boolean; onClo
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

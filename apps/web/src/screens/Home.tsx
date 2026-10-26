@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
@@ -212,7 +213,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
   const tone = data.settings.tone;
   const track = trackState(data, view.companion.trackId ?? view.habit?.id ?? "");
   useEffect(() => { if (days) haptic.success(); }, [days]);
-  return (
+  return createPortal(
     <AnimatePresence>
       {days && (
         <motion.div className="scrim center" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -228,7 +229,8 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

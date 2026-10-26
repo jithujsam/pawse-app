@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { APP_VERSION, runUpdate, useUpdatePrompt } from "../update";
 import { UPDATE_COPY, updatePhase } from "../copy";
@@ -38,7 +39,7 @@ export function UpdateDialog() {
   }, [latest, busy]);
 
   const notes = (latest?.notes ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
-  return (
+  return createPortal(
     <AnimatePresence>
       {latest && (
         <motion.div className="scrim center" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -69,6 +70,7 @@ export function UpdateDialog() {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
