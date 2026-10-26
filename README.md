@@ -1,22 +1,22 @@
-<p align="center"><img src="apps/web/public/icon-192.png" width="96" height="96" alt="Pawse logo"></p>
+<p align="center"><img src="apps/web/public/icon-192.png" width="96" height="96" alt="pawse logo"></p>
 
-<h1 align="center">Pawse</h1>
+<h1 align="center">pawse</h1>
 <p align="center"><b>Pause the habit. Keep your pet happy.</b></p>
 
-Pawse is a habit-change app with a pet at its heart. Pick something you want to change, such as late-night food orders, impulse buys, smoking or doomscrolling, set your own goal (stop, cut down, or understand it first), and adopt a companion. Days with your goal met help them heal, slips cost a little, and the app helps you get through urges and learn from slips. A slip is information, not a verdict.
+pawse is a habit-change app with a pet at its heart. Pick something you want to change, such as late-night food orders, impulse buys, smoking or doomscrolling, set your own goal (stop, cut down, or understand it first), and adopt a companion. Days with your goal met help them heal, slips cost a little, and the app helps you get through urges and learn from slips. A slip is information, not a verdict.
 
-It's built to feel warm rather than preachy. It's honest about slips, generous about progress, and private by default.
+It's built to feel warm rather than preachy. It's honest about slips, generous about progress, and careful with your data.
 
 <p align="center">
+  <img src="docs/screenshots/light-00-pets.png" width="230" alt="Pets: a 3D dog, fox and voxel cat, one per habit">
   <img src="docs/screenshots/light-04-home.png" width="230" alt="Home: the 3D pet, health buttons and today's check-in">
   <img src="docs/screenshots/light-05-health.png" width="230" alt="Health: a heart that fills to the pet's health">
-  <img src="docs/screenshots/light-06-history.png" width="230" alt="History: the pet's life story">
 </p>
 
 ## What it does
 
 **A pet that reflects how things are going**
-- Six species: dog, cat, rabbit, fox, owl and panda, each with several coats and one of four personalities (playful, calm, sassy, wise). The dog and the fox are animated in 3D; the others use expressive animated 2D art.
+- Three pets, all in 3D: a **3D dog** with a face that shows how it feels, a **blocky voxel cat** and a **3D fox**, each with several coats and one of four personalities (playful, calm, sassy, wise). The 2D drawings remain only as a fallback for phones that can't run 3D. The rabbit, owl and panda are switched off for now; pets that already are one stay as they are.
 - Personality changes how the pet plays and talks, and you choose how direct it is: Gentle, Honest or Direct.
 - Tap the pet to pet it, tickle it or stroke it, and it reacts.
 
@@ -44,9 +44,9 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 
 **Tools that help in the moment**
 - **Insights:** this week against last, urges ridden out, a map of your risky hours, money kept and a savings goal.
-- **Journey:** milestones, streaks, a calendar and a one-line daily reflection.
+- **Journey:** milestones, streaks, a calendar where you can fill in or correct today and the three days before it, and a one-line daily reflection.
 - **Notes from your pet:** a thank-you after clean days, a heads-up before your usual risky hour, and a check-in reminder.
-- **Android home-screen widget** showing your pet and today at a glance.
+- **Two Android home-screen widgets** (one on a card, one clear on the wallpaper) stack all your pets, each breathing in its mood today. Tap one to check in.
 
 <p align="center">
   <img src="docs/screenshots/light-07-conditions.png" width="190" alt="Conditions with recovery days">
@@ -58,12 +58,13 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 <p align="center">
   <img src="docs/screenshots/light-01-welcome.png" width="160" alt="Welcome">
   <img src="docs/screenshots/light-02-species.png" width="160" alt="Choose your companion">
-  <img src="docs/screenshots/light-03-look.png" width="160" alt="Coat and personality">
+  <img src="docs/screenshots/light-06-history.png" width="160" alt="History: the pet's life story">
   <img src="docs/screenshots/light-09-quick.png" width="160" alt="Quick check-in">
   <img src="docs/screenshots/light-14-me.png" width="160" alt="Settings">
 </p>
 
 <p align="center"><b>Dark mode</b><br>
+  <img src="docs/screenshots/dark-00-pets.png" width="190" alt="Pets in dark mode">
   <img src="docs/screenshots/dark-04-home.png" width="190" alt="Home in dark mode">
   <img src="docs/screenshots/dark-05-health.png" width="190" alt="Health in dark mode">
   <img src="docs/screenshots/dark-11-insights.png" width="190" alt="Insights in dark mode">
@@ -74,7 +75,7 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 
 - An account is needed so your pet survives a lost phone. Your data is protected by row-level security, so only you can read it. Photos never leave the phone.
 - An optional PIN encrypts everything stored on the phone (PBKDF2 with AES-GCM).
-- The AI explanations run through a server function. No AI key ships in the app, and every AI answer is checked and falls back to plain text if anything is off.
+- When you log a slip, its details go through a server function to an AI model that writes a short explanation. No AI key ships in the app, and every AI answer is checked and falls back to plain text if anything is off.
 - It never tracks calories, weight or restriction. It's a self-awareness tool, not medical advice. Pet conditions are illustrative.
 - Your region comes from the phone's time zone, which sets the currency and clock with no location permission. Times always show on a 12-hour clock.
 
@@ -104,9 +105,9 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 |---|---|---|---|
 | `public/models/dog.glb` | Shiba Inu | Quaternius | CC0 1.0 |
 | `public/models/fox.glb` | Fox | Quaternius | CC0 1.0 |
-| `public/models/cat.glb` | Cat (included, not shown) | Quaternius | CC0 1.0 |
+| `public/models/cat.glb` | Cat (blocky voxel) | Quaternius | CC0 1.0 |
 
-Sources and notes are in [`apps/web/public/models/LICENSE.md`](apps/web/public/models/LICENSE.md). The models are rigged with skeletal animation clips (idle, head-low idle, hit react, jump, death) but have no facial rig. Expressions come from body animation and posture, accessories are 2D-only, and cat, rabbit, owl and panda use the 2D art.
+Sources and notes are in [`apps/web/public/models/LICENSE.md`](apps/web/public/models/LICENSE.md). The models are rigged with skeletal animation clips (idle, head-low idle, hit react, jump, death). The dog also has a face rig (eyelids, brows, tongue); the cat and fox show their mood through body animation and posture. Accessories are 2D-only.
 
 ## Develop
 
@@ -135,7 +136,7 @@ Run the migrations in `supabase/migrations` in order (0001 to 0005). Each one is
 
 ### Where things live
 
-- `src/Companion.tsx`: the 2D pet art and live behaviour. `src/Pet3D.tsx`: the 3D pet.
+- `src/Pet3D.tsx`: the 3D pets. `src/Companion.tsx`: live behaviour, and the 2D art used where 3D can't run.
 - `src/health.ts`: the health report, conditions, history and stats. `src/voice.ts`: everything the pet says.
 - `src/store.ts`: state, IndexedDB persistence, encryption. `src/sync.ts` and `src/syncmap.ts`: offline-first sync.
 - `src/notify.ts`: reminders and pet notes. `src/region.ts`: time zone and currency.
