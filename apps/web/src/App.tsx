@@ -37,10 +37,8 @@ import { UpdateDialog } from "./ui/UpdateDialog";
 import { t } from "./text";
 import { APP_NAME } from "./brand";
 
-/** One run of the loading paw (.paw-load in styles.css). The boot splash and a screen's first showing hold for one run. */
+/** One run of the loading paw (.paw-load in styles.css). The boot splash lifts only at the end of a run. */
 const PAW_RUN_MS = 1400;
-/** Screens already shown this session: their loader doesn't play again. */
-const shownScreens = new Set<string>();
 /** The splash never waits on a slow network for longer than this; the sync carries on in the background. */
 const BOOT_WAIT_MS = 12_000;
 
@@ -222,14 +220,12 @@ function Shell() {
       <div className="stage">
         <AnimatePresence mode="wait" initial={false} custom={dir.current}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" custom={dir.current} variants={slide} initial="enter" animate="center" exit="exit">
-            <FirstRun name={tab}>
-              <Suspense fallback={<GhostPage />}>
-                {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
-                {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
-                {tab === "insights" && <WithTrack><Report /></WithTrack>}
-                {tab === "you" && <WithTrack><Me /></WithTrack>}
-              </Suspense>
-            </FirstRun>
+            <Suspense fallback={<GhostPage />}>
+              {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
+              {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
+              {tab === "insights" && <WithTrack><Report /></WithTrack>}
+              {tab === "you" && <WithTrack><Me /></WithTrack>}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -253,18 +249,6 @@ function Shell() {
       <SubPage open={planHabit !== null} title={t("me.profile.row_plan")} onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
     </div>
   );
-}
-
-/** A screen's first showing: the paw plays one full run, then the screen. Later showings start at once. Reduced motion skips the run. */
-function FirstRun({ name, children }: { name: string; children: React.ReactNode }) {
-  const [lifted, setLifted] = useState(() => shownScreens.has(name));
-  useEffect(() => {
-    if (lifted) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const timer = setTimeout(() => { shownScreens.add(name); setLifted(true); }, reduce ? 0 : PAW_RUN_MS);
-    return () => clearTimeout(timer);
-  }, [lifted, name]);
-  return lifted ? <>{children}</> : <Loading />;
 }
 
 /** Screens that show one recovery track render nothing once there is none, even mid-transition. */

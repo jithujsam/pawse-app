@@ -24,7 +24,7 @@ export function UpdateDialog() {
   useEffect(() => {
     if (!latest) return;
     const prev = document.activeElement as HTMLElement | null;
-    const t = setTimeout(() => ref.current?.querySelector<HTMLElement>(".btn")?.focus({ preventScroll: true }), 250);
+    const t = setTimeout(() => ref.current?.focus({ preventScroll: true }), 250);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
       if (e.key !== "Tab" || !ref.current) return;
@@ -44,7 +44,7 @@ export function UpdateDialog() {
     <AnimatePresence>
       {latest && (
         <motion.div className="scrim center" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <motion.div ref={ref} className="celebrate update-dialog" role="dialog" aria-modal="true" aria-label={c.title} onClick={(e) => e.stopPropagation()}
+          <motion.div ref={ref} className="celebrate update-dialog" role="dialog" aria-modal="true" aria-label={c.title} tabIndex={-1} onClick={(e) => e.stopPropagation()}
             initial={{ scale: 0.92, opacity: 0, y: 24 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} transition={spring.soft}>
             <header className="update-head">
               <h2>{c.title}</h2>
@@ -61,12 +61,12 @@ export function UpdateDialog() {
                 <div>{notes.map((n, i) => <p key={i}>{n}</p>)}</div>
               </section>
             )}
-            <Button disabled={busy} onClick={() => { setPercent(0); void runUpdate(latest, setPercent).finally(() => setPercent(null)); }}>
-              {busy ? updatePhase(percent) : <>{Icon.download}<span>{c.now}</span></>}
-            </Button>
             <div className="update-actions">
-              <Button variant="text" disabled={busy} onClick={() => { haptic.select(); skip(); }}>{c.skip}</Button>
+              <Button disabled={busy} onClick={() => { setPercent(0); void runUpdate(latest, setPercent).finally(() => setPercent(null)); }}>
+                {busy ? updatePhase(percent) : <>{Icon.download}<span>{c.now}</span></>}
+              </Button>
               <Button variant="secondary" disabled={busy} onClick={later}>{c.later}</Button>
+              <Button variant="text" disabled={busy} onClick={() => { haptic.select(); skip(); }}>{c.skip}</Button>
             </div>
           </motion.div>
         </motion.div>
