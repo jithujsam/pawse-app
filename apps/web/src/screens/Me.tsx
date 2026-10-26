@@ -9,6 +9,7 @@ import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { concernIn } from "../guard";
 import { money } from "../format";
 import { t } from "../text";
+import { Dropdown } from "../ui/Dropdown";
 import { fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
@@ -282,7 +283,8 @@ function QuestionsPage() {
               {editing ? (<>
                 <LabelInput value={f.label} onCommit={(label) => setField(f.id, { label })} />
                 <div className="row">
-                  <select className="input select dropdown" value={f.type} aria-label={t("me.questions.type_aria")} onChange={(e) => setField(f.id, { type: e.target.value as FieldType })}>{TYPES.map((ty) => <option key={ty.value} value={ty.value}>{ty.label}</option>)}</select>
+                  <Dropdown className="select" label={t("me.questions.type_aria")} selected={f.type} items={TYPES.map((ty) => ({ key: ty.value, label: ty.label }))}
+                    onPick={(k) => setField(f.id, { type: k as FieldType })} />
                   <button className="icon-btn danger" aria-label={t("me.questions.remove_aria")} onClick={() => rmField(f.id)}>{Icon.trash}</button>
                 </div>
                 {(f.type === "choice" || f.type === "multi") && (

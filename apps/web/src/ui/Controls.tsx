@@ -5,6 +5,7 @@ import { spring } from "../motion";
 import { CRISIS_MESSAGE, RESTRICTION_NOTE } from "../copy";
 import { concernIn, type Concern, type Strictness } from "../guard";
 import { t } from "../text";
+import { Dropdown, type DropItem } from "./Dropdown";
 
 /** Pill button with spring press feedback and a light haptic. */
 export function Button({ variant = "primary", children, onClick, disabled, type = "button", className = "", ...rest }:
@@ -34,22 +35,21 @@ export interface Opt<T> { value: T; label: string; disabled?: boolean }
 /** Options whose value and label are the same words. */
 export const plainOpts = (xs: readonly string[]): Opt<string>[] => xs.map((x) => ({ value: x, label: x }));
 
-/** A dropdown. Shows `placeholder` until something is picked. Uses the phone's own picker, so it works with screen readers and large text. */
+/** A dropdown. Shows `placeholder` until something is picked. The app's own menu (ui/Dropdown.tsx), so it matches the theme. */
 export function Select<T extends string | number | boolean>({ value, options, onChange, label, placeholder = t("ui.select.choose"), className = "", clearLabel, onClear }:
   { value: T | undefined | null; options: Opt<T>[]; onChange: (v: T) => void; label: string; placeholder?: string; className?: string; clearLabel?: string; onClear?: () => void }) {
   const at = options.findIndex((o) => o.value === value);
+  const items: DropItem[] = [
+    ...(at >= 0 && clearLabel && onClear ? [{ key: CLEAR, label: clearLabel }] : []),
+    ...options.map((o, i) => ({ key: String(i), label: o.label, disabled: o.disabled })),
+  ];
   return (
-    <select className={`input dropdown ${className}`} aria-label={label} value={at < 0 ? "" : String(at)} data-empty={at < 0}
-      onChange={(e) => {
-        haptic.select();
-        if (e.target.value === CLEAR) { onClear?.(); return; }
-        const o = options[Number(e.target.value)];
+    <Dropdown items={items} selected={at < 0 ? null : String(at)} label={label} placeholder={placeholder} className={className}
+      onPick={(k) => {
+        if (k === CLEAR) { onClear?.(); return; }
+        const o = options[Number(k)];
         if (o) onChange(o.value);
-      }}>
-      {at < 0 && <option value="" disabled>{placeholder}</option>}
-      {at >= 0 && clearLabel && onClear && <option value={CLEAR}>{clearLabel}</option>}
-      {options.map((o, i) => <option key={String(o.value)} value={i} disabled={o.disabled}>{o.label}</option>)}
-    </select>
+      }} />
   );
 }
 
@@ -75,21 +75,20 @@ export function SelectOther({ value, options, onChange, label, placeholder = t("
   const commit = () => { const v = draft.trim(); if (v && !concern) onChange(v); };
   return (
     <div className="stack tight">
-      <select className="input dropdown" aria-label={label} value={shown} data-empty={shown === ""}
-        onChange={(e) => {
-          haptic.select();
-          if (e.target.value === CLEAR) { setCustom(false); setDraft(""); onChange(""); return; }
-          if (e.target.value === OTHER) { setCustom(true); if (!commitLabel) onChange(""); requestAnimationFrame(() => ref.current?.focus()); return; }
-          const o = options[Number(e.target.value)];
+      <Dropdown label={label} placeholder={placeholder} selected={shown === "" ? null : shown}
+        items={[
+          ...(shown !== "" && clearLabel ? [{ key: CLEAR, label: clearLabel }] : []),
+          ...options.map((o, i) => ({ key: String(i), label: o.label, disabled: o.disabled })),
+          { key: OTHER, label: otherLabel },
+        ]}
+        onPick={(k) => {
+          if (k === CLEAR) { setCustom(false); setDraft(""); onChange(""); return; }
+          if (k === OTHER) { setCustom(true); if (!commitLabel) onChange(""); requestAnimationFrame(() => ref.current?.focus()); return; }
+          const o = options[Number(k)];
           if (!o) return;
           setCustom(false); setDraft("");
           onChange(o.value);
-        }}>
-        {shown === "" && <option value="" disabled>{placeholder}</option>}
-        {shown !== "" && clearLabel && <option value={CLEAR}>{clearLabel}</option>}
-        {options.map((o, i) => <option key={o.value} value={i} disabled={o.disabled}>{o.label}</option>)}
-        <option value={OTHER}>{otherLabel}</option>
-      </select>
+        }} />
       {own && (
         <div className="other-row">
           <input ref={ref} className="input" autoComplete="off" maxLength={maxLength} value={text} placeholder={otherPlaceholder} aria-label={t("ui.select.typed_suffix", { label, hint: otherPlaceholder.toLowerCase() })} aria-invalid={concern ? true : undefined}
@@ -130,17 +129,13 @@ export function MultiSelect({ value, options, onChange, label, max = 8, placehol
         </div>
       )}
       {!full && (
-        <select className="input dropdown" aria-label={t("ui.select.add_suffix", { label })} value="" data-empty
-          onChange={(e) => {
-            haptic.select();
-            if (e.target.value === OTHER) { setTyping(true); requestAnimationFrame(() => ref.current?.focus()); return; }
-            const o = left[Number(e.target.value)];
+        <Dropdown label={t("ui.select.add_suffix", { label })} placeholder={value.length ? t("ui.select.add_another") : placeholder} selected={null}
+          items={[...left.map((o, i) => ({ key: String(i), label: o.label })), ...(allowOther ? [{ key: OTHER, label: otherLabel }] : [])]}
+          onPick={(k) => {
+            if (k === OTHER) { setTyping(true); requestAnimationFrame(() => ref.current?.focus()); return; }
+            const o = left[Number(k)];
             if (o) { setTyping(false); add(o.value); }
-          }}>
-          <option value="" disabled>{value.length ? t("ui.select.add_another") : placeholder}</option>
-          {left.map((o, i) => <option key={o.value} value={i}>{o.label}</option>)}
-          {allowOther && <option value={OTHER}>{otherLabel}</option>}
-        </select>
+          }} />
       )}
       {typing && !full && (
         <div className="other-row">

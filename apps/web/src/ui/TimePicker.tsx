@@ -1,6 +1,7 @@
 import { haptic } from "../haptics";
 import { pad } from "../dates";
 import { Select } from "./Controls";
+import { Dropdown } from "./Dropdown";
 import { t } from "../text";
 
 /**
@@ -14,13 +15,13 @@ export function TimePicker({ value, onChange, label }: { value: string; onChange
   const set = (h: number, min: number, isPm: boolean) => { haptic.select(); onChange(`${pad((h % 12) + (isPm ? 12 : 0))}:${pad(min)}`); };
   return (
     <div className="timepick" role="group" aria-label={label}>
-      <select className="input dropdown" aria-label={t("ui.common.hour")} value={h12} onChange={(e) => set(Number(e.target.value), m, pm)}>
-        {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h}</option>)}
-      </select>
+      <Dropdown label={t("ui.common.hour")} selected={String(h12)} className="hour"
+        items={Array.from({ length: 12 }, (_, i) => ({ key: String(i + 1), label: String(i + 1) }))}
+        onPick={(k) => set(Number(k), m, pm)} />
       <span aria-hidden>:</span>
-      <select className="input dropdown" aria-label={t("ui.common.minute")} value={m - (m % 5)} onChange={(e) => set(h12, Number(e.target.value), pm)}>
-        {Array.from({ length: 12 }, (_, i) => i * 5).map((x) => <option key={x} value={x}>{pad(x)}</option>)}
-      </select>
+      <Dropdown label={t("ui.common.minute")} selected={String(m - (m % 5))} className="minute"
+        items={Array.from({ length: 12 }, (_, i) => ({ key: String(i * 5), label: pad(i * 5) }))}
+        onPick={(k) => set(h12, Number(k), pm)} />
       <Select className="ampm" label={t("ui.common.am_pm")} value={pm} onChange={(p) => set(h12, m, p)} options={[{ value: false, label: "AM" }, { value: true, label: "PM" }]} />
     </div>
   );
