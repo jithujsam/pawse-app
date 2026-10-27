@@ -1,9 +1,10 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { Species } from "./types";
 
-/** What each home screen pet widget shows: one stacked card per pet, with its species and mood. Android only. */
+/** What each home screen pet widget shows: one card per pet, with its species, mood and name. Android only. */
 export type WidgetMood = "happy" | "idle" | "sad";
-export interface WidgetPet { species: Species; mood: WidgetMood }
+/** `name` is left out while the app is locked, so no name sits outside the PIN. */
+export interface WidgetPet { species: Species; mood: WidgetMood; name?: string }
 interface WidgetPlugin { update(o: { pets: WidgetPet[]; day: string }): Promise<void> }
 const Widget = registerPlugin<WidgetPlugin>("Widget");
 

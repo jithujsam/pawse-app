@@ -6,11 +6,35 @@
     android:background="@null"
     android:padding="4dp">
 
-    <StackView
-        android:id="@+id/widget_stack"
+    <!-- One page per pet. The pages slide on their own; the arrows step through them. -->
+    <ViewFlipper
+        android:id="@+id/widget_pages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:loopViews="true" />
+        android:autoStart="true"
+        android:flipInterval="6000" />
+
+    <TextView
+        android:id="@+id/widget_prev"
+        android:layout_width="44dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start|center_vertical"
+        android:gravity="center"
+        android:text="&#8249;"
+        android:textSize="32sp"
+        android:contentDescription="@string/widget_previous_pet"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/widget_next"
+        android:layout_width="44dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end|center_vertical"
+        android:gravity="center"
+        android:text="&#8250;"
+        android:textSize="32sp"
+        android:contentDescription="@string/widget_next_pet"
+        android:visibility="gone" />
 
     <ImageView
         android:id="@+id/widget_empty"

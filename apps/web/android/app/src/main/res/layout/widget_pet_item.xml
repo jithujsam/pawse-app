@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One pet in the stack: its six frames cycle here, so the pet breathes and wags like it does in the app. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- One pet: its six frames cycle here, so the pet breathes and wags like it does in the app, with its name under it. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_item"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <ViewFlipper
         android:id="@+id/widget_flipper"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:autoStart="true"
         android:flipInterval="600">
 
@@ -19,4 +21,16 @@
         <ImageView android:id="@+id/widget_frame_4" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:contentDescription="@null" />
         <ImageView android:id="@+id/widget_frame_5" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:contentDescription="@null" />
     </ViewFlipper>
-</FrameLayout>
+
+    <TextView
+        android:id="@+id/widget_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:paddingTop="2dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</LinearLayout>
