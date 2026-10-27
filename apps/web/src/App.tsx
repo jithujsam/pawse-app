@@ -36,6 +36,7 @@ import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
 import { t } from "./text";
 import { APP_NAME } from "./brand";
+import { hideSplash, native } from "./native";
 
 /** One run of the loading paw (.paw-load in styles.css). The boot splash lifts only at the end of a run. */
 const PAW_RUN_MS = 1400;
@@ -62,6 +63,8 @@ export function App({ boot }: { boot: Boot }) {
   const autoLock = data.settings.autoLock;
 
   useEffect(() => { if (boot.kind === "locked") void vault.pinLength().then((length) => setLock((l) => l && { ...l, length })); }, [boot.kind]);
+  // The lock screen comes before the shell, so it lifts the launch splash itself.
+  useEffect(() => { if (lock) hideSplash(); }, [lock]);
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
@@ -144,7 +147,11 @@ function Shell() {
   const [waited, setWaited] = useState(false);
   useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
   const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
-  const lifted = useRunLift(ready && (!session || syncSettled || waited));
+  const loaded = ready && (!session || syncSettled || waited);
+  const lifted = useRunLift(loaded);
+  // On the phone the launch splash is the only boot screen. It has no paw run to wait for, so it lifts as soon as the app has loaded.
+  const up = native ? loaded : lifted;
+  useEffect(() => { if (up) hideSplash(); }, [up]);
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
@@ -205,7 +212,7 @@ function Shell() {
 
   useEffect(() => { if (data.settings.onboarded) { const t = setTimeout(prefetch, 1500); return () => clearTimeout(t); } }, [data.settings.onboarded]);
 
-  if (!ready || !lifted) return <div className="app"><BootSplash /></div>;
+  if (!up) return native ? null : <div className="app"><BootSplash /></div>;
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
   if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;

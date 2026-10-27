@@ -4,7 +4,7 @@ import { Keyboard } from "@capacitor/keyboard";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
 
-const native = Capacitor.isNativePlatform();
+export const native = Capacitor.isNativePlatform();
 
 /** Lifts the launch splash. Called once the first screen is on its way, or if starting up failed, so it never sticks. */
 export function hideSplash() {
