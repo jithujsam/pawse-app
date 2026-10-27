@@ -17,12 +17,9 @@ Every Pawse release ends with an update to the distribution repository, **`jithu
 
 Releases are plain files on `main`. The repo doesn't use GitHub Releases or tags.
 
-**Currently published, and checked:** 2.1.0, code 7.
-- `latest.json`, the README and `apk/Pawse-2.1.0.apk` agree.
-- The file's SHA-256 is `c8801d33…cba53`, matching both.
-- The APK is signed with the release key: certificate SHA-256 `80:81:68:8B:…:25:7B`, as in `apps/web/android/keystore/README.md`. It has a v2/v3 signing block.
-- The web bundle inside it reports `name:"2.1.0",code:7`.
-- **Unknown:** which `pawse-app` commit it was built from. The APK records no version-control info, which is why the procedure now records the source commit.
+**Currently published (checked 2026-10-27):** 3.9.12, code 39, matching `apps/web/version.json` and the live `latest.json`. The build history, with each release's pawse-app commit, is in `pawse-releases/RELEASE_STATUS.md`.
+- The file's SHA-256 is `9648ef63…fb89ef3`, matching `latest.json` and the README.
+- The publish workflow writes the entry, so the procedure below is kept to the check-and-verify steps.
 
 ## Non-negotiable rules
 
@@ -88,8 +85,10 @@ Without the build tools, `keytool -printcert -jarfile app-release.apk` shows the
 
 *Checked on 2026-10-24 against the published 2.1.0:* the `unzip … | grep` version check, `keytool -printcert -jarfile`, `sha256sum` and the step 4 consistency script all gave the expected results (`OK 2.1.0 7`). `apksigner` and `aapt2` aren't installed where this was written; they're the standard Android build-tools commands for the build machine.
 
-### 4. Prepare the `pawse-releases` change
-With the standing approval, commit it straight to `main` (skip the branch and PR). Without it, use a branch and PR as below.
+### 4. Publish to `pawse-releases` (the workflow does this)
+**Usual way:** Actions → **Android APK** → Run workflow, on `main`, with `build_type` = `release`, `publish` ticked, and `release_notes` = one line of plain-language notes. The `apk` job builds and verifies the signed APK. The `publish` job runs `.github/scripts/publish-release.py`, which checks the APK again and writes `apk/`, `latest.json`, the README (download link, Versions row, SHA line) and `RELEASE_STATUS.md`. It then commits and pushes to `pawse-releases` `main`, and checks that the published APK's SHA-256 matches. It needs the `PAWSE_RELEASES_TOKEN` secret: a fine-grained token with contents write on `jithujsam/pawse-releases` only. The script refuses a lower or equal code, an existing APK file, or any mismatch, and then nothing is pushed.
+
+**By hand (if the workflow can't run):** the manual edits below. Without the standing approval, use a branch and PR instead.
 ```
 git clone https://github.com/jithujsam/pawse-releases && cd pawse-releases
 git checkout -b release/<new name>
