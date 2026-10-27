@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actions, activeCompanion, cleanStreak, getData, treatsLeft, viewCompanion } from "../src/store";
+import { actions, activeCompanion, cleanStreak, getData, viewCompanion } from "../src/store";
 import { blank, migrateIds, normalize, PER_TRACK_KEYS } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import { dayStatus } from "../src/recovery";
@@ -152,7 +152,6 @@ describe("tracks never affect each other", () => {
     expect(trackState(d, "hb")).toMatchObject({ plan, celebrated: [], treatsGiven: 0, wear: null });
     expect(cleanStreak(d, "ha")).toBe(0);
     expect(cleanStreak(d, "hb")).toBe(1);
-    expect(treatsLeft(d, "hb")).toBe(1);
     expect(checkTracks(d)).toEqual([]);
   });
 
@@ -371,6 +370,7 @@ describe("missing and deleted tracks", () => {
 
 describe("backups, imports and data this version can't fully read", () => {
   it("restores a backup from before tracks, and its own exports round-trip", () => {
+    actions.applyRemote(blank()); // a restore goes onto a fresh phone; a phone that already has the habit keeps its own copy
     expect(actions.importJson(JSON.stringify(v1()))).toBe(true);
     expect(trackState(getData(), getData().habits[0].id).plan).toEqual(plan);
     const exported = actions.exportJson();

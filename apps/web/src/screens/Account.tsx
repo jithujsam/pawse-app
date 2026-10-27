@@ -5,6 +5,7 @@ import { spring } from "../motion";
 import { actions } from "../store";
 import { AUTH_REDIRECT, configured, supabase, useSession } from "../supabase";
 import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
+import { NET_MS, withTimeout } from "../net";
 import { Button, Select } from "../ui/Controls";
 import { accountBlocker, friendlyAuthError, newPasswordBlocker, passwordScore } from "../authErrors";
 import { t } from "../text";
@@ -35,6 +36,8 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [mode, setMode] = useState<"up" | "in">("up");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Deleting the account asks for the password again; it is kept only while the confirm block is open.
+  const [deletePassword, setDeletePassword] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -46,6 +49,37 @@ export function Account({ compact = false }: { compact?: boolean }) {
 
   if (!configured || !supabase) {
     return <p className="muted small">{t("account.form.unavailable")}</p>;
+  }
+
+  /**
+   * Ends this phone's session and wipes this phone's copy. The network sign-out can hang or fail, so it is bounded:
+   * the phone is wiped either way, and the account itself is untouched.
+   */
+  async function endSession(uid: string) {
+    stopSync();
+    await forgetSync(uid);
+    await withTimeout(supabase!.auth.signOut(), NET_MS).catch(() => undefined);
+    await actions.resetAll();
+  }
+
+  async function deleteAccount(uid: string, email: string) {
+    haptic.heavy();
+    setBusy(true);
+    try {
+      // GoTrue checks this password before anything is deleted. The delete_my_account function also requires a sign-in
+      // made in the last few minutes, so a stored session alone can't delete the account (see the Phase 3 report).
+      const { error: pwError } = await withTimeout(supabase!.auth.signInWithPassword({ email, password: deletePassword }), NET_MS);
+      if (pwError) { toast(friendlyAuthError(pwError.message), { kind: "bad" }); return; }
+      const { error } = await withTimeout(supabase!.rpc("delete_my_account"), NET_MS);
+      if (error) { toast(friendlyAuthError(error.message), { kind: "bad" }); return; }
+      await endSession(uid);
+      toast(t("account.signed_in.deleted"));
+    } catch (e) {
+      toast(friendlyAuthError(e instanceof Error ? e.message : e), { kind: "bad" });
+    } finally {
+      setBusy(false);
+      setDeletePassword("");
+    }
   }
 
   if (session) {
@@ -66,11 +100,12 @@ export function Account({ compact = false }: { compact?: boolean }) {
                 <p className="small" role={unsynced ? "alert" : undefined}>{unsynced ? (unsynced === 1 ? t("account.signed_in.pending_one") : t("account.signed_in.pending_other", { n: unsynced })) : t("account.signed_in.sign_out_body")}</p>
                 <Button variant="secondary" onClick={async () => {
                   if (unsynced === null) {
-                    await syncNow();
+                    // A sync that hangs must not keep the person from signing out: give it a bounded time.
+                    await withTimeout(syncNow(), NET_MS).catch(() => undefined);
                     const pending = getSyncStatus().pending;
                     if (pending > 0) { haptic.warn(); setUnsynced(pending); return; }
                   }
-                  const uid = session.user.id; stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
+                  await endSession(session.user.id);
                 }}>{t("account.signed_in.sign_out")}</Button>
                 <Button variant="text" onClick={() => { setUnsynced(null); setConfirm(null); }}>{t("ui.common.cancel")}</Button>
               </motion.div>
@@ -78,14 +113,9 @@ export function Account({ compact = false }: { compact?: boolean }) {
             {confirm === "delete" && (
               <motion.div key="del" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                 <p className="small">{t("account.signed_in.delete_body")}</p>
-                <Button variant="danger" onClick={async () => {
-                  haptic.heavy();
-                  const uid = session.user.id;
-                  const { error } = await supabase!.rpc("delete_my_account");
-                  if (error) { toast(friendlyAuthError(error.message), { kind: "bad" }); return; }
-                  stopSync(); await forgetSync(uid); await supabase!.auth.signOut(); await actions.resetAll();
-                  toast(t("account.signed_in.deleted"));
-                }}>{t("account.signed_in.delete_confirm")}</Button>
+                <label className="field"><span className="field-label">{t("account.signed_in.delete_password")}</span>
+                  <input className="input" type="password" autoComplete="current-password" maxLength={128} value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} /></label>
+                <Button variant="danger" disabled={busy || !deletePassword || !session.user.email} onClick={() => void deleteAccount(session.user.id, session.user.email ?? "")}>{t("account.signed_in.delete_confirm")}</Button>
                 <Button variant="text" onClick={() => setConfirm(null)}>{t("ui.common.cancel")}</Button>
               </motion.div>
             )}

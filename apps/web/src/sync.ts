@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { kv } from "./db";
 import { actions, getData, onCommit } from "./store";
 import { supabase } from "./supabase";
+import { withTimeout } from "./net";
 import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, TRACK_COLUMNS, type Pulled, type Table } from "./syncmap";
 
 /**
@@ -17,9 +18,24 @@ const CONFLICT: Record<Table, string> = {
 const missing = new Set<Table>();
 const isMissingTable = (msg: string) => /does not exist|could not find the table|schema cache/i.test(msg);
 const OVERLAP_MS = 5000;
+/** One whole sync pass may take this long; past it the pass is abandoned and retried later, not left hanging. */
+const CYCLE_MS = 90_000;
 
-interface Meta { cursor: Partial<Record<Table, string>>; pending: Record<string, number>; removed: Record<string, number> }
-const emptyMeta = (): Meta => ({ cursor: {}, pending: {}, removed: {} });
+/**
+ * Errors caused by a row's own contents or by permissions (a check constraint, a foreign key, a duplicate, or row-level
+ * security). Sending the same row again can't succeed, so such rows are set aside instead of blocking every sync.
+ */
+const isRowLevel = (e: { code?: string; message: string }) =>
+  /^(22|23|42501)/.test(e.code ?? "") || /violates|invalid input|null value|row-level security|foreign key|duplicate key/i.test(e.message);
+
+interface Meta {
+  cursor: Partial<Record<Table, string>>;
+  pending: Record<string, number>;
+  removed: Record<string, number>;
+  /** Changes the server refused for good, with why. They aren't retried until the row changes again. */
+  rejected: Record<string, string>;
+}
+const emptyMeta = (): Meta => ({ cursor: {}, pending: {}, removed: {}, rejected: {} });
 
 export type SyncState = "off" | "idle" | "syncing" | "offline" | "error";
 let status: { state: SyncState; last: number | null; pending: number } = { state: "off", last: null, pending: 0 };
@@ -44,7 +60,8 @@ let generation = 0;
 const echo = new Map<string, number>();
 
 const metaKey = (uid: string) => `sync:${uid}`;
-const saveMeta = () => { if (userId) void kv.set(metaKey(userId), meta).catch(() => undefined); setStatus({ pending: Object.keys(meta.pending).length + Object.keys(meta.removed).length }); };
+// Refused rows count as not backed up: sign-out warns about them, since they live only on this phone.
+const saveMeta = () => { if (userId) void kv.set(metaKey(userId), meta).catch(() => undefined); setStatus({ pending: Object.keys(meta.pending).length + Object.keys(meta.removed).length + Object.keys(meta.rejected).length }); };
 
 onCommit((prev, next, source) => {
   if (!userId) return;
@@ -63,7 +80,7 @@ onCommit((prev, next, source) => {
   const t = Date.now();
   const { changed, removed } = diff(prev, next);
   if (!changed.length && !removed.length) return;
-  for (const k of changed) { meta.pending[k] = t; delete meta.removed[k]; }
+  for (const k of changed) { meta.pending[k] = t; delete meta.removed[k]; delete meta.rejected[k]; }
   for (const k of removed) { delete meta.pending[k]; if (tombstone(k)) meta.removed[k] = t; }
   saveMeta();
   schedule(1500);
@@ -99,10 +116,11 @@ export function syncNow(): Promise<void> {
   if (running) { again = true; return running; }
   running = (async () => {
     try {
-      do { again = false; await cycle(userId!); } while (again && userId);
+      do { again = false; await withTimeout(cycle(userId!), CYCLE_MS, () => { generation++; }); } while (again && userId);
       failures = 0;
       // Signed out mid-cycle: stay "off" rather than reporting a backup that belongs to nobody.
-      if (userId) setStatus({ state: "idle", last: Date.now() });
+      // Rows the server refused stay on this phone: say so, rather than claiming everything is backed up.
+      if (userId) setStatus(Object.keys(meta.rejected).length ? { state: "error" } : { state: "idle", last: Date.now() });
     } catch (e) {
       failures++;
       const offline = typeof navigator !== "undefined" && navigator.onLine === false;
@@ -129,6 +147,30 @@ async function pullTable(table: Table, uid: string): Promise<Record<string, unkn
     if (!data || data.length < 1000) break;
   }
   return out;
+}
+
+/** Upserts one batch. Older servers without a newer column get the batch without it, as they always have. */
+async function sendRows(t: Table, rows: Record<string, unknown>[]): Promise<{ code?: string; message: string } | null> {
+  let batch = rows;
+  let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
+  // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
+  if (error && t === "companions" && /coat|personality/i.test(error.message)) {
+    batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
+  // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
+  if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
+    const drop = new Set<string>(TRACK_COLUMNS[t]);
+    batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
+  if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
+    batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  return error ? { code: error.code, message: error.message } : null;
 }
 
 async function cycle(uid: string) {
@@ -190,52 +232,48 @@ async function cycle(uid: string) {
     for (const [col, v] of Object.entries(ts.match)) q = q.eq(col, v);
     const { error } = await q;
     if (stale()) return;
-    if (error) throw new Error(`delete ${k}: ${error.message}`);
+    if (error && !isRowLevel(error)) throw new Error(`delete ${k}: ${error.message}`);
     if (meta.removed[k] === t) delete meta.removed[k];
+    if (error) { meta.rejected[k] = `delete ${ts.table}: ${error.message}`; continue; }
     echo.set(k, t);
   }
 
   // 3. push changes, parents first
   const snapshot = { ...meta.pending };
   const data = getData();
-  const byTable = new Map<Table, Record<string, unknown>[]>();
+  const byTable = new Map<Table, { key: string; row: Record<string, unknown> }[]>();
   for (const [k, t] of Object.entries(snapshot)) {
-    for (const u of toRemote(k, data, uid, t)) byTable.set(u.table, [...(byTable.get(u.table) ?? []), u.row]);
+    for (const u of toRemote(k, data, uid, t)) byTable.set(u.table, [...(byTable.get(u.table) ?? []), { key: k, row: u.row }]);
   }
   const held = new Set<string>();
+  const refused = new Set<string>();
   for (const t of PUSH_ORDER) {
-    const rows = byTable.get(t);
-    if (!rows?.length) continue;
+    const items = byTable.get(t);
+    if (!items?.length) continue;
     // Rows for a table the server lacks stay pending until it exists.
-    if (missing.has(t)) { for (const [k] of Object.entries(snapshot)) if (toRemote(k, data, uid, 0).some((u) => u.table === t)) held.add(k); continue; }
-    for (let i = 0; i < rows.length; i += 500) {
-      let batch = rows.slice(i, i + 500);
-      let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
-      // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
-      if (error && t === "companions" && /coat|personality/i.test(error.message)) {
-        batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
-      // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
-      // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
-      if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
-        const drop = new Set<string>(TRACK_COLUMNS[t]);
-        batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
-      // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
-      if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
-        batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
-        ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-      }
+    if (missing.has(t)) { for (const { key } of items) held.add(key); continue; }
+    for (let i = 0; i < items.length; i += 500) {
+      const chunk = items.slice(i, i + 500);
+      const error = await sendRows(t, chunk.map((x) => x.row));
       if (stale()) return;
-      if (error) throw new Error(`${t}: ${error.message}`);
+      if (!error) continue;
+      if (!isRowLevel(error)) throw new Error(`${t}: ${error.message}`);
+      // The server refused some rows for good, and one bad row fails the whole batch. Send each row alone, so the
+      // good ones still go, and set the refused ones aside instead of failing every cycle.
+      for (const item of chunk) {
+        const alone = await sendRows(t, [item.row]);
+        if (stale()) return;
+        if (!alone) continue;
+        if (!isRowLevel(alone)) throw new Error(`${t}: ${alone.message}`);
+        meta.rejected[item.key] = `${t}: ${alone.message}`;
+        refused.add(item.key);
+      }
     }
   }
   for (const [k, t] of Object.entries(snapshot)) {
     if (held.has(k)) continue;
     if (meta.pending[k] === t) delete meta.pending[k];
-    echo.set(k, t);
+    if (!refused.has(k)) echo.set(k, t);
   }
   saveMeta();
 }

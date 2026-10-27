@@ -81,9 +81,9 @@ export interface TrackState {
   celebrated: number[];
   /** What this track's companion is wearing, if anything. */
   wear: Accessory | null;
-  /** Treats handed out so far. Treats earned = clean days; the difference is what's in the jar. */
+  /** Legacy: treats handed out so far. No screen uses it any more; kept so saved and synced rows still read. */
   treatsGiven: number;
-  /** The last day the companion ate (YYYY-MM-DD). */
+  /** Legacy: the last day the companion ate (YYYY-MM-DD). No screen uses it any more; kept so saved rows still read. */
   fedOn: string | null;
   /** Something to save the money toward (money habits). */
   savingsGoal: SavingsGoal | null;

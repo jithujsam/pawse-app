@@ -9,6 +9,8 @@ import { cacheKey } from "./cache.ts";
 const MODELS = (Deno.env.get("AI_MODELS") ?? Deno.env.get("AI_MODEL") ?? "openai/gpt-4.1-mini")
   .split(",").map((m) => m.trim()).filter(Boolean).slice(0, 3);
 const DAILY_LIMIT = Number(Deno.env.get("AI_DAILY_LIMIT") ?? "80");
+/** AI-written text is kept for seven days at most. Older rows are never served and are deleted on the next write. */
+const RETENTION_MS = 7 * 24 * 3600_000;
 /** A ceiling on calls across everyone per UTC day, so a bug or abuse can't run up the bill. 0 turns AI off. */
 const GLOBAL_DAILY_LIMIT = Number(Deno.env.get("AI_GLOBAL_DAILY_LIMIT") ?? "3000");
 const ORIGINS = new Set(["https://localhost", "capacitor://localhost", "http://localhost", "http://localhost:5173", "http://localhost:4173",
@@ -125,8 +127,8 @@ Deno.serve(async (req) => {
   const body = parsed.data;
 
   const ck = await cacheKey(u.user.id, body);
-  const { data: hit } = await admin.from("ai_cache").select("result").eq("key", ck).maybeSingle();
-  if (hit?.result) return json(req, { ok: true, result: hit.result, cached: true });
+  const { data: hit } = await admin.from("ai_cache").select("result, created_at").eq("key", ck).maybeSingle();
+  if (hit?.result && Date.now() - Date.parse(String(hit.created_at)) < RETENTION_MS) return json(req, { ok: true, result: hit.result, cached: true });
 
   // Everyone's calls today, checked before this person's own quota. Fails closed: no count, no call.
   const { data: usage, error: usageErr } = await admin.from("ai_usage").select("calls").eq("day", new Date().toISOString().slice(0, 10));
@@ -159,7 +161,9 @@ Deno.serve(async (req) => {
     const check = (body.kind === "slip" ? SlipOut : WeeklyOut).safeParse(extractJson(content));
     if (!check.success) { console.warn("invalid output", body.kind); return json(req, { ok: false, error: "invalid" }); }
     // user_id (migration 0004) lets the cache go with the account. Before 0004 the write fails quietly and nothing is cached.
-    await admin.from("ai_cache").upsert({ key: ck, user_id: u.user.id, kind: body.kind, result: check.data });
+    // created_at is set on every write, so the seven-day limit counts from the last time the result was made.
+    await admin.from("ai_cache").upsert({ key: ck, user_id: u.user.id, kind: body.kind, result: check.data, created_at: new Date().toISOString() });
+    await admin.from("ai_cache").delete().lt("created_at", new Date(Date.now() - RETENTION_MS).toISOString());
     return json(req, { ok: true, result: check.data });
   } catch (e) {
     console.warn("failed", e instanceof Error ? e.name : "unknown");

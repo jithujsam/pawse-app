@@ -15,7 +15,7 @@ export type Mood = "idle" | "waiting" | "happy" | "hurt" | "sick" | "dying" | "s
 /** Short, one-off behaviours layered on top of the mood. */
 export type Gesture =
   | "none" | "yawn" | "perk" | "look" | "petted" | "tilt" | "hop" | "nap" | "side"
-  | "giggle" | "dizzy" | "eat" | "refuse" | "talk" | "treat";
+  | "giggle" | "dizzy" | "talk";
 /** What a tap or stroke on the companion was, so the screen can answer in its voice. */
 export type Reaction = "petted" | "giggle" | "dizzy" | "stroke";
 
@@ -75,16 +75,16 @@ export function CompanionArt({ species, coat, stage, mood, age, size = 280, look
 
   const eyes: "open" | "happy" | "closed" | "dizzy" =
     g === "dizzy" ? "dizzy"
-      : mood === "dying" || g === "nap" || g === "refuse" ? "closed"
-        : g === "petted" || g === "giggle" || g === "treat" || g === "eat" || (mood === "happy" && g === "hop") ? "happy"
+      : mood === "dying" || g === "nap" ? "closed"
+        : g === "petted" || g === "giggle" || (mood === "happy" && g === "hop") ? "happy"
           : "open";
   const lid = eyes === "open" ? (blink ? 1 : g === "yawn" ? 0.55 : tired ? 0.38 : mood === "sad" ? 0.3 : g === "side" ? 0.35 : 0) : 0;
   const brows: "sad" | "side" | null = mood === "hurt" || mood === "sad" ? "sad" : g === "side" ? "side" : null;
   const mouth: "smile" | "grin" | "o" | "frown" | "flat" | "talk" =
-    g === "talk" || g === "eat" ? "talk"
+    g === "talk" ? "talk"
       : g === "yawn" ? "o"
-        : g === "petted" || g === "giggle" || g === "hop" || g === "treat" ? "grin"
-          : mood === "hurt" || mood === "sad" || g === "refuse" ? "frown"
+        : g === "petted" || g === "giggle" || g === "hop" ? "grin"
+          : mood === "hurt" || mood === "sad" ? "frown"
             : mood === "happy" || mood === "idle" ? "smile"
               : tired ? "flat" : "smile";
   const px = Math.max(-1, Math.min(1, g === "side" ? 0.9 : look.x)) * h.eyeR * 0.38;
@@ -243,7 +243,7 @@ export function CompanionArt({ species, coat, stage, mood, age, size = 280, look
     </>);
   };
 
-  const cheeks = mood === "happy" || g === "petted" || g === "treat" || g === "giggle" || baby;
+  const cheeks = mood === "happy" || g === "petted" || g === "giggle" || baby;
   const whiskers = species === "cat" || species === "fox" || species === "rabbit";
 
   return (

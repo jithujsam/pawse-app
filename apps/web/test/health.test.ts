@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { conditions, healthReport, history, stats } from "../src/health";
-import { viewCompanion } from "../src/store";
+import { silentDays, viewCompanion } from "../src/store";
 import { blank } from "../src/persist";
 import { addDays, today } from "../src/dates";
 import type { AppData, Species } from "../src/types";
@@ -41,15 +41,31 @@ describe("health", () => {
       expect(c.find((x) => x.id === "smoking")!.days).toBeGreaterThan(0);
     }
   });
-  it("going quiet is missing data: noticed, but it costs no life and doesn't lower the heart", () => {
+  it("going quiet is missing data: the pet isn't lonely, it costs no life and doesn't lower the heart", () => {
     const d = world("cat", 0, { born: 20, neglect: true });
     const v = viewCompanion(d, "c1");
-    const lonely = conditions(d, v).find((c) => c.id === "lonely");
-    expect(lonely?.tone).toBe("mild");
-    expect(lonely?.fix).not.toMatch(/age|life|cost/i);
+    expect(silentDays(d, "h1")).toBeGreaterThanOrEqual(2);
+    expect(conditions(d, v).some((c) => c.id === "lonely" || /lonely|hasn't heard|misses/i.test(`${c.name} ${c.what} ${c.why}`))).toBe(false);
     expect(v.states.every((s) => s.neglectMonths === 0 && s.damageMonths === 0)).toBe(true);
     expect(v.age).toBe(0);
     expect(healthReport(d, v, "honest").heart).toBe(100);
+  });
+  it("the heart is the one primary number: a slip day lowers it, the same records always give the same value, and no separate life-expectancy figure is reported", () => {
+    const good = world("dog", 0, { clean: 9 });
+    const slip = world("dog", 1, { clean: 9 });
+    const heart = (d: AppData) => healthReport(d, viewCompanion(d, "c1"), "honest").heart;
+    expect(heart(slip)).toBeLessThan(heart(good));
+    expect(heart(good)).toBe(heart(world("dog", 0, { clean: 9 })));
+    expect(Object.keys(stats(good, viewCompanion(good, "c1")))).not.toContain("lifeExpectancy");
+  });
+  it("quiet days don't change the pet's stage, age or conditions compared with a checked-in day", () => {
+    const quiet = world("dog", 0, { born: 20, clean: 0 });
+    const checked = { ...quiet, cleanDays: [{ habitId: "h1", day: today() }] };
+    const q = viewCompanion(quiet, "c1");
+    const c = viewCompanion(checked, "c1");
+    expect(q.stage).toBe(c.stage);
+    expect(q.age).toBe(c.age);
+    expect(conditions(quiet, q).map((x) => x.id)).toEqual(conditions(checked, c).map((x) => x.id));
   });
   it("history lists slips with what they cost, newest first, birth last", () => {
     const d = world("dog", 1, { clean: 3 });

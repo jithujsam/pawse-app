@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, NO_DEATH_CEILING_MONTHS, repeatMultiplier, simulate, stageForAge } from "../src";
+import { baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, NO_DEATH_CEILING_MONTHS, repeatMultiplier, simulate, stageForAge } from "../src";
 import { pattern } from "../src/simulate";
 
 const firstDay = (states: ReturnType<typeof simulate>, age: number) => states.findIndex((s) => s.visibleAge >= age) + 1;
@@ -18,22 +18,8 @@ describe("deduction", () => {
     expect(computeSeverity({ classWeight: 1.4, amount: 1000, median: 100, triggers: 2 })).toBe(3);
     expect(computeSeverity({ classWeight: 0.5, amount: 1, median: 100, triggers: 0 })).toBe(0.5);
   });
-  it("AI adjustment is clamped to +/-30% and 0.5..12 months", () => {
-    expect(applyAiAdjustment(10, 90)).toBeCloseTo(12);
-    expect(applyAiAdjustment(4, 90)).toBeCloseTo(5.2);
-    expect(applyAiAdjustment(4, -90)).toBeCloseTo(2.8);
-    expect(applyAiAdjustment(0.6, -30)).toBe(0.6 * 0.7 < 0.5 ? 0.5 : 0.6 * 0.7);
-  });
-  it("AI never moves a slip more than 30% from its baseline, even above 12 months", () => {
-    for (const base of [2, 4, 9, 12, 18, 24]) for (const pct of [-90, -30, -10, 0, 10, 30, 90]) {
-      const out = applyAiAdjustment(base, pct);
-      expect(out).toBeGreaterThanOrEqual(base * 0.7 - 1e-9);
-      expect(out).toBeLessThanOrEqual(base * 1.3 + 1e-9);
-    }
-    expect(applyAiAdjustment(18, 0)).toBe(18);
-    expect(applyAiAdjustment(24, 30)).toBe(24);
-    expect(applyAiAdjustment(24, -30)).toBeCloseTo(16.8);
-    expect(applyAiAdjustment(baselineMonths(3, 5), 0)).toBe(baselineMonths(3, 5));
+  it("a slip's months come only from severity and repeats; the engine takes no AI input", () => {
+    expect(baselineMonths(2, 1)).toBe(8);
   });
 });
 
