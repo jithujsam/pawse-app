@@ -64,11 +64,11 @@ export function deathLine(tone: Tone, name: string): string {
 }
 
 export function dyingBanner(tone: Tone, name: string, age: number): string {
-  const a = Math.round(age);
+  const a = 100 - Math.round(age);
   return byTone(tone, {
-    gentle: `${name} is very tired right now (${a} of 100). Each day with your goal met helps them rest and recover.`,
-    honest: `${name} is very frail at ${a} of 100. Days with your goal met help them recover.`,
-    brutal: `${name} is very frail: ${a} of 100. Days with your goal met are what bring them back.`,
+    gentle: `${name} is very tired right now (health ${a}%). Each day with your goal met helps them rest and recover.`,
+    honest: `${name} is very frail: health is at ${a}%. Days with your goal met help them recover.`,
+    brutal: `${name} is very frail, health ${a}%. Days with your goal met are what bring them back.`,
   });
 }
 

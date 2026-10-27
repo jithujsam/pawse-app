@@ -28,7 +28,7 @@ describe("companion voice", () => {
     for (const set of [g, h, b]) for (const l of set) { expect(l).not.toMatch(SHAME); expect(l.length).toBeGreaterThan(10); }
     for (let i = 0; i < h.length; i++) { expect(g[i]).not.toBe(h[i]); expect(b[i]).not.toBe(h[i]); }
     expect(absorbedLine("honest", "Miso", 40, 2.5, false)).toContain("2.5 months");
-    expect(dyingBanner("brutal", "Miso", 92.4)).toContain("92 of 100");
+    expect(dyingBanner("brutal", "Miso", 92.4)).toContain("health 8%");
   });
   it("no line makes the pet's care conditional, refuses food, or disapproves of the person", () => {
     const CONDITIONAL = /\b(earn(ed)?|deserve|won'?t eat|refus\w*|hunger strike|on strike|disappoint\w*|disgust\w*|punish\w*|spoils? the meal|I saw that|not hungry|fast today|credit|forgave)\b/i;

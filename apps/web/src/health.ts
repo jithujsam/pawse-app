@@ -1,6 +1,6 @@
 import { cleanDaysToAge, cleanDaysToUndo, floorAge, STAGE_LABEL } from "@detox/engine";
 import { addDays, today } from "./dates";
-import { cleanStreak, recoveryPlan, silentDays, type CompanionView } from "./store";
+import { cleanStreak, recoveryPlan, SCARS_ON, silentDays, type CompanionView } from "./store";
 import { dayStatus, daysTogether, milestoneProgress, trackSummary } from "./progress";
 import { MILESTONES } from "./copy";
 import { monthsText, plural } from "./format";
@@ -149,8 +149,8 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
       fix: "Check in whenever you're ready. It only takes ten seconds, and nothing is held against the quiet days.", days: 0, tone: "mild" });
   }
   const scar = v.current ? Math.round(floorAge(v.current) * 10) / 10 : 0;
-  // Scars only exist under classic rules; under continuity a heavy day heals like any other.
-  if (d.settings.petLife === "classic" && v.states.some((x) => x.binge)) {
+  // The health bar has no scars (SCARS_ON), so a heavy day heals like any other.
+  if (SCARS_ON && v.states.some((x) => x.binge)) {
     out.push({ id: "scar", name: "Lasting mark", what: "A heavy day that left a lasting mark.", why: `A day with 3 or more slips. ${name}'s life expectancy is now ${Math.round(100 - scar)}.`, fix: "This part doesn't heal, but it doesn't have to grow.", days: null, tone: "moderate" });
   }
   return out;
@@ -172,8 +172,8 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
       flush();
       if (s.damageMonths < 0.05 && s.absorbedMonths > 0) items.push({ day: s.day, kind: "shrug", text: `A slip, but ${name} was strong enough to shrug it off` });
       else {
-        // A lasting mark is a classic-rules idea only; under continuity a heavy day is just a slip day.
-        const marked = s.binge && d.settings.petLife === "classic";
+        // A lasting mark needs scars (SCARS_ON); without them a heavy day is just a slip day.
+        const marked = s.binge && SCARS_ON;
         items.push({ day: s.day, kind: marked ? "binge" : "slip", months: s.damageMonths, text: `${name} lost ${monthsText(s.damageMonths)} of lifespan${slips.length > 1 ? ` (${slips.length} slips)` : ""}${marked ? ". A lasting mark" : ""}` });
       }
     } else if (d.cleanDays.some((c) => c.habitId === habit.id && c.day === s.day)) {

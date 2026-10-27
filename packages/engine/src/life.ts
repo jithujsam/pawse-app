@@ -23,6 +23,8 @@ export interface DayState {
   netMonths: number;
   lifetimeDamage: number;
   visibleAge: number;
+  /** The life budget this fold used, so months and age convert the same way later. Absent means the PRD 1,200. */
+  budgetMonths?: number;
   stage: Stage;
   /** Hidden reserve left at the end of the day. Never shown as a number. */
   reserveMonths: number;
@@ -42,16 +44,46 @@ export interface DayState {
  *   the ceiling isn't counted at all (not toward lifetime damage, the scar floor or binge scars), so good days
  *   always bring the companion back.
  * - scars: false turns off the permanent scar floor and binge scars, so full recovery is always possible.
+ * - budgetMonths: the months that make 100 visible age. The PRD 5.3 default is 1,200; the health bar uses 30.
  */
-export interface SimOptions { ceilingMonths?: number; scars?: boolean }
+export interface SimOptions { ceilingMonths?: number; scars?: boolean; budgetMonths?: number }
 /** Kept for callers written against the name used in the release-readiness work. */
 export type SimulateOptions = SimOptions;
 
 /** The continuity rules: the companion can get very frail but never dies, and every month can heal back. */
 export const CONTINUITY: SimOptions = { ceilingMonths: NO_DEATH_CEILING_MONTHS, scars: false };
 
-export function ageFromMonths(netMonths: number): number {
-  return Math.min(100, Math.max(0, (netMonths / LIFE_BUDGET_MONTHS) * 100));
+export function ageFromMonths(netMonths: number, budgetMonths = LIFE_BUDGET_MONTHS): number {
+  return Math.min(100, Math.max(0, (netMonths / budgetMonths) * 100));
+}
+
+/**
+ * The health bar: 20 segments of 5%, so one clean day (1.5 months) wins back one segment and a slip costs
+ * months x 10/3 percent. Visible age is the red part, and a fully red bar (30 months) is death.
+ */
+export const HEALTH_BUDGET_MONTHS = 30;
+export const HEALTH_SEGMENTS = 20;
+
+/**
+ * The rules the health bar runs on. There are no scars, so 20 clean days always bring a full bar back. Without
+ * `canDie` the bar also stops one step short of fully red, so a companion can't die.
+ */
+export function healthRules(canDie: boolean): SimOptions {
+  return canDie
+    ? { budgetMonths: HEALTH_BUDGET_MONTHS, scars: false }
+    : { budgetMonths: HEALTH_BUDGET_MONTHS, ceilingMonths: HEALTH_BUDGET_MONTHS * (NO_DEATH_CEILING_MONTHS / LIFE_BUDGET_MONTHS), scars: false };
+}
+
+/** Months to visible age points on the health bar (one point is 0.3 months). */
+export const healthAgeFromMonths = (months: number): number => (months / HEALTH_BUDGET_MONTHS) * 100;
+
+/**
+ * Red and green segments for a visible age. Any damage shows at least one red segment, and only death fills
+ * the bar: a living companion always keeps one green segment.
+ */
+export function healthSegments(age: number): { red: number; green: number } {
+  const red = age >= 100 ? HEALTH_SEGMENTS : Math.min(HEALTH_SEGMENTS - 1, Math.max(age > 0 ? 1 : 0, Math.round(age / (100 / HEALTH_SEGMENTS))));
+  return { red, green: HEALTH_SEGMENTS - red };
 }
 
 
@@ -61,6 +93,7 @@ export function ageFromMonths(netMonths: number): number {
  */
 export function simulate(days: DayInput[], opts: SimOptions = {}): DayState[] {
   const ceiling = opts.ceilingMonths ?? Infinity;
+  const budget = opts.budgetMonths ?? LIFE_BUDGET_MONTHS;
   const scars = opts.scars ?? true;
   let net = 0;
   let lifetime = 0;
@@ -91,9 +124,9 @@ export function simulate(days: DayInput[], opts: SimOptions = {}): DayState[] {
       // Healing with nothing left to heal slowly builds the hidden reserve.
       if (healed < CLEAN_DAY_HEAL_MONTHS) reserve = Math.min(RESERVE_MAX_MONTHS, reserve + RESERVE_GAIN_MONTHS);
     }
-    const visibleAge = ageFromMonths(net);
+    const visibleAge = ageFromMonths(net, budget);
     out.push({
-      day: d.day, damageMonths: damage, healedMonths: healed, netMonths: net,
+      day: d.day, budgetMonths: budget, damageMonths: damage, healedMonths: healed, netMonths: net,
       lifetimeDamage: lifetime, visibleAge, stage: stageForAge(visibleAge),
       reserveMonths: reserve, absorbedMonths: absorbed, floorMonths: scarMonths, binge, neglectMonths: neglect,
     });
@@ -102,14 +135,14 @@ export function simulate(days: DayInput[], opts: SimOptions = {}): DayState[] {
 }
 
 /** The best visible age healing can ever bring back: 100 minus this is the companion's life expectancy. */
-export const floorAge = (s: DayState): number => ageFromMonths(s.floorMonths);
+export const floorAge = (s: DayState): number => ageFromMonths(s.floorMonths, s.budgetMonths);
 
 /**
  * Clean days in a row needed to bring visible age down to `targetAge`.
  * Null when the scar floor sits above the target (that much can't come back).
  */
 export function cleanDaysToAge(s: DayState, targetAge: number): number | null {
-  const targetMonths = (Math.max(0, targetAge) / 100) * LIFE_BUDGET_MONTHS;
+  const targetMonths = (Math.max(0, targetAge) / 100) * (s.budgetMonths ?? LIFE_BUDGET_MONTHS);
   if (s.floorMonths > targetMonths + 1e-9) return null;
   const toHeal = s.netMonths - targetMonths;
   return toHeal <= 0 ? 0 : Math.ceil(toHeal / CLEAN_DAY_HEAL_MONTHS - 1e-9);

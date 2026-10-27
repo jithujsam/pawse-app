@@ -1,15 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { STAGE_LABEL } from "@detox/engine";
+import { HEALTH_SEGMENTS, healthSegments, STAGE_LABEL } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
 import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare } from "../notify";
-import { actions, getData, recoveryPlan, useActiveView, useData, type Deduction } from "../store";
-import { celebratedFor, milestoneToCelebrate, trackSummary } from "../progress";
+import { actions, getData, recoveryPlan, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
+import { celebratedFor, daysTogether, milestoneToCelebrate, trackSummary } from "../progress";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -65,6 +65,11 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
   const streak = progress.current;
   const age = view.age;
+  // The bar is the pet's health: green is what is left, red is damage, and a fully red bar is death.
+  // Age is shown as days together.
+  const healthPct = 100 - Math.round(age);
+  const days = daysTogether(companion.bornOn, today());
+  const seg = healthSegments(age);
   const danger = age >= 80;
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
@@ -105,7 +110,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
-    setNote(d.binge && data.settings.petLife === "classic" ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
+    setNote(d.binge && SCARS_ON ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
     // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
     void scheduleCare("slip", careOpts());
   }
@@ -141,7 +146,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         </motion.div>}
       </motion.header>
 
-      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, age: Math.round(age) })} variants={rise}>
+      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
@@ -168,10 +173,10 @@ export function Home({ onBack }: { onBack?: () => void }) {
             </motion.button>
           ))}
         </div>
-        <div className="agetext"><span>{t("home.hero.age")} <b><AnimatedNumber value={Math.round(age)} /></b></span><span className="muted">{t("home.hero.life_left")} <AnimatedNumber value={100 - Math.round(age)} /></span></div>
-        <div className={`agebar${danger ? " danger" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(age)} aria-label={t("home.hero.age_aria")}>
-          <motion.i initial={false} animate={{ width: `${Math.max(1.5, age)}%` }} transition={spring.calm} />
-          {plan && plan.lifeExpectancy < 100 && <span className="agebar-cap" style={{ left: `${plan.lifeExpectancy}%` }} aria-hidden />}
+        <div className="agetext"><span>{t("home.hero.day")} <b><AnimatedNumber value={days} /></b></span><span className="muted">{t("home.hero.vital_health")} <AnimatedNumber value={healthPct} />%</span></div>
+        <div className={`healthbar${danger ? " danger" : ""}`} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
+          aria-valuetext={t("home.hero.bar_text", { green: seg.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
+          {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < seg.green ? "ok" : "hurt"} />)}
         </div>
       </motion.section>
 

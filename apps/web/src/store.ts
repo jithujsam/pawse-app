@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
-  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, simulate, STAGE_LABEL, stageForAge,
+  baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, healthAgeFromMonths, healthRules, simulate, STAGE_LABEL, stageForAge,
   type DayInput, type DayState, type HabitClass, type Stage,
 } from "@detox/engine";
 import { addDays, iso, today, weekStart } from "./dates";
@@ -155,6 +155,9 @@ export interface CompanionView {
  */
 export const QUIET_DAYS_AGE = false;
 
+/** The health bar has no permanent scars, so a heavy day leaves no lasting mark and its copy stays off. */
+export const SCARS_ON = false;
+
 export function viewCompanion(d: AppData, companionId: string, upTo = today(), opts: { ignoreNoDeath?: boolean } = {}): CompanionView {
   const companion = d.companions.find((c) => c.id === companionId)!;
   const habit = d.habits.find((h) => h.companionId === companionId);
@@ -162,10 +165,10 @@ export function viewCompanion(d: AppData, companionId: string, upTo = today(), o
   // paused days, days with any record, today and days after a death are never "missed". petDayInputs counts only
   // this companion's slips on its own track, so a slip filed under another track can never age it.
   const inputs: DayInput[] = petDayInputs(d, companionId, upTo, today(), QUIET_DAYS_AGE ? d.settings.neglectFrom : null);
-  // Continuity (the default): the companion can't die and every month can heal. Classic: the PRD rules.
-  // A companion that already died stays as it was.
+  // The health bar runs on a 30-month budget (20 clean days). Continuity (the default): the companion can't die.
+  // Classic: fully red is death. A companion that already died stays as it was.
   const continuity = d.settings.petLife !== "classic" && !companion.diedOn && !opts.ignoreNoDeath;
-  const states = simulate(inputs, continuity ? CONTINUITY : {});
+  const states = simulate(inputs, healthRules(!continuity));
   const current = states[states.length - 1];
   const age = companion.finalAge ?? current?.visibleAge ?? 0;
   return { companion, habit, states, current, age, stage: stageForAge(age), dead: companion.diedOn !== null };
@@ -504,7 +507,7 @@ export const actions = {
     const nth = data.entries.filter((e) => e.habitId === habitId && e.day === day).length + 1;
     const months = baselineMonths(severity, nth);
     const before = viewCompanion(base, companion.id, day);
-    const effects = effectsFor(habit.cls, Math.min(100, before.age + months / 12));
+    const effects = effectsFor(habit.cls, Math.min(100, before.age + healthAgeFromMonths(months)));
     const tone = data.settings.tone;
     const streakBefore = cleanStreak(data, habitId);
     const entry: Entry = {

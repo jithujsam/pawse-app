@@ -14,16 +14,16 @@ export const homeHeader = defineSection("home.header", { screen: "Pet screen", t
 // @copy-section-end home.header
 
 // @copy-section home.hero
-export const homeHero = defineSection("home.hero", { screen: "Pet screen", title: "Pet, vitals and age", source: "src/screens/Home.tsx" }, {
-  hero_aria: "{name}, age {age}",
+export const homeHero = defineSection("home.hero", { screen: "Pet screen", title: "Pet, vitals and health bar", source: "src/screens/Home.tsx" }, {
+  hero_aria: "{name}, day {day}, health {health}%",
   vitals_aria: "{name}'s health",
   health_aria: "Health: {title}, {heart} of 100",
   vital_health: "Health",
   vital_history: "History",
   vital_conditions: "Conditions",
-  age: "Age",
-  life_left: "Life left",
-  age_aria: "Visible age",
+  day: "Day",
+  bar_aria: "{name}'s health",
+  bar_text: "{green} of {total} segments healthy",
 });
 // @copy-section-end home.hero
 

@@ -596,6 +596,7 @@ These override the sections they name. Reasons and sources: `docs/PAWSE_RECOVERY
    - **Pauses.** Each track can be paused and resumed. Paused days are "Not tracking" and never change records, streaks, the check-in rate or the pet.
    - **Dates.** Records keep the local day they were made on. Day arithmetic ignores daylight saving. Weeks start on Monday, calendar months have their real length, and a recovery month runs to the same day next month, clamped to the month end.
    - **The pet.** Only the track's own companion's slips age it, and only that track's goal-met days heal it.
+10. **Health bar and days (2026-10-27, §5.2, §5.3, §19.1).** The pet's health is a bar of 20 segments of 5%, with 30 months as 100% (`HEALTH_BUDGET_MONTHS`), so one goal-met day (1.5 months) wins back one segment and a slip costs months x 10/3 percent (a 4-month slip is 13.3%). Visible age is the red part. Home shows the bar and "Day N" (days together) instead of an age number. A fully red bar is death, only when "can pass away" is on; otherwise the bar stops one segment short. The health bar has no scars or binge marks, so 20 goal-met days always bring a full bar back. The 1,200-month budget stays the engine default and the §5.3 pacing table is still pinned on it; the app passes `healthRules()`.
 
 ## 20. Multi-track amendment (2026-10-25)
 

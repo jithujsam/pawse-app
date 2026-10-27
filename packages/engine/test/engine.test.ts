@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, NO_DEATH_CEILING_MONTHS, repeatMultiplier, simulate, stageForAge } from "../src";
+import { applyAiAdjustment, baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, CONTINUITY, floorAge, HEALTH_SEGMENTS, healthAgeFromMonths, healthRules, healthSegments, NO_DEATH_CEILING_MONTHS, repeatMultiplier, simulate, stageForAge, type DayInput } from "../src";
 import { pattern } from "../src/simulate";
 
 const firstDay = (states: ReturnType<typeof simulate>, age: number) => states.findIndex((s) => s.visibleAge >= age) + 1;
@@ -200,5 +200,50 @@ describe("optional no-death ceiling", () => {
     const s = simulate([...pattern(200, () => 5, 3), ...pattern(10, () => 0, 1)], { ceilingMonths: NO_DEATH_CEILING_MONTHS });
     expect(s[200].healedMonths).toBe(1.5);
     expect(s[209].visibleAge).toBeLessThan(99);
+  });
+});
+
+// The health bar (30 months = 100%, 20 segments of 5%). The PRD 5.3 pacing table above is pinned on the
+// default 1,200-month budget; these tests pin what the health bar's budget changes and that it leaves the default alone.
+describe("health bar", () => {
+  const day = (i: number) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+  const run = (spec: ("clean" | number)[]): DayInput[] => spec.map((x, i) => ({ day: day(i), damage: x === "clean" ? [] : [x], clean: x === "clean" }));
+
+  it("one clean day (1.5 months) is one 5% segment", () => {
+    expect(healthAgeFromMonths(1.5)).toBeCloseTo(5, 9);
+    const s = simulate(run([12, "clean"]), healthRules(true));
+    expect(s[0].visibleAge).toBeCloseTo(40, 9);
+    expect(s[1].visibleAge).toBeCloseTo(35, 9);
+  });
+  it("a baseline slip (4 months) takes 13.3% and about 3 clean days win it back", () => {
+    const s = simulate(run([4, "clean", "clean", "clean"]), healthRules(true));
+    expect(s[0].visibleAge).toBeCloseTo(13.333, 3);
+    expect(s[3].visibleAge).toBe(0);
+  });
+  it("20 clean days bring a bar that is nearly fully red back to full green", () => {
+    const s = simulate(run([12, 12, 5.9, ...Array(20).fill("clean")]), healthRules(false));
+    expect(s[2].visibleAge).toBeCloseTo(99, 9);
+    expect(s[22].visibleAge).toBe(0);
+  });
+  it("fully red is death with passing away on, and never reached with it off", () => {
+    const heavy = run([12, 12, 12]);
+    expect(simulate(heavy, healthRules(true))[2]).toMatchObject({ visibleAge: 100, stage: "dead" });
+    const alive = simulate(heavy, healthRules(false));
+    expect(alive.some((x) => x.stage === "dead")).toBe(false);
+    expect(alive[2].visibleAge).toBeCloseTo(99, 9);
+  });
+  it("there are no scars: a binge day still heals all the way", () => {
+    const days: DayInput[] = [{ day: day(0), damage: [4, 4, 4], clean: false }, ...run(Array(8).fill("clean")).map((d, i) => ({ ...d, day: day(i + 1) }))];
+    expect(simulate(days, healthRules(true))[8].visibleAge).toBe(0);
+  });
+  it("segments: any damage shows, a living pet keeps one green, only death fills the bar", () => {
+    expect(healthSegments(0)).toEqual({ red: 0, green: HEALTH_SEGMENTS });
+    expect(healthSegments(1.7)).toEqual({ red: 1, green: 19 });
+    expect(healthSegments(13.3)).toEqual({ red: 3, green: 17 });
+    expect(healthSegments(99)).toEqual({ red: 19, green: 1 });
+    expect(healthSegments(100)).toEqual({ red: 20, green: 0 });
+  });
+  it("the default budget is unchanged", () => {
+    expect(simulate(run([12]))[0].visibleAge).toBeCloseTo(1, 9);
   });
 });

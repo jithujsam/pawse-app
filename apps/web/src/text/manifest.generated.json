@@ -1148,7 +1148,7 @@
     {
       "id": "home.hero",
       "screen": "Pet screen",
-      "title": "Pet, vitals and age",
+      "title": "Pet, vitals and health bar",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 16,
@@ -1158,7 +1158,8 @@
           "id": "home.hero.hero_aria",
           "kind": "text",
           "placeholders": [
-            "age",
+            "day",
+            "health",
             "name"
           ]
         },
@@ -1193,19 +1194,24 @@
           "placeholders": []
         },
         {
-          "id": "home.hero.age",
+          "id": "home.hero.day",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "home.hero.life_left",
+          "id": "home.hero.bar_aria",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "name"
+          ]
         },
         {
-          "id": "home.hero.age_aria",
+          "id": "home.hero.bar_text",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "green",
+            "total"
+          ]
         }
       ]
     },

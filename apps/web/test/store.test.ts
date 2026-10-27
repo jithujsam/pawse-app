@@ -32,8 +32,8 @@ describe("AI polish on a slip", () => {
   });
 
   it("never lets the AI's nudge be what kills the companion (classic rules, where death exists)", () => {
-    // 50 old slips of 23.8 months = 1190 net; today's 8-month slip leaves it alive at 1198 of 1200.
-    load([...Array.from({ length: 50 }, (_, i) => entry(`old${i}`, addDays(t0, -50 + i), 23.8)), entry("e1", t0, 8)]);
+    // Two old slips of 10 months = 20 net; today's 8-month slip leaves it alive at 28 of 30 (the health bar's budget).
+    load([entry("old0", addDays(t0, -2), 10), entry("old1", addDays(t0, -1), 10), entry("e1", t0, 8)]);
     actions.setSettings({ petLife: "classic" });
     expect(viewCompanion(getData(), C).stage).not.toBe("dead");
     expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
@@ -140,7 +140,7 @@ describe("pet rules: continuity by default, classic opt-in", () => {
   });
 
   it("classic rules (opt-in) keep the PRD behaviour: a companion can die", () => {
-    load(heavy().slice(0, 50)); // 50 x 24 = 1200 months: the next slip records the death
+    load(heavy().slice(0, 50)); // far past the 30-month budget: the next slip records the death
     actions.setSettings({ petLife: "classic" });
     actions.logSlip(H, {}, t0);
     expect(getData().companions[0].diedOn).not.toBeNull();

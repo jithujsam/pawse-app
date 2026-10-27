@@ -12,7 +12,8 @@ import { fmtDay, fmtTime, today } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
-import { actions, slipRequest, useData, type Deduction } from "../store";
+import { healthAgeFromMonths } from "@detox/engine";
+import { actions, SCARS_ON, slipRequest, useData, type Deduction } from "../store";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, ConcernNote, GuardedInput, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
@@ -120,7 +121,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
 
   if (result) {
     const felt = Math.max(0, result.entry.months - result.absorbed);
-    const ageAfter = Math.min(100, ageBefore + (felt / 1200) * 100);
+    const ageAfter = Math.min(100, ageBefore + healthAgeFromMonths(felt));
     const shrugged = result.absorbed > 0 && felt < 0.05;
     return (
       <motion.div className="stack" variants={stagger} initial="hidden" animate="show">
@@ -134,7 +135,7 @@ function LogBody({ habit, name, age, onClose, onSaved, day: presetDay }: Props) 
             <motion.i className="added" initial={{ width: 0 }} animate={{ width: `${Math.max(0.6, ageAfter - ageBefore)}%` }} transition={{ ...spring.calm, delay: 0.35 }} style={{ left: `${ageBefore}%` }} />
           </div>
           {result.absorbed > 0 && <span className="small">{absorbedLine(data.settings.tone, name, result.streakBefore, result.absorbed, shrugged)}</span>}
-          {result.binge && data.settings.petLife === "classic" && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
+          {result.binge && SCARS_ON && <span className="small">{bingeLine(data.settings.tone, name)}</span>}
           {!shrugged && result.effectLine && <span>{result.effectLine}</span>}
           <span className="muted small">{result.nthToday > 1 ? t("sheets.log.slip_n", { n: result.nthToday }) : ""}{result.weekSlips === 1 ? t("sheets.log.this_week_one") : t("sheets.log.this_week_other", { n: result.weekSlips })}</span>
         </motion.div>
