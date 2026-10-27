@@ -20,7 +20,6 @@ export const MAX_SEVERITY = 3.0;
 export const MAX_REPEAT_MULTIPLIER = 2.0;
 export const MIN_SLIP_MONTHS = 0.5;
 export const MAX_SLIP_MONTHS = 12;
-export const MAX_AI_ADJUST_PCT = 30;
 export const TRIGGER_BONUS = 0.25;
 export const MAX_TRIGGER_BONUS = 0.5;
 

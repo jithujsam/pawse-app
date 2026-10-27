@@ -3,8 +3,7 @@ import { careNote, recoveryLine, say, type Event } from "../src/voice";
 import { absorbedLine, bingeLine, dyingBanner, greeting, quietBanner, welcomeBackLine } from "../src/copy";
 import { blank, normalize } from "../src/persist";
 import { toRemote, merge, type Pulled } from "../src/syncmap";
-import { treatsLeft } from "../src/store";
-import { defaultTrackState } from "../src/tracks";
+import { defaultTrackState, trackState } from "../src/tracks";
 import { COATS, coatFor, mix, tuxedoPixels } from "../src/pets";
 import type { AppData, Personality, Tone } from "../src/types";
 
@@ -73,10 +72,9 @@ function sample(): AppData {
 }
 
 describe("care data", () => {
-  it("treats: one per clean day, minus those given", () => {
-    expect(treatsLeft(sample(), "h1")).toBe(2);
-    const s = sample();
-    expect(treatsLeft({ ...s, habits: s.habits.map((h) => ({ ...h, track: { ...h.track!, treatsGiven: 9 } })) }, "h1")).toBe(0);
+  it("legacy treat count still loads from saved data, though no screen shows or changes it", () => {
+    const d = normalize(JSON.parse(JSON.stringify(sample())))!;
+    expect(trackState(d, "h1").treatsGiven).toBe(1);
   });
   it("coat, personality and care settings survive storage and sync", () => {
     const d = normalize(JSON.parse(JSON.stringify(sample())))!;

@@ -61,8 +61,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const checked = slippedToday || cleanToday;
   // Any record today is a check-in (an urge too); a paused or not-tracked day isn't waiting for one.
   const checkedIn = checked || progress.today === "urge";
-  const lonely = !checkedIn && !resting && progress.quiet >= 3;
-  const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
+  // After a few quiet days the line is a warm welcome back. The pet keeps its usual mood: quiet days don't change how it looks.
+  const returning = !checkedIn && !resting && progress.quiet >= 3;
+  const mood = moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
   const streak = progress.current;
   const age = view.age;
   const danger = age >= 80;
@@ -73,7 +74,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
-    : lonely ? welcomeBackLine(tone, companion.name)
+    : returning ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
@@ -168,7 +169,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
             </motion.button>
           ))}
         </div>
-        <div className="agetext"><span>{t("home.hero.age")} <b><AnimatedNumber value={Math.round(age)} /></b></span><span className="muted">{t("home.hero.life_left")} <AnimatedNumber value={100 - Math.round(age)} /></span></div>
+        <div className="agetext"><span>{t("home.hero.age")} <b><AnimatedNumber value={Math.round(age)} /></b></span></div>
         <div className={`agebar${danger ? " danger" : ""}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(age)} aria-label={t("home.hero.age_aria")}>
           <motion.i initial={false} animate={{ width: `${Math.max(1.5, age)}%` }} transition={spring.calm} />
           {plan && plan.lifeExpectancy < 100 && <span className="agebar-cap" style={{ left: `${plan.lifeExpectancy}%` }} aria-hidden />}

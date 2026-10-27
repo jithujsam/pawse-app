@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
+import { motion } from "motion/react";
 import { projectDaysToAge } from "@detox/engine";
-import { aiWeekly } from "../ai";
-import { configured, useSession } from "../supabase";
 import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
 import { checkIns, countDays, trackIndex, trackSummary, weekdayOf } from "../progress";
 import { addDays, fmtHour, today, weekStart } from "../dates";
 import { rise, spring, stagger } from "../motion";
-import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekRequestFor, weekStats } from "../store";
+import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekStats } from "../store";
 import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon, plainOpts, SelectOther, TrackContext } from "../ui/Controls";
@@ -19,7 +17,6 @@ import type { Baseline } from "../types";
 
 /** Common things to save for. Anything else can be typed. */
 export const SAVING_FOR = ["An emergency fund", "A trip", "Something for my home", "A gift for someone", "Paying off a debt", "Something I've wanted for a while", "My future"];
-const DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const BASELINE_LABEL: Record<Baseline, string> = { many_daily: t("insights.since.several_daily"), daily: t("insights.since.daily"), few_weekly: t("insights.since.few_weekly"), weekly: t("insights.since.weekly") };
 
 
@@ -77,8 +74,6 @@ export function Report() {
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
   const maxW = Math.max(1, ...weeks);
   const all = data.entries.filter((e) => e.habitId === habit.id);
-  const byDow = DOW.map((_, i) => all.filter((e) => weekdayOf(e.day) === i).length);
-  const worst = byDow.indexOf(Math.max(...byDow));
   const frailIn = view.age >= 80 ? 0 : projectDaysToAge(view.states, 80);
   const money = habit.unit === "money";
   const fmt = (n: number) => Math.round(n * 10) / 10;
@@ -87,27 +82,8 @@ export function Report() {
   const pace = recentPace(data, habit.id, companion.bornOn);
   const recentPerWeek = pace ?? 0;
 
-  const { session } = useSession();
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // Summaries written earlier stay readable here. New ones are no longer written: the numbers above already say it.
   const summary = data.summaries[habit.id]?.[ws];
-  async function write() {
-    const req = weekRequestFor(habit.id, ws, all.length >= 3 ? DOW[worst] : null);
-    if (!req) return;
-    setBusy(true); setFailed(false);
-    const text = await aiWeekly(req);
-    setBusy(false);
-    if (text) actions.setSummary(ws, text, habit.id); else setFailed(true);
-  }
-
-  // Write the week's summary on its own once there's something to say; at most every six hours.
-  useEffect(() => {
-    if (!session || summary || busy || cur.slips + prev.slips === 0) return;
-    const k = `companion/auto-summary/${ws}`;
-    try { if (Date.now() - Number(localStorage.getItem(k) ?? 0) < 6 * 3600_000) return; localStorage.setItem(k, String(Date.now())); } catch { return; }
-    void write();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, ws]);
 
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 
@@ -195,23 +171,11 @@ export function Report() {
         </motion.section>
       )}
 
-      {configured && (
+      {summary && (
         <motion.section className="card stack" aria-label={t("insights.summary.aria")} variants={rise}>
           <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>{t("insights.summary.title")}</h2></div>
-          <AnimatePresence mode="wait">
-            {busy ? (
-              <motion.div key="busy" className="stack tight" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="shimmer-line" /><div className="shimmer-line" /><div className="shimmer-line short" />
-              </motion.div>
-            ) : summary ? (
-              <motion.p key={summary} className="bubble" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>{summary}</motion.p>
-            ) : (
-              <motion.p key="empty" className="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>{session ? t("insights.summary.empty_in") : t("insights.summary.empty_out")}</motion.p>
-            )}
-          </AnimatePresence>
-          {summary && <p className="muted small">{t("insights.summary.ai_note")}</p>}
-          {failed && <p className="err" role="alert">{t("insights.summary.failed")}</p>}
-          {session && <Button variant="secondary" disabled={busy || cur.slips + prev.slips === 0} onClick={write}>{busy ? t("insights.summary.writing") : summary ? t("insights.summary.again") : t("insights.summary.write")}</Button>}
+          <p className="bubble">{summary}</p>
+          <p className="muted small">{t("insights.summary.ai_note")}</p>
         </motion.section>
       )}
 

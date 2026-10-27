@@ -66,7 +66,8 @@ describe("PIN encryption", () => {
 
 describe("app lock changes", () => {
   it("tell listeners (the widget) when the PIN is turned on and off", async () => {
-    const { onPinChange, vault } = await import("../src/store");
+    const { boot, onPinChange, vault } = await import("../src/store");
+    await boot(); // the PIN can only be changed once the data is loaded, as in the app
     let n = 0;
     const off = onPinChange(() => n++);
     await vault.setPin("4826");
@@ -75,5 +76,52 @@ describe("app lock changes", () => {
     expect(vault.hasPin()).toBe(false);
     expect(n).toBe(2);
     off();
+  });
+});
+
+describe("restoring a backup only adds (the additive rule)", () => {
+  const E1 = "33333333-3333-4333-8333-333333333331", E2 = "33333333-3333-4333-8333-333333333332", E3 = "33333333-3333-4333-8333-333333333333";
+  const entry = (id: string, months: number, createdAt: number) => ({
+    id, habitId: H, companionId: C, day: "2026-10-02", time: null, values: {}, amount: null, months, severity: 1, effects: [], explanation: "", source: "baseline" as const, aiAdjustPct: null, createdAt,
+  });
+
+  it("keeps this phone's version of anything with the same id, and adds what it doesn't have", () => {
+    const backup = { ...sample(), entries: [entry(E1, 9, 1), entry(E2, 2, 2)], summaries: {} };
+    actions.applyRemote({ ...sample(), entries: [entry(E1, 4, 1), entry(E3, 1, 3)], settings: { ...sample().settings, userName: "Sam", onboarded: true } });
+    const file = JSON.stringify(backup);
+    expect(actions.importJson(file)).toBe(true);
+    const d = getData();
+    expect(d.entries.find((e) => e.id === E1)!.months).toBe(4); // this phone's edit wins
+    expect(d.entries.find((e) => e.id === E2)!.months).toBe(2); // missing here, so added
+    expect(d.entries.find((e) => e.id === E3)).toBeDefined(); // nothing is deleted
+    expect(d.settings.userName).toBe("Sam"); // settings are never replaced
+  });
+
+  it("doesn't add a second clean day for the same habit and day, or a second journal entry for the same day", () => {
+    actions.applyRemote({ ...sample(), entries: [] });
+    const before = getData();
+    actions.importJson(JSON.stringify({ ...sample(), entries: [], cleanDays: [{ habitId: H, day: "2026-10-03" }], journal: [{ day: "2026-10-03", mood: 1, body: "other" }] }));
+    expect(getData().cleanDays.filter((c) => c.day === "2026-10-03")).toHaveLength(1);
+    expect(getData().journal.filter((j) => j.day === "2026-10-03")).toHaveLength(1);
+    expect(getData().journal[0].body).toBe(before.journal[0].body);
+  });
+
+  it("keeps this phone's weekly summary for a week it already has, and adds the other weeks", () => {
+    actions.applyRemote({ ...sample(), summaries: { [H]: { "2026-10-05": "Local words." } } });
+    actions.importJson(JSON.stringify({ ...sample(), summaries: { [H]: { "2026-10-05": "Backup words.", "2026-09-28": "Older week." } } }));
+    expect(getData().summaries[H]).toEqual({ "2026-10-05": "Local words.", "2026-09-28": "Older week." });
+  });
+
+  it("leaves out rows whose pet is missing, so nothing orphaned is added", () => {
+    actions.applyRemote({ ...sample(), entries: [] });
+    actions.importJson(JSON.stringify({ ...sample(), entries: [{ ...entry(E2, 2, 2), companionId: "99999999-9999-4999-8999-999999999999" }] }));
+    expect(getData().entries.some((e) => e.id === E2)).toBe(false);
+  });
+
+  it("undoing a restored entry twice brings it back only once", () => {
+    actions.applyRemote({ ...sample(), entries: [entry(E1, 4, 1)] });
+    actions.restoreEntry(entry(E1, 4, 1));
+    actions.restoreEntry(entry(E1, 4, 1));
+    expect(getData().entries.filter((e) => e.id === E1)).toHaveLength(1);
   });
 });

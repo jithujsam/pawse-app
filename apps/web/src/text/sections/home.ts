@@ -22,7 +22,6 @@ export const homeHero = defineSection("home.hero", { screen: "Pet screen", title
   vital_history: "History",
   vital_conditions: "Conditions",
   age: "Age",
-  life_left: "Life left",
   age_aria: "Visible age",
 });
 // @copy-section-end home.hero

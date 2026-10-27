@@ -127,7 +127,7 @@ describe("3. goal-met days are recalculated when slips change", () => {
     const day = addDays(t(), -1);
     actions.markClean(A, day);
     const e = actions.logSlip(A, {}, day).entry;
-    actions.applyAi(e.id, { months: 2, adjustPct: -10, effects: [], explanation: "x" });
+    actions.applyAi(e.id, { effects: [], explanation: "x" });
     actions.reflectOnLapse(e.id, { before: "tired", adjust: "eat earlier" });
     expect(dayStatus(getData(), A, day, t())).toBe("lapse");
   });

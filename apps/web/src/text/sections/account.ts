@@ -66,6 +66,7 @@ export const accountSignedIn = defineSection("account.signed_in", { screen: "Acc
   pending_other: "{n} changes haven't backed up yet and will be lost. Sign out anyway?",
   delete_body: "This permanently deletes your account, your pets and every log, here and in the cloud. It can't be undone.",
   delete_confirm: "Delete my account for good",
+  delete_password: "Your password, to confirm",
   deleted: "Your account was deleted",
 });
 // @copy-section-end account.signed_in
