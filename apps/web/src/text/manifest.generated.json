@@ -2121,7 +2121,7 @@
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
       "start": 82,
-      "end": 94,
+      "end": 88,
       "entries": [
         {
           "id": "insights.summary.aria",
@@ -2134,37 +2134,7 @@
           "placeholders": []
         },
         {
-          "id": "insights.summary.empty_in",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.summary.empty_out",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "insights.summary.ai_note",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.summary.failed",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.summary.writing",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.summary.again",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.summary.write",
           "kind": "text",
           "placeholders": []
         }
@@ -2176,8 +2146,8 @@
       "title": "Slips per week",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 96,
-      "end": 102,
+      "start": 90,
+      "end": 96,
       "entries": [
         {
           "id": "insights.chart.title",
@@ -2204,8 +2174,8 @@
       "title": "If nothing changes",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 104,
-      "end": 112,
+      "start": 98,
+      "end": 106,
       "entries": [
         {
           "id": "insights.forecast.title",
@@ -2249,8 +2219,8 @@
       "title": "How was today?",
       "source": "src/screens/Reflect.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 114,
-      "end": 134,
+      "start": 108,
+      "end": 128,
       "entries": [
         {
           "id": "insights.reflect.title",
@@ -2345,8 +2315,8 @@
       "title": "Weekly review",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 136,
-      "end": 159,
+      "start": 130,
+      "end": 153,
       "entries": [
         {
           "id": "insights.review.check_in",
@@ -2470,8 +2440,8 @@
       "title": "Weekly review headline",
       "source": "src/recovery.ts",
       "file": "src/text/sections/insights.ts",
-      "start": 161,
-      "end": 171,
+      "start": 155,
+      "end": 165,
       "entries": [
         {
           "id": "insights.goal_line.nothing_open",
@@ -2530,8 +2500,8 @@
       "title": "What your records show",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 173,
-      "end": 186,
+      "start": 167,
+      "end": 180,
       "entries": [
         {
           "id": "insights.patterns.aria",
@@ -4097,7 +4067,7 @@
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 133,
-      "end": 155,
+      "end": 154,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4121,11 +4091,6 @@
         },
         {
           "id": "sheets.health.tab_conditions",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.health.life_expectancy",
           "kind": "text",
           "placeholders": []
         },
@@ -4213,8 +4178,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 157,
-      "end": 196,
+      "start": 156,
+      "end": 195,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4412,8 +4377,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 198,
-      "end": 223,
+      "start": 197,
+      "end": 222,
       "entries": [
         {
           "id": "sheets.memorial.life",
@@ -4778,7 +4743,7 @@
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
       "start": 59,
-      "end": 71,
+      "end": 72,
       "entries": [
         {
           "id": "account.signed_in.as",
@@ -4825,6 +4790,11 @@
           "placeholders": []
         },
         {
+          "id": "account.signed_in.delete_password",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "account.signed_in.deleted",
           "kind": "text",
           "placeholders": []
@@ -4837,8 +4807,8 @@
       "title": "Backup status",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 73,
-      "end": 84,
+      "start": 74,
+      "end": 85,
       "entries": [
         {
           "id": "account.sync.syncing",
@@ -4892,8 +4862,8 @@
       "title": "Check your email",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 86,
-      "end": 94,
+      "start": 87,
+      "end": 95,
       "entries": [
         {
           "id": "account.check_email.title",
@@ -4930,8 +4900,8 @@
       "title": "Choose a new password",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 96,
-      "end": 105,
+      "start": 97,
+      "end": 106,
       "entries": [
         {
           "id": "account.new_password.title",

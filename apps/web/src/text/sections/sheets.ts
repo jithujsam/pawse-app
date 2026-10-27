@@ -137,7 +137,6 @@ export const sheetsHealth = defineSection("sheets.health", { screen: "Health", t
   tab_health: "Health",
   tab_history: "History",
   tab_conditions: "Conditions",
-  life_expectancy: "Life expectancy",
   check_ins: "Check-ins",
   things_one: "1 thing affecting {name}",
   things_other: "{n} things affecting {name}",

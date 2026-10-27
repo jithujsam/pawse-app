@@ -61,8 +61,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const checked = slippedToday || cleanToday;
   // Any record today is a check-in (an urge too); a paused or not-tracked day isn't waiting for one.
   const checkedIn = checked || progress.today === "urge";
-  const lonely = !checkedIn && !resting && progress.quiet >= 3;
-  const mood = lonely && !just ? "waiting" : moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
+  // After a few quiet days the line is a warm welcome back. The pet keeps its usual mood: quiet days don't change how it looks.
+  const returning = !checkedIn && !resting && progress.quiet >= 3;
+  const mood = moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
   const streak = progress.current;
   const age = view.age;
   // The bar is the pet's health: green is what is left, red is damage, and a fully red bar is death.
@@ -78,7 +79,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
-    : lonely ? welcomeBackLine(tone, companion.name)
+    : returning ? welcomeBackLine(tone, companion.name)
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));

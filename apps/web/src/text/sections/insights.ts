@@ -83,13 +83,7 @@ export const insightsSince = defineSection("insights.since", { screen: "Insights
 export const insightsSummary = defineSection("insights.summary", { screen: "Insights", title: "Written summary", source: "src/screens/Report.tsx" }, {
   aria: "Written summary",
   title: "In words",
-  empty_in: "A short, honest read of your week, written for you.",
-  empty_out: "Sign in from Me to get a short written read of your week.",
   ai_note: "Written by an AI service from your counts. See Me → Your data for exactly what is sent.",
-  failed: "Couldn't write it just now. Your numbers above are unaffected. Try again later.",
-  writing: "Writing…",
-  again: "Write it again",
-  write: "Write my summary",
 });
 // @copy-section-end insights.summary
 

@@ -23,7 +23,8 @@ vi.mock("../src/supabase", () => ({
   },
 }));
 
-const { aiCacheKey, aiForSlip, aiWeekly } = await import("../src/ai");
+const { aiCacheKey, aiForSlip, AI_RETENTION_MS } = await import("../src/ai");
+const { AI_CACHE_KEY } = await import("../src/store");
 
 const req: SlipRequest = {
   kind: "slip", tone: "honest", habitClass: "food_spending", companionName: "Biscuit", amount: 400, unit: "money", median: 200,
@@ -92,14 +93,58 @@ describe("when the AI fails or answers badly, the baseline stands", () => {
     expect(calls).toBe(n);
     signedIn = true;
   });
+});
 
-  it("weekly summary must be safe and cite a number", async () => {
-    const week = { kind: "weekly" as const, tone: "honest" as const, habitClass: "food_spending", companionName: "Biscuit", unit: "money" as const,
-      thisWeek: { slips: 3, spend: 900, months: 9 }, lastWeek: { slips: 5, spend: 1500, months: 15 }, worstWeekday: "Friday", age: 12, currency: "₹" };
-    reply = bad({ summary: "A quieter week than the last one, mostly on Fridays." });
-    expect(await aiWeekly(week)).toBeNull();
-    reply = bad({ summary: "3 slips this week, down from 5. Fridays were the hardest." });
-    expect(await aiWeekly(week)).toBe("3 slips this week, down from 5. Fridays were the hardest.");
+describe("the AI's percentage is ignored", () => {
+  it("a slip answer carries a sentence and tags, never a months figure", async () => {
+    reply = () => ({ data: { ok: true, result: { ai_adjust_pct: 30, body_effects: ["cough"], explanation: "Biscuit coughed." } }, error: null });
+    const a = await aiForSlip({ ...req, amount: 778 });
+    expect(a).toEqual({ effects: ["cough"], explanation: "Biscuit coughed." });
+    expect(a).not.toHaveProperty("months");
+    expect(a).not.toHaveProperty("adjustPct");
     reply = null;
+  });
+});
+
+describe("AI retention and sign-in", () => {
+  const DAY = 24 * 3600_000;
+  const seed = (entries: Record<string, unknown>) => mem.set(AI_CACHE_KEY, JSON.stringify(entries));
+  const fresh = (n: number): SlipRequest => ({ ...req, amount: 2000 + n });
+
+  it("keeps an answer for seven days, and no longer", () => {
+    expect(AI_RETENTION_MS).toBe(7 * DAY);
+  });
+
+  it("serves a cached answer that is under seven days old, without asking the AI again", async () => {
+    const r = fresh(1);
+    seed({ [aiCacheKey(r)]: { at: Date.now() - 2 * DAY, raw: { ai_adjust_pct: 0, body_effects: [], explanation: "Biscuit, from the cache." } } });
+    const before = calls;
+    expect((await aiForSlip(r))?.explanation).toBe("Biscuit, from the cache.");
+    expect(calls).toBe(before);
+  });
+
+  it("does not serve an answer older than seven days; it asks again", async () => {
+    const r = fresh(2);
+    seed({ [aiCacheKey(r)]: { at: Date.now() - 8 * DAY, raw: { ai_adjust_pct: 0, body_effects: [], explanation: "Stale." } } });
+    const before = calls;
+    expect((await aiForSlip(r))?.explanation).toBe("Biscuit felt that.");
+    expect(calls).toBe(before + 1);
+    expect(JSON.parse(mem.get(AI_CACHE_KEY)!)[aiCacheKey(r)].raw.explanation).toBe("Biscuit felt that.");
+  });
+
+  it("discards entries saved in the old, untimed format", async () => {
+    const r = fresh(3);
+    seed({ [aiCacheKey(r)]: { ai_adjust_pct: 0, body_effects: [], explanation: "Untimed." } });
+    expect((await aiForSlip(r))?.explanation).toBe("Biscuit felt that.");
+  });
+
+  it("signed out: nothing is sent and no cached answer is shown", async () => {
+    const r = fresh(4);
+    seed({ [aiCacheKey(r)]: { at: Date.now(), raw: { ai_adjust_pct: 0, body_effects: [], explanation: "Cached." } } });
+    signedIn = false;
+    const before = calls;
+    expect(await aiForSlip(r)).toBeNull();
+    expect(calls).toBe(before);
+    signedIn = true;
   });
 });

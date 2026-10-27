@@ -12,6 +12,7 @@ import { concernIn, concernInAny, type Concern } from "./guard";
 import { NAMES } from "./pets";
 import { money } from "./format";
 import { kv, idbAvailable } from "./db";
+import { withTimeout } from "./net";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, trackState } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
@@ -49,6 +50,12 @@ function commit(next: AppData, source: CommitSource = "local") {
 // ---------- persistence: IndexedDB, encrypted when a PIN is set ----------
 
 let vaultKey: VaultKey | null = null;
+/**
+ * True only once `data` holds what was actually loaded: after a normal boot, after a successful unlock, or after an
+ * explicit erase. While the vault is locked (or a boot read failed), `data` is a blank placeholder. Writing it would
+ * overwrite the encrypted vault with an empty object, so flush() does nothing until this is true.
+ */
+let writable = false;
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 let writing: Promise<void> = Promise.resolve();
 
@@ -61,6 +68,7 @@ export function flush(): Promise<void> {
   clearTimeout(persistTimer);
   const snapshot = data;
   writing = writing.then(async () => {
+    if (!writable) return;
     try {
       if (!idbAvailable()) { localStorage.setItem(LEGACY_KEY, JSON.stringify(snapshot)); return; }
       // The pet's species alone stays readable, so the lock screen wears the person's accent colour.
@@ -79,8 +87,10 @@ export type Boot = { kind: "ready" } | { kind: "locked"; sealed: Sealed };
 export async function boot(): Promise<Boot> {
   if (!idbAvailable()) {
     try { data = migrateIds(normalize(JSON.parse(localStorage.getItem(LEGACY_KEY) ?? "null")) ?? blank()); } catch { data = blank(); }
+    writable = true;
     return { kind: "ready" };
   }
+  writable = false;
   try {
     const sealed = await kv.get<Sealed>("data.enc");
     if (sealed) {
@@ -101,8 +111,9 @@ export async function boot(): Promise<Boot> {
     if (v1 && (await kv.get("data.v1-backup")) === undefined) await kv.set("data.v1-backup", raw);
     data = migrateIds(loaded ?? blank());
     if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
+    writable = true;
     if (legacy || v1 || (loaded && loaded !== data)) { await flush(); if (legacy) localStorage.removeItem(LEGACY_KEY); }
-  } catch { data = blank(); }
+  } catch { data = blank(); writable = false; }
   return { kind: "ready" };
 }
 
@@ -116,6 +127,7 @@ export async function unlockWith(pin: string, sealed: Sealed): Promise<boolean> 
   if (!result || result.report.invalid + result.report.orphaned > 0) await kv.set(`data.enc.unreadable.${Date.now()}`, sealed).catch(() => undefined);
   data = migrateIds(result?.data ?? blank());
   if (data.settings.onboarded && !data.settings.neglectFrom) data = { ...data, settings: { ...data.settings, neglectFrom: today() } };
+  writable = true;
   listeners.forEach((l) => l());
   return true;
 }
@@ -126,8 +138,8 @@ export const onPinChange = (fn: () => void) => { pinWatchers.add(fn); return () 
 
 export const vault = {
   hasPin: () => vaultKey !== null,
-  async setPin(pin: string) { vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length).catch(() => undefined); pinWatchers.forEach((w) => w()); },
-  async removePin() { vaultKey = null; await flush(); await kv.del("pinLength").catch(() => undefined); pinWatchers.forEach((w) => w()); },
+  async setPin(pin: string) { if (!writable) return; vaultKey = await newKey(pin); await flush(); await kv.set("pinLength", pin.length).catch(() => undefined); pinWatchers.forEach((w) => w()); },
+  async removePin() { if (!writable) return; vaultKey = null; await flush(); await kv.del("pinLength").catch(() => undefined); pinWatchers.forEach((w) => w()); },
   pinLength: async () => (await kv.get<number>("pinLength").catch(() => undefined)) ?? 4,
   /** Re-checks the current PIN without changing anything. */
   async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },
@@ -265,12 +277,6 @@ export function slipHour(e: Entry): number | null {
   return iso(at) === e.day ? at.getHours() : null;
 }
 
-/** Treats in the jar: one per clean day ever, minus those already given. */
-export function treatsLeft(d: AppData, habitId: string): number {
-  const slips = new Set(d.entries.filter((e) => e.habitId === habitId).map((e) => e.day));
-  return Math.max(0, d.cleanDays.filter((c) => c.habitId === habitId && !slips.has(c.day)).length - trackState(d, habitId).treatsGiven);
-}
-
 /** Unrecorded days in a row up to yesterday. A rest or paused day, or anything recorded, ends the count. */
 export const silentDays = (d: AppData, habitId: string, t0 = today()) => quietDays(trackIndex(d, habitId, t0));
 
@@ -348,6 +354,38 @@ function valuesConcern(values: Entry["values"]): Concern | null {
 }
 
 /** Drops anything that would track food or weight (or carries crisis text) from track definitions that arrive from outside: a backup file or another phone. */
+/**
+ * The additive restore rule. Rows the phone doesn't have yet are added. A row with the same key keeps this phone's
+ * version: the same id for companions, habits, entries, urges and summaries; the same habit and day for clean days;
+ * the same day for journal entries; the same week for a weekly summary. Settings stay as they are on a phone that
+ * is already set up; a phone that isn't set up yet (new, or just erased) takes the backup's settings, so the
+ * restore doesn't leave it stuck in onboarding. Nothing is deleted, so an import can't undo anything done since the
+ * backup was made. Rows whose parent is missing are left out by normalize, as on any load.
+ * Returns `local` itself when nothing would change.
+ */
+export function mergeAdditive(local: AppData, incoming: AppData): AppData {
+  const add = <T,>(have: T[], more: T[], key: (x: T) => string): T[] => {
+    const ids = new Set(have.map(key));
+    return [...have, ...more.filter((x) => !ids.has(key(x)))];
+  };
+  const summaries: AppData["summaries"] = { ...local.summaries };
+  for (const [habitId, weeks] of Object.entries(incoming.summaries)) summaries[habitId] = { ...weeks, ...(local.summaries[habitId] ?? {}) };
+  const merged = normalize({
+    ...local,
+    settings: local.settings.onboarded ? local.settings : incoming.settings,
+    companions: add(local.companions, incoming.companions, (c) => c.id),
+    habits: add(local.habits, incoming.habits, (h) => h.id),
+    entries: add(local.entries, incoming.entries, (e) => e.id).sort((a, b) => a.createdAt - b.createdAt),
+    cleanDays: add(local.cleanDays, incoming.cleanDays, (c) => `${c.habitId}|${c.day}`),
+    urges: add(local.urges, incoming.urges, (u) => u.id).sort((a, b) => a.createdAt - b.createdAt),
+    journal: add(local.journal, incoming.journal, (j) => j.day),
+    summaries,
+  });
+  if (!merged) return local;
+  const same = JSON.stringify(merged) === JSON.stringify(local);
+  return same ? local : merged;
+}
+
 export function scrubTracking(d: AppData): AppData {
   let changed = false;
   const habits = d.habits.map((h) => {
@@ -432,23 +470,16 @@ export const actions = {
   },
 
   /**
-   * Applies a validated AI result to an entry that was first saved with the baseline. Returns the months
-   * actually kept. The AI's nudge is dropped (the baseline stands) when it alone would decide whether the
-   * companion lives or dies: a life-or-death outcome always comes from the deterministic engine.
+   * Adds the AI's sentence and body-effect tags to an entry that was saved with the baseline. The months lost
+   * never change: the AI has no say in any recovery number. Returns false if there is no such entry.
    */
-  applyAi(entryId: string, r: { months: number; adjustPct: number; effects: string[]; explanation: string }): number | null {
-    const e = data.entries.find((x) => x.id === entryId);
-    if (!e) return null;
-    const c = data.companions.find((x) => x.id === e.companionId)!;
-    const withMonths = (months: number, adjustPct: number | null): AppData => ({
+  applyAi(entryId: string, r: { effects: string[]; explanation: string }): boolean {
+    if (!data.entries.some((x) => x.id === entryId)) return false;
+    commit({
       ...data,
-      entries: data.entries.map((x) => (x.id === entryId ? { ...x, months, aiAdjustPct: adjustPct, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
+      entries: data.entries.map((x) => (x.id === entryId ? { ...x, effects: r.effects, explanation: r.explanation, source: "ai" as const } : x)),
     });
-    let next = withMonths(r.months, r.adjustPct);
-    const diesWithAi = viewCompanion(next, e.companionId).states.some((s) => s.stage === "dead");
-    if (diesWithAi !== (c.diedOn !== null)) next = withMonths(e.months, null);
-    commit(next);
-    return next.entries.find((x) => x.id === entryId)!.months;
+    return true;
   },
 
   setSummary: (week: string, text: string, habitId?: string) => {
@@ -465,11 +496,16 @@ export const actions = {
    * backup this version can read (including one from a newer version). Rows it can't use are left out; the file
    * itself is untouched, so nothing in it is lost.
    */
+  /**
+   * Restores a backup additively (see mergeAdditive): rows this phone doesn't have are added, and nothing here is
+   * replaced or deleted. False when the file isn't a backup of an onboarded person.
+   */
   importJson(text: string): boolean {
     try {
-      const d = normalize(JSON.parse(text));
-      if (!d || !d.settings.onboarded) return false;
-      commit(migrateIds(scrubTracking(d)));
+      const incoming = normalize(JSON.parse(text));
+      if (!incoming || !incoming.settings.onboarded) return false;
+      const merged = mergeAdditive(data, migrateIds(scrubTracking(incoming)));
+      if (merged !== data) commit(merged);
       return true;
     } catch { return false; }
   },
@@ -596,8 +632,8 @@ export const actions = {
   },
 
   deleteEntry: (id: string) => commit({ ...data, entries: data.entries.filter((e) => e.id !== id) }),
-  /** Puts back an entry removed by mistake (undo). */
-  restoreEntry: (e: Entry) => commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }),
+  /** Puts back an entry removed by mistake (undo). Does nothing if an entry with that id is already here. */
+  restoreEntry: (e: Entry) => { if (!data.entries.some((x) => x.id === e.id)) commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }); },
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
   /** Records which milestones a track has celebrated. */
   setCelebrated: (habitId: string, seen: number[]) => { if (data.habits.some((h) => h.id === habitId)) commit(withTrack(data, habitId, (s) => ({ ...s, celebrated: seen }))); },
@@ -815,13 +851,15 @@ export const actions = {
    * so sync starts over and, while signed in, brings the account's history back.
    */
   async resetAll() {
-    vaultKey = null;
-    try { await kv.clear(); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY); } catch { /* ignore */ }
+    // An erase is the person's explicit choice, so it may write even from the lock screen (Forgot PIN → Erase).
+    vaultKey = null; writable = true;
+    // Bounded: if storage never answers, the erase still finishes; the commit below writes over what's left.
+    try { await withTimeout(kv.clear(), 5000); localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(AI_CACHE_KEY); } catch { /* ignore */ }
     commit(blank(), "reset");
   },
 };
 
-import type { SlipRequest, WeeklyRequest } from "@detox/schema";
+import type { SlipRequest } from "@detox/schema";
 
 /** What the AI is allowed to see about one slip: no photos, short notes only. */
 export function slipRequest(entryId: string): SlipRequest | null {
@@ -847,17 +885,5 @@ export function slipRequest(entryId: string): SlipRequest | null {
     ].map((t) => t.slice(0, 80)).slice(0, 4),
     nthToday: data.entries.filter((x) => x.habitId === habit.id && x.day === e.day && x.createdAt <= e.createdAt).length || 1,
     baselineMonths: e.months, last7Slips: last7,
-  };
-}
-
-export function weekRequestFor(habitId: string, weekStartDay: string, worstWeekday: string | null): WeeklyRequest | null {
-  const habit = data.habits.find((h) => h.id === habitId);
-  const companion = habit && data.companions.find((c) => c.id === habit.companionId);
-  if (!habit || !companion) return null;
-  const pick = (w: ReturnType<typeof weekStats>) => ({ slips: w.slips, spend: Math.round(w.spend), months: Math.round(w.months * 10) / 10 });
-  return {
-    kind: "weekly", tone: data.settings.tone, habitClass: habit.cls, companionName: companion.name, unit: habit.unit,
-    thisWeek: pick(weekStats(data, habitId, weekStartDay)), lastWeek: pick(weekStats(data, habitId, addDays(weekStartDay, -7))),
-    worstWeekday, age: Math.round(viewCompanion(data, companion.id).age), currency: data.settings.currency,
   };
 }

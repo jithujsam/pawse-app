@@ -22,6 +22,9 @@ export const table = (t: string) => { if (!server.has(t)) server.set(t, new Map(
 export const stamp = () => new Date(Date.UTC(2026, 0, 1) + ++clock * 60_000).toISOString();
 const absent = new Map<string, string[]>();
 export const lacksColumns = (t: string, cols: string[]) => { absent.set(t, cols); };
+const refused = new Map<string, (r: Row) => boolean>();
+/** Makes the server refuse any row of table `t` that matches, the way a check constraint does: the whole upsert fails. */
+export const refuses = (t: string, bad: (r: Row) => boolean) => { refused.set(t, bad); };
 export const hold = () => { let open!: () => void; gate = new Promise((r) => { open = r; }); return () => { gate = null; open(); }; };
 const keyOf = (t: string, r: Row) => KEYS[t].map((k) => String(r[k])).join("|");
 const stale = (old: Row | undefined, r: Row) => old !== undefined && Number(r.client_updated_at ?? 0) < Number(old.client_updated_at ?? 0);
@@ -44,6 +47,8 @@ function query(t: string) {
     upsert: (rows: Row[]) => {
       const col = (absent.get(t) ?? []).find((c) => rows.some((r) => c in r));
       if (col) return Promise.resolve({ error: { message: `Could not find the '${col}' column of '${t}' in the schema cache` } });
+      const bad = refused.get(t);
+      if (bad && rows.some(bad)) return Promise.resolve({ error: { code: "23514", message: `new row for relation "${t}" violates check constraint` } });
       for (const r of rows) { const k = keyOf(t, r); const old = table(t).get(k); if (!stale(old, r)) table(t).set(k, { ...old, ...r, updated_at: stamp() }); }
       return Promise.resolve({ error: null });
     },

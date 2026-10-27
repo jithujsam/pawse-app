@@ -30,7 +30,9 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   const streak = cleanStreak(d, habit.id);
   const silent = silentDays(d, habit.id);
   const reserve = v.current?.reserveMonths ?? 0;
-  // Quiet days are missing data, not a slip, so they don't lower the heart.
+  // The primary recovery number, on a 0 to 100 scale. It falls a little as the pet ages, drops on a day with a slip,
+  // and gets back up to 10 points from the cushion of good days. It is derived from the stored records each time,
+  // so it is never a saved value. Quiet days are missing data, not a slip, so they don't lower it.
   let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) + Math.min(10, reserve);
   heart = Math.round(Math.max(3, Math.min(slipped ? 80 : 100, heart)));
   const level: Level = heart >= 85 ? "thriving" : heart >= 68 ? "healthy" : heart >= 48 ? "okay" : heart >= 28 ? "unwell" : "critical";
@@ -66,7 +68,7 @@ export interface Condition {
   tone: "mild" | "moderate" | "serious";
 }
 
-export type CondKey = "appetite" | "smoking" | "alcohol" | "food_spending" | "doomscrolling" | "impulse_buying" | "custom" | "aging" | "lonely";
+export type CondKey = "appetite" | "smoking" | "alcohol" | "food_spending" | "doomscrolling" | "impulse_buying" | "custom" | "aging";
 export const CONDITION_TEXT: Record<CondKey, Partial<Record<Species, [string, string]>> & { all: [string, string] }> = {
   appetite: {
     all: ["Run down", "Tired and quiet after a hard day."],
@@ -110,10 +112,6 @@ export const CONDITION_TEXT: Record<CondKey, Partial<Record<Species, [string, st
     rabbit: ["Dental trouble", "Sore teeth make eating harder."],
     owl: ["Dull feathers", "Feathers losing their shine."],
   },
-  lonely: {
-    all: ["Lonely", "Misses hearing from you."],
-    rabbit: ["Lonely (rabbits are social)", "Rabbits get low quickly without company."],
-  },
 };
 const pick = (k: CondKey, s: Species) => CONDITION_TEXT[k][s] ?? CONDITION_TEXT[k].all;
 
@@ -125,7 +123,6 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
   const slipped = d.entries.some((e) => e.habitId === habit.id && e.day === t0);
   const week = d.entries.filter((e) => e.habitId === habit.id && e.day > addDays(t0, -7));
   const weekDamage = v.states.filter((x) => x.day > addDays(t0, -7)).reduce((a, x) => a + x.damageMonths, 0);
-  const silent = silentDays(d, habit.id);
   const plan = recoveryPlan(v);
 
   if (slipped) {
@@ -143,15 +140,11 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
     out.push({ id: "aging", name: n, what: w, why: `${name} has aged early: ${STAGE_LABEL[v.stage].toLowerCase()} at age ${Math.round(v.age)}.`,
       fix: days ? `Needs ${plural(days, "goal-met day")} to feel younger again.` : "Goal-met days still help bring them back.", days, tone: v.stage === "frail" ? "serious" : v.stage === "old" ? "moderate" : "mild" });
   }
-  if (silent >= 2) {
-    const [n, w] = pick("lonely", s);
-    out.push({ id: "lonely", name: n, what: w, why: `No check-in for ${plural(silent, "day")}. Quiet days don't cost any life, but healing only happens on days you check in.`,
-      fix: "Check in whenever you're ready. It only takes ten seconds, and nothing is held against the quiet days.", days: 0, tone: "mild" });
-  }
+  // No condition for quiet days: a missing check-in is missing data, not something the pet has caught.
   const scar = v.current ? Math.round(floorAge(v.current) * 10) / 10 : 0;
   // The health bar has no scars (SCARS_ON), so a heavy day heals like any other.
   if (SCARS_ON && v.states.some((x) => x.binge)) {
-    out.push({ id: "scar", name: "Lasting mark", what: "A heavy day that left a lasting mark.", why: `A day with 3 or more slips. ${name}'s life expectancy is now ${Math.round(100 - scar)}.`, fix: "This part doesn't heal, but it doesn't have to grow.", days: null, tone: "moderate" });
+    out.push({ id: "scar", name: "Lasting mark", what: "A heavy day that left a lasting mark.", why: `A day with 3 or more slips. ${name}'s age can't drop below ${Math.round(scar)} now.`, fix: "This part doesn't heal, but it doesn't have to grow.", days: null, tone: "moderate" });
   }
   return out;
 }
@@ -180,8 +173,9 @@ export function history(d: AppData, v: CompanionView): HistoryItem[] {
       if (!run) run = { from: s.day, to: s.day, healed: 0, n: 0 };
       run.to = s.day; run.healed += s.healedMonths; run.n++;
     } else if (s.neglectMonths > 0) {
+      // Only reachable if QUIET_DAYS_AGE is switched back on. Worded so a quiet day is never a lonely pet.
       flush();
-      items.push({ day: s.day, kind: "lonely", months: s.damageMonths, text: `Quiet day: ${name} got lonely${s.damageMonths > 0 ? ` and lost ${monthsText(s.damageMonths)}` : ""}` });
+      items.push({ day: s.day, kind: "lonely", months: s.damageMonths, text: `No check-in that day${s.damageMonths > 0 ? `, and ${name} lost ${monthsText(s.damageMonths)}` : ""}` });
     }
   }
   flush();
@@ -204,7 +198,6 @@ export function stats(d: AppData, v: CompanionView) {
     // Recorded days out of days that could have been recorded: rest and paused days are left out.
     checkInRate: p.checkInRate ?? 0,
     lost: Math.round(lost * 10) / 10, healed: Math.round(healed * 10) / 10,
-    lifeExpectancy: v.current ? Math.round(100 - floorAge(v.current)) : 100,
     best: p.best,
     urges: p.managedUrges,
     spent: Math.round(d.entries.filter((e) => e.habitId === habit.id).reduce((a, e) => a + (e.amount ?? 0), 0)),

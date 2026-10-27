@@ -82,7 +82,7 @@ function restingClip(mood: Mood): Clip {
   return "idle";
 }
 function clipFor(mood: Mood, gesture: Gesture): Clip {
-  if (gesture === "petted" || gesture === "treat") return "petted";
+  if (gesture === "petted") return "petted";
   if (gesture === "giggle" || gesture === "hop") return "giggle";
   if (mood === "hurt") return "hurt";
   if (mood === "happy" && gesture !== "none") return "happy";
@@ -106,7 +106,7 @@ function expressionFor(mood: Mood, gesture: Gesture, stage: Stage): Expr {
     default: break;
   }
   if (mood !== "dying") {
-    if (gesture === "petted" || gesture === "treat") { e.lid = 0.82; e.brow = 0; e.lift = 0.3; e.tongue = 0.8; e.tail = 1.6; e.ears = -0.3; e.tears = 0; }
+    if (gesture === "petted") { e.lid = 0.82; e.brow = 0; e.lift = 0.3; e.tongue = 0.8; e.tail = 1.6; e.ears = -0.3; e.tears = 0; }
     else if (gesture === "giggle" || gesture === "hop") { e.lid = 0.7; e.brow = 0; e.lift = 0.6; e.tongue = 1; e.tail = 1.6; e.bob = 1.6; e.tears = 0; }
     else if (gesture === "yawn" || gesture === "nap") { e.lid = 1; e.tongue = gesture === "yawn" ? 1 : 0; }
     else if (gesture === "dizzy") { e.lid = 0.5; e.brow = 0.6; }
@@ -389,7 +389,7 @@ function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
 /** Little things that float up from the pet while it feels something: hearts, z's, a sweat drop. */
 function fxFor(mood: Mood, gesture: Gesture): "heart" | "zzz" | "drop" | null {
   if (mood === "dying" || gesture === "nap") return "zzz";
-  if (gesture === "petted" || gesture === "treat" || gesture === "giggle" || (mood === "happy" && gesture === "hop")) return "heart";
+  if (gesture === "petted" || gesture === "giggle" || (mood === "happy" && gesture === "hop")) return "heart";
   if (mood === "sick" || mood === "sad" || mood === "hurt") return "drop";
   return null;
 }

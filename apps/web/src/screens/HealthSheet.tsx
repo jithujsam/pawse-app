@@ -62,7 +62,6 @@ function Body({ initial }: { initial: HealthTab }) {
             </div>
             <p>{r.body}</p>
             <div className="stats">
-              <div className="stat item"><span className="muted small">{t("sheets.health.life_expectancy")}</span><b className="v">{st.lifeExpectancy}</b></div>
               <div className="stat item"><span className="muted small">{t("sheets.health.check_ins")}</span><b className="v">{st.checkInRate}<small>%</small></b></div>
             </div>
             {conds.length > 0

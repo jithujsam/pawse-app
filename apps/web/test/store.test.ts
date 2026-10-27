@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actions, activeCompanion, getData, moneyKept, recentPace, viewCompanion } from "../src/store";
+import { actions, activeCompanion, getData, moneyKept, recentPace, slipRequest, viewCompanion } from "../src/store";
 import { dayStatus } from "../src/recovery";
 import { toRemote } from "../src/syncmap";
 import { blank } from "../src/persist";
@@ -22,23 +22,40 @@ function load(entries: Entry[]) {
     entries,
   });
 }
-const ai = (months: number, adjustPct: number) => ({ months, adjustPct, effects: [], explanation: "Biscuit felt that." });
+const ai = { effects: ["heavier"], explanation: "Biscuit felt that." };
 
-describe("AI polish on a slip", () => {
-  it("applies the AI's nudge in the ordinary case", () => {
+describe("AI adds words, never numbers, to a slip", () => {
+  it("adds the sentence and tags, and leaves the months lost exactly as the engine set them", () => {
     load([entry("e1", t0, 4)]);
-    expect(actions.applyAi("e1", ai(5.2, 30))).toBe(5.2);
-    expect(getData().entries[0]).toMatchObject({ months: 5.2, aiAdjustPct: 30, source: "ai" });
+    expect(actions.applyAi("e1", ai)).toBe(true);
+    expect(getData().entries[0]).toMatchObject({ months: 4, aiAdjustPct: null, effects: ["heavier"], explanation: "Biscuit felt that.", source: "ai" });
   });
 
-  it("never lets the AI's nudge be what kills the companion (classic rules, where death exists)", () => {
+  it("does not move the pet's age, the healing or the death date, even under classic rules where death exists", () => {
     // Two old slips of 10 months = 20 net; today's 8-month slip leaves it alive at 28 of 30 (the health bar's budget).
     load([entry("old0", addDays(t0, -2), 10), entry("old1", addDays(t0, -1), 10), entry("e1", t0, 8)]);
     actions.setSettings({ petLife: "classic" });
-    expect(viewCompanion(getData(), C).stage).not.toBe("dead");
-    expect(actions.applyAi("e1", ai(10.4, 30))).toBe(8);
+    const before = viewCompanion(getData(), C);
+    actions.applyAi("e1", ai);
+    const after = viewCompanion(getData(), C);
+    expect(after.stage).toBe(before.stage);
+    expect(after.age).toBe(before.age);
+    expect(after.states.map((s) => s.damageMonths)).toEqual(before.states.map((s) => s.damageMonths));
     expect(getData().companions[0].diedOn).toBeNull();
-    expect(getData().entries.find((e) => e.id === "e1")).toMatchObject({ months: 8, aiAdjustPct: null, explanation: "Biscuit felt that." });
+  });
+
+  it("returns false for an entry that doesn't exist, and changes nothing", () => {
+    load([entry("e1", t0, 4)]);
+    expect(actions.applyAi("missing", ai)).toBe(false);
+    expect(getData().entries[0]).toMatchObject({ months: 4, source: "baseline" });
+  });
+
+  it("keeps the AI adjustments already stored before this change exactly as they were", () => {
+    // Saved while the old AI nudge existed: 5.2 months with aiAdjustPct 30. Reading must not recompute them.
+    load([{ ...entry("old-ai", addDays(t0, -3), 5.2), aiAdjustPct: 30, source: "ai" as const, explanation: "Biscuit felt that." }]);
+    const d = getData();
+    expect(d.entries[0]).toMatchObject({ months: 5.2, aiAdjustPct: 30, source: "ai" });
+    expect(viewCompanion(d, C).states.find((s) => s.day === addDays(t0, -3))!.damageMonths).toBeCloseTo(5.2);
   });
 });
 
@@ -226,5 +243,19 @@ describe("recovery tracks", () => {
     actions.selectTrack(H);
     const [row] = toRemote("s", getData(), "u", 1);
     expect((row.row.settings as Record<string, unknown>).activeHabit).toBeUndefined();
+  });
+});
+
+describe("what a slip sends to the AI", () => {
+  it("never includes photos, reflections, or the phone's other records", () => {
+    const PHOTO = "data:image/jpeg;base64,PHOTODATA";
+    load([{ ...entry("e1", t0, 4), amount: 420, values: { photo: PHOTO, what: "Pizza", urge: 3 } }]);
+    actions.applyRemote({ ...getData(), journal: [{ day: t0, mood: 1, body: "PRIVATE REFLECTION" }] });
+    const req = slipRequest("e1")!;
+    const sent = JSON.stringify(req);
+    expect(sent).not.toContain("PHOTODATA");
+    expect(sent).not.toContain("PRIVATE REFLECTION");
+    expect(sent).not.toMatch(/@/); // no email address
+    expect(Object.keys(req).sort()).toEqual(["amount", "baselineMonths", "companionName", "habitClass", "kind", "last7Slips", "median", "nthToday", "texts", "tone", "triggers", "unit"].sort());
   });
 });
