@@ -7,7 +7,10 @@
 #   so it can never sign with any other key.
 #   release-unsigned: the same release build without a signature, for signing elsewhere with the key.
 #   It can't be installed or published as it is.
-#   Nothing here publishes to pawse-releases: that stays a reviewed PR (docs/RELEASING.md).
+#   publish (release only, on main): tick "publish" and write the release notes. The publish job takes the
+#   verified APK from the apk job, runs .github/scripts/publish-release.py and pushes to
+#   jithujsam/pawse-releases main. Pushing to main publishes at once (standing owner approval, docs/RELEASING.md).
+#   Needs the PAWSE_RELEASES_TOKEN secret: a fine-grained token with contents write on jithujsam/pawse-releases only.
 name: Android APK
 
 on:
@@ -21,6 +24,14 @@ on:
         type: choice
         options: [debug, release, release-unsigned]
         default: debug
+      publish:
+        description: "release, from main only: also publish the APK to jithujsam/pawse-releases main (live at once)"
+        type: boolean
+        default: false
+      release_notes:
+        description: "publish only: one line of plain-language notes for users (shown in the app and the README)"
+        type: string
+        default: ""
 
 concurrency:
   group: android-${{ github.ref }}
@@ -39,6 +50,8 @@ jobs:
   apk:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      artifact: ${{ steps.verify.outputs.artifact }}
     steps:
       # On a PR, build exactly the PR's latest commit (not GitHub's temporary merge commit).
       - uses: actions/checkout@v4
@@ -179,3 +192,65 @@ jobs:
           [ -n "$ARTIFACT_ID" ] && [ -n "$ARTIFACT_URL" ] || { echo "::error::The APK artifact wasn't uploaded"; exit 1; }
           echo "Download (signed-in GitHub users; a zip with the APK and BUILD-INFO.txt): $ARTIFACT_URL"
           { echo; echo "**Download:** $ARTIFACT_URL"; } >> "$GITHUB_STEP_SUMMARY"
+
+  # Publishes the verified release to jithujsam/pawse-releases main. Manual runs only: a release, from main, with "publish" ticked.
+  publish:
+    needs: apk
+    if: github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' && inputs.publish && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # One publish at a time: a second run waits rather than racing this one on pawse-releases main.
+    concurrency:
+      group: pawse-releases-publish
+      cancel-in-progress: false
+    steps:
+      - name: Check the publishing token
+        env:
+          TOKEN: ${{ secrets.PAWSE_RELEASES_TOKEN }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::The PAWSE_RELEASES_TOKEN secret is missing. Nothing was published."; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.apk.outputs.artifact }}
+          path: build
+
+      - uses: actions/checkout@v4
+        with:
+          repository: jithujsam/pawse-releases
+          token: ${{ secrets.PAWSE_RELEASES_TOKEN }}
+          path: releases
+
+      - name: Write the release into the pawse-releases checkout
+        env:
+          NOTES: ${{ inputs.release_notes }}
+        run: python3 .github/scripts/publish-release.py --build-dir build --releases releases --notes "$NOTES"
+
+      - name: Commit and push to pawse-releases main
+        working-directory: releases
+        run: |
+          set -euo pipefail
+          name=$(python3 -c 'import json; print(json.load(open("latest.json"))["name"])')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Pawse $name: APK, update manifest and notes (pawse-app ${GITHUB_SHA::7})"
+          git push origin HEAD:main
+
+      - name: Confirm pawse-releases serves the new APK
+        run: |
+          set -euo pipefail
+          url=$(python3 -c 'import json; print(json.load(open("releases/latest.json"))["url"])')
+          want=$(python3 -c 'import json; print(json.load(open("releases/latest.json"))["sha256"])')
+          for try in $(seq 10); do
+            got=$(curl -sL "$url?t=$(date +%s)" | sha256sum | cut -d' ' -f1)
+            if [ "$got" = "$want" ]; then
+              echo "Published: $url ($want)" | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::$url still doesn't serve the published APK. Raw GitHub may be caching; check it again in a few minutes."
+          exit 1
