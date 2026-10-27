@@ -34,7 +34,7 @@ export const meProfile = defineSection("me.profile", { screen: "Me", title: "Pro
 
 // @copy-section me.pet
 export const mePet = defineSection("me.pet", { screen: "Me → Your pet", title: "Your pet", source: "src/screens/Me.tsx" }, {
-  age: "Age",
+  days: "Days together",
   born: "Born",
   name: "Name",
   style_failed: "3D couldn't load on this phone, so a drawing is shown.",
