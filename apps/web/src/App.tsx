@@ -39,8 +39,8 @@ import { APP_NAME } from "./brand";
 
 /** One run of the loading paw (.paw-load in styles.css). The boot splash lifts only at the end of a run. */
 const PAW_RUN_MS = 1400;
-/** The splash never waits on a slow network for longer than this; the sync carries on in the background. */
-const BOOT_WAIT_MS = 12_000;
+/** A phone still going through onboarding waits for the first sync (to find a restore) for no longer than this. */
+const BOOT_WAIT_MS = 6_000;
 
 export type Tab = "pets" | "calendar" | "insights" | "you";
 const TABS: Tab[] = ["pets", "calendar", "insights", "you"];
@@ -139,12 +139,13 @@ function Shell() {
   // onboarding out for it, or the person loses their place mid-step.
   const restoreSettled = useRef(false);
   if (sync.last !== null || sync.state === "error" || sync.state === "offline") restoreSettled.current = true;
-  // The boot splash holds until the session check and the first sync have settled (or the wait runs out), then
-  // until the paw has finished a whole run, so nothing is cut off mid-animation.
+  // The boot splash holds until the session check is done, then until the paw has finished a whole run, so nothing
+  // is cut off mid-animation. A returning person's data is already on the phone, so the sync can carry on behind
+  // the splash. Only a phone still in onboarding waits for the first sync, since that decides whether to restore.
   const [waited, setWaited] = useState(false);
   useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
   const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
-  const lifted = useRunLift(ready && (!session || syncSettled || waited));
+  const lifted = useRunLift(ready && (!session || data.settings.onboarded || syncSettled || waited));
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
