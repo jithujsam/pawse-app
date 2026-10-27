@@ -142,7 +142,7 @@ function PetPage() {
     <section className="card stack">
       <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
       <div className="stats">
-        <div className="stat item"><span className="muted small">{t("me.pet.age")}</span><b className="v">{Math.round(view.age)}</b></div>
+        <div className="stat item"><span className="muted small">{t("me.pet.days")}</span><b className="v">{daysTogether(companion.bornOn, today())}</b></div>
         <div className="stat item"><span className="muted small">{t("me.pet.born")}</span><b>{fmtDay(companion.bornOn)}</b></div>
       </div>
     </section>

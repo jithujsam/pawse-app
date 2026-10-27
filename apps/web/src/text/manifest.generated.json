@@ -2712,7 +2712,7 @@
       "end": 68,
       "entries": [
         {
-          "id": "me.pet.age",
+          "id": "me.pet.days",
           "kind": "text",
           "placeholders": []
         },
