@@ -27,10 +27,11 @@
 :root[data-pet="panda"] { --accent: #4b7a37; --accent-dark: #a3d68c; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: color-mix(in oklab, var(--accent-dark) 16%, #0b0b0d);
-    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
-    --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
-    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    /* AMOLED: the ground is true black so lit pixels switch off. Surfaces are only a few steps up, and the accent barely tints them. */
+    --ink: #000;
+    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 6%, #0c0c0e); --raised: color-mix(in oklab, var(--accent-dark) 10%, #161618); --control: color-mix(in oklab, var(--accent-dark) 20%, #2a2a2e);
+    --hero-a: color-mix(in oklab, var(--accent-dark) 12%, #0c0c0e); --hero-b: color-mix(in oklab, var(--accent-dark) 4%, #000);
+    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 18%, #141416);
     --slip: #ff6b64; --slip-soft: rgba(255,107,100,.14);
     --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
     --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
@@ -41,10 +42,11 @@
 }
 
 :root[data-theme="dark"] {
-    --ink: color-mix(in oklab, var(--accent-dark) 16%, #0b0b0d);
-    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 15%, #17171a); --raised: color-mix(in oklab, var(--accent-dark) 19%, #232327); --control: color-mix(in oklab, var(--accent-dark) 26%, #3a3a40);
-    --hero-a: color-mix(in oklab, var(--accent-dark) 22%, #17171a); --hero-b: color-mix(in oklab, var(--accent-dark) 8%, #0e0e10);
-    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 20%, #1b1b1f);
+    /* AMOLED: the ground is true black so lit pixels switch off. Surfaces are only a few steps up, and the accent barely tints them. */
+    --ink: #000;
+    --ground: var(--ink); --surface: color-mix(in oklab, var(--accent-dark) 6%, #0c0c0e); --raised: color-mix(in oklab, var(--accent-dark) 10%, #161618); --control: color-mix(in oklab, var(--accent-dark) 20%, #2a2a2e);
+    --hero-a: color-mix(in oklab, var(--accent-dark) 12%, #0c0c0e); --hero-b: color-mix(in oklab, var(--accent-dark) 4%, #000);
+    --text: color-mix(in oklab, var(--accent-dark) 6%, #f4f3f1); --muted: color-mix(in oklab, var(--accent-dark) 12%, #a7a6a8); --on-accent: #101012; --soft: color-mix(in oklab, var(--accent-dark) 18%, #141416);
     --slip: #ff6b64; --slip-soft: rgba(255,107,100,.14);
     --negative: #e29580; --negative-soft: rgba(226,149,128,.14); --positive: #68a76d; --positive-soft: rgba(104,167,109,.14); --warning: #e5ae44; --on-status: #101012; --chart: var(--accent-dark);
     --line: color-mix(in oklab, var(--accent-dark) 13%, transparent);
@@ -184,8 +186,8 @@ p { text-wrap: pretty; }
 .theme-swatch { width: 100%; height: 64px; border-radius: 12px; display: grid; grid-template-columns: 1fr; padding: 8px; gap: 6px; overflow: hidden; }
 .theme-swatch i { display: block; border-radius: 6px; }
 .ts-light { background: #f2f4f7; } .ts-light i { background: #fff; }
-.ts-dark { background: #0f1012; } .ts-dark i { background: #222327; }
-.ts-system { background: linear-gradient(135deg, #f2f4f7 50%, #0f1012 50%); } .ts-system i { background: color-mix(in srgb, #fff 50%, #222327); }
+.ts-dark { background: #000; } .ts-dark i { background: #1c1c1f; }
+.ts-system { background: linear-gradient(135deg, #f2f4f7 50%, #000 50%); } .ts-system i { background: color-mix(in srgb, #fff 50%, #1c1c1f); }
 .accent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
 .accent-opt { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 6px; cursor: pointer; text-align: center; }
 .accent-dot { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; box-shadow: 0 0 0 3px var(--surface); }
