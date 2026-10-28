@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breedFor } from "../src/pets";
+import { breedFor, coatFor, coatsFor } from "../src/pets";
 import { modelFor } from "../src/pet3d-support";
 
 describe("dog breeds", () => {
@@ -20,5 +20,12 @@ describe("dog breeds", () => {
   it("other species have no breeds and keep their model", () => {
     expect(breedFor("cat")).toBeUndefined();
     expect(modelFor("cat", "husky")).toBe("models/cat.glb");
+  });
+
+  it("a Husky has its own colourings, and a Shiba keeps the dog coats", () => {
+    expect(coatsFor("dog", "husky").map((c) => c.id)).toEqual(["grey", "black", "red"]);
+    expect(coatsFor("dog", "shiba").map((c) => c.id)).toEqual(["golden", "cocoa", "cream"]);
+    expect(coatFor("dog", "black", "husky").id).toBe("black");
+    expect(coatFor("dog", "golden", "husky").id).toBe("grey");
   });
 });

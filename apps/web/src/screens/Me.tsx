@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { CompanionArt, LiveCompanion, PetPortrait } from "../Companion";
-import { ACCESSORIES, BREEDS, COATS, PERSONALITIES, SPECIES, breedFor } from "../pets";
+import { ACCESSORIES, BREEDS, PERSONALITIES, SPECIES, breedFor, coatsFor } from "../pets";
 import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
@@ -156,7 +156,7 @@ function PetPage() {
       </div>
       {has3D(companion.species) && <span className="muted small">{pet3dStatus() === "failed" ? t("me.pet.style_failed") : pet3dStatus() === "unsupported" ? t("me.pet.style_unsupported") : STYLE_3D[companion.species].note}</span>}
       <div className="field"><span className="field-label">{t("me.pet.coat")}</span>
-        <Select label={t("me.pet.coat")} value={companion.coat ?? COATS[companion.species][0].id} options={COATS[companion.species].map((c) => ({ value: c.id, label: c.label }))}
+        <Select label={t("me.pet.coat")} value={companion.coat ?? coatsFor(companion.species, companion.breed)[0].id} options={coatsFor(companion.species, companion.breed).map((c) => ({ value: c.id, label: c.label }))}
           onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, breed: companion.breed, personality: companion.personality })} />
       </div>
       {BREEDS[companion.species] && <div className="field"><span className="field-label">{t("me.pet.breed")}</span>
