@@ -129,8 +129,8 @@ p { text-wrap: pretty; }
 .pet-card[data-active="true"] { box-shadow: var(--shadow), inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
 .pet-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pet-card-art { width: 112px; height: 112px; display: grid; place-items: center; border-radius: 50%; background: var(--raised); overflow: hidden; margin-bottom: 6px; }
-.pet-card-name { font: 600 19px/1.2 var(--serif); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pet-card-track { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pet-card-name { font: 600 19px/1.2 var(--serif); max-width: 100%; overflow-wrap: anywhere; }
+.pet-card-track { max-width: 100%; overflow-wrap: anywhere; }
 .pet-card-status { color: var(--muted); align-self: end; font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pet-card-status[data-s="met"], .pet-card-status[data-s="urge"] { color: var(--positive); }
 .pet-card-add { background: transparent; box-shadow: inset 0 0 0 2px var(--control); grid-template-rows: auto auto auto; align-content: center; }
