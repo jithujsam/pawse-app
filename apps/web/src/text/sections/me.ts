@@ -41,6 +41,7 @@ export const mePet = defineSection("me.pet", { screen: "Me → Your pet", title:
   style_unsupported: "This phone can't draw 3D, so a drawing is shown.",
   species: "Species",
   coat: "Coat",
+  breed: "Breed",
   personality: "Personality",
   wardrobe: "Wardrobe",
   days_of_care: "{n} days of care",

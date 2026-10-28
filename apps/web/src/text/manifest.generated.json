@@ -990,7 +990,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 39,
-      "end": 50,
+      "end": 51,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1030,6 +1030,11 @@
           "placeholders": []
         },
         {
+          "id": "pets.picker.breed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "pets.picker.personality",
           "kind": "text",
           "placeholders": []
@@ -1042,8 +1047,8 @@
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 52,
-      "end": 62,
+      "start": 53,
+      "end": 63,
       "entries": [
         {
           "id": "pets.add.label",
@@ -2720,7 +2725,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 35,
-      "end": 68,
+      "end": 69,
       "entries": [
         {
           "id": "me.pet.days",
@@ -2754,6 +2759,11 @@
         },
         {
           "id": "me.pet.coat",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.pet.breed",
           "kind": "text",
           "placeholders": []
         },
@@ -2906,8 +2916,8 @@
       "title": "Voice",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 70,
-      "end": 78,
+      "start": 71,
+      "end": 79,
       "entries": [
         {
           "id": "me.voice.intro",
@@ -2946,8 +2956,8 @@
       "title": "Reminders",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 80,
-      "end": 93,
+      "start": 81,
+      "end": 94,
       "entries": [
         {
           "id": "me.reminders.daily",
@@ -3013,8 +3023,8 @@
       "title": "Check-in questions",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 95,
-      "end": 116,
+      "start": 96,
+      "end": 117,
       "entries": [
         {
           "id": "me.questions.intro",
@@ -3114,8 +3124,8 @@
       "title": "Your data",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 118,
-      "end": 134,
+      "start": 119,
+      "end": 135,
       "entries": [
         {
           "id": "me.data.backup",
@@ -3190,8 +3200,8 @@
       "title": "Appearance",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 136,
-      "end": 154,
+      "start": 137,
+      "end": 155,
       "entries": [
         {
           "id": "me.appearance.theme",
@@ -3276,8 +3286,8 @@
       "title": "Feel and region",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 156,
-      "end": 169,
+      "start": 157,
+      "end": 170,
       "entries": [
         {
           "id": "me.feel.haptics",
@@ -3343,8 +3353,8 @@
       "title": "About and help",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 171,
-      "end": 189,
+      "start": 172,
+      "end": 190,
       "entries": [
         {
           "id": "me.about.version",

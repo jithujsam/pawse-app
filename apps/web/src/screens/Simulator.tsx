@@ -39,7 +39,7 @@ function seeded(seed: number) {
   return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
 }
 
-export function Simulator({ open, onClose, species, coat, name, habit }: { open: boolean; onClose: () => void; species: Species; coat?: string; name: string; habit: Habit }) {
+export function Simulator({ open, onClose, species, coat, breed, name, habit }: { open: boolean; onClose: () => void; species: Species; coat?: string; breed?: string; name: string; habit: Habit }) {
   const [pattern, setPattern] = useState<Pattern>("heavy");
   const [speed, setSpeed] = useState("2000");
   const [days, setDays] = useState<DayInput[]>([]);
@@ -91,7 +91,7 @@ export function Simulator({ open, onClose, species, coat, name, habit }: { open:
             <section className={`hero sim-hero${age >= 80 ? " hero-danger" : ""}`}>
               <div className="hero-name"><h2>{name}</h2><span className="stage-tag">{STAGE_LABEL[cur?.stage ?? "baby"]}</span></div>
               <motion.div animate={{ opacity: dead ? 0.55 : 1, filter: dead ? "grayscale(0.8)" : "grayscale(0)" }} transition={{ duration: 1.2 }}>
-                <LiveCompanion species={species} coat={coat} stage={cur?.stage === "dead" ? "frail" : cur?.stage ?? "baby"} mood={mood} age={age} size={170} interactive={false} />
+                <LiveCompanion species={species} coat={coat} breed={breed} stage={cur?.stage === "dead" ? "frail" : cur?.stage ?? "baby"} mood={mood} age={age} size={170} interactive={false} />
               </motion.div>
               <AnimatePresence mode="wait">
                 <motion.p key={days.length} className="speech" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>

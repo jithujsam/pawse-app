@@ -451,10 +451,10 @@ export const actions = {
     commit({ ...data, settings: { ...data.settings, ...rest, ...safeName } });
   },
 
-  finishOnboarding(o: { species: Species; coat?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }): boolean {
+  finishOnboarding(o: { species: Species; coat?: string; breed?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }): boolean {
     if (concernInAny([o.companionName, o.userName, o.intake.what, o.intake.amountLabel, ...o.intake.triggers, ...planTexts(o.plan)])) return false;
     const companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim() || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim() || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null };
     const habitId = uid();
     const habit: Habit = {
       id: habitId, name: o.intake.what.trim().slice(0, 60) || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
@@ -668,7 +668,7 @@ export const actions = {
   /** Switches the companion to another species, keeping its name, age and history. */
   setSpecies: (id: string, species: Species) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, species, coat: undefined } : c)) }),
-  setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "personality">) =>
+  setCompanionLook: (id: string, patch: Pick<Companion, "coat" | "breed" | "personality">) =>
     commit({ ...data, companions: data.companions.map((c) => (c.id === id ? { ...c, ...patch } : c)) }),
 
   /** False when the name needs the safety note: the pet keeps its name then. */
@@ -691,8 +691,8 @@ export const actions = {
    * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
    * phone. Returns its habit id, or null at the 50-track limit.
    */
-  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; personality?: Personality }): string | null {
-    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, personality: o.personality, focus: true });
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality }): string | null {
+    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, focus: true });
   },
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality) {
@@ -713,13 +713,13 @@ export const actions = {
    */
   createTrack(o: {
     name: string; description?: string; cls: HabitClass; unit: Measure; amountLabel?: string; triggers?: string[]; fields?: Habit["fields"];
-    species: Species; companionName: string; coat?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean;
+    species: Species; companionName: string; coat?: string; breed?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean;
   }): string | null {
     const name = o.name.trim().slice(0, 60);
     if (!name || data.habits.length >= 50) return null;
     if (concernInAny([o.name, o.description, o.amountLabel, o.companionName, ...(o.triggers ?? []), ...fieldTexts(o.fields ?? []), ...planTexts(o.plan)])) return null;
     const habitId = uid(), companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
     const habit: Habit = {
       id: habitId, name, cls: o.cls, classWeight: weightFor(o.cls), companionId, unit: o.unit,
       fields: o.fields ?? starterFields({ what: name, measure: o.unit, amountLabel: o.amountLabel, cls: o.cls, triggers: o.triggers ?? [] }),

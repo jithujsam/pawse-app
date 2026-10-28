@@ -50,7 +50,14 @@ export const COATS: Record<Species, Coat[]> = {
   ],
 };
 
-export const coatFor = (species: Species, id?: string): Coat => COATS[species].find((c) => c.id === id) ?? COATS[species][0];
+/** Breeds a species can be, for the species that have more than one. Missing a breed means the first one. */
+export const BREEDS: Partial<Record<Species, { id: string; label: string }[]>> = {
+  dog: [{ id: "shiba", label: "Shiba Inu" }, { id: "husky", label: "Husky" }],
+};
+
+export const breedFor = (species: Species, id?: string) => BREEDS[species]?.find((b) => b.id === id) ?? BREEDS[species]?.[0];
+
+export const coatFor =(species: Species, id?: string): Coat => COATS[species].find((c) => c.id === id) ?? COATS[species][0];
 
 export const PERSONALITIES: { id: Personality; label: string; blurb: string }[] = [
   { id: "playful", label: "Playful", blurb: "Bouncy, loud about good days" },

@@ -11,3 +11,7 @@ The files are the meshopt-compressed copies distributed in the npm package
 whose NOTICE records each model as Quaternius, CC0 1.0. CC0 allows commercial use with no
 attribution required; we credit anyway. No rabbit, owl or panda model was available under a
 free licence from a reachable source, so those species use the 2D animated art.
+
+## husky.glb
+
+Husky (Quaternius, Ultimate Animated Animal Pack), CC0 1.0. Uncompressed copy of the uploaded file. Licence to be confirmed against the pack page before release.

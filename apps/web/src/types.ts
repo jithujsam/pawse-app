@@ -34,6 +34,8 @@ export interface Companion {
   finalAge: number | null;
   /** Coat colour id for the species (see COATS). Older companions have none and get the first coat. */
   coat?: string;
+  /** Breed id for the species (see BREEDS). Only dogs have breeds for now; missing means the first breed. */
+  breed?: string;
   personality?: Personality;
   /** The track this companion belongs to. Filled on load; a companion belongs to exactly one track. */
   trackId?: string;
