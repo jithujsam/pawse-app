@@ -3,6 +3,8 @@ import type { Species } from "./types";
 /** Which species have a 3D model, and whether this device can draw it. Kept apart from three.js so it loads lazily. */
 export type Species3D = "dog" | "cat" | "fox";
 export const MODEL: Record<Species3D, string> = { dog: "models/dog.glb", cat: "models/cat.glb", fox: "models/fox.glb" };
+/** The model for a species, and for a dog, its breed. Breeds share the Shiba Inu rig and clips. */
+export const modelFor = (species: Species3D, breed?: string): string => (species === "dog" && breed === "husky" ? "models/husky.glb" : MODEL[species]);
 
 /**
  * Every pet is 3D, each model named for what it is. Only the dog has the face rig (eyelids, brows, tongue);

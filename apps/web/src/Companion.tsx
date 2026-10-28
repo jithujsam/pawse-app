@@ -38,7 +38,7 @@ export function moodFor(stage: Stage, opts: { checkedToday: boolean; slippedToda
 }
 
 interface ArtProps {
-  species: Species; coat?: string; stage: Stage; mood: Mood; age: number; size?: number;
+  species: Species; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; size?: number;
   /** Where the eyes look, -1..1 on each axis. */
   look?: { x: number; y: number };
   gesture?: Gesture;
@@ -315,7 +315,7 @@ export function PetPortrait({ still, ...art }: ArtProps & { still?: boolean }) {
   if (!t.on || still) return <CompanionArt {...art} />;
   return (
     <Suspense fallback={<Waiting3D size={size} />}>
-      <Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} reduced={!!reduce}
+      <Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} reduced={!!reduce}
         size={size} onFail={t.fail} loading={<Waiting3D size={size} />} fallback={<CompanionArt {...art} />} />
     </Suspense>
   );
@@ -422,7 +422,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); haptic.tap(); play("petted", 1200); setHearts((h) => h + 1); onReact?.("petted"); } }}
       whileTap={interactive ? { scale: 0.97 } : undefined}>
       {t3d.on
-        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
+        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
             size={art.size ?? 280} onFail={t3d.fail} loading={<Waiting3D size={art.size ?? 280} />} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
         : <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />}
       <Burst burst={hearts} kind="heart" count={6} />

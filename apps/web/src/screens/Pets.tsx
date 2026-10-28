@@ -9,7 +9,7 @@ import { t } from "../text";
 import { today } from "../dates";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
-import { COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES } from "../pets";
+import { BREEDS, COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor } from "../pets";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
@@ -67,7 +67,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
                   aria-label={t("pets.grid.card", { pet: view.companion.name, track: habit.name, line })}>
                   <span className="pet-card-art" aria-hidden>
-                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} stage={view.stage} mood={mood} age={view.age} size={100} />
+                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} size={100} />
                   </span>
                   <b className="pet-card-name">{view.companion.name}</b>
                   <span className="pet-card-track small">{habit.name}</span>
@@ -147,8 +147,8 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
   );
 }
 
-export interface PetPick { species: Species; coat: string; personality: Personality; name: string }
-export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", personality: "playful", name: "" });
+export interface PetPick { species: Species; coat: string; breed: string; personality: Personality; name: string }
+export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "" });
 
 /**
  * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Used when setting
@@ -161,7 +161,7 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
       <div className="species-grid" role="radiogroup" aria-label={t("pets.picker.group")}>
         {PICKABLE.map((s) => (
           <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
-            whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
+            whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", breed: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
             <motion.div animate={pet.species === s.id ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
               <PetPortrait species={s.id} stage="baby" mood={pet.species === s.id ? "happy" : "idle"} age={2} size={68} />
             </motion.div>
@@ -175,6 +175,8 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
           placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
       <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
         <Select label={t("pets.picker.coat")} value={coat} options={COATS[pet.species].map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
+      {BREEDS[pet.species] && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
+        <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
       <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
         <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>
     </div>
@@ -194,7 +196,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   const close = () => { reset(); onClose(); };
   const save = () => {
     const petName = pet.name.trim() || NAMES[pet.species][0];
-    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, personality: pet.personality });
+    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
     toast(t("pets.add.added", { name: petName, what: what.trim() }), { kind: "good" });

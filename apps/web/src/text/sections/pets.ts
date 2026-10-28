@@ -45,6 +45,7 @@ export const petsPicker = defineSection("pets.picker", { screen: "Home", title: 
   name_other: "Another name…",
   name_own: "Type a name",
   coat: "Coat",
+  breed: "Breed",
   personality: "Personality",
 });
 // @copy-section-end pets.picker

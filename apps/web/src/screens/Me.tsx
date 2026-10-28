@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { CompanionArt, LiveCompanion, PetPortrait } from "../Companion";
-import { ACCESSORIES, COATS, PERSONALITIES, SPECIES } from "../pets";
+import { ACCESSORIES, BREEDS, COATS, PERSONALITIES, SPECIES, breedFor } from "../pets";
 import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
@@ -61,7 +61,7 @@ export function Me() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>{t("me.profile.title")}</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
           <span className="muted small">{t("me.profile.summary", { species: SPECIES_LABEL[companion.species], personality: PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label ?? "", stage: STAGE_LABEL[view.stage], day: together })}</span>
@@ -114,7 +114,7 @@ export function Me() {
       <SubPage open={page === "appearance"} title={t("me.profile.row_appearance")} onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title={t("me.profile.row_feel")} onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title={t("me.profile.row_about")} onClose={close}><AboutPage /></SubPage>
-      {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} name={companion.name} habit={habit} />}
+      {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} breed={companion.breed} name={companion.name} habit={habit} />}
     </motion.main>
   );
 }
@@ -140,7 +140,7 @@ function PetPage() {
   };
   return (<>
     <section className="card stack">
-      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
+      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
       <div className="stats">
         <div className="stat item"><span className="muted small">{t("me.pet.days")}</span><b className="v">{daysTogether(companion.bornOn, today())}</b></div>
         <div className="stat item"><span className="muted small">{t("me.pet.born")}</span><b>{fmtDay(companion.bornOn)}</b></div>
@@ -157,11 +157,15 @@ function PetPage() {
       {has3D(companion.species) && <span className="muted small">{pet3dStatus() === "failed" ? t("me.pet.style_failed") : pet3dStatus() === "unsupported" ? t("me.pet.style_unsupported") : STYLE_3D[companion.species].note}</span>}
       <div className="field"><span className="field-label">{t("me.pet.coat")}</span>
         <Select label={t("me.pet.coat")} value={companion.coat ?? COATS[companion.species][0].id} options={COATS[companion.species].map((c) => ({ value: c.id, label: c.label }))}
-          onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, personality: companion.personality })} />
+          onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, breed: companion.breed, personality: companion.personality })} />
       </div>
+      {BREEDS[companion.species] && <div className="field"><span className="field-label">{t("me.pet.breed")}</span>
+        <Select label={t("me.pet.breed")} value={breedFor(companion.species, companion.breed)?.id ?? ""} options={BREEDS[companion.species]!.map((b) => ({ value: b.id, label: b.label }))}
+          onChange={(id) => actions.setCompanionLook(companion.id, { coat: companion.coat, breed: id, personality: companion.personality })} />
+      </div>}
       <div className="field"><span className="field-label">{t("me.pet.personality")}</span>
         <Select label={t("me.pet.personality")} value={companion.personality ?? "playful"} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))}
-          onChange={(id) => { actions.setCompanionLook(companion.id, { coat: companion.coat, personality: id }); toast(say("petted", id, settings.tone), { ms: 2500 }); }} />
+          onChange={(id) => { actions.setCompanionLook(companion.id, { coat: companion.coat, breed: companion.breed, personality: id }); toast(say("petted", id, settings.tone), { ms: 2500 }); }} />
       </div>
     </section>
     <section className="card stack">
@@ -185,7 +189,7 @@ function PetPage() {
         <div className="hall">
           {hall.map((c) => (
             <div className="item hall-item" key={c.id}>
-              <CompanionArt species={c.species} coat={c.coat} stage="frail" mood="dying" age={100} size={96} />
+              <CompanionArt species={c.species} coat={c.coat} breed={c.breed} stage="frail" mood="dying" age={100} size={96} />
               <b>{c.name}</b><span className="muted small">{data.entries.filter((e) => e.companionId === c.id).length === 1 ? t("me.pet.hall_slips_one", { n: 1 }) : t("me.pet.hall_slips_other", { n: data.entries.filter((e) => e.companionId === c.id).length })}</span>
             </div>
           ))}

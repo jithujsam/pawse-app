@@ -19,7 +19,7 @@ import type { Gesture, Mood } from "./Companion";
  * tongue parented to the head bone, plus ear and tail posing and floating hearts, z's and drops.
  * Accessories are not shown in 3D.
  */
-import { markPet3d, MODEL, type Species3D } from "./pet3d-support";
+import { markPet3d, modelFor, type Species3D } from "./pet3d-support";
 export type { Species3D };
 
 type Clip = "idle" | "waiting" | "happy" | "hurt" | "sick" | "dying" | "petted" | "giggle";
@@ -183,10 +183,10 @@ function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
   return { balls, glints, lids, brows, tears, tongue, eyeR, eyes: eyes.map((e) => e.c) };
 }
 
-interface Props { species: Species3D; coat?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean }
+interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean }
 
-function Model({ species, coat, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
-  const gltf = useLoader(GLTFLoader, MODEL[species], (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
+function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
+  const gltf = useLoader(GLTFLoader, modelFor(species, breed), (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
   useEffect(() => markPet3d("ok"), []);
   const { scene, mixer, actions, head, neck, face, ears, tail, catEyes } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene) as THREE.Group;

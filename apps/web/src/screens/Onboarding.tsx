@@ -37,12 +37,12 @@ const STORY = [
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
   step: number; species: Species; companionName: string; userName: string; what: string; cls: HabitClass; amountLabel: string;
-  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; personality: Personality;
+  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; breed: string; personality: Personality;
   plan: RecoveryPlan;
 }
 const initial: Draft = {
   step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", amountLabel: "",
-  baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", personality: "playful",
+  baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", breed: "", personality: "playful",
   plan: emptyPlan(),
 };
 const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.min(LAST - 1, Math.max(1, d.step)) }; } catch { return initial; } };
@@ -68,7 +68,7 @@ export function Onboarding() {
   const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -88,8 +88,8 @@ export function Onboarding() {
             {d.step === 1 && (<>
               <motion.h1 variants={rise}>{t("onboarding.pet.title")}</motion.h1>
               <motion.p className="muted" variants={rise}>{t("onboarding.pet.intro")}</motion.p>
-              <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, personality: d.personality, name: d.companionName }}
-                onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}) })} /></motion.div>
+              <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName }}
+                onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}) })} /></motion.div>
               <motion.label className="field" variants={rise}><span className="field-label">{t("onboarding.pet.call_you", { name: d.companionName.trim() || "they" })}</span>
                 <GuardedInput className="input" autoComplete="given-name" value={d.userName} placeholder={t("onboarding.pet.call_you_placeholder")} maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") go(2); }} />
               </motion.label>
@@ -152,7 +152,7 @@ export function Onboarding() {
             {d.step === 7 && (<>
               <motion.h1 variants={rise}>{t("onboarding.voice.title", { name })}</motion.h1>
               <motion.div className="preview" variants={rise}>
-                <PetPortrait species={d.species} coat={d.coat} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
+                <PetPortrait species={d.species} coat={d.coat} breed={d.breed} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
                 <AnimatePresence mode="wait">
                   <motion.p key={d.tone} className="speech" initial={{ opacity: 0, scale: 0.92, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring.bouncy}>
                     {tonePreview(d.tone, name)}
@@ -197,7 +197,7 @@ export function Onboarding() {
               <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(10)}>{t("onboarding.final.meet", { name })}</Button></motion.div>
             </>)}
 
-            {d.step === 10 && <Hatch species={d.species} coat={d.coat} name={name} tone={d.tone} onDone={finish} />}
+            {d.step === 10 && <Hatch species={d.species} coat={d.coat} breed={d.breed} name={name} tone={d.tone} onDone={finish} />}
           </motion.div>
         </motion.div>
       </AnimatePresence>
@@ -231,7 +231,7 @@ export function Story({ species, onStart }: { species: Species; onStart: () => v
   );
 }
 
-function Hatch({ species, coat, name, tone, onDone }: { species: Species; coat?: string; name: string; tone: Tone; onDone: () => void }) {
+function Hatch({ species, coat, breed, name, tone, onDone }: { species: Species; coat?: string; breed?: string; name: string; tone: Tone; onDone: () => void }) {
   const [phase, setPhase] = useState<"egg" | "crack" | "born">("egg");
   useEffect(() => {
     const a = setTimeout(() => { setPhase("crack"); haptic.tap(); }, 1300);
@@ -255,7 +255,7 @@ function Hatch({ species, coat, name, tone, onDone }: { species: Species; coat?:
           ) : (
             <motion.div key="pet" initial={{ scale: 0.3, y: 40, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} transition={spring.bouncy}>
               <Burst burst={1} kind="spark" count={12} />
-              <LiveCompanion species={species} coat={coat} stage="baby" mood="happy" gesture="hop" age={0} size={220} />
+              <LiveCompanion species={species} coat={coat} breed={breed} stage="baby" mood="happy" gesture="hop" age={0} size={220} />
             </motion.div>
           )}
         </AnimatePresence>
