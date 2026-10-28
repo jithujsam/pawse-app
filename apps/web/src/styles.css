@@ -160,6 +160,10 @@ p { text-wrap: pretty; }
 .srow { width: 100%; border: 0; background: none; color: var(--text); display: flex; align-items: center; gap: 14px; padding: 0 16px; min-height: 64px; text-align: left; cursor: pointer; font-weight: 550; position: relative; }
 .srow + .srow::before { content: ""; position: absolute; top: 0; left: 54px; right: 0; height: 1px; background: var(--line); }
 .srow-ico { width: 24px; height: 24px; color: var(--accent); display: grid; place-items: center; flex: none; }
+.srow-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--negative); color: var(--on-status); font: 700 12px/20px var(--font); text-align: center; flex: none; }
+.tab-dot { position: absolute; top: 8px; right: calc(50% - 22px); width: 9px; height: 9px; border-radius: 50%; background: var(--negative); box-shadow: 0 0 0 2px var(--surface); }
+@media (prefers-reduced-motion: no-preference) { .tab-dot { animation: tab-dot-in .3s ease-out; } }
+@keyframes tab-dot-in { from { transform: scale(0); } to { transform: scale(1); } }
 .srow-ico .ico { width: 19px; height: 19px; }
 .srow-label { flex: 1; min-width: 0; }
 .srow-value { color: var(--muted); font-size: 14px; font-weight: 500; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

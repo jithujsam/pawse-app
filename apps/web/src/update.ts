@@ -100,16 +100,40 @@ export function shouldPrompt(l: Latest, prefs: UpdatePrefs, now: number): boolea
   return prefs.skipped !== l.code && (prefs.snoozeUntil ?? 0) <= now;
 }
 
-// One shared result, so the popup and the Home banner agree and a track switch never re-fetches.
+// One shared result, so the popup, the Home banner and the navbar dot agree and a track switch never re-fetches.
 let shared: Latest | null = null;
 let checkedAt = 0;
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((f) => f());
 
+// Popup state lives here too, so Settings can open the same popup the launch check opens.
+let forceOpen = false;
+let dismissed = false;
+
+// A failed check is retried a few times, so a cold start before the network is up doesn't miss the update.
+const RETRY_MS = 30 * 1000;
+const RETRY_LIMIT = 5;
+let failures = 0;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
 async function refresh(force = false): Promise<UpdateCheck> {
   if (!force && Date.now() - checkedAt < RECHECK_MS) return shared ? { status: "available", latest: shared } : { status: "latest" };
   const r = await checkUpdate();
-  if (r.status !== "error") { checkedAt = Date.now(); shared = r.status === "available" ? r.latest : null; emit(); }
+  if (r.status === "error") {
+    if (failures < RETRY_LIMIT) { failures++; clearTimeout(retryTimer); retryTimer = setTimeout(() => void refresh(true), RETRY_MS); }
+    return r;
+  }
+  failures = 0;
+  checkedAt = Date.now();
+  shared = r.status === "available" ? r.latest : null;
+  emit();
+  return r;
+}
+
+/** Settings → Check for updates. Opens the same popup as launch, even after Later or Don't remind, because the person asked. */
+export async function checkNow(): Promise<UpdateCheck> {
+  const r = await refresh(true);
+  if (r.status === "available") { forceOpen = true; dismissed = false; emit(); }
   return r;
 }
 
@@ -130,15 +154,22 @@ function useShared(): Latest | null {
 /** The newest version, for the Home banner. Phone app only; the web app updates itself. */
 export const useUpdate = (): Latest | null => useShared();
 
-/** Drives the launch popup: `latest` is set only while the popup should be showing. */
+const closePrompt = () => { forceOpen = false; dismissed = true; emit(); };
+
+/** Drives the popup: `latest` is set only while it should be showing (launch rules, or a Settings check). */
 export function useUpdatePrompt() {
   const found = useShared();
-  const [hidden, setHidden] = useState(false);
-  const open = !!found && !hidden && shouldPrompt(found, readPrefs(), Date.now());
+  const open = !!found && !dismissed && (forceOpen || shouldPrompt(found, readPrefs(), Date.now()));
   return {
     latest: open ? found : null,
-    later: () => { writePrefs({ ...readPrefs(), snoozeUntil: Date.now() + SNOOZE_MS }); setHidden(true); },
-    skip: () => { if (found) writePrefs({ ...readPrefs(), skipped: found.code }); setHidden(true); },
-    close: () => setHidden(true),
+    later: () => { writePrefs({ ...readPrefs(), snoozeUntil: Date.now() + SNOOZE_MS }); closePrompt(); },
+    skip: () => { if (found) writePrefs({ ...readPrefs(), skipped: found.code }); closePrompt(); },
+    close: closePrompt,
   };
+}
+
+/** The newest version while it's still wanted: drives the navbar dot and the About badge. A skipped version gets neither. */
+export function useUpdatePending(): Latest | null {
+  const found = useShared();
+  return found && readPrefs().skipped !== found.code ? found : null;
 }

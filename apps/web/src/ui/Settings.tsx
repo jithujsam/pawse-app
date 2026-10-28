@@ -17,11 +17,12 @@ export function Group({ title, children }: { title?: string; children: ReactNode
 }
 
 /** One tappable settings row: icon, label, current value, chevron. */
-export function Row({ icon, label, value, onClick, tone }: { icon: ReactNode; label: string; value?: ReactNode; onClick: () => void; tone?: "danger" }) {
+export function Row({ icon, label, value, onClick, tone, badge }: { icon: ReactNode; label: string; value?: ReactNode; onClick: () => void; tone?: "danger"; badge?: { count: number; label: string } }) {
   return (
     <motion.button className="srow" data-tone={tone} onClick={() => { haptic.tap(); onClick(); }} whileTap={{ scale: 0.985 }} transition={spring.snappy}>
       <span className="srow-ico" aria-hidden>{icon}</span>
       <span className="srow-label">{label}</span>
+      {badge && <span className="srow-badge"><span aria-hidden>{badge.count}</span><span className="sr-only">{badge.label}</span></span>}
       {value !== undefined && <span className="srow-value">{value}</span>}
       <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
     </motion.button>

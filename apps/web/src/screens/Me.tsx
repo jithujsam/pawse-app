@@ -29,7 +29,7 @@ import { toast } from "../ui/Toast";
 import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
-import { APP_VERSION, checkUpdate, openDownload, RELEASES_PAGE, runUpdate } from "../update";
+import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, useUpdatePending } from "../update";
 import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -43,6 +43,7 @@ type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" 
 export function Me() {
   const data = useData();
   const view = useActiveView()!;
+  const pending = useUpdatePending();
   const { companion } = view;
   const habit = view.habit ?? data.habits[0];
   const { settings } = data;
@@ -94,7 +95,8 @@ export function Me() {
         <Group title={t("me.profile.g_app")}>
           <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
           <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
-          <Row icon={Icon.info} label={t("me.profile.row_about")} value={APP_VERSION.name} onClick={() => setPage("about")} />
+          <Row icon={Icon.info} label={t("me.profile.row_about")} value={APP_VERSION.name} onClick={() => setPage("about")}
+            badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
         </Group>
       </motion.div>
       {import.meta.env.DEV && <motion.div variants={rise}>
@@ -405,11 +407,10 @@ function AboutPage() {
   const [checking, setChecking] = useState(false);
   async function check() {
     setChecking(true);
-    const r = await checkUpdate();
+    const r = await checkNow();
     setChecking(false);
-    if (r.status === "available") toast(t("me.about.ready", { version: r.latest.name }), { action: { label: t("home.header.update_cta"), run: () => void runUpdate(r.latest) }, ms: 8000 });
-    else if (r.status === "error") toast(t("me.about.error"), { kind: "bad" });
-    else toast(t("me.about.latest"), { kind: "good" });
+    if (r.status === "error") toast(t("me.about.error"), { kind: "bad" });
+    else if (r.status === "latest") toast(t("me.about.latest"), { kind: "good" });
   }
   return (<>
     <section className="card stack about-hero">

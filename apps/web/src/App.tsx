@@ -34,6 +34,7 @@ import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
+import { useUpdatePending } from "./update";
 import { t } from "./text";
 import { APP_NAME } from "./brand";
 
@@ -133,6 +134,7 @@ function Shell() {
   }, []);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
   const { session, ready, recovering } = useSession();
+  const updateDot = useUpdatePending() !== null;
   const [pwDone, setPwDone] = useState(false);
   const sync = useSyncStatus();
   // The restore check waits for the first sync to settle, once. A retry after that (offline, say) must not swap
@@ -241,6 +243,7 @@ function Shell() {
             <button key={tabId} className="tab" data-tab={tabId} aria-current={tab === tabId ? "page" : undefined} onClick={() => go(tabId)}>
               <span className="tab-ico">{ICONS[tabId]}</span>
               <span className="tab-label">{LABELS[tabId]}</span>
+              {tabId === "you" && updateDot && <span className="tab-dot" aria-hidden />}
             </button>
           );
           return i === 2 ? [
