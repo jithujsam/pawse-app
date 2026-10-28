@@ -2,5 +2,5 @@
 <resources>
     <color name="widget_surface">#FF18191C</color>
     <color name="widget_name">#FFF2EDE8</color>
-    <color name="app_bg">#FF16110E</color>
+    <color name="app_bg">#FF000000</color>
 </resources>

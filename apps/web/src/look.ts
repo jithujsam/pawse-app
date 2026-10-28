@@ -12,8 +12,8 @@ export function applyLook(theme: Settings["theme"] = "system", accent: Settings[
   if (theme === "system") delete root.dataset.theme; else root.dataset.theme = theme;
   if (accent === "pet") delete root.dataset.accent; else root.dataset.accent = accent;
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-  // The status bar follows the page's own ground colour, which in dark mode is tinted by the accent.
-  const fallback = dark ? "#16110e" : "#faf7f2";
+  // The status bar follows the page's own ground colour: pure black in dark mode, so AMOLED pixels stay off.
+  const fallback = dark ? "#000000" : "#faf7f2";
   const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
   paint();
   requestAnimationFrame(paint);
