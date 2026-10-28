@@ -47,7 +47,7 @@ describe("in-app update", () => {
   });
 });
 
-const { parseLatest, shouldPrompt, SNOOZE_MS } = await import("../src/update");
+const { parseLatest, pendingUpdates, shouldPrompt } = await import("../src/update");
 
 describe("update manifest and popup rules", () => {
   it("accepts a good manifest and rejects malformed ones", () => {
@@ -60,13 +60,24 @@ describe("update manifest and popup rules", () => {
     expect(parseLatest(null)).toBeNull();
   });
 
-  it("shows the popup unless the version was skipped or snoozed", () => {
+  it("shows the launch popup once per version: not after Later or Don't remind on it, but again for a newer one", () => {
     const l = { ...base, code: 20 };
-    const now = 1_000_000;
-    expect(shouldPrompt(l, {}, now)).toBe(true);
-    expect(shouldPrompt(l, { skipped: 20 }, now)).toBe(false);
-    expect(shouldPrompt({ ...l, code: 21 }, { skipped: 20 }, now)).toBe(true);
-    expect(shouldPrompt(l, { snoozeUntil: now + SNOOZE_MS }, now)).toBe(false);
-    expect(shouldPrompt(l, { snoozeUntil: now - 1 }, now)).toBe(true);
+    expect(shouldPrompt(l, {})).toBe(true);
+    expect(shouldPrompt(l, { skipped: 20 })).toBe(false);
+    expect(shouldPrompt(l, { later: 20 })).toBe(false);
+    expect(shouldPrompt({ ...l, code: 21 }, { later: 20 })).toBe(true);
+    expect(shouldPrompt({ ...l, code: 21 }, { skipped: 20 })).toBe(true);
+  });
+
+  it("keeps the versions missed since the installed one, newest first, and drops bad history entries", () => {
+    const parsed = parseLatest({ ...base, sha256: sha, history: [
+      { name: "9.9.8", code: 98, notes: "Eight" },
+      { name: "9.9.0", code: 90 },
+      { name: "bad", code: "x" },
+      { name: "ancient", code: 5 },
+    ] });
+    expect(parsed?.history?.map((h) => h.code)).toEqual([98, 90, 5]);
+    expect(pendingUpdates(parsed!).map((v) => v.code)).toEqual([99, 98, 90]);
+    expect(pendingUpdates({ ...base, sha256: sha, code: 9 } as never)).toEqual([]);
   });
 });
