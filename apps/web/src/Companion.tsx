@@ -5,7 +5,7 @@ import { describePet } from "./pet-label";
 import { t } from "./text";
 import { haptic } from "./haptics";
 import { coatFor, mix } from "./pets";
-import { Burst } from "./ui/Controls";
+import { Burst, PawLoader } from "./ui/Controls";
 import { has3D, markPet3d, webglOk, type Species3D } from "./pet3d-support";
 const Pet3D = lazy(() => import("./Pet3D").then((m) => ({ default: m.Pet3D })));
 import type { Accessory, Personality, Species } from "./types";
@@ -301,8 +301,8 @@ function use3d(species: Species) {
   return { on: !failed && has3D(species) && webglOk(), fail: () => { markPet3d("failed"); setFailed(true); } };
 }
 
-/** A calm blank disc while the model loads, so the old drawing never flashes in before the 3D pet. */
-const Waiting3D = ({ size }: { size: number }) => <span className="pet3d-wait" style={{ width: size, height: size }} aria-hidden />;
+/** A calm disc with a small pulsing paw while the model loads, so the old drawing never flashes in before the 3D pet. */
+const Waiting3D = ({ size }: { size: number }) => <span className="pet3d-wait" style={{ width: size, height: size }} aria-hidden><PawLoader size={Math.round(size * 0.3)} /></span>;
 
 /**
  * A pet for small, non-interactive spots (the Pets grid, the profile): the same 3D or drawn art as the home screen,
