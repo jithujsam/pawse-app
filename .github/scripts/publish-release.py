@@ -143,7 +143,10 @@ def main():
 
     # 4. Write the files, then check that they agree with each other.
     shutil.copyfile(apk_src, apk_dst)
-    latest = {"name": name, "code": code, "url": RAW + apk_rel, "notes": notes, "sha256": sha}
+    # The versions before this one, newest first, so the app can show every update a person has missed.
+    previous = {"name": published["name"], "code": published["code"], "notes": published.get("notes", "")}
+    history = [previous] + [h for h in published.get("history", []) if h["code"] < code]
+    latest = {"name": name, "code": code, "url": RAW + apk_rel, "notes": notes, "sha256": sha, "history": history[:10]}
     write(latest_path, json.dumps(latest, ensure_ascii=False) + "\n")
     write(readme_path, readme)
     write(status_path, status)

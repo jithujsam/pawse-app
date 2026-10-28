@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { APP_VERSION, runUpdate, useUpdatePrompt } from "../update";
+import { APP_VERSION, pendingUpdates, runUpdate, useUpdatePrompt } from "../update";
 import { updatePhase } from "../copy";
 import { t, tt } from "../text";
 import { useData } from "../store";
@@ -39,7 +39,7 @@ export function UpdateDialog() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latest, busy]);
 
-  const notes = (latest?.notes ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
+  const pending = latest ? pendingUpdates(latest) : [];
   return createPortal(
     <AnimatePresence>
       {latest && (
@@ -55,10 +55,15 @@ export function UpdateDialog() {
               <span className="update-arrow" aria-hidden>{Icon.chevR}</span>
               <span><small>{t("update.dialog.new")}</small><b className="pill on">v{latest.name}</b></span>
             </div>
-            {notes.length > 0 && (
+            {pending.length > 0 && (
               <section className="update-notes" aria-label={c.whatsNew}>
                 <h3>{c.whatsNew}</h3>
-                <div>{notes.map((n, i) => <p key={i}>{n}</p>)}</div>
+                {pending.map((v) => (
+                  <div key={v.code}>
+                    <h4>v{v.name}</h4>
+                    {(v.notes ?? "").split("\n").map((x) => x.trim()).filter(Boolean).map((n, i) => <p key={i}>{n}</p>)}
+                  </div>
+                ))}
               </section>
             )}
             <div className="update-actions">

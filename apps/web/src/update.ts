@@ -11,7 +11,9 @@ export const APP_VERSION = { name: __APP_VERSION__, code: __APP_CODE__ };
 export const RELEASES_PAGE = "https://github.com/jithujsam/pawse-releases";
 const LATEST_URL = "https://raw.githubusercontent.com/jithujsam/pawse-releases/main/latest.json";
 
-export interface Latest { name: string; code: number; url: string; notes?: string; sha256?: string }
+/** One released version. `history` in latest.json holds the versions before the newest, newest first. */
+export interface Version { name: string; code: number; notes?: string }
+export interface Latest extends Version { url: string; sha256?: string; history?: Version[] }
 
 const RELEASE_HOST = "https://raw.githubusercontent.com/jithujsam/pawse-releases/";
 
@@ -24,7 +26,27 @@ export function parseLatest(j: unknown): Latest | null {
   if (typeof o.url !== "string" || !o.url.startsWith(RELEASE_HOST)) return null;
   if (o.sha256 !== undefined && (typeof o.sha256 !== "string" || !/^[0-9a-f]{64}$/i.test(o.sha256))) return null;
   const notes = typeof o.notes === "string" ? o.notes.slice(0, 600) : undefined;
-  return { name: o.name, code: o.code, url: o.url, notes, sha256: o.sha256 as string | undefined };
+  return { name: o.name, code: o.code, url: o.url, notes, sha256: o.sha256 as string | undefined, history: parseHistory(o.history) };
+}
+
+/** Older versions from latest.json. Bad entries are dropped one by one; a missing or broken list is just empty. */
+function parseHistory(j: unknown): Version[] {
+  if (!Array.isArray(j)) return [];
+  return j.flatMap((x): Version[] => {
+    if (!x || typeof x !== "object") return [];
+    const v = x as Record<string, unknown>;
+    if (typeof v.name !== "string" || !v.name.trim() || v.name.length > 20) return [];
+    if (typeof v.code !== "number" || !Number.isInteger(v.code) || v.code < 1) return [];
+    return [{ name: v.name, code: v.code, notes: typeof v.notes === "string" ? v.notes.slice(0, 600) : undefined }];
+  }).slice(0, 10);
+}
+
+/** Every version newer than the installed one, newest first, so the popup can show all that are pending. */
+export function pendingUpdates(l: Latest): Version[] {
+  const all: Version[] = [{ name: l.name, code: l.code, notes: l.notes }, ...(l.history ?? [])];
+  return all
+    .filter((v, i) => v.code > APP_VERSION.code && all.findIndex((x) => x.code === v.code) === i)
+    .sort((a, b) => b.code - a.code);
 }
 
 /** "error" means we couldn't tell (offline, GitHub down, bad file), which is not the same as "up to date". */
@@ -89,13 +111,14 @@ export async function runUpdate(l: Latest, onProgress?: (percent: number) => voi
 export const RECHECK_MS = 60 * 60 * 1000;
 const PREFS_KEY = "pawse.update";
 
-export interface UpdatePrefs { skipped?: number }
+/** skipped: "Don't remind" for that version. later: the newest version the person chose Later on. */
+export interface UpdatePrefs { skipped?: number; later?: number }
 export const readPrefs = (): UpdatePrefs => { try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") as UpdatePrefs; } catch { return {}; } };
 const writePrefs = (p: UpdatePrefs) => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { /* private mode: the popup just shows again next launch */ } };
 
-/** The launch popup is for a version the person hasn't chosen "Don't remind" on. Later only hides it until the next launch. */
+/** The launch popup shows once per new version: not after Later or Don't remind on it, and again only when a newer one arrives. */
 export function shouldPrompt(l: Latest, prefs: UpdatePrefs): boolean {
-  return prefs.skipped !== l.code;
+  return prefs.skipped !== l.code && (prefs.later ?? 0) < l.code;
 }
 
 // One shared result, so the popup, the Home banner and the navbar dot agree and a track switch never re-fetches.
@@ -167,7 +190,7 @@ export function useUpdatePrompt() {
   const open = !!found && !dismissed && (forceOpen || shouldPrompt(found, readPrefs()));
   return {
     latest: open ? found : null,
-    later: closePrompt,
+    later: () => { if (found) writePrefs({ ...readPrefs(), later: found.code }); closePrompt(); },
     skip: () => { if (found) writePrefs({ ...readPrefs(), skipped: found.code }); closePrompt(); },
     close: closePrompt,
   };
