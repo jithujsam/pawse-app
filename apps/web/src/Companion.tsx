@@ -57,9 +57,9 @@ const HEAD: Record<Species, { cy: number; eyeY: number; eyeDX: number; eyeR: num
   panda: { cy: 98, eyeY: 96, eyeDX: 18, eyeR: 5.5, top: 56, neck: 140 },
 };
 
-export function CompanionArt({ species, coat, stage, mood, age, size = 280, look = { x: 0, y: 0 }, gesture = "none", accessory = null, blink = false }: ArtProps) {
+export function CompanionArt({ species, coat, breed, stage, mood, age, size = 280, look = { x: 0, y: 0 }, gesture = "none", accessory = null, blink = false }: ArtProps) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const c = coatFor(species, coat);
+  const c = coatFor(species, coat, breed);
   const t = Math.max(0, Math.min(1, age / 100));
   // Age dulls the coat a little, never into something unrecognisable.
   const fur = mix(c.fur, "#a3a3a3", t * 0.28);

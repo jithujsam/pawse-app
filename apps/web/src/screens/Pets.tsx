@@ -9,7 +9,7 @@ import { t } from "../text";
 import { today } from "../dates";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
-import { BREEDS, COATS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor } from "../pets";
+import { BREEDS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor, coatsFor } from "../pets";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
@@ -155,7 +155,7 @@ export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat:
  * up the app and when adding a recovery track, so a pet is made the same way both times.
  */
 export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
-  const coat = pet.coat || COATS[pet.species][0].id;
+  const coat = pet.coat || coatsFor(pet.species, pet.breed)[0].id;
   return (
     <div className="stack">
       <div className="species-grid" role="radiogroup" aria-label={t("pets.picker.group")}>
@@ -174,7 +174,7 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
         <SelectOther key={pet.species} label={t("pets.picker.name_aria")} value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
           placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
       <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
-        <Select label={t("pets.picker.coat")} value={coat} options={COATS[pet.species].map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
+        <Select label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
       {BREEDS[pet.species] && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
         <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
       <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>

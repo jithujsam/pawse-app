@@ -45,8 +45,9 @@ const STAGE_GREY: Record<Stage, number> = { baby: 0, young: 0, adult: 0, middle:
 const STAGE_DROOP: Record<Stage, number> = { baby: 0, young: 0, adult: 0, middle: 0.05, old: 0.16, frail: 0.26, dead: 0.26 };
 
 /** Coat colours for the fur material ("Main" on the dog and fox; a tint over the cat's texture). The tuxedo is repainted, not tinted. */
-const COAT: Record<Species3D, Record<string, string>> = {
+const COAT: Record<string, Record<string, string>> = {
   dog: { golden: "#c8803f", cocoa: "#6b4126", cream: "#e8cfa5" },
+  husky: { grey: "#9aa0a8", black: "#2b2b30", red: "#b8642c" },
   fox: { red: "#d8692c", arctic: "#eef0f4", silver: "#70737f" },
   cat: { tabby: "#ffffff", ginger: "#ffc48a", tuxedo: "#ffffff" },
 };
@@ -186,6 +187,7 @@ function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
 interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean }
 
 function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
+  const isHusky = species === "dog" && breed === "husky";
   const gltf = useLoader(GLTFLoader, modelFor(species, breed), (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
   useEffect(() => markPet3d("ok"), []);
   const { scene, mixer, actions, head, neck, face, ears, tail, catEyes } = useMemo(() => {
@@ -238,7 +240,10 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
   // Coat colour and age greying, applied to cloned materials so other instances are untouched.
   useEffect(() => {
     const grey = STAGE_GREY[stage];
-    const tint = new THREE.Color(COAT[species][coat ?? ""] ?? Object.values(COAT[species])[0]);
+    // The Husky is a different model, so its fur is its own material, and its coats are its own colours.
+    const colours = COAT[isHusky ? "husky" : species];
+    const tint = new THREE.Color(colours[coat ?? ""] ?? Object.values(colours)[0]);
+    const furName = isHusky ? "Material.001" : "Main";
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -246,7 +251,7 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
         if (!m.color) continue;
         m.userData.base ??= m.color.clone();
         m.userData.map ??= m.map;
-        const isFur = species === "cat" || m.name === "Main";
+        const isFur = species === "cat" || m.name === furName;
         const base = isFur ? tint.clone() : (m.userData.base as THREE.Color).clone();
         // Age: the coat loses colour and lightens a touch, like a greying muzzle, not a tint.
         if (isFur || m.name === "Main_Light") { const hsl = { h: 0, s: 0, l: 0 }; base.getHSL(hsl); base.setHSL(hsl.h, hsl.s * (1 - grey * 1.4), Math.min(0.9, hsl.l + grey * 0.12)); }
@@ -256,7 +261,7 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
       }
     });
     catEyes.forEach((e) => (e.visible = coat === "tuxedo"));
-  }, [scene, species, coat, stage, catEyes]);
+  }, [scene, species, coat, stage, catEyes, isHusky]);
 
   // Cross-fade between clips whenever the state changes.
   const current = useRef<THREE.AnimationAction | null>(null);

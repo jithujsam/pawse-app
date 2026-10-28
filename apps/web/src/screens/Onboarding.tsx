@@ -16,7 +16,7 @@ import { SITUATIONS } from "../recovery";
 import { PetStep } from "./Pets";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
-import { COATS, NAMES } from "../pets";
+import { NAMES, coatsFor } from "../pets";
 import { Burst, Button, GuardedInput, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import type { Baseline, Personality, RecoveryPlan, Species, Tone } from "../types";
 
@@ -68,7 +68,7 @@ export function Onboarding() {
   const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || COATS[d.species][0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || coatsFor(d.species, d.breed)[0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
