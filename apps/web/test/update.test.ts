@@ -47,7 +47,7 @@ describe("in-app update", () => {
   });
 });
 
-const { parseLatest, shouldPrompt, SNOOZE_MS } = await import("../src/update");
+const { parseLatest, shouldPrompt } = await import("../src/update");
 
 describe("update manifest and popup rules", () => {
   it("accepts a good manifest and rejects malformed ones", () => {
@@ -60,13 +60,10 @@ describe("update manifest and popup rules", () => {
     expect(parseLatest(null)).toBeNull();
   });
 
-  it("shows the popup unless the version was skipped or snoozed", () => {
+  it("shows the launch popup unless that exact version was skipped", () => {
     const l = { ...base, code: 20 };
-    const now = 1_000_000;
-    expect(shouldPrompt(l, {}, now)).toBe(true);
-    expect(shouldPrompt(l, { skipped: 20 }, now)).toBe(false);
-    expect(shouldPrompt({ ...l, code: 21 }, { skipped: 20 }, now)).toBe(true);
-    expect(shouldPrompt(l, { snoozeUntil: now + SNOOZE_MS }, now)).toBe(false);
-    expect(shouldPrompt(l, { snoozeUntil: now - 1 }, now)).toBe(true);
+    expect(shouldPrompt(l, {})).toBe(true);
+    expect(shouldPrompt(l, { skipped: 20 })).toBe(false);
+    expect(shouldPrompt({ ...l, code: 21 }, { skipped: 20 })).toBe(true);
   });
 });

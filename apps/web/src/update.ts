@@ -85,19 +85,17 @@ export async function runUpdate(l: Latest, onProgress?: (percent: number) => voi
   return r === "installing" || r === "browser";
 }
 
-/** The popup shows again after this long if the person chose Later. */
-export const SNOOZE_MS = 24 * 60 * 60 * 1000;
 /** Coming back to the app re-checks, but no more often than this. */
 export const RECHECK_MS = 60 * 60 * 1000;
 const PREFS_KEY = "pawse.update";
 
-export interface UpdatePrefs { skipped?: number; snoozeUntil?: number }
+export interface UpdatePrefs { skipped?: number }
 export const readPrefs = (): UpdatePrefs => { try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") as UpdatePrefs; } catch { return {}; } };
 const writePrefs = (p: UpdatePrefs) => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { /* private mode: the popup just shows again next launch */ } };
 
-/** The popup is for a version the person hasn't skipped and hasn't snoozed. The Home banner ignores both. */
-export function shouldPrompt(l: Latest, prefs: UpdatePrefs, now: number): boolean {
-  return prefs.skipped !== l.code && (prefs.snoozeUntil ?? 0) <= now;
+/** The launch popup is for a version the person hasn't chosen "Don't remind" on. Later only hides it until the next launch. */
+export function shouldPrompt(l: Latest, prefs: UpdatePrefs): boolean {
+  return prefs.skipped !== l.code;
 }
 
 // One shared result, so the popup, the Home banner and the navbar dot agree and a track switch never re-fetches.
@@ -133,8 +131,15 @@ async function refresh(force = false): Promise<UpdateCheck> {
 /** Settings → Check for updates. Opens the same popup as launch, even after Later or Don't remind, because the person asked. */
 export async function checkNow(): Promise<UpdateCheck> {
   const r = await refresh(true);
-  if (r.status === "available") { forceOpen = true; dismissed = false; emit(); }
+  if (r.status === "available") showUpdate();
   return r;
+}
+
+/** Opens the update popup now, whatever Later or Don't remind said. */
+export function showUpdate() {
+  forceOpen = true;
+  dismissed = false;
+  emit();
 }
 
 function useShared(): Latest | null {
@@ -159,10 +164,10 @@ const closePrompt = () => { forceOpen = false; dismissed = true; emit(); };
 /** Drives the popup: `latest` is set only while it should be showing (launch rules, or a Settings check). */
 export function useUpdatePrompt() {
   const found = useShared();
-  const open = !!found && !dismissed && (forceOpen || shouldPrompt(found, readPrefs(), Date.now()));
+  const open = !!found && !dismissed && (forceOpen || shouldPrompt(found, readPrefs()));
   return {
     latest: open ? found : null,
-    later: () => { writePrefs({ ...readPrefs(), snoozeUntil: Date.now() + SNOOZE_MS }); closePrompt(); },
+    later: closePrompt,
     skip: () => { if (found) writePrefs({ ...readPrefs(), skipped: found.code }); closePrompt(); },
     close: closePrompt,
   };

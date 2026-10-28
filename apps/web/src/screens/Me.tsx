@@ -29,7 +29,7 @@ import { toast } from "../ui/Toast";
 import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
-import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, useUpdatePending } from "../update";
+import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, showUpdate, useUpdate, useUpdatePending } from "../update";
 import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
@@ -38,7 +38,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
 
-type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | null;
+type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
 
 export function Me() {
   const data = useData();
@@ -95,8 +95,9 @@ export function Me() {
         <Group title={t("me.profile.g_app")}>
           <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
           <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
-          <Row icon={Icon.info} label={t("me.profile.row_about")} value={APP_VERSION.name} onClick={() => setPage("about")}
+          <Row icon={Icon.download} label={t("me.profile.row_updates")} value={APP_VERSION.name} onClick={() => setPage("updates")}
             badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
+          <Row icon={Icon.info} label={t("me.profile.row_about")} onClick={() => setPage("about")} />
         </Group>
       </motion.div>
       {import.meta.env.DEV && <motion.div variants={rise}>
@@ -116,6 +117,7 @@ export function Me() {
       <SubPage open={page === "appearance"} title={t("me.profile.row_appearance")} onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title={t("me.profile.row_feel")} onClose={close}><FeelPage /></SubPage>
       <SubPage open={page === "about"} title={t("me.profile.row_about")} onClose={close}><AboutPage /></SubPage>
+      <SubPage open={page === "updates"} title={t("me.profile.row_updates")} onClose={close}><UpdatesPage /></SubPage>
       {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} breed={companion.breed} name={companion.name} habit={habit} />}
     </motion.main>
   );
@@ -403,7 +405,8 @@ function FeelPage() {
   );
 }
 
-function AboutPage() {
+function UpdatesPage() {
+  const update = useUpdate();
   const [checking, setChecking] = useState(false);
   async function check() {
     setChecking(true);
@@ -412,6 +415,23 @@ function AboutPage() {
     if (r.status === "error") toast(t("me.about.error"), { kind: "bad" });
     else if (r.status === "latest") toast(t("me.about.latest"), { kind: "good" });
   }
+  return (
+    <section className="card stack">
+      <div className="row"><h2>{t("me.about.version")}</h2><span className="muted">{APP_VERSION.name}</span></div>
+      {update ? (<>
+        <p>{t("me.about.ready", { version: update.name })}</p>
+        {update.notes && <p className="small muted">{update.notes}</p>}
+        <Button onClick={() => showUpdate()}>{t("update.dialog.now")}</Button>
+      </>) : <p className="muted small">{t("me.about.latest")}</p>}
+      <div className="actions">
+        <Button variant="secondary" disabled={checking} onClick={check}>{checking ? t("me.about.checking") : t("me.about.check")}</Button>
+        <Button variant="secondary" onClick={() => openDownload(RELEASES_PAGE)}>{t("me.about.all")}</Button>
+      </div>
+    </section>
+  );
+}
+
+function AboutPage() {
   return (<>
     <section className="card stack about-hero">
       <PawLogo size={72} />
@@ -430,13 +450,6 @@ function AboutPage() {
       <h2>{t("me.about.contact_title")}</h2>
       <p>{t("me.about.contact_body")}</p>
       <Button variant="secondary" onClick={() => { window.location.href = `mailto:${CONTACT_EMAIL}`; }}>{t("me.about.contact_cta", { email: CONTACT_EMAIL })}</Button>
-    </section>
-    <section className="card stack">
-      <div className="row"><h2>{t("me.about.version")}</h2><span className="muted">{APP_VERSION.name}</span></div>
-      <div className="actions">
-        <Button variant="secondary" disabled={checking} onClick={check}>{checking ? t("me.about.checking") : t("me.about.check")}</Button>
-        <Button variant="secondary" onClick={() => openDownload(RELEASES_PAGE)}>{t("me.about.all")}</Button>
-      </div>
     </section>
     <section className="card stack">
       <h2>{t("me.about.safety")}</h2>
