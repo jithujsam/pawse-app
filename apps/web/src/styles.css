@@ -382,8 +382,6 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 /* ---------- home ---------- */
 .greet { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-.streak-chip { background: var(--surface); box-shadow: var(--shadow); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: 14px; white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
-.streak-chip > span[aria-hidden] { color: var(--positive); font-size: 10px; }
 .hero { background: var(--hero-a); border-radius: 32px; padding: 24px 24px 28px; display: grid; justify-items: center; gap: 12px; position: relative; color: var(--text); min-height: 0; align-content: safe center; overflow: hidden; isolation: isolate; box-shadow: var(--shadow); }
 .hero > * { position: relative; z-index: 1; }
 .hero::before, .hero::after { display: none; }
@@ -782,7 +780,7 @@ button.plan-card:focus-visible { outline: 2px solid var(--accent); outline-offse
 
 
 /* ---------- warm clay finish ---------- */
-.card, .group-body, .pet-card, .choice, .species-card, .checkin, .streak-chip, .profile-card, .speech { border: 1px solid var(--line); }
+.card, .group-body, .pet-card, .choice, .species-card, .checkin, .profile-card, .speech { border: 1px solid var(--line); }
 .btn { transition: background .3s, color .3s, opacity .2s, transform .15s var(--ease), box-shadow .15s; }
 .btn:not(:disabled):active { transform: translateY(1.5px) scale(.98); }
 .btn.secondary { box-shadow: inset 0 0 0 1px var(--line); }

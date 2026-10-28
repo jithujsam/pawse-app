@@ -1101,20 +1101,10 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 3,
-      "end": 14,
+      "end": 12,
       "entries": [
         {
           "id": "home.header.all_pets",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.header.streak_day",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.header.streak_days",
           "kind": "text",
           "placeholders": []
         },
@@ -1156,8 +1146,8 @@
       "title": "Pet, vitals and health bar",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 16,
-      "end": 28,
+      "start": 14,
+      "end": 26,
       "entries": [
         {
           "id": "home.hero.hero_aria",
@@ -1226,8 +1216,8 @@
       "title": "Paused card",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 30,
-      "end": 35,
+      "start": 28,
+      "end": 33,
       "entries": [
         {
           "id": "home.paused.aria",
@@ -1247,8 +1237,8 @@
       "title": "Weekly summary",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 37,
-      "end": 45,
+      "start": 35,
+      "end": 43,
       "entries": [
         {
           "id": "home.week.title",
@@ -1290,8 +1280,8 @@
       "title": "Today's check-in messages",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 47,
-      "end": 51,
+      "start": 45,
+      "end": 49,
       "entries": [
         {
           "id": "home.today.slip_blocks_goal",
@@ -1306,8 +1296,8 @@
       "title": "Milestone dialog",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 53,
-      "end": 60,
+      "start": 51,
+      "end": 58,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -1339,8 +1329,8 @@
       "title": "First-run tips",
       "source": "src/ui/Coach.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 62,
-      "end": 75,
+      "start": 60,
+      "end": 73,
       "entries": [
         {
           "id": "home.coach.s1_title",
@@ -1405,8 +1395,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 77,
-      "end": 89,
+      "start": 75,
+      "end": 87,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -1468,8 +1458,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 91,
-      "end": 99,
+      "start": 89,
+      "end": 97,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -1508,8 +1498,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 101,
-      "end": 110,
+      "start": 99,
+      "end": 108,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -1555,8 +1545,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 112,
-      "end": 134,
+      "start": 110,
+      "end": 132,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -1675,8 +1665,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 136,
-      "end": 148,
+      "start": 134,
+      "end": 146,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -1731,8 +1721,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 150,
-      "end": 160,
+      "start": 148,
+      "end": 158,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -2321,7 +2311,7 @@
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
       "start": 130,
-      "end": 153,
+      "end": 156,
       "entries": [
         {
           "id": "insights.review.check_in",
@@ -2329,7 +2319,7 @@
           "placeholders": []
         },
         {
-          "id": "insights.review.fold",
+          "id": "insights.review.title",
           "kind": "text",
           "placeholders": []
         },
@@ -2349,16 +2339,26 @@
           "placeholders": []
         },
         {
+          "id": "insights.review.when_last",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.review.when_this",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.review.when_next",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "insights.review.from",
           "kind": "text",
           "placeholders": [
             "date"
           ]
-        },
-        {
-          "id": "insights.review.last_focus",
-          "kind": "text",
-          "placeholders": []
         },
         {
           "id": "insights.review.days_aria",
@@ -2387,48 +2387,53 @@
         {
           "id": "insights.review.used",
           "kind": "text",
-          "placeholders": [
-            "list"
-          ]
-        },
-        {
-          "id": "insights.review.strategy_item",
-          "kind": "text",
-          "placeholders": [
-            "managed",
-            "title",
-            "total"
-          ]
+          "placeholders": []
         },
         {
           "id": "insights.review.hard",
           "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.review.times_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.review.times_other",
+          "kind": "text",
           "placeholders": [
-            "list"
+            "n"
           ]
         },
         {
-          "id": "insights.review.focus_next",
+          "id": "insights.review.focus_was",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "when"
+          ]
         },
         {
-          "id": "insights.review.pick_focus",
+          "id": "insights.review.focus_for",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "when"
+          ]
         },
         {
           "id": "insights.review.focus_aria",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "when"
+          ]
         },
         {
-          "id": "insights.review.focus_placeholder",
+          "id": "insights.review.own",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "insights.review.focus_own",
+          "id": "insights.review.own_placeholder",
           "kind": "text",
           "placeholders": []
         },
@@ -2445,8 +2450,8 @@
       "title": "Weekly review headline",
       "source": "src/recovery.ts",
       "file": "src/text/sections/insights.ts",
-      "start": 155,
-      "end": 165,
+      "start": 158,
+      "end": 168,
       "entries": [
         {
           "id": "insights.goal_line.nothing_open",
@@ -2505,8 +2510,8 @@
       "title": "What your records show",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 167,
-      "end": 180,
+      "start": 170,
+      "end": 183,
       "entries": [
         {
           "id": "insights.patterns.aria",

@@ -142,9 +142,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <div>
           <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
-        {streak > 0 && <motion.div className="streak-chip" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring.bouncy} key={streak}>
-          <span aria-hidden>●</span> <AnimatedNumber value={streak} /> {streak === 1 ? t("home.header.streak_day") : t("home.header.streak_days")}
-        </motion.div>}
       </motion.header>
 
       <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>

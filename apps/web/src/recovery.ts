@@ -215,8 +215,8 @@ export function weekReview(d: AppData, habit: Habit, week: string, t0 = today(),
 export function adjustmentIdeas(r: WeekReview, habit: Habit, what: string): string[] {
   const ideas: string[] = [];
   const best = r.strategies.find((s) => s.managed > 0);
-  if (best) ideas.push(`Reach for "${strategy(best.id).title.toLowerCase()}" first when an urge hits`);
-  if (r.difficult[0]) ideas.push(`Plan one thing to do when I'm ${r.difficult[0][0].toLowerCase()}`);
+  if (best) ideas.push(`Reach for ${strategy(best.id).title} first when an urge hits`);
+  if (r.difficult[0]) ideas.push(`Plan one thing for the next time "${r.difficult[0][0]}" comes up`);
   if (r.counts.unrecorded >= 3) ideas.push("Check in each evening, even on easy days");
   ideas.push(frictionIdeas(habit.cls, what)[0]);
   return [...new Set(ideas)].slice(0, 4);

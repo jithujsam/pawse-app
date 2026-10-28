@@ -3,8 +3,6 @@ import { defineSection, tones } from "../core";
 // @copy-section home.header
 export const homeHeader = defineSection("home.header", { screen: "Pet screen", title: "Header and update banner", source: "src/screens/Home.tsx" }, {
   all_pets: "All pets",
-  streak_day: "day",
-  streak_days: "days",
   update_title: "Update available",
   update_version: "Version {version}",
   update_version_notes: "Version {version} · {notes}",

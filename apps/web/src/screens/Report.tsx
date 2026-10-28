@@ -10,7 +10,7 @@ import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour,
 import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon, plainOpts, SelectOther, TrackContext } from "../ui/Controls";
-import { CheckIn, Observations } from "./WeeklyReview";
+import { CheckIn, Observations, WeeklyReview } from "./WeeklyReview";
 import { t } from "../text";
 import { money } from "../format";
 import type { Baseline } from "../types";
@@ -108,6 +108,7 @@ export function Report() {
       <motion.h1 variants={rise}>{t("insights.header.title")}</motion.h1>
       {needsTrackContext(data, habit.id) && <motion.div variants={rise}><TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} /></motion.div>}
       <CheckIn />
+      <WeeklyReview />
       <motion.section className="card stack" variants={rise}>
         <h2>{t("insights.week.title")}</h2>
         <p>{verdict(tone, cur.slips, prev.slips)}</p>

@@ -5,13 +5,15 @@ import { t } from "../text";
 import { addDays, fmtDay, today, weekStart } from "../dates";
 import { weekdayOf } from "../progress";
 import { haptic } from "../haptics";
-import { rise } from "../motion";
+import { rise, spring } from "../motion";
 import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults, weekReview } from "../recovery";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { plainOpts, Select, SelectOther } from "../ui/Controls";
+import { Button, GuardedInput } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { Reflect } from "./Reflect";
+
+type Which = "last" | "this";
 
 /**
  * The weekly review: what was recorded, what helped, what was hard, and one realistic adjustment for the
@@ -23,52 +25,78 @@ export function WeeklyReview() {
   const habit = view.habit!;
   const ws = weekStart(today());
   // Early in a week, last week is the one worth reviewing.
-  const [which, setWhich] = useState<"last" | "this">(() => { const dow = weekdayOf(today()); return dow === 0 || dow >= 5 ? "this" : "last"; });
+  const [which, setWhich] = useState<Which>(() => { const dow = weekdayOf(today()); return dow === 0 || dow >= 5 ? "this" : "last"; });
+  const [own, setOwn] = useState(false);
+  const [draft, setDraft] = useState("");
   const week = which === "this" ? ws : addDays(ws, -7);
   const r = weekReview(data, habit, week);
   const ideas = adjustmentIdeas(r, habit, trackState(data, habit.id).description || habit.name);
+  // A focus is always saved for the week after the one reviewed, so name that week in the words the person reads.
   const focusWeek = addDays(week, 7);
+  const reviewedWhen = t(which === "last" ? "insights.review.when_last" : "insights.review.when_this");
+  const focusWhen = t(which === "last" ? "insights.review.when_this" : "insights.review.when_next");
   const pick = (text: string) => { if (concernIn(text)) return; actions.setWeekFocus(focusWeek, text, habit.id); haptic.success(); toast(t("insights.review.saved"), { kind: "good" }); };
+  const saveOwn = () => { if (!draft.trim() || concernIn(draft)) return; pick(draft.trim()); setDraft(""); setOwn(false); };
   const order = ["met", "urge", "lapse", "rest", "unrecorded"] as const;
   // Rest and paused days are both "Not tracking".
   const shown = { ...r.counts, rest: r.counts.rest + r.counts.paused };
+  const weeks: { value: Which; label: string }[] = [{ value: "last", label: t("insights.review.last_week") }, { value: "this", label: t("insights.review.this_week") }];
 
   return (
-    <div className="stack">
-      <div className="field">
-        <span className="field-label">{t("insights.review.which")}</span>
-        <Select label={t("insights.review.which")} value={which} onChange={setWhich} options={[{ value: "last", label: t("insights.review.last_week") }, { value: "this", label: t("insights.review.this_week") }]} />
+    <motion.section className="card stack" aria-label={t("insights.review.title")} variants={rise}>
+      <h2>{t("insights.review.title")}</h2>
+      <div className="segmented" role="tablist" aria-label={t("insights.review.which")}>
+        {weeks.map((w) => (
+          <button key={w.value} type="button" role="tab" aria-selected={which === w.value} className="seg" onClick={() => setWhich(w.value)}>
+            {which === w.value && <motion.span layoutId="review-week" className="seg-pill" transition={spring.snappy} />}
+            <span className="seg-label">{w.label}</span>
+          </button>
+        ))}
       </div>
       <p className="muted small">{t("insights.review.from", { date: fmtDay(week) })}</p>
       <p>{r.goalLine}</p>
-      {r.lastFocus && <p className="small">{t("insights.review.last_focus")} <b>{r.lastFocus}</b></p>}
       <dl className="review-days" aria-label={t("insights.review.days_aria")}>
         {order.filter((k) => shown[k] > 0).map((k) => (
           <div className="row" key={k}><dt><i className="dot" data-s={k} aria-hidden />{STATUS_LABEL[k]}</dt><dd><b>{shown[k]}</b> {shown[k] === 1 ? t("calendar.stats.day") : t("calendar.stats.days")}</dd></div>
         ))}
       </dl>
       {r.urges.total > 0 && <p className="small">{t("insights.review.urges", { managed: r.urges.managed, total: r.urges.total, urges: r.urges.total === 1 ? t("insights.review.urge_one") : t("insights.review.urge_other") })}</p>}
-      {r.strategies.length > 0 && <p className="small">{t("insights.review.used", { list: r.strategies.map((s) => t("insights.review.strategy_item", { title: strategy(s.id).title.toLowerCase(), managed: s.managed, total: s.total })).join(", ") })}</p>}
-      {r.difficult.length > 0 && <p className="small">{t("insights.review.hard", { list: r.difficult.map(([l, n]) => `${l.toLowerCase()} (${n})`).join(", ") })}</p>}
-      <div className="field">
-        <span className="field-label">{r.focus ? t("insights.review.focus_next") : t("insights.review.pick_focus")}</span>
+      {r.strategies.length > 0 && (
+        <div className="stack tight">
+          <span className="field-label">{t("insights.review.used")}</span>
+          {r.strategies.map((s) => <div className="row small" key={s.id}><span>{strategy(s.id).title}</span><span>{t("insights.patterns.tried_row", { managed: s.managed, total: s.total })}</span></div>)}
+        </div>
+      )}
+      {r.difficult.length > 0 && (
+        <div className="stack tight">
+          <span className="field-label">{t("insights.review.hard")}</span>
+          {r.difficult.map(([label, n]) => <div className="row small" key={label}><span>{label}</span><span>{n === 1 ? t("insights.review.times_one") : t("insights.review.times_other", { n })}</span></div>)}
+        </div>
+      )}
+      <div className="stack tight">
+        {r.lastFocus && <p className="small">{t("insights.review.focus_was", { when: reviewedWhen })} <b>{r.lastFocus}</b></p>}
+        <span className="field-label">{t("insights.review.focus_for", { when: focusWhen })}</span>
         {r.focus && <p><b>{r.focus}</b></p>}
-        <SelectOther label={t("insights.review.focus_aria")} options={plainOpts(ideas)} value={r.focus ?? ""} onChange={pick} maxLength={160} commitLabel={t("ui.common.save")}
-          placeholder={t("insights.review.focus_placeholder")} otherPlaceholder={t("insights.review.focus_own")} />
+        <div className="stack tight" role="group" aria-label={t("insights.review.focus_aria", { when: focusWhen })}>
+          {ideas.map((idea) => <button key={idea} type="button" className="choice" aria-pressed={r.focus === idea} onClick={() => pick(idea)}>{idea}</button>)}
+          <button type="button" className="choice" aria-pressed={own} onClick={() => setOwn((o) => !o)}>{t("insights.review.own")}</button>
+        </div>
+        {own && (
+          <div className="other-row">
+            <GuardedInput className="input" maxLength={160} autoComplete="off" value={draft} placeholder={t("insights.review.own_placeholder")} aria-label={t("insights.review.own_placeholder")} onChange={(e) => setDraft(e.target.value)} />
+            <Button variant="secondary" disabled={!draft.trim() || !!concernIn(draft)} onClick={saveOwn}>{t("ui.common.save")}</Button>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.section>
   );
 }
 
-/** A small check-in: one mood and an optional line. The weekly review folds away below it. */
+/** A small check-in: one mood and an optional line. */
 export function CheckIn() {
   return (
     <motion.section className="card stack tight checkin-lite" aria-label={t("insights.review.check_in")} variants={rise}>
       <Reflect />
-      <details className="fold">
-        <summary>{t("insights.review.fold")}</summary>
-        <div className="fold-body"><WeeklyReview /></div>
-      </details>
     </motion.section>
   );
 }
