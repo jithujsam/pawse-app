@@ -87,7 +87,7 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
   const base = { user_id: userId, client_updated_at: t };
   switch (l.kind) {
     case "s": return [{ table: "profiles", row: { id: userId, settings: { ...legacyProfileCopy(d), ...portableSettings(l.row) }, client_updated_at: t, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone?.slice(0, 64) ?? null } }];
-    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, personality: l.row.personality ?? null, habit_id: l.row.trackId ?? null, deleted_at: null } }];
+    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, breed: l.row.breed ?? null, personality: l.row.personality ?? null, habit_id: l.row.trackId ?? null, deleted_at: null } }];
     case "h": {
       const tr = trackState(d, l.row.id);
       return [{ table: "habits", row: {
@@ -187,7 +187,7 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     if (r.deleted_at) { companions = companions.filter((c) => c.id !== r.id); continue; }
     const owner = r.habit_id ? String(r.habit_id) : companions.find((c) => c.id === r.id)?.trackId;
     companions = upsert(companions, { id: String(r.id), species: r.species as Companion["species"], name: String(r.name), bornOn: String(r.born_on), diedOn: (r.died_on as string) ?? null, finalAge: num(r.final_age),
-      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}), ...(owner ? { trackId: owner } : {}) });
+      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.breed ? { breed: String(r.breed) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}), ...(owner ? { trackId: owner } : {}) });
   }
   const sortedHabits = [...p.habits].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0));
   for (const r of sortedHabits) {
