@@ -1,20 +1,16 @@
-import type { Accessory, Personality, Species } from "./types";
+import type { Personality, Species } from "./types";
 
 /** One coat: the colours the art is painted with. `dark` is ear tips, socks, patches; `iris` the eye colour. */
 export interface Coat { id: string; label: string; fur: string; shade: string; belly: string; inner: string; dark: string; iris: string; marks?: string }
 
 export const SPECIES: { id: Species; label: string; blurb: string; off?: true }[] = [
   { id: "dog", label: "Dog", blurb: "Loyal, waits by the door" },
-  { id: "cat", label: "Cat", blurb: "Quiet, notices everything" },
-  { id: "rabbit", label: "Rabbit", blurb: "Gentle, a little shy", off: true },
+  { id: "cat", label: "Cat", blurb: "Quiet, notices everything", off: true },
   { id: "fox", label: "Fox", blurb: "Clever and curious" },
-  { id: "owl", label: "Owl", blurb: "Up late with you", off: true },
-  { id: "panda", label: "Panda", blurb: "Slow, soft, unbothered", off: true },
 ];
 
 /**
- * The species a person can pick now: the dog, cat and fox, which also come in 3D. The rabbit, owl and panda are
- * switched off for now but kept whole, so pets that already are one stay as they are.
+ * The species a person can pick now: the dog and fox. The cat stays for pets that already are one.
  */
 export const PICKABLE = SPECIES.filter((s) => !s.off);
 
@@ -29,24 +25,10 @@ export const COATS: Record<Species, Coat[]> = {
     { id: "ginger", label: "Ginger", fur: "#eaa762", shade: "#c97b3b", belly: "#fcecd8", inner: "#f2b0a6", dark: "#c06f30", iris: "#d9a021", marks: "#c26f31" },
     { id: "tuxedo", label: "Tuxedo", fur: "#3c3c45", shade: "#26262c", belly: "#f4f4f4", inner: "#e9a5a5", dark: "#1f1f24", iris: "#e5c34c" },
   ],
-  rabbit: [
-    { id: "cream", label: "Cream", fur: "#f3e8d8", shade: "#d9c6ad", belly: "#fffbf4", inner: "#f2b8bd", dark: "#cdb497", iris: "#3a2a2a" },
-    { id: "grey", label: "Grey", fur: "#bcb8b2", shade: "#97918a", belly: "#f0eeea", inner: "#efb3b8", dark: "#8a847d", iris: "#2a2222" },
-    { id: "brown", label: "Brown", fur: "#a97d5a", shade: "#855e40", belly: "#ead8c4", inner: "#e9a9ad", dark: "#6f4c33", iris: "#2a1a12" },
-  ],
   fox: [
     { id: "red", label: "Red", fur: "#e47c3c", shade: "#bd5b23", belly: "#fff5ec", inner: "#3d2b25", dark: "#3d2b25", iris: "#d59b1d" },
     { id: "arctic", label: "Arctic", fur: "#f2f2f5", shade: "#cfd3db", belly: "#ffffff", inner: "#a7aebb", dark: "#9ba2af", iris: "#5b8fc7" },
     { id: "silver", label: "Silver", fur: "#737785", shade: "#525562", belly: "#eaebef", inner: "#26272c", dark: "#26272c", iris: "#d8a72d" },
-  ],
-  owl: [
-    { id: "barn", label: "Barn", fur: "#cd9e68", shade: "#a87a42", belly: "#fcf4e8", inner: "#e9c89c", dark: "#7c5530", iris: "#f2a321", marks: "#9a7046" },
-    { id: "snowy", label: "Snowy", fur: "#eef1f5", shade: "#c9ced7", belly: "#ffffff", inner: "#dde2e9", dark: "#8f98a5", iris: "#f2c230", marks: "#9aa3ae" },
-    { id: "brown", label: "Brown", fur: "#8c6648", shade: "#6b4b33", belly: "#ead9c4", inner: "#c9ab8a", dark: "#4a3222", iris: "#f08a1c", marks: "#5c4029" },
-  ],
-  panda: [
-    { id: "classic", label: "Classic", fur: "#f8f6f1", shade: "#ddd8cd", belly: "#ffffff", inner: "#2c2c31", dark: "#2c2c31", iris: "#1a1a1a" },
-    { id: "brown", label: "Qinling", fur: "#f4ede3", shade: "#dacebc", belly: "#fffaf3", inner: "#6c4b36", dark: "#6c4b36", iris: "#2a1a10" },
   ],
 };
 
@@ -76,19 +58,9 @@ export const PERSONALITIES: { id: Personality; label: string; blurb: string }[] 
   { id: "wise", label: "Wise", blurb: "Few words, all of them true" },
 ];
 
-/** Accessories and the clean-streak milestone that unlocks each one. */
-export const ACCESSORIES: { id: Accessory; label: string; days: number }[] = [
-  { id: "bandana", label: "Bandana", days: 3 },
-  { id: "bow", label: "Bow", days: 7 },
-  { id: "flowers", label: "Flower crown", days: 14 },
-  { id: "scarf", label: "Scarf", days: 30 },
-  { id: "glasses", label: "Glasses", days: 60 },
-  { id: "crown", label: "Crown", days: 100 },
-];
-
 export const NAMES: Record<Species, string[]> = {
-  dog: ["Biscuit", "Mochi", "Pepper", "Bean"], cat: ["Miso", "Luna", "Pixel", "Olive"], rabbit: ["Clover", "Pip", "Hazel", "Nimbus"],
-  fox: ["Ember", "Rusty", "Juniper", "Maple"], owl: ["Hoot", "Sage", "Willow", "Nova"], panda: ["Bao", "Dumpling", "Momo", "Tofu"],
+  dog: ["Biscuit", "Mochi", "Pepper", "Bean"], cat: ["Miso", "Luna", "Pixel", "Olive"],
+  fox: ["Ember", "Rusty", "Juniper", "Maple"],
 };
 
 const TUXEDO = { dark: [0x35, 0x3d, 0x4f], light: [0xf4, 0xf4, 0xf4], lo: 0.5, hi: 0.7 };

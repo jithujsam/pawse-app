@@ -3,8 +3,8 @@ import { companionMissions } from "../missions";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
-import { CompanionArt, LiveCompanion, PetPortrait } from "../Companion";
-import { ACCESSORIES, BREEDS, PERSONALITIES, SPECIES, breedFor, coatsFor } from "../pets";
+import { LiveCompanion, PetImage, PetPortrait } from "../Companion";
+import { BREEDS, PERSONALITIES, SPECIES, breedFor, coatsFor } from "../pets";
 import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
@@ -38,7 +38,7 @@ const TYPES: { value: FieldType; label: string }[] = [
   { value: "choice", label: t("me.questions.t_choice") }, { value: "multi", label: t("me.questions.t_multi") }, { value: "scale", label: t("me.questions.t_scale") }, { value: "text", label: t("me.questions.t_text") },
   { value: "number", label: t("me.questions.t_number") }, { value: "money", label: t("me.questions.t_money") }, { value: "yesno", label: t("me.questions.t_yesno") }, { value: "photo", label: t("me.questions.t_photo") },
 ];
-const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", rabbit: "Rabbit", fox: "Fox", owl: "Owl", panda: "Panda" };
+const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", fox: "Fox" };
 
 type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
 
@@ -64,7 +64,7 @@ export function Me() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>{t("me.profile.title")}</motion.h1>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
           <span className="muted small">{t("me.profile.summary", { species: SPECIES_LABEL[companion.species], personality: PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label ?? "", wellness: companionMissions(data, companion.id, today())?.healthCap ?? 100 })}</span>
@@ -152,7 +152,7 @@ function PetPage() {
   };
   return (<>
     <section className="card stack">
-      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
+      <div className="pet-stage"><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} stage={view.stage} mood="happy" age={view.age} size={170} /></div>
       <div className="stats">
         <div className="stat item"><span className="muted small">{t("me.pet.days")}</span><b className="v">{daysTogether(companion.bornOn, today())}</b></div>
         <div className="stat item"><span className="muted small">{t("me.pet.born")}</span><b>{fmtDay(companion.bornOn)}</b></div>
@@ -181,12 +181,6 @@ function PetPage() {
       </div>
     </section>
     <section className="card stack">
-      <div className="row"><h2>{t("me.pet.wardrobe")}</h2><span className="muted small">{care === 1 ? t("me.pet.day_of_care", { n: care }) : t("me.pet.days_of_care", { n: care })}</span></div>
-      <Select label={t("me.pet.accessory")} value={track.wear ?? "none"} onChange={(id) => actions.setTrackSettings(habit.id, { wear: id === "none" ? null : id })}
-        options={[{ value: "none", label: t("me.pet.none") }, ...ACCESSORIES.map((a) => ({ value: a.id as string, label: Math.max(best, care) >= a.days ? a.label : t("me.pet.unlocks", { label: a.label, n: a.days }), disabled: Math.max(best, care) < a.days }))] as { value: NonNullable<typeof track.wear> | "none"; label: string; disabled?: boolean }[]} />
-      <p className="muted small">{t("me.pet.care_note")}</p>
-    </section>
-    <section className="card stack">
       <h2>{t("me.pet.health_title", { name: companion.name })}</h2>
       <p className="small">{t("me.pet.health_body", { name: companion.name })} {settings.petLife === "classic"
         ? t("me.pet.classic_on")
@@ -201,7 +195,7 @@ function PetPage() {
         <div className="hall">
           {hall.map((c) => (
             <div className="item hall-item" key={c.id}>
-              <CompanionArt species={c.species} coat={c.coat} breed={c.breed} stage="frail" mood="dying" age={100} size={96} />
+              <PetImage round species={c.species} coat={c.coat} breed={c.breed} mood="dying" size={96} />
               <b>{c.name}</b><span className="muted small">{data.entries.filter((e) => e.companionId === c.id).length === 1 ? t("me.pet.hall_slips_one", { n: 1 }) : t("me.pet.hall_slips_other", { n: data.entries.filter((e) => e.companionId === c.id).length })}</span>
             </div>
           ))}

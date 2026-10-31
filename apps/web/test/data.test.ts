@@ -26,6 +26,15 @@ describe("loading saved data", () => {
     expect(d.settings.autoLock).toBe("1m");
     expect(d.settings.haptics).toBe(true);
   });
+  it("turns retired species (rabbit, owl, panda) into a golden Shiba, keeping name and history", () => {
+    const base = sample();
+    for (const species of ["rabbit", "owl", "panda"]) {
+      const raw = { ...base, companions: [{ ...base.companions[0], species, name: "Pip", coat: "grey" }] };
+      const d = normalize(raw)!;
+      expect(d.companions[0]).toMatchObject({ id: "c1", name: "Pip", species: "dog", breed: "shiba", coat: "golden" });
+      expect(d.entries).toHaveLength(1);
+    }
+  });
   it("keeps the good rows when one row is damaged", () => {
     const raw = { ...sample(), entries: [...sample().entries, { id: "bad", months: "lots" }] };
     const d = normalize(raw)!;
