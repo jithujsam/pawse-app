@@ -42,6 +42,8 @@ interface ArtProps {
   gesture?: Gesture;
   /** A rescued pet's condition per trait (see PetCondition in Pet3D.tsx). Missing means well. */
   condition?: PetCondition;
+  /** The scene's light (see scene.ts); the pet is lit to match. */
+  light?: { color: string; intensity: number };
 }
 
 /** A still portrait of the pet, for lists and as the stand-in when 3D is not available. */
@@ -70,7 +72,7 @@ export function PetPortrait({ still, ...art }: ArtProps & { still?: boolean }) {
   if (!t.on || still) return <PetImage {...art} />;
   return (
     <Suspense fallback={<Waiting3D size={size} />}>
-      <Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} condition={art.condition} reduced={!!reduce}
+      <Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} condition={art.condition} light={art.light} reduced={!!reduce}
         size={size} onFail={t.fail} loading={<Waiting3D size={size} />} fallback={<PetImage {...art} />} />
     </Suspense>
   );
@@ -167,7 +169,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); haptic.tap(); play("petted", 1200); setHearts((h) => h + 1); onReact?.("petted"); } }}
       whileTap={interactive ? { scale: 0.97 } : undefined}>
       {t3d.on
-        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} condition={art.condition} reduced={!!reduce}
+        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} condition={art.condition} light={art.light} reduced={!!reduce}
             size={art.size ?? 280} onFail={t3d.fail} loading={<Waiting3D size={art.size ?? 280} />} fallback={<PetImage {...art} size={art.size ?? 280} />} /></Suspense>
         : <PetImage {...art} size={art.size ?? 280} />}
       <Burst burst={hearts} kind="heart" count={6} />

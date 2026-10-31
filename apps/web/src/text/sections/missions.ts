@@ -4,9 +4,6 @@ import { defineSection, tones } from "../core";
 export const missionsSheet = defineSection("missions.sheet", { screen: "Missions sheet", title: "The 21-day journey", source: "src/screens/MissionsSheet.tsx, src/screens/Home.tsx" }, {
   label: "Missions",
   button: "Missions",
-  button_aria_one: "Missions, {n} to go",
-  button_aria_other: "Missions, {n} to go",
-  button_aria_done: "Missions",
   title: "Missions",
   subtitle_rescue: "{name}'s recovery",
   subtitle_raise: "{name}'s training",

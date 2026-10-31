@@ -2,7 +2,7 @@ import { interpolate, isToneText, pickTone, type Section, type ToneText, type Va
 import { APP_NAME } from "../brand";
 import type { Tone } from "../types";
 import { accountBlockers, accountCheckEmail, accountErrors, accountForm, accountNewPassword, accountSignedIn, accountSync } from "./sections/account";
-import { homeHeader, homeHero, homeMilestone, homePaused, homeToday, homeWeek, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
+import { homeHeader, homeHero, homeScene, homeMilestone, homePaused, homeToday, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
 import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice } from "./sections/me";
 import { notificationsCatchup, notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
@@ -27,7 +27,7 @@ export const SECTIONS = [
   welcomeStory, welcomeAccount, welcomeRestoring,
   onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingTriggers, onboardingWhy, onboardingHelp, onboardingVoice, onboardingReminders, onboardingFinal, onboardingHatch,
   petsGrid, petsMenu, petsPicker, petsAdd,
-  homeHeader, homeHero, homePaused, homeWeek, homeToday, homeMilestone,
+  homeHeader, homeHero, homeScene, homePaused, homeToday, homeMilestone,
   missionsSheet, missionsMoment, missionsContent, packsLines,
   calendarNote, calendarAge, calendarMonth, calendarDay, calendarStats, calendarMilestones,
   insightsHeader, insightsWeek, insightsUrges, insightsMoney, insightsWhen, insightsSince, insightsSummary, insightsChart, insightsForecast, insightsReflect, insightsReview, insightsGoalLine, insightsPatterns,

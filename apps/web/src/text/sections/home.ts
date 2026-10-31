@@ -14,13 +14,10 @@ export const homeHeader = defineSection("home.header", { screen: "Pet screen", t
 // @copy-section home.hero
 export const homeHero = defineSection("home.hero", { screen: "Pet screen", title: "Pet, vitals and health bar", source: "src/screens/Home.tsx" }, {
   hero_aria: "{name}, day {day}, health {health}%",
-  vitals_aria: "{name}'s health",
-  health_aria: "Health: {title}, {heart} of 100",
   vital_health: "Health",
   vital_history: "History",
   vital_conditions: "Conditions",
   bar_aria: "{name}'s health",
-  bar_text: "{green} of {total} segments healthy",
   recover_one: "1 goal-met day to recover",
   recover_other: "{n} goal-met days to recover",
   issue_line: "{issue}: {n} days to clear",
@@ -29,22 +26,28 @@ export const homeHero = defineSection("home.hero", { screen: "Pet screen", title
 });
 // @copy-section-end home.hero
 
+// @copy-section home.scene
+export const homeScene = defineSection("home.scene", { screen: "Pet screen", title: "Scene readouts and Today", source: "src/screens/Home.tsx" }, {
+  well: "{n}% well",
+  run: "Day {n} run",
+  next: "Next: day {n}",
+  today: "Today",
+  goal_met: "Goal met",
+  slipped: "I slipped",
+  urge: "Had an urge",
+  edit: "Edit",
+  slip_logged: "Slip logged",
+  add_details: "Add details",
+  strip_aria: "Last 28 days",
+});
+// @copy-section-end home.scene
+
 // @copy-section home.paused
 export const homePaused = defineSection("home.paused", { screen: "Pet screen", title: "Paused card", source: "src/screens/Home.tsx" }, {
   aria: "Paused",
   resume: "Resume",
 });
 // @copy-section-end home.paused
-
-// @copy-section home.week
-export const homeWeek = defineSection("home.week", { screen: "Pet screen", title: "Weekly summary", source: "src/screens/Home.tsx" }, {
-  title: "Weekly summary",
-  count_one: "{n} goal-met day",
-  count_other: "{n} goal-met days",
-  strip_aria: "This week",
-  day_aria: "{date}: {status}",
-});
-// @copy-section-end home.week
 
 // @copy-section home.today
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {

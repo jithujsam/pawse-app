@@ -192,7 +192,7 @@ function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
 export type PetCondition = Partial<Record<"coat" | "posture" | "energy" | "trust" | "calm" | "curiosity" | "play" | "rest", number>>;
 const well = (c: PetCondition | undefined, k: keyof PetCondition) => Math.max(0, Math.min(1, c?.[k] ?? 1));
 
-interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean; condition?: PetCondition }
+interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean; condition?: PetCondition; light?: { color: string; intensity: number } }
 
 function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced, condition }: Props) {
   const isHusky = species === "dog" && breed === "husky";
@@ -417,6 +417,7 @@ function fxFor(mood: Mood, gesture: Gesture): "heart" | "zzz" | "drop" | null {
 export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { size: number; fallback: ReactNode; loading?: ReactNode; onFail?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref);
+  const lightK = props.light ? props.light.intensity / 1.6 : 1;
   const fx = props.reduced ? null : fxFor(props.mood, props.gesture ?? "none");
   return (
     <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={describePet(props.species, props.stage, props.mood)} role="img">
@@ -424,8 +425,8 @@ export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { s
         <Suspense fallback={loading ?? fallback}>
           <Canvas frameloop={on && !props.reduced ? "always" : "demand"} dpr={[1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
             camera={{ fov: 26, position: [0, 0.66, 2.8], near: 0.1, far: 20 }} onCreated={({ camera }) => camera.lookAt(0, 0.5, 0)}>
-            <hemisphereLight args={["#fff8ee", "#b8a48c", 1.6]} />
-            <directionalLight position={[2, 3, 2.5]} intensity={1.6} />
+            <hemisphereLight args={[props.light?.color ?? "#fff8ee", "#b8a48c", 1.6 * lightK]} />
+            <directionalLight position={[2, 3, 2.5]} intensity={1.6 * lightK} color={props.light?.color ?? "#ffffff"} />
             <directionalLight position={[-2, 1.5, -1]} intensity={0.4} />
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
               <circleGeometry args={[0.42, 40]} />
