@@ -1,6 +1,7 @@
 # Detox Companion
 
-Read docs/PRD.md before any work. It is the source of truth.
+docs/PRD.md is the source of truth. Read only the sections the task needs (use `grep -n '^## ' docs/PRD.md` for the index), not the whole file.
+Docs are on demand: RELEASING.md only for releases, COPY_GLOSSARY.md only for copy, RECOVERY_RULES.md and MULTI_TRACK_ARCHITECTURE.md only for those areas. Never read docs/archive/ or the overnight/audit reports unless asked.
 
 ## Rules
 - The damage engine lives only in packages/engine and stays pure TypeScript with no I/O.
