@@ -1,4 +1,4 @@
-import type { HabitClass } from "@detox/engine";
+import type { AdoptionMode, HabitClass } from "@detox/engine";
 
 export type Tone = "gentle" | "honest" | "brutal";
 export type Species = "dog" | "cat" | "rabbit" | "fox" | "owl" | "panda";
@@ -39,6 +39,24 @@ export interface Companion {
   personality?: Personality;
   /** The track this companion belongs to. Filled on load; a companion belongs to exactly one track. */
   trackId?: string;
+  /** Raise a Puppy or Rescue & Rebuild (PRD §23). Missing means raise: every pet from before missions is raised. Chosen once. */
+  adoption?: AdoptionMode;
+  /** What mission progress can't recompute. Levels and conditions always come from the track's records (missions.ts). */
+  missions?: MissionMemory;
+}
+
+/** Only-ever-growing mission memory, merged by union across phones. */
+export interface MissionMemory {
+  /** Mission set version these were earned in (MISSION_SET_VERSION). */
+  v: number;
+  /** Mission ids completed once. A completion is never taken back. */
+  done: string[];
+  /** Milestone keys already celebrated ("<mission>:<level>"), so each fires once. */
+  seen: string[];
+  /** Days with at least one interaction with the pet, counted at most once a day (an optional mission extra). */
+  petDays?: number;
+  /** The last day counted in petDays. */
+  petOn?: string | null;
 }
 
 export interface Habit {

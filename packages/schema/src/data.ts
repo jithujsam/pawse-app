@@ -30,6 +30,16 @@ export const CompanionSchema = z.object({
   personality: z.enum(["playful", "calm", "sassy", "wise"]).optional(),
   /** The track this companion belongs to (v2). Filled on load for older data. */
   trackId: id.optional(),
+  /** Adoption mode (PRD §23). Missing means raise. */
+  adoption: z.enum(["raise", "rescue"]).optional(),
+  /** Mission memory: completions and celebrations only; progress is recomputed. */
+  missions: z.object({
+    v: z.number().int().min(1).max(100),
+    done: z.array(z.string().regex(/^[a-z_]{1,40}$/)).max(100),
+    seen: z.array(z.string().regex(/^[a-z_]{1,40}:[0-6]$/)).max(1000),
+    petDays: z.number().int().min(0).max(100000).optional(),
+    petOn: day.nullable().optional(),
+  }).optional(),
 });
 
 export const HabitSchema = z.object({
