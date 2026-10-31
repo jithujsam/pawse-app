@@ -97,6 +97,8 @@ export interface MissionState {
   pct: number;
   /** Goal-met days counted, never more than the final threshold. */
   days: number;
+  /** Goal-met days still needed to complete the mission (0 when completed). */
+  remaining: number;
   /** The threshold for the next level, or null when completed. */
   nextAt: number | null;
   /** The level reached at nextAt (0 = completed), or null when completed. */
@@ -141,6 +143,7 @@ export function missionState(def: MissionDef, input: MissionInput): MissionState
     id: def.id, mode: def.mode, scale: def.scale, level, completed: level === 0, status: STATUS_BY_LEVEL[level],
     value, start, target, pct: (value - start) / (target - start),
     days: latched ? th[5] : days,
+    remaining: level === 0 ? 0 : th[5] - days,
     nextAt: level === 0 ? null : th[passed], nextLevel: level === 0 ? null : ((level - 1) as MissionLevel),
     prevAt: passed === 0 ? 0 : th[passed - 1],
     reached,
@@ -158,6 +161,22 @@ export function overallProgress(states: readonly MissionState[]): { passed: numb
   const total = states.length * 6;
   const completed = states.filter((s) => s.completed).length;
   return { passed, total, pct: total ? passed / total : 0, completed, active: states.length - completed };
+}
+
+// ---------- the health bar ----------
+
+/** Where a rescued pet's health bar starts: 2 of 20 boxes green. */
+export const RESCUE_HEALTH_START = 10;
+
+/**
+ * How much of the health bar a pet's missions allow, 0..100. A rescued pet arrives in poor shape, so its bar starts
+ * at 10% and every level its missions pass turns more of it green, up to 100% when all are recovered: 25, 40, 55, 70,
+ * 85, 100 on the default schedule. Rounded to whole boxes (5%). A raised puppy is healthy from the start: 100.
+ */
+export function missionHealthCap(mode: AdoptionMode, states: readonly MissionState[]): number {
+  if (mode !== "rescue" || !states.length) return 100;
+  const raw = RESCUE_HEALTH_START + (100 - RESCUE_HEALTH_START) * overallProgress(states).pct;
+  return Math.min(100, Math.round(raw / 5) * 5);
 }
 
 // ---------- celebrations ----------

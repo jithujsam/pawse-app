@@ -5,6 +5,7 @@ import { dayStatus, daysTogether, milestoneProgress, trackSummary } from "./prog
 import { MILESTONES } from "./copy";
 import { monthsText, plural } from "./format";
 import type { AppData, Species, Tone } from "./types";
+import { companionMissions } from "./missions";
 
 /**
  * The pet's health, explained. Everything here is derived from the engine's numbers and the log,
@@ -35,6 +36,11 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   // so it is never a saved value. Quiet days are missing data, not a slip, so they don't lower it.
   let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) + Math.min(10, reserve);
   heart = Math.round(Math.max(3, Math.min(slipped ? 80 : 100, heart)));
+  // A rescued pet arrives in poor shape: its missions limit how full the heart can be (10% at the start, 100% when
+  // every mission is recovered), the same limit the health bar shows.
+  const cap = companionMissions(d, v.companion.id, t0)?.healthCap ?? 100;
+  const rehab = cap < 100 && Math.round((heart * cap) / 100) < heart;
+  heart = Math.max(3, Math.round((heart * cap) / 100));
   const level: Level = heart >= 85 ? "thriving" : heart >= 68 ? "healthy" : heart >= 48 ? "okay" : heart >= 28 ? "unwell" : "critical";
   const g = tone === "gentle", b = tone === "brutal";
   const lines: Record<Level, [string, string]> = {
@@ -51,8 +57,20 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
     unwell: [`${name} isn't doing well`, `${b ? "Straight talk: " : ""}${name} is unwell${slipped ? " and feeling today's slip" : ""}. Keeping the habit in check for a while is what helps most. You can do this, one day at a time.`],
     critical: [`${name} needs you`, `${name} is very weak right now. ${g ? "It's not too late." : "This is the moment to change course."} A good day today starts the healing, and every day after adds to it.`],
   };
-  const [title, body] = lines[level];
+  const [title, body] = rehab && !slipped && level !== "thriving" ? rehabLines(name, tone, cap) : lines[level];
   return { level, heart, title, body, silent };
+}
+
+/** A rescued pet that is still recovering: the heart is low because of where it started, not because of anything the person did. */
+function rehabLines(name: string, tone: Tone, cap: number): [string, string] {
+  const body = cap <= 10
+    ? (tone === "gentle" ? `${name} came to you in poor shape. Missions show what ${name} is working through, and every goal-met day helps.`
+      : tone === "brutal" ? `${name} arrived in poor shape. Goal-met days are what bring the bar back. Open Missions to see what's left.`
+        : `${name} arrived in poor shape. Each mission level reached turns more of the bar green. Open Missions to see what's next.`)
+    : (tone === "gentle" ? `${name} is getting better, one mission at a time. Every goal-met day helps.`
+      : tone === "brutal" ? `${name} is on the way back. Keep the goal-met days coming and the bar keeps turning green.`
+        : `${name} is getting better. Each mission level reached turns more of the bar green.`);
+  return [`${name} is still recovering`, body];
 }
 
 export interface Condition {

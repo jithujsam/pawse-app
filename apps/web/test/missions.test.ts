@@ -165,6 +165,25 @@ describe("existing pets", () => {
   });
 });
 
+describe("the health bar and heart", () => {
+  it("a rescue's heart and bar start low and rise with missions; a raised puppy's are unchanged", async () => {
+    const { viewCompanion } = await import("../src/store");
+    const { healthReport } = await import("../src/health");
+    const { shownHealth } = await import("../src/missions");
+    const { CA, CB } = phone(7000, { metA: 0, metB: 0 });
+    const heart = (id: string) => healthReport(getData(), viewCompanion(getData(), id), "honest");
+    expect(m(CB).healthCap).toBe(10);
+    expect(shownHealth(viewCompanion(getData(), CB).age, m(CB).healthCap)).toBe(10);
+    expect(heart(CB)).toMatchObject({ heart: 10, title: "Scout is still recovering" });
+    expect(heart(CA).heart).toBe(100);
+    const { CB: CB2 } = phone(7100, { metB: 12 });
+    expect(m(CB2).healthCap).toBe(55);
+    expect(heart(CB2).heart).toBeLessThanOrEqual(55);
+    const { CB: CB3 } = phone(7200, { metB: 30 });
+    expect(m(CB3).healthCap).toBe(100);
+  });
+});
+
 describe("pet days (an optional extra)", () => {
   it("counts at most once a day", () => {
     const { CB } = phone(4000);

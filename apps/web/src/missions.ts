@@ -1,5 +1,5 @@
 import {
-  MISSION_SET_VERSION, missionMilestoneToCelebrate, missionStates, newlyCompleted, overallProgress, petTraits, setbackState, visualStage,
+  MISSION_SET_VERSION, missionHealthCap, missionMilestoneToCelebrate, missionStates, newlyCompleted, overallProgress, petTraits, setbackState, visualStage,
   type AdoptionMode, type MissionLevel, type MissionState, type VisualStage, type VisualTrait,
 } from "@detox/engine";
 import { daysFrom, streaks, trackIndex } from "./progress";
@@ -52,6 +52,8 @@ export interface CompanionMissions {
   traits: Record<VisualTrait, number>;
   stage: VisualStage;
   memory: MissionMemory;
+  /** How much of the health bar the missions allow, 0..100: a rescue starts at 10, a raised puppy is always 100. */
+  healthCap: number;
   /** The next milestone over all missions: the lowest threshold still ahead, or null when everything is done. */
   next: { at: number; level: MissionLevel; toGo: number } | null;
 }
@@ -84,7 +86,7 @@ export function companionMissions(d: AppData, companionId: string, today: string
   const ahead = states.filter((s) => s.nextAt !== null).sort((a, b) => a.nextAt! - b.nextAt!)[0];
   return {
     mode, goalMetDays, states, overall: overallProgress(states), setback,
-    traits: petTraits(mode, states, { setback }), stage: visualStage(states), memory,
+    traits: petTraits(mode, states, { setback }), stage: visualStage(states), memory, healthCap: missionHealthCap(mode, states),
     next: ahead ? { at: ahead.nextAt!, level: ahead.nextLevel!, toGo: Math.max(0, ahead.nextAt! - goalMetDays) } : null,
   };
 }
@@ -110,4 +112,12 @@ export function withPetDay(c: Companion, today: string): MissionMemory | null {
   const m = memoryOf(c);
   if (m.petOn === today) return null;
   return { ...m, petDays: (m.petDays ?? 0) + 1, petOn: today };
+}
+
+/**
+ * The health bar's percentage for a pet: its health from slips and goal-met days (100 - age), limited by how far its
+ * missions have come. A rescued pet's bar starts mostly red and turns green as missions are completed.
+ */
+export function shownHealth(age: number, healthCap: number): number {
+  return Math.max(0, Math.min(100, Math.round(((100 - age) * healthCap) / 100)));
 }
