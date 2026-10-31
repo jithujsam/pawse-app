@@ -2,9 +2,8 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { STAGE_LABEL, type AdoptionMode } from "@detox/engine";
 import { companionMissions, RESCUE_SPECIES } from "../missions";
-import { moodFor, PetImage, PetPortrait } from "../Companion";
+import { moodFor, PetPortrait } from "../Companion";
 import { has3D, STYLE_3D } from "../pet3d-support";
-import { TopBar } from "../ui/TopBar";
 import { pauseHint, pauseRefused, pauseToast, resumeHint, resumeToast } from "../copy";
 import { concernIn, concernInAny } from "../guard";
 import { t } from "../text";
@@ -20,6 +19,9 @@ import type { Personality, Species } from "../types";
 import { Button, Icon, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
+
+/** Every 3D pet is its own graphics context, which phones cap, so only the first few cards are 3D. */
+const MAX_3D_CARDS = 8;
 
 /**
  * The Pets tab: one card per recovery track. Each track is a habit with its own companion, so the grid is
@@ -46,11 +48,18 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
 
   return (
     <main className="screen">
-      <TopBar title={t("pets.grid.title")} actions={tracks.length > 0 ? (
-        <div className="layout-toggle" role="radiogroup" aria-label={t("pets.grid.layout")}>
-          <button type="button" role="radio" aria-checked={layout === "grid"} aria-label={t("pets.grid.layout_grid")} onClick={() => pickLayout("grid")}>{Icon.grid}</button>
-          <button type="button" role="radio" aria-checked={layout === "list"} aria-label={t("pets.grid.layout_list")} onClick={() => pickLayout("list")}>{Icon.list}</button>
-        </div>) : undefined} />
+      <header className="pets-head">
+        <div className="stack tight">
+          <h1>{t("pets.grid.title")}</h1>
+          <p className="muted small">{t("pets.grid.intro")}</p>
+        </div>
+        {tracks.length > 0 && (
+          <div className="layout-toggle" role="radiogroup" aria-label={t("pets.grid.layout")}>
+            <button type="button" role="radio" aria-checked={layout === "grid"} aria-label={t("pets.grid.layout_grid")} onClick={() => pickLayout("grid")}>{Icon.grid}</button>
+            <button type="button" role="radio" aria-checked={layout === "list"} aria-label={t("pets.grid.layout_list")} onClick={() => pickLayout("list")}>{Icon.list}</button>
+          </div>
+        )}
+      </header>
 
       {tracks.length === 0 ? (
         <section className="card stack center-text">
@@ -60,7 +69,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
         </section>
       ) : (
         <section className="pet-grid" data-layout={layout} aria-label={t("pets.grid.tracks")}>
-          {tracks.map(({ habit, view, status, paused, wellness }) => {
+          {tracks.map(({ habit, view, status, paused, wellness, condition }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
@@ -72,14 +81,11 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
                   aria-label={t("pets.grid.card", { pet: view.companion.name, track: habit.name, line })}>
                   <span className="pet-card-art" aria-hidden>
-                    <PetImage round species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} mood={mood} size={layout === "list" ? 56 : 96} />
+                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} condition={condition} size={layout === "list" ? 84 : 100} />
                   </span>
                   <b className="pet-card-name">{view.companion.name}</b>
-                  <span className="pet-card-track small muted">{habit.name}</span>
-                  <span className="pet-card-status small" data-s={paused ? "paused" : status}>
-                    {!view.dead && !paused && <i className="mark" data-s={status} aria-hidden />}
-                    {view.dead || paused ? line : t("home.scene.well", { n: wellness })}
-                  </span>
+                  <span className="pet-card-track small">{habit.name}</span>
+                  <span className="pet-card-status small" data-s={paused ? "paused" : status}>{line}</span>
                 </motion.button>
                 <button className="icon-btn pet-card-more" aria-haspopup="dialog" aria-label={t("pets.grid.more", { track: habit.name })} onClick={() => { haptic.tap(); setMenu(habit.id); }}>{Icon.more}</button>
               </div>
@@ -88,6 +94,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
           {data.habits.length < 50 && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
             <span className="pet-card-plus" aria-hidden>{Icon.plus}</span>
             <b className="pet-card-name">{t("pets.grid.add")}</b>
+            <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
           </motion.button>}
         </section>
       )}

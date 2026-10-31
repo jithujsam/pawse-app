@@ -14,6 +14,9 @@ export const homeHeader = defineSection("home.header", { screen: "Pet screen", t
 // @copy-section home.hero
 export const homeHero = defineSection("home.hero", { screen: "Pet screen", title: "Pet, vitals and health bar", source: "src/screens/Home.tsx" }, {
   hero_aria: "{name}, day {day}, health {health}%",
+  vitals_aria: "{name}'s health",
+  health_aria: "Health: {title}, {heart} of 100",
+  bar_text: "{green} of {total} segments healthy",
   vital_health: "Health",
   vital_history: "History",
   vital_conditions: "Conditions",

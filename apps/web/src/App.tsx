@@ -116,6 +116,8 @@ function Shell() {
   useMidnight();
   const data = useData();
   const view = useActiveView();
+  const species = view?.companion.species;
+  useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const [tab, setTab] = useState<Tab>("pets");
   // Inside the Pets tab: the grid, or one recovery track (the companion home screen).
   // With exactly one active pet, the app opens straight to it (nothing stored changes).

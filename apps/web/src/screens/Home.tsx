@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
-import { addDays, today } from "../dates";
+import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, greeting, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
+import { addDays, fmtDay, today } from "../dates";
+import { HEALTH_SEGMENTS } from "@detox/engine";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { scheduleCare } from "../notify";
@@ -11,7 +12,6 @@ import { actions, getData, SCARS_ON, useActiveView, useData, type Deduction } fr
 import { celebratedFor, daysTogether, milestoneProgress, milestoneToCelebrate, trackSummary } from "../progress";
 import { sceneFor } from "../scene";
 import { PetScene } from "../ui/PetScene";
-import { Group, Row } from "../ui/Settings";
 import { trackState } from "../tracks";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
@@ -147,27 +147,62 @@ export function Home({ onBack }: { onBack?: () => void }) {
       action: { label: t("home.scene.add_details"), run: () => { actions.deleteEntry(id); setSheet(true); } } });
   }
 
-  const readouts = [
-    t("home.scene.well", { n: healthPct }), streak > 0 || !!j ? t("home.scene.run", { n: streak }) : null, nextMilestone ? t("home.scene.next", { n: nextMilestone }) : null,
-  ].filter((x): x is string => !!x);
+  const meta = [streak > 0 ? t("home.scene.run", { n: streak }) : null, nextMilestone ? t("home.scene.next", { n: nextMilestone }) : null].filter((x): x is string => !!x).join(" · ");
+  const bar = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
+  const nothing = !checkedIn && !resting;
 
   return (
     <main className="screen scene-screen">
-      <PetScene scene={scene} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}
-        overlay={<>
-          <div className="ps-id">
-            {onBack && <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button>}
-            <h1 className="t-display">{companion.name}</h1>
-            <p className="t-body" aria-live="polite">{line}</p>
-          </div>
-          <div className="ps-read t-label">{readouts.map((r) => <span key={r}>{r}</span>)}</div>
-        </>}>
-        <Burst burst={sparks} kind="spark" count={10} />
-        <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
-          stage={view.stage} mood={mood} age={age} size={240} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
+      <PetScene scene={scene} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
+        <div className="hs-bar">
+          {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
+          <span className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</span>
+        </div>
+        <h1 className="hs-name">{companion.name}</h1>
+        {meta && <p className="hs-meta">{meta}</p>}
+        <div className="hs-stage">
+          <Burst burst={sparks} kind="spark" count={10} />
+          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
+            stage={view.stage} mood={mood} age={age} size={290} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.p key={line} className="speech" aria-live="polite" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
+            {line}
+          </motion.p>
+        </AnimatePresence>
+        <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
+          {VITALS.map((v) => (
+            <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
+              aria-label={v.id === "health" ? t("home.hero.health_aria", { title: report.title, heart: report.heart }) : v.label}>
+              <span className="vital-ico">{v.id === "health" ? <Heart value={report.heart} level={report.level} size={24} /> : v.icon}
+                {v.id === "conditions" && conds.length > 0 && <i className="care-badge" data-tone={conds.some((c) => c.tone === "serious") ? "bad" : "warn"}>{conds.length}</i>}</span>
+              <span>{v.id === "health" ? `${report.heart}` : v.label}</span>
+            </motion.button>
+          ))}
+          <motion.button className="vital" onClick={() => { haptic.tap(); setMissionsOpen(true); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
+            aria-label={activeMissions === 0 ? t("missions.sheet.button_aria_done") : activeMissions === 1 ? t("missions.sheet.button_aria_one", { n: 1 }) : t("missions.sheet.button_aria_other", { n: activeMissions })}>
+            <span className="vital-ico">{Icon.paw}{activeMissions > 0 && <i className="care-badge">{activeMissions}</i>}</span>
+            <span>{t("missions.sheet.button")}</span>
+          </motion.button>
+        </div>
+        <div className="agetext"><b>{journeyLine}</b><span className="muted">{healthPct}%</span></div>
+        <div className="healthbar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
+          aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
+          {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
+        </div>
       </PetScene>
 
       <div className="scene-body">
+        <AnimatePresence>
+          {update && (
+            <motion.button className="update-banner" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}
+              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
+              <span><b>{t("home.header.update_title")}</b><span className="small">{update.notes ? t("home.header.update_version_notes", { version: update.name, notes: update.notes }) : t("home.header.update_version", { version: update.name })}</span></span>
+              <span className="update-cta">{updating === null ? t("home.header.update_cta") : updating > 0 ? `${updating}%` : t("home.header.update_downloading")}</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {trackPaused && (
           <section className="card row paused-card" aria-label={t("home.paused.aria")}>
             <span className="small">{pauseHint(tone)}</span>
@@ -175,9 +210,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
           </section>
         )}
 
-        <section className="today" aria-label={t("home.scene.today")}>
-          <h2>{t("home.scene.today")}</h2>
-          {!checkedIn && !resting ? (
+        <section className="card today" aria-label={t("home.scene.today")}>
+          <div className="today-head"><h2>{fmtDay(t0)}</h2>{nothing && <p>{tt("calendar.note.nothing", tone)}</p>}</div>
+          {nothing ? (
             <>
               <div className="today-actions">
                 <Button onClick={clean}>{t("home.scene.goal_met")}</Button>
@@ -188,31 +223,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
           ) : (
             <>
               <div className="today-done"><span>{loggedLine}</span><Button variant="text" onClick={() => setEditing((e) => !e)}>{t("home.scene.edit")}</Button></div>
-              {editing && <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />}
+              {editing && <DayDetail day={t0} standalone onMarkMet={clean} onSlipSaved={saved} />}
             </>
           )}
-        </section>
-
-        <section className="stack" aria-label={t("home.scene.strip_aria")}>
-          <div className="strip28" role="img" aria-label={t("home.scene.strip_aria")}>
-            {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
+          <div className="today-trail">
+            <div className="strip28" role="img" aria-label={t("home.scene.strip_aria")}>
+              {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
+            </div>
+            <div className="strip-meta"><span>{t("home.scene.strip_aria")}</span><span>{t("home.scene.well", { n: healthPct })}</span></div>
           </div>
-          <div className="wbar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct} aria-label={t("home.hero.bar_aria", { name: companion.name })}><i style={{ width: `${healthPct}%` }} /></div>
-          <div className="strip-meta"><span>{t("home.scene.well", { n: healthPct })}</span><span>{journeyLine}</span></div>
         </section>
-
-        <Group>
-          {update && (
-            <button className="srow" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}>
-              <span className="srow-label">{t("home.header.update_title")}<br /><span className="t-caption muted">{update.notes ? t("home.header.update_version_notes", { version: update.name, notes: update.notes }) : t("home.header.update_version", { version: update.name })}</span></span>
-              <span className="srow-value">{updating === null ? t("home.header.update_cta") : updating > 0 ? `${updating}%` : t("home.header.update_downloading")}</span>
-            </button>
-          )}
-          <Row icon={<Heart value={report.heart} level={report.level} size={20} />} label={t("home.hero.vital_health")} value={`${healthPct}%`} onClick={() => setHealth("health")} />
-          <Row icon={VITALS[1].icon} label={t("home.hero.vital_history")} onClick={() => setHealth("history")} />
-          <Row icon={VITALS[2].icon} label={t("home.hero.vital_conditions")} value={conds.length > 0 ? conds.length : undefined} onClick={() => setHealth("conditions")} />
-          <Row icon={Icon.paw} label={t("missions.sheet.button")} value={activeMissions > 0 ? activeMissions : undefined} onClick={() => setMissionsOpen(true)} />
-        </Group>
       </div>
 
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />

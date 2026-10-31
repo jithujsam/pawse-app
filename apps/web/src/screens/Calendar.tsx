@@ -82,7 +82,7 @@ export function CalendarSections() {
           </div>
           <p className="muted small">{t("calendar.month.note")}</p>
         </div>
-        {spark.length >= 7 && (
+        {spark.length >= 7 && spark.some((v) => v > 0) && (
           <div className="card stack" aria-label={t("calendar.age.aria")}>
             <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{Math.round(spark[spark.length - 1])}</b></div>
             <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>

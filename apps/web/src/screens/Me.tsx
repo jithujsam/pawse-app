@@ -31,7 +31,7 @@ import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
 import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, showUpdate, useUpdate, useUpdatePending } from "../update";
-import type { Field, FieldType } from "../types";
+import type { Field, FieldType, Settings } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
   { value: "choice", label: t("me.questions.t_choice") }, { value: "multi", label: t("me.questions.t_multi") }, { value: "scale", label: t("me.questions.t_scale") }, { value: "text", label: t("me.questions.t_text") },
@@ -80,7 +80,7 @@ export function Me() {
       </Group>
       <Group title={t("me.profile.g_experience")}>
         <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
-        <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={THEME_LABEL[settings.theme]} onClick={() => setPage("appearance")} />
+        <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
         <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
       </Group>
       <Group title={t("me.profile.g_privacy")}>
@@ -353,6 +353,12 @@ function DataPage() {
 /** Common currency symbols. Anything else, up to four characters, can be typed. */
 export const CURRENCIES = [{ sym: "₹", name: "Indian rupee" }, { sym: "$", name: "Dollar" }, { sym: "€", name: "Euro" }, { sym: "£", name: "Pound" }, { sym: "¥", name: "Yen or yuan" }, { sym: "₩", name: "Won" }, { sym: "R$", name: "Brazilian real" }, { sym: "₦", name: "Naira" }];
 const THEME_LABEL = { system: t("me.appearance.theme_system"), light: t("me.appearance.theme_light"), dark: t("me.appearance.theme_dark") } as const;
+const ACCENT_OPTS: { id: Settings["accent"]; label: string; color: string }[] = [
+  { id: "pet", label: t("me.appearance.accent_pet"), color: "conic-gradient(#c2572a, #2f7a52, #2f6aa3, #b03f6b, #c2572a)" },
+  { id: "coral", label: t("me.appearance.accent_coral"), color: "#c2572a" }, { id: "ocean", label: t("me.appearance.accent_ocean"), color: "#2f6aa3" }, { id: "forest", label: t("me.appearance.accent_forest"), color: "#2f7a52" },
+  { id: "berry", label: t("me.appearance.accent_berry"), color: "#b03f6b" }, { id: "plum", label: t("me.appearance.accent_plum"), color: "#6b4fb0" }, { id: "slate", label: t("me.appearance.accent_slate"), color: "#4b5a6b" },
+];
+
 function AppearancePage() {
   const { settings } = useData();
   return (<>
@@ -360,6 +366,11 @@ function AppearancePage() {
       <h2>{t("me.appearance.theme")}</h2>
       <Select label={t("me.appearance.theme")} value={settings.theme} onChange={(th) => actions.setSettings({ theme: th })} options={(["system", "light", "dark"] as const).map((th) => ({ value: th, label: THEME_LABEL[th] }))} />
       <p className="muted small">{t("me.appearance.theme_hint")}</p>
+    </section>
+    <section className="card stack">
+      <h2>{t("me.appearance.colour")}</h2>
+      <Select label={t("me.appearance.accent")} value={settings.accent} onChange={(a) => actions.setSettings({ accent: a })} options={ACCENT_OPTS.map((a) => ({ value: a.id, label: a.label }))} />
+      <p className="muted small">{t("me.appearance.accent_hint")}</p>
     </section>
   </>);
 }

@@ -41,6 +41,9 @@ export function Journey() {
 
       <section className="stack" aria-label={t("calendar.milestones.title")}>
         <h2>{t("calendar.milestones.title")}</h2>
+        <div className="milestones-card">
+          <div className="milestones">{MILESTONES.map((m) => <div key={m} className="badge" data-got={care >= m} data-next={m === next}><span className="badge-disc">{m}</span></div>)}</div>
+        </div>
         <div className="ms-list">
           {next && <div><b>{t("calendar.milestones.badge", { n: next })}</b><span className="muted">{next - care === 1 ? t("calendar.milestones.to_go_one", { n: next - care }) : t("calendar.milestones.to_go_other", { n: next - care })}</span></div>}
           {reached.map((m) => <div key={m}><b>{t("calendar.milestones.badge", { n: m })}</b><span className="muted">{t("calendar.milestones.reached")}</span></div>)}

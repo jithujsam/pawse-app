@@ -137,6 +137,16 @@ export const meAppearance = defineSection("me.appearance", { screen: "Me → App
   theme_light: "Light",
   theme_dark: "Dark",
   theme_hint: "System follows your phone's light or dark setting.",
+  colour: "Colour",
+  accent: "Accent colour",
+  accent_pet: "Match my pet",
+  accent_coral: "Coral",
+  accent_ocean: "Ocean",
+  accent_forest: "Forest",
+  accent_berry: "Berry",
+  accent_plum: "Plum",
+  accent_slate: "Slate",
+  accent_hint: "\"Match my pet\" picks a colour that suits your pet.",
 });
 // @copy-section-end me.appearance
 

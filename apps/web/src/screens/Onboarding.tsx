@@ -57,6 +57,7 @@ export function Onboarding() {
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
 
+  useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
   const go = (n: number) => { haptic.select(); up({ step: n }); };
   const name = d.companionName.trim() || NAMES[d.species][0];
   // Every typed field is checked as it is typed; Continue waits until none of them needs the safety note.

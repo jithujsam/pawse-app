@@ -95,6 +95,8 @@ export async function boot(): Promise<Boot> {
   try {
     const sealed = await kv.get<Sealed>("data.enc");
     if (sealed) {
+      const pet = await kv.get<string>("pet");
+      if (pet) document.documentElement.dataset.pet = pet;
       return { kind: "locked", sealed };
     }
     let raw = await kv.get<unknown>("data");
