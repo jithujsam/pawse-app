@@ -127,7 +127,7 @@ describe("placeholders and tones", () => {
   });
 
   it("the app name always comes from one place", () => {
-    expect(t("onboarding.triggers.intro")).toContain("pawse offers these back");
+    expect(t("me.reminders.note", { name: "x" })).toContain("pawse never sends");
     expect(t("sheets.plan.intro")).toContain("what pawse offers");
   });
 });

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { PetPortrait } from "../Companion";
+import { PetImage } from "../Companion";
+import { sceneFor } from "../scene";
+import { PetScene } from "../ui/PetScene";
 import { deathLine } from "../copy";
 import { addDays } from "../dates";
 import { daysTogether } from "../progress";
@@ -14,6 +16,8 @@ import { t } from "../text";
 import type { Species } from "../types";
 
 const BABY: Record<Species, string> = { dog: t("sheets.memorial.kind_dog"), cat: t("sheets.memorial.kind_cat"), fox: t("sheets.memorial.kind_fox") };
+/** A storm at night, whatever the hour. */
+const MEMORIAL_SCENE = sceneFor({ wellness: 0, rescue: false, slipToday: false, milestoneToday: false, hour: 23 });
 const slow = (delay: number) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.2, delay, ease: [0.22, 0.8, 0.3, 1] as const } });
 
 export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => void }) {
@@ -28,14 +32,12 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
   const tone = data.settings.tone;
 
   return (
-    <main className="screen memorial">
-      <div className="stars" aria-hidden>{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 100}%`, top: `${(i * 23) % 40}%`, animationDelay: `${(i % 7) * 0.6}s` }} />)}</div>
-      <motion.h1 {...slow(0.2)}>{companion.name}</motion.h1>
-      {data.settings.deathScene && (
-        <motion.div className="memorial-art" initial={{ opacity: 1, filter: "grayscale(0)" }} animate={{ opacity: 0.75, filter: "grayscale(0.7)" }} transition={{ duration: 3, ease: "easeOut" }}>
-          <PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} stage="frail" mood="dying" age={100} size={220} />
-        </motion.div>
-      )}
+    <main className="screen scene-screen memorial">
+      <PetScene scene={MEMORIAL_SCENE} label={companion.name}>
+        {data.settings.deathScene && <PetImage species={companion.species} coat={companion.coat} breed={companion.breed} mood="dying" size={220} />}
+      </PetScene>
+      <div className="scene-body">
+      <motion.h1 className="t-display" {...slow(0.2)}>{companion.name}</motion.h1>
       <motion.p {...slow(1.2)}>{deathLine(tone, companion.name)}</motion.p>
       <motion.section className="card stack memorial-card" {...slow(2)}>
         <h2>{t("sheets.memorial.life")}</h2>
@@ -53,6 +55,7 @@ export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => 
           <SelectOther label={t("sheets.memorial.new_name")} value={name} onChange={setName} options={plainOpts(NAMES[species])} maxLength={20} placeholder={t("sheets.memorial.name_placeholder", { name: NAMES[species][0] })} otherLabel={t("sheets.memorial.name_other")} otherPlaceholder={t("sheets.memorial.name_own")} /></div>
         <Button disabled={concernIn(name) !== null} onClick={() => { haptic.success(); actions.adopt(habit!.id, name, species, companion.personality); actions.resetCelebrations(habit!.id); onDone(); }}>{t("sheets.memorial.adopt", { kind: BABY[species] })}</Button>
       </motion.section>
+      </div>
     </main>
   );
 }

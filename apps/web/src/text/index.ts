@@ -6,7 +6,7 @@ import { homeHeader, homeHero, homeScene, homeMilestone, homePaused, homeToday, 
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
 import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice } from "./sections/me";
 import { notificationsCatchup, notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
-import { onboardingChange, onboardingChrome, onboardingCount, onboardingFinal, onboardingHatch, onboardingHelp, onboardingPet, onboardingReminders, onboardingTriggers, onboardingVoice, onboardingWhy } from "./sections/onboarding";
+import { onboardingChange, onboardingChrome, onboardingCount, onboardingFinal, onboardingHatch, onboardingPet, onboardingReminders } from "./sections/onboarding";
 import { petsAdd, petsGrid, petsMenu, petsPicker } from "./sections/pets";
 import { privacyFlows, privacySummary } from "./sections/privacy";
 import { safetyCrisis, safetyDisclaimer, safetyHelplines, safetyProfessional, safetyRestriction, safetySupport } from "./sections/safety";
@@ -25,7 +25,7 @@ import { welcomeAccount, welcomeRestoring, welcomeStory } from "./sections/welco
 export const SECTIONS = [
   navTabs, navLoading, petLook, uiCommon, uiSelect, uiSettings, helpTutorial,
   welcomeStory, welcomeAccount, welcomeRestoring,
-  onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingTriggers, onboardingWhy, onboardingHelp, onboardingVoice, onboardingReminders, onboardingFinal, onboardingHatch,
+  onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingReminders, onboardingFinal, onboardingHatch,
   petsGrid, petsMenu, petsPicker, petsAdd,
   homeHeader, homeHero, homeScene, homePaused, homeToday, homeMilestone,
   missionsSheet, missionsMoment, missionsContent, packsLines,

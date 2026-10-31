@@ -84,8 +84,8 @@
       "title": "How a pet is described to a screen reader",
       "source": "src/pet-label.ts, src/Companion.tsx, src/Pet3D.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 66,
-      "end": 78,
+      "start": 65,
+      "end": 77,
       "entries": [
         {
           "id": "pet.look.label",
@@ -145,7 +145,7 @@
       "source": "src/ui/*.tsx",
       "file": "src/text/sections/system.ts",
       "start": 24,
-      "end": 43,
+      "end": 42,
       "entries": [
         {
           "id": "ui.common.back",
@@ -179,11 +179,6 @@
         },
         {
           "id": "ui.common.skip",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "ui.common.skip_for_now",
           "kind": "text",
           "placeholders": []
         },
@@ -235,8 +230,8 @@
       "title": "Dropdowns",
       "source": "src/ui/Controls.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 45,
-      "end": 58,
+      "start": 44,
+      "end": 57,
       "entries": [
         {
           "id": "ui.select.choose",
@@ -303,8 +298,8 @@
       "title": "Photos and pin pad",
       "source": "src/screens/LogSheet.tsx, src/ui/PinPad.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 60,
-      "end": 64,
+      "start": 59,
+      "end": 63,
       "entries": [
         {
           "id": "ui.settings.digits",
@@ -322,8 +317,8 @@
       "title": "The walkthrough",
       "source": "src/ui/Tutorial.tsx, src/screens/Me.tsx",
       "file": "src/text/sections/system.ts",
-      "start": 80,
-      "end": 101,
+      "start": 79,
+      "end": 100,
       "entries": [
         {
           "id": "help.tutorial.label",
@@ -549,7 +544,7 @@
       "source": "src/screens/Onboarding.tsx",
       "file": "src/text/sections/onboarding.ts",
       "start": 9,
-      "end": 16,
+      "end": 14,
       "entries": [
         {
           "id": "onboarding.pet.title",
@@ -558,18 +553,6 @@
         },
         {
           "id": "onboarding.pet.intro",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.pet.call_you",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "onboarding.pet.call_you_placeholder",
           "kind": "text",
           "placeholders": []
         }
@@ -581,8 +564,8 @@
       "title": "Step 2: what to change",
       "source": "src/screens/Onboarding.tsx, src/screens/Pets.tsx",
       "file": "src/text/sections/onboarding.ts",
-      "start": 18,
-      "end": 27,
+      "start": 16,
+      "end": 25,
       "entries": [
         {
           "id": "onboarding.change.title",
@@ -622,19 +605,9 @@
       "title": "Step 3: what to count",
       "source": "src/screens/Onboarding.tsx, src/screens/Pets.tsx",
       "file": "src/text/sections/onboarding.ts",
-      "start": 29,
-      "end": 42,
+      "start": 27,
+      "end": 34,
       "entries": [
-        {
-          "id": "onboarding.count.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.count.intro",
-          "kind": "text",
-          "placeholders": []
-        },
         {
           "id": "onboarding.count.field",
           "kind": "text",
@@ -654,127 +627,6 @@
           "id": "onboarding.count.own",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "onboarding.count.often_field",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.count.often_aria",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.count.choose",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.count.note",
-          "kind": "text",
-          "placeholders": []
-        }
-      ]
-    },
-    {
-      "id": "onboarding.triggers",
-      "screen": "Onboarding",
-      "title": "Step 4: what sets it off",
-      "source": "src/screens/Onboarding.tsx",
-      "file": "src/text/sections/onboarding.ts",
-      "start": 44,
-      "end": 51,
-      "entries": [
-        {
-          "id": "onboarding.triggers.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.triggers.intro",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.triggers.field",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.triggers.placeholder",
-          "kind": "text",
-          "placeholders": []
-        }
-      ]
-    },
-    {
-      "id": "onboarding.why",
-      "screen": "Onboarding",
-      "title": "Step 5: why it matters",
-      "source": "src/screens/Onboarding.tsx",
-      "file": "src/text/sections/onboarding.ts",
-      "start": 53,
-      "end": 58,
-      "entries": [
-        {
-          "id": "onboarding.why.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.why.intro",
-          "kind": "text",
-          "placeholders": []
-        }
-      ]
-    },
-    {
-      "id": "onboarding.help",
-      "screen": "Onboarding",
-      "title": "Step 6: a first step",
-      "source": "src/screens/Onboarding.tsx",
-      "file": "src/text/sections/onboarding.ts",
-      "start": 60,
-      "end": 65,
-      "entries": [
-        {
-          "id": "onboarding.help.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.help.intro",
-          "kind": "text",
-          "placeholders": []
-        }
-      ]
-    },
-    {
-      "id": "onboarding.voice",
-      "screen": "Onboarding",
-      "title": "Step 7: voice",
-      "source": "src/screens/Onboarding.tsx",
-      "file": "src/text/sections/onboarding.ts",
-      "start": 67,
-      "end": 73,
-      "entries": [
-        {
-          "id": "onboarding.voice.title",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "onboarding.voice.field",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "onboarding.voice.note",
-          "kind": "text",
-          "placeholders": []
         }
       ]
     },
@@ -784,8 +636,8 @@
       "title": "Step 8: a daily nudge",
       "source": "src/screens/Onboarding.tsx",
       "file": "src/text/sections/onboarding.ts",
-      "start": 75,
-      "end": 89,
+      "start": 36,
+      "end": 50,
       "entries": [
         {
           "id": "onboarding.reminders.title",
@@ -855,8 +707,8 @@
       "title": "Step 9: one last thing",
       "source": "src/screens/Onboarding.tsx",
       "file": "src/text/sections/onboarding.ts",
-      "start": 91,
-      "end": 98,
+      "start": 52,
+      "end": 58,
       "entries": [
         {
           "id": "onboarding.final.title",
@@ -872,13 +724,6 @@
           "id": "onboarding.final.adult_hint",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "onboarding.final.meet",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
         }
       ]
     },
@@ -888,8 +733,8 @@
       "title": "Step 10: hatching",
       "source": "src/screens/Onboarding.tsx",
       "file": "src/text/sections/onboarding.ts",
-      "start": 100,
-      "end": 106,
+      "start": 60,
+      "end": 66,
       "entries": [
         {
           "id": "onboarding.hatch.waiting",
