@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { projectDaysToAge } from "@detox/engine";
-import { ACCENT } from "../Companion";
 import { verdict } from "../copy";
 import { checkIns, countDays, trackIndex, trackSummary, weekdayOf } from "../progress";
-import { addDays, fmtHour, today, weekStart } from "../dates";
+import { addDays, fmtDay, fmtHour, parse, today, weekStart } from "../dates";
+import { dayStatus, STATUS_LABEL } from "../recovery";
 import { rise, spring, stagger } from "../motion";
 import { actions, BASELINE_PER_WEEK, moneyKept, recentPace, riskyHour, slipHour, useActiveView, useData, weekStats } from "../store";
 import { needsTrackContext, trackState } from "../tracks";
@@ -89,7 +89,6 @@ export function Report() {
 
   // Urges: noticing and riding them out is the skill that predicts lasting change.
   const urgeLog = data.urges.filter((u) => u.habitId === habit.id);
-  const urgesWeek = urgeLog.filter((u) => u.day >= ws);
   const rode = progress.managedUrges;
   // When it happens: weekday x four-hour block.
   const grid = Array.from({ length: 7 }, () => Array(6).fill(0) as number[]);
@@ -103,51 +102,55 @@ export function Report() {
   const saved = kept ? kept.saved : null;
   const goal = state.savingsGoal;
 
+  const strip = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(ws, i);
+    return { d, s: dayStatus(data, habit.id, d, today()), label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
+  });
+  const weekMet = strip.filter((x) => x.s === "met").length;
+
   return (
-    <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
+    <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>{t("insights.header.title")}</motion.h1>
-      {needsTrackContext(data, habit.id) && <motion.div variants={rise}><TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} /></motion.div>}
-      <CheckIn />
-      <WeeklyReview />
-      <motion.section className="card stack" variants={rise}>
+      {needsTrackContext(data, habit.id) && <TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} />}
+
+      <section className="stack" aria-label={t("insights.week.title")}>
         <h2>{t("insights.week.title")}</h2>
+        <section className="card stack">
         <p>{verdict(tone, cur.slips, prev.slips)}</p>
         <div className="stats">
           <div className="stat"><div className="muted small">{t("insights.week.slips")}</div><div className="v"><AnimatedNumber value={cur.slips} from={0} /></div><Delta cur={cur.slips} prev={prev.slips} /></div>
           <div className="stat"><div className="muted small">{t("insights.week.life_lost")}</div><div className="v"><AnimatedNumber value={fmt(cur.months)} from={0} decimals={1} /> <small>{t("insights.week.months_short")}</small></div><Delta cur={fmt(cur.months)} prev={fmt(prev.months)} unit={` ${t("insights.week.months_short")}`} /></div>
           <div className="stat"><div className="muted small">{t("insights.week.goal_met_days")}</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
+          <div className="stat"><div className="muted small">{t("insights.urges.managed")}</div><div className="v"><AnimatedNumber value={rode} from={0} /> <small>{t("insights.urges.of", { n: urgeLog.length })}</small></div></div>
           {money
             ? <div className="stat"><div className="muted small">{t("insights.week.spent")}</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
             : <div className="stat"><div className="muted small">{t("insights.week.days_checked_in")}</div><div className="v"><AnimatedNumber value={inThis} from={0} /></div><Delta cur={inThis} prev={inPrev} good="up" /></div>}
         </div>
+        {urgeLog.length > 0 && <p className="small">{rode === urgeLog.length ? t("insights.urges.all") : t("insights.urges.some", { managed: rode, total: urgeLog.length })}</p>}
         <p className="muted small">{t("insights.week.arrows")}</p>
-      </motion.section>
-
-      <motion.section className="card stack" aria-label={t("insights.urges.aria")} variants={rise}>
-        <div className="row"><h2>{t("insights.urges.title")}</h2><span className="muted small">{t("insights.urges.this_week", { n: urgesWeek.length })}</span></div>
-        {urgeLog.length === 0
-          ? <p className="muted">{t("insights.urges.empty")}</p>
-          : <>
-              <div className="stats">
-                <div className="stat item"><span className="muted small">{t("insights.urges.managed")}</span><b className="v"><AnimatedNumber value={rode} from={0} /></b></div>
-                <div className="stat item"><span className="muted small">{t("insights.urges.noticed")}</span><b className="v"><AnimatedNumber value={urgeLog.length} from={0} /></b></div>
+      </section>
+        <div className="card stack" aria-label={t("insights.week.summary")}>
+          <div className="row"><h3>{t("insights.week.summary")}</h3><span className="muted small">{weekMet === 1 ? t("insights.week.count_one", { n: weekMet }) : t("insights.week.count_other", { n: weekMet })}</span></div>
+          <div className="weekstrip" aria-label={t("insights.week.strip_aria")}>
+            {strip.map((x) => (
+              <div key={x.d} className="wday" data-today={x.d === today()} aria-label={t("insights.week.day_aria", { date: fmtDay(x.d), status: STATUS_LABEL[x.s] })}>
+                <span className="muted small">{x.label}</span>
+                <i className="mark" data-s={x.s} />
               </div>
-              <p className="small">{rode === urgeLog.length ? t("insights.urges.all") : t("insights.urges.some", { managed: rode, total: urgeLog.length })}</p>
-            </>}
-      </motion.section>
+            ))}
+          </div>
+        </div>
+        {summary && <section className="card stack" aria-label={t("insights.summary.aria")}>
+          <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>{t("insights.summary.title")}</h2></div>
+          <p className="bubble">{summary}</p>
+          <p className="muted small">{t("insights.summary.ai_note")}</p>
+        </section>}
+      </section>
 
-      {money && (
-        <motion.section className="card stack" aria-label={t("insights.money.aria")} variants={rise}>
-          <div className="row"><h2>{t("insights.money.title")}</h2>{kept && <span className="muted small">{kept.days === 1 ? t("insights.money.over_one", { n: kept.days }) : t("insights.money.over_other", { n: kept.days })}</span>}</div>
-          {saved === null
-            ? <p className="muted">{baseline ? t("insights.money.needs_slip") : t("insights.money.needs_pace")}</p>
-            : <p className="big-money"><small>{currency}</small> <AnimatedNumber value={saved} from={0} /></p>}
-          <SavingsGoal habitId={habit.id} saved={saved ?? 0} goal={goal} currency={currency} />
-        </motion.section>
-      )}
-
-      <motion.section className="card stack" aria-label={t("insights.when.title")} variants={rise}>
-        <div className="row"><h2>{t("insights.when.title")}</h2>{risk !== null && <span className="muted small">{t("insights.when.peak", { time: fmtHour(risk) })}</span>}</div>
+      <section className="stack" aria-label={t("insights.when.title")}>
+        <h2>{t("insights.when.title")}</h2>
+        <section className="card stack" aria-label={t("insights.when.title")}>
+        <div className="row">{risk !== null && <span className="muted small">{t("insights.when.peak", { time: fmtHour(risk) })}</span>}</div>
         {timed < 3 ? <p className="muted">{t("insights.when.empty")}</p> : (
           <div className="heat" role="img" aria-label={t("insights.when.heat_aria") + (risk !== null ? t("insights.when.heat_most", { time: fmtHour(risk) }) : "")}>
             <span />{[0, 4, 8, 12, 16, 20].map((h) => <span key={h} className="heat-h">{fmtHour(h)}</span>)}
@@ -159,50 +162,65 @@ export function Report() {
           </div>
         )}
         {risk !== null && <p className="small">{t("insights.when.heads_up", { name: companion.name, time: fmtHour(risk) })}</p>}
-      </motion.section>
+      </section>
+      </section>
 
-      {baseline && pace !== null && progress.slips + progress.metDays >= 3 && (
-        <motion.section className="card stack" variants={rise}>
-          <h2>{t("insights.since.title")}</h2>
+      {money && (
+        <section className="stack" aria-label={t("insights.money.title")}>
+          <h2>{t("insights.money.title")}</h2>
+          <section className="card stack" aria-label={t("insights.money.aria")}>
+          <div className="row">{kept && <span className="muted small">{kept.days === 1 ? t("insights.money.over_one", { n: kept.days }) : t("insights.money.over_other", { n: kept.days })}</span>}</div>
+          {saved === null
+            ? <p className="muted">{baseline ? t("insights.money.needs_slip") : t("insights.money.needs_pace")}</p>
+            : <p className="big-money"><small>{currency}</small> <AnimatedNumber value={saved} from={0} /></p>}
+          <SavingsGoal habitId={habit.id} saved={saved ?? 0} goal={goal} currency={currency} />
+        </section>
+        </section>
+      )}
+
+      <section className="stack" aria-label={t("insights.patterns.title")}>
+        <h2>{t("insights.patterns.title")}</h2>
+        {baseline && pace !== null && progress.slips + progress.metDays >= 3 && (
+          <section className="card stack">
+          <h3>{t("insights.since.title")}</h3>
           <p>{t("insights.since.body", { frequency: BASELINE_LABEL[baseline], n: fmt(recentPerWeek) })}</p>
           <div className="compare" aria-hidden>
             <div><span className="muted small">{t("insights.since.then")}</span><motion.i initial={{ width: 0 }} animate={{ width: "100%" }} transition={spring.calm} /></div>
             <div><span className="muted small">{t("insights.since.now")}</span><motion.i className={`now${recentPerWeek > BASELINE_PER_WEEK[baseline] ? " worse" : ""}`} initial={{ width: 0 }} animate={{ width: `${Math.min(100, (recentPerWeek / BASELINE_PER_WEEK[baseline]) * 100)}%` }} transition={{ ...spring.calm, delay: 0.2 }} /></div>
           </div>
-        </motion.section>
-      )}
-
-      {summary && (
-        <motion.section className="card stack" aria-label={t("insights.summary.aria")} variants={rise}>
-          <div className="row" style={{ justifyContent: "flex-start", gap: 8 }}>{Icon.spark}<h2>{t("insights.summary.title")}</h2></div>
-          <p className="bubble">{summary}</p>
-          <p className="muted small">{t("insights.summary.ai_note")}</p>
-        </motion.section>
-      )}
-
-      <motion.section className="card stack" variants={rise}>
-        <h2>{t("insights.chart.title")}</h2>
+        </section>
+        )}
+        <section className="card stack">
+        <h3>{t("insights.chart.title")}</h3>
         <svg className="chart" viewBox={`0 0 ${W} ${H + 20}`} role="img" aria-label={t("insights.chart.aria", { list: weeks.join(", ") })}>
-          {[0, 0.5, 1].map((t) => <line key={t} x1="0" x2={W} y1={H - t * (H - 12)} y2={H - t * (H - 12)} stroke="var(--raised)" strokeDasharray="3 4" />)}
+          {[0, 1 / 3, 2 / 3, 1].map((g) => <line key={g} x1="0" x2={W} y1={H - g * (H - 12)} y2={H - g * (H - 12)} stroke="var(--line)" />)}
           {weeks.map((v, i) => {
             const h = (v / maxW) * (H - 12);
             return <g key={i}>
-              <motion.rect x={i * (bw + gap)} width={bw} rx="6" fill={i === 7 ? "var(--chart)" : "var(--control)"}
+              <motion.rect x={i * (bw + gap)} width={bw} rx="6" fill="var(--accent)"
                 initial={{ y: H, height: 0 }} animate={{ y: H - h, height: Math.max(h, 0) }} transition={{ ...spring.soft, delay: 0.15 + i * 0.05 }} />
               <text x={i * (bw + gap) + bw / 2} y={H + 14} textAnchor="middle">{i === 7 ? t("insights.chart.now") : `-${7 - i}`}</text>
               {v > 0 && <motion.text x={i * (bw + gap) + bw / 2} y={H - h - 4} textAnchor="middle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + i * 0.05 }}>{v}</motion.text>}
             </g>;
           })}
         </svg>
-      </motion.section>
+      </section>
+        <Observations />
+      </section>
 
-      <Observations />
+      <section className="stack" aria-label={t("insights.review.check_in")}>
+        <h2>{t("insights.review.check_in")}</h2>
+        <CheckIn />
+        <WeeklyReview />
+      </section>
 
-      <motion.section className="card stack" variants={rise}>
+      <section className="stack" aria-label={t("insights.forecast.title")}>
         <h2>{t("insights.forecast.title")}</h2>
+        <section className="card stack">
         <p>{view.age >= 80 ? t("insights.forecast.already", { name: companion.name }) : frailIn === null ? t("insights.forecast.steady", { name: companion.name }) : Math.max(1, Math.round(frailIn / 7)) === 1 ? t("insights.forecast.pace_one", { name: companion.name }) : t("insights.forecast.pace_other", { name: companion.name, weeks: Math.max(1, Math.round(frailIn / 7)) })}</p>
         <p className="muted small">{t("safety.disclaimer.forecast")}</p>
-      </motion.section>
+      </section>
+      </section>
     </motion.main>
   );
 }

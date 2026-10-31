@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { HEALTH_SEGMENTS } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
 import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
-import { addDays, fmtDay, parse, today, weekStart } from "../dates";
+import { fmtDay, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare } from "../notify";
@@ -26,9 +26,9 @@ import { missionText, packLine } from "../mission-text";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
-import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
+import { afterSlipLine, restLine } from "../recovery";
 import { ACCESSORIES } from "../pets";
-import { t } from "../text";
+import { t, tt } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
 export function Home({ onBack }: { onBack?: () => void }) {
@@ -129,6 +129,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
     else if (!ev) toast(cleanToast(tone, companion.name), { kind: "good", ms: 1000, action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
   }
+  // I slipped: with no required question the slip is logged at once, and the toast can undo it or open the form for details.
+  function slip() {
+    if (habit.fields.some((f) => f.required)) { setSheet(true); return; }
+    const d = actions.logSlip(habit.id, {}, t0, null);
+    if (!d) { haptic.warn(); return; }
+    saved(d);
+    const id = d.entry.id;
+    toast(t("home.today.slip_logged"), { kind: "bad", extra: { label: t("ui.common.undo"), run: () => { actions.deleteEntry(id); setJust(null); } },
+      action: { label: t("home.today.add_details"), run: () => { actions.deleteEntry(id); setSheet(true); } } });
+  }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
     setNote(d.binge && SCARS_ON ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : rescue ? packLine(habit.cls, "slip", tone) : say("slip", personality, tone));
@@ -141,14 +151,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // A stroke tells the pet's story (its talking-pet pack); other taps keep their playful answers.
   const react = (r: Reaction) => setNote(rescue && r === "stroke" ? packLine(habit.cls, "story", tone) : say(r, personality, tone));
 
-  const ws = weekStart(t0);
-  const strip = Array.from({ length: 7 }, (_, i) => {
-    const d = addDays(ws, i);
-    const s = dayStatus(data, habit.id, d, t0);
-    return { d, s, label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
-  });
-
-  const weekMet = strip.filter((x) => x.s === "met").length;
 
   return (
     <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
@@ -216,19 +218,17 @@ export function Home({ onBack }: { onBack?: () => void }) {
       )}
 
       {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
-      <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />
-
-      <motion.section className="checkin" aria-label={t("home.week.title")} variants={rise}>
-        <div className="row"><h2>{t("home.week.title")}</h2><span className="muted small">{weekMet === 1 ? t("home.week.count_one", { n: weekMet }) : t("home.week.count_other", { n: weekMet })}</span></div>
-        <div className="weekstrip" aria-label={t("home.week.strip_aria")}>
-          {strip.map((x) => (
-            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={t("home.week.day_aria", { date: fmtDay(x.d), status: STATUS_LABEL[x.s] })}>
-              <span className="muted small">{x.label}</span>
-              <motion.i layout initial={false} animate={{ scale: x.s === "unrecorded" || x.s === "future" ? 0.7 : 1 }} transition={spring.bouncy} />
-            </div>
-          ))}
-        </div>
-      </motion.section>
+      {!checkedIn && !resting ? (
+        <motion.section className="card stack home-day" aria-label={t("calendar.day.aria", { date: fmtDay(t0) })} variants={rise}>
+          <h2>{fmtDay(t0)}</h2>
+          <p className="muted">{tt("calendar.note.nothing", tone)}</p>
+          <div className="actions">
+            <Button onClick={clean}>{t("home.today.goal_met")}</Button>
+            <Button variant="secondary" onClick={slip}>{t("home.today.slipped")}</Button>
+          </div>
+          <Button variant="text" onClick={() => { haptic.tap(); setUrge(true); }}>{t("home.today.urge")}</Button>
+        </motion.section>
+      ) : <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />}
 
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />

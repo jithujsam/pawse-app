@@ -157,6 +157,9 @@ export const sheetsHealth = defineSection("sheets.health", { screen: "Health", t
 export const sheetsPlan = defineSection("sheets.plan", { screen: "Your plan", title: "Plan page", source: "src/screens/Plan.tsx" }, {
   goal: "Your goal",
   goal_none: "Not sure yet",
+  finish: "Finish your plan",
+  sec_why: "Why it matters",
+  sec_first: "First step",
   aiming: "What are you aiming for?",
   why: "Why does this matter to you?",
   reasons_aria: "Reasons",

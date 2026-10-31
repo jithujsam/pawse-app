@@ -14,7 +14,7 @@ import { toast } from "../ui/Toast";
  * and an if-then plan ("if I'm bored at 10pm, then I'll…") roughly doubles follow-through in studies
  * of implementation intentions. One entry per day; mood is required, words are optional.
  */
-const MOODS = [{ n: 1, e: "😞", l: t("insights.reflect.mood_1") }, { n: 2, e: "😕", l: t("insights.reflect.mood_2") }, { n: 3, e: "😐", l: t("insights.reflect.mood_3") }, { n: 4, e: "🙂", l: t("insights.reflect.mood_4") }, { n: 5, e: "😄", l: t("insights.reflect.mood_5") }];
+export const MOODS = [{ n: 1, e: "😞", l: t("insights.reflect.mood_1") }, { n: 2, e: "😕", l: t("insights.reflect.mood_2") }, { n: 3, e: "😐", l: t("insights.reflect.mood_3") }, { n: 4, e: "🙂", l: t("insights.reflect.mood_4") }, { n: 5, e: "😄", l: t("insights.reflect.mood_5") }];
 const PROMPTS = [
   t("insights.reflect.prompt_1"), t("insights.reflect.prompt_2"), t("insights.reflect.prompt_3"),
   t("insights.reflect.prompt_4"), t("insights.reflect.prompt_5"), t("insights.reflect.prompt_6"),

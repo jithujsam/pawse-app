@@ -36,18 +36,13 @@ export const homePaused = defineSection("home.paused", { screen: "Pet screen", t
 });
 // @copy-section-end home.paused
 
-// @copy-section home.week
-export const homeWeek = defineSection("home.week", { screen: "Pet screen", title: "Weekly summary", source: "src/screens/Home.tsx" }, {
-  title: "Weekly summary",
-  count_one: "{n} goal-met day",
-  count_other: "{n} goal-met days",
-  strip_aria: "This week",
-  day_aria: "{date}: {status}",
-});
-// @copy-section-end home.week
-
 // @copy-section home.today
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {
+  goal_met: "Goal met",
+  slipped: "I slipped",
+  urge: "Had an urge",
+  slip_logged: "Slip logged",
+  add_details: "Add details",
   slip_blocks_goal: "You already logged a slip today, so today can't be marked as goal met.",
 });
 // @copy-section-end home.today
@@ -123,12 +118,13 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
 // @copy-section calendar.stats
 export const calendarStats = defineSection("calendar.stats", { screen: "Journey", title: "Calendar totals", source: "src/screens/Journey.tsx" }, {
   title: "Journey",
-  so_far: "So far",
-  together: "Days together",
+  this_month: "This month",
+  met_of: "{met} of {days} days met",
+  runs: "Your runs",
+  current_run: "Current run",
+  best_run: "Best run",
+  notes: "Notes",
   goal_met_days: "Goal-met days",
-  healed: "Life healed",
-  months_short: "mo",
-  best: "Best streak",
   day: "day",
   days: "days",
 });

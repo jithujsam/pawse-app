@@ -50,22 +50,14 @@ export function CalendarSections() {
 
   return (
     <>
-      <motion.section className="card stack" aria-label={t("calendar.age.aria")} variants={rise}>
-        <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
-        {spark.length > 1
-          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>
-              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="var(--chart)" fillOpacity={0.12} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
-              <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
-            </svg>
-          : <p className="muted small">{spark.length === 1 ? t("calendar.age.one_point", { name: companion.name }) : t("calendar.age.none")}</p>}
-      </motion.section>
-
+      <motion.h2 variants={rise}>{t("calendar.stats.this_month")}</motion.h2>
       <motion.section className="card stack cal" variants={rise}>
         <div className="row">
           <button className="icon-btn" aria-label={t("calendar.month.previous")} onClick={() => monthShift(-1)}>{Icon.chevL}</button>
           <AnimatePresence mode="wait" initial={false}><motion.h2 key={cursor} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>{fmtMonth(`${cursor}-01`)}</motion.h2></AnimatePresence>
           <button className="icon-btn" aria-label={t("calendar.month.next")} onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
         </div>
+        <p className="muted small center-text">{t("calendar.stats.met_of", { met: month.met, days: month.met + month.urge + month.lapse + month.unrecorded })}</p>
         <div className="grid7" aria-hidden>{t("calendar.month.weekdays").split(" ").map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={cursor} className="grid7"
@@ -90,6 +82,18 @@ export function CalendarSections() {
         </div>
         <p className="muted small">{t("calendar.month.note")}</p>
       </motion.section>
+      {spark.length >= 7 && spark.some((v) => v > 0) && (
+      <motion.section className="card stack" aria-label={t("calendar.age.aria")} variants={rise}>
+        <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
+        {spark.length > 1
+          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>
+              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="var(--chart)" fillOpacity={0.12} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
+              <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
+            </svg>
+          : <p className="muted small">{spark.length === 1 ? t("calendar.age.one_point", { name: companion.name }) : t("calendar.age.none")}</p>}
+      </motion.section>
+
+      )}
       <Sheet open={sheet} onClose={() => setSheet(false)} label={t("calendar.day.aria", { date: fmtDay(sel) })}>
         <DayDetail day={sel} standalone />
       </Sheet>

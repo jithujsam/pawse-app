@@ -8,7 +8,12 @@ export const insightsHeader = defineSection("insights.header", { screen: "Insigh
 
 // @copy-section insights.week
 export const insightsWeek = defineSection("insights.week", { screen: "Insights", title: "This week and last", source: "src/screens/Report.tsx" }, {
-  title: "This week and last",
+  title: "This week",
+  summary: "Weekly summary",
+  count_one: "{n} goal-met day",
+  count_other: "{n} goal-met days",
+  strip_aria: "This week",
+  day_aria: "{date}: {status}",
   slips: "Slips",
   life_lost: "Life lost",
   months_short: "mo",
@@ -22,12 +27,8 @@ export const insightsWeek = defineSection("insights.week", { screen: "Insights",
 
 // @copy-section insights.urges
 export const insightsUrges = defineSection("insights.urges", { screen: "Insights", title: "Urges managed", source: "src/screens/Report.tsx" }, {
-  aria: "Urges",
-  title: "Urges managed",
-  this_week: "{n} this week",
-  empty: "When an urge hits, tap + and choose \"Having an urge\". Getting through urges is a skill, and it grows with practice.",
-  managed: "Managed",
-  noticed: "Noticed",
+  managed: "Urges managed",
+  of: "of {n}",
   all: "Every urge you've logged, you've managed.",
   some: "{managed} of {total} managed. The others are still useful: each one shows you more about when urges come.",
 });
@@ -36,7 +37,7 @@ export const insightsUrges = defineSection("insights.urges", { screen: "Insights
 // @copy-section insights.money
 export const insightsMoney = defineSection("insights.money", { screen: "Insights", title: "Money kept", source: "src/screens/Report.tsx" }, {
   aria: "Money",
-  title: "Money kept",
+  title: "Money",
   over_one: "vs your old pace, over {n} checked-in day",
   over_other: "vs your old pace, over {n} checked-in days",
   needs_slip: "Log a slip with an amount and this shows what you're keeping compared with before.",
@@ -56,7 +57,7 @@ export const insightsMoney = defineSection("insights.money", { screen: "Insights
 
 // @copy-section insights.when
 export const insightsWhen = defineSection("insights.when", { screen: "Insights", title: "When it happens", source: "src/screens/Report.tsx" }, {
-  title: "When it happens",
+  title: "Hardest times",
   peak: "Peak around {time}",
   empty: "A map of your risky hours appears after a few slips.",
   heat_aria: "Slips by weekday and time of day.",
@@ -97,7 +98,7 @@ export const insightsChart = defineSection("insights.chart", { screen: "Insights
 
 // @copy-section insights.forecast
 export const insightsForecast = defineSection("insights.forecast", { screen: "Insights", title: "If nothing changes", source: "src/screens/Report.tsx" }, {
-  title: "If nothing changes",
+  title: "Looking ahead",
   already: "{name} is already frail.",
   steady: "At the current pace {name} is not getting older.",
   pace_one: "At this pace, {name} reaches the frail stage in about 1 week.",
@@ -170,7 +171,7 @@ export const insightsGoalLine = defineSection("insights.goal_line", { screen: "I
 // @copy-section insights.patterns
 export const insightsPatterns = defineSection("insights.patterns", { screen: "Insights", title: "What your records show", source: "src/screens/WeeklyReview.tsx" }, {
   aria: "What your records show",
-  title: "What your records show",
+  title: "Patterns",
   not_enough_one: "Not enough yet to see a pattern. 1 more slip or urge logged and {app} will show what it notices. Until then, it won't guess.",
   not_enough_other: "Not enough yet to see a pattern. {n} more slips or urges logged and {app} will show what it notices. Until then, it won't guess.",
   nothing: "Nothing stands out yet. That's a real answer too: no single feeling, time or place dominates your records.",

@@ -1,23 +1,22 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { AdoptionMode, HabitClass } from "@detox/engine";
-import { LiveCompanion, PetPortrait } from "../Companion";
-import { DISCLAIMER, hatchLine, TONES, tonePreview } from "../copy";
+import { LiveCompanion } from "../Companion";
+import { DISCLAIMER, hatchLine } from "../copy";
 import { concernIn } from "../guard";
 import { t } from "../text";
 import { haptic } from "../haptics";
 import { remindersSupported, requestReminders } from "../notify";
 import { toast } from "../ui/Toast";
-import { fade, rise, spring, stagger } from "../motion";
-import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
+import { rise, spring } from "../motion";
+import { HABIT_CHOICES, inferClass, measureForLabel } from "../questions";
 import { actions, emptyPlan } from "../store";
-import { HelpSection, planConcern, WhySection } from "./Plan";
-import { SITUATIONS } from "../recovery";
 import { PetStep } from "./Pets";
+import { planConcern } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { NAMES, coatsFor } from "../pets";
-import { Burst, Button, GuardedInput, Icon, MultiSelect, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
+import { Burst, Button, Icon, plainOpts, Select, SelectOther, Switch } from "../ui/Controls";
 import type { Baseline, Personality, RecoveryPlan, Species, Tone } from "../types";
 
 export const BASELINES: { value: Baseline | "unsure"; label: string }[] = [
@@ -41,12 +40,13 @@ interface Draft {
   plan: RecoveryPlan;
 }
 const initial: Draft = {
-  step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", amountLabel: "",
+  step: 1, species: "dog", companionName: NAMES.dog[0], userName: "", what: "", cls: "custom", amountLabel: "",
   baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", breed: "", personality: "playful", adoption: "raise",
   plan: emptyPlan(),
 };
-const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.min(LAST - 1, Math.max(1, d.step)) }; } catch { return initial; } };
-const LAST = 10;
+const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.min(STEPS, Math.max(1, d.step)) }; } catch { return initial; } };
+const STEPS = 3; // the hatch is step 4
+const HATCH = STEPS + 1;
 
 export function Onboarding() {
   const [d, setD] = useState<Draft>(loadDraft);
@@ -54,15 +54,12 @@ export function Onboarding() {
   const [ownTime, setOwnTime] = useState(() => !REMINDERS.some((r) => r.time === loadDraft().reminder));
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
-  useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
 
   const go = (n: number) => { haptic.select(); up({ step: n }); };
   const name = d.companionName.trim() || NAMES[d.species][0];
   // Every typed field is checked as it is typed; Continue waits until none of them needs the safety note.
   const nameConcern = concernIn(d.companionName) ?? concernIn(d.userName);
   const whatConcern = concernIn(d.what);
-  const amountConcern = concernIn(d.amountLabel);
-  const setPlan = (p: Partial<RecoveryPlan>) => setD((s) => ({ ...s, plan: { ...s.plan, ...p } }));
   const planBlocked = planConcern(d.plan) !== null;
 
   const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
@@ -71,136 +68,69 @@ export function Onboarding() {
     actions.finishOnboarding({ species: d.species, coat: d.coat || coatsFor(d.species, d.breed)[0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan, adoption: d.adoption });
   };
 
-  const showChrome = d.step > 0 && d.step < LAST;
-  const canGoBack = d.step > 1 && d.step < LAST;
+  const showChrome = d.step < HATCH;
+  const canGoBack = d.step > 1 && d.step < HATCH;
   return (
     <div className="screen onboard">
       <div className="ob-top" data-hidden={!showChrome}>
         <button className="icon-btn" aria-label={t("ui.common.back")} onClick={() => go(d.step - 1)} disabled={!canGoBack}>{Icon.back}</button>
-        <div className="progress" aria-hidden><motion.i animate={{ width: `${(d.step / (LAST - 1)) * 100}%` }} transition={spring.calm} /></div>
-        <span className="small muted">{t("onboarding.chrome.progress", { step: Math.min(d.step, LAST - 1), total: LAST - 1 })}</span>
+        <div className="progress" aria-hidden><i style={{ width: `${(d.step / STEPS) * 100}%` }} /></div>
+        <span className="small muted">{t("onboarding.chrome.progress", { step: Math.min(d.step, STEPS), total: STEPS })}</span>
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={d.step} className="step" variants={fade} initial="enter" animate="center" exit="exit">
-          <motion.div className="step-inner" variants={stagger} initial="hidden" animate="show">
+      <div key={d.step} className="step">
+        <div className="step-inner">
 
-            {d.step === 1 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.pet.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.pet.intro")}</motion.p>
-              <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName, adoption: d.adoption }}
-                onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}), ...(p.adoption ? { adoption: p.adoption } : {}) })} /></motion.div>
-              <motion.label className="field" variants={rise}><span className="field-label">{t("onboarding.pet.call_you", { name: d.companionName.trim() || "they" })}</span>
-                <GuardedInput className="input" autoComplete="given-name" value={d.userName} placeholder={t("onboarding.pet.call_you_placeholder")} maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") go(2); }} />
-              </motion.label>
-              <motion.div variants={rise}><Button disabled={nameConcern !== null} onClick={() => go(2)}>{t("ui.common.continue")}</Button></motion.div>
-            </>)}
+          {d.step === 1 && (<>
+            <h1>{t("onboarding.pet.title")}</h1>
+            <p className="muted">{t("onboarding.pet.intro")}</p>
+            <PetStep compact pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName, adoption: d.adoption }}
+              onChange={(p) => {
+                // A new species brings its own first name, unless the person typed their own.
+                const swapped = p.species && p.species !== d.species && (!d.companionName.trim() || NAMES[d.species].includes(d.companionName));
+                up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}),
+                  ...(p.name !== undefined && !swapped ? { companionName: p.name } : {}), ...(swapped ? { companionName: NAMES[p.species!][0] } : {}) });
+              }} />
+            <Button disabled={nameConcern !== null || !d.companionName.trim()} onClick={() => go(2)}>{t("ui.common.continue")}</Button>
+          </>)}
 
-            {d.step === 2 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.change.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.change.intro")}</motion.p>
-              <motion.div className="field" variants={rise}><span className="field-label">{t("onboarding.change.field")}</span>
-                <SelectOther label={t("onboarding.change.aria")} options={plainOpts(HABIT_CHOICES)} value={d.what} onChange={pickWhat} placeholder={t("onboarding.change.placeholder")} otherPlaceholder={t("onboarding.change.own")} />
-              </motion.div>
-              <motion.div variants={rise}><Button disabled={!d.what.trim() || whatConcern !== null} onClick={() => go(3)}>{t("ui.common.continue")}</Button></motion.div>
-            </>)}
+          {d.step === 2 && (<>
+            <h1>{t("onboarding.change.title")}</h1>
+            <p className="muted">{t("onboarding.change.intro")}</p>
+            <div className="field"><span className="field-label">{t("onboarding.change.field")}</span>
+              <SelectOther label={t("onboarding.change.aria")} options={plainOpts(HABIT_CHOICES)} value={d.what} onChange={pickWhat} placeholder={t("onboarding.change.placeholder")} otherPlaceholder={t("onboarding.change.own")} />
+            </div>
+            <Button disabled={!d.what.trim() || whatConcern !== null} onClick={() => go(3)}>{t("ui.common.continue")}</Button>
+          </>)}
 
-            {d.step === 3 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.count.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.count.intro")}</motion.p>
-              <motion.div className="field" variants={rise}><span className="field-label">{t("onboarding.count.field")}</span>
-                <SelectOther label={t("onboarding.count.aria")} value={d.amountLabel} onChange={(v) => up({ amountLabel: v === NO_AMOUNT ? "" : v })} maxLength={40}
-                  options={[...plainOpts(AMOUNT_CHOICES.map((a) => a.label)), { value: NO_AMOUNT, label: t("onboarding.count.none") }]}
-                  placeholder={t("onboarding.count.none")} otherPlaceholder={t("onboarding.count.own")} />
-              </motion.div>
-              <motion.div className="field" variants={rise}><span className="field-label">{t("onboarding.count.often_field")}</span>
-                <Select label={t("onboarding.count.often_aria")} value={d.baseline ?? undefined} placeholder={t("onboarding.count.choose")} options={BASELINES} onChange={(b) => up({ baseline: b === "unsure" ? null : b })} />
-              </motion.div>
-              <motion.p className="muted small" variants={rise}>{t("onboarding.count.note")}</motion.p>
-              <motion.div variants={rise}><Button disabled={amountConcern !== null} onClick={() => go(4)}>{t("ui.common.continue")}</Button></motion.div>
-            </>)}
+          {d.step === 3 && (<>
+            <h1>{t("onboarding.reminders.title")}</h1>
+            <p className="muted">{t("onboarding.reminders.intro", { name })}</p>
+            <div className="field"><span className="field-label">{t("onboarding.reminders.field")}</span>
+              <Select label={t("onboarding.reminders.aria")} value={ownTime ? CUSTOM_TIME : d.reminder}
+                options={[...REMINDERS.map((r) => ({ value: r.time, label: t("onboarding.reminders.option", { label: r.label(), time: fmtTime(r.time) }) })), { value: CUSTOM_TIME, label: t("onboarding.reminders.other") }]}
+                onChange={(t) => { if (t === CUSTOM_TIME) setOwnTime(true); else { setOwnTime(false); up({ reminder: t }); } }} />
+              {ownTime && <TimePicker label={t("onboarding.reminders.aria")} value={d.reminder} onChange={(v) => up({ reminder: v })} />}
+            </div>
+            <h2>{t("onboarding.final.title")}</h2>
+            <div className="card stack">
+              <p>{DISCLAIMER}</p>
+              <p className="muted small">{t("safety.disclaimer.illustrative")}</p>
+            </div>
+            <Switch checked={adult} onChange={setAdult} label={t("onboarding.final.adult")} hint={t("onboarding.final.adult_hint")} />
+            <div className="stack tight">
+              <Button disabled={!adult} onClick={async () => {
+                const on = await requestReminders(d.reminder, d.tone, name);
+                if (!on) toast(remindersSupported ? t("notifications.permission.blocked") : t("notifications.permission.web"), { kind: "bad" });
+                go(HATCH);
+              }}>{t("onboarding.reminders.turn_on")}</Button>
+              <Button variant="text" disabled={!adult} onClick={() => go(HATCH)}>{t("ui.common.not_now")}</Button>
+            </div>
+          </>)}
 
-            {d.step === 4 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.triggers.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.triggers.intro")}</motion.p>
-              <motion.div className="field" variants={rise}><span className="field-label">{t("onboarding.triggers.field")}</span>
-                <MultiSelect label={t("onboarding.triggers.field")} options={plainOpts(SITUATIONS)} value={d.triggers} onChange={(triggers) => up({ triggers })} max={8} placeholder={t("onboarding.triggers.placeholder")} />
-              </motion.div>
-              <motion.div variants={rise}><Button onClick={() => { setPlan({ situations: [...new Set([...d.plan.situations, ...d.triggers.map((x) => x.trim()).filter(Boolean)])].slice(0, 12) }); up({ triggers: [] }); go(5); }}>{d.triggers.some((x) => x.trim()) ? t("ui.common.continue") : t("ui.common.skip_for_now")}</Button></motion.div>
-            </>)}
-
-            {d.step === 5 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.why.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.why.intro")}</motion.p>
-              <motion.div className="stack" variants={rise}><WhySection plan={d.plan} set={setPlan} situations={false} /></motion.div>
-              <motion.div className="stack tight" variants={rise}>
-                <Button disabled={planBlocked} onClick={() => go(6)}>{t("ui.common.continue")}</Button>
-                <Button variant="text" onClick={() => go(7)}>{t("ui.common.skip_for_now")}</Button>
-              </motion.div>
-            </>)}
-
-            {d.step === 6 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.help.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.help.intro")}</motion.p>
-              <motion.div className="stack" variants={rise}><HelpSection plan={d.plan} set={setPlan} cls={d.cls} /></motion.div>
-              <motion.div className="stack tight" variants={rise}>
-                <Button disabled={planBlocked} onClick={() => go(7)}>{t("ui.common.continue")}</Button>
-                <Button variant="text" onClick={() => go(7)}>{t("ui.common.skip_for_now")}</Button>
-              </motion.div>
-            </>)}
-
-            {d.step === 7 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.voice.title", { name })}</motion.h1>
-              <motion.div className="preview" variants={rise}>
-                <PetPortrait species={d.species} coat={d.coat} breed={d.breed} stage="young" mood={d.tone === "brutal" ? "idle" : "happy"} age={14} size={110} />
-                <AnimatePresence mode="wait">
-                  <motion.p key={d.tone} className="speech" initial={{ opacity: 0, scale: 0.92, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring.bouncy}>
-                    {tonePreview(d.tone, name)}
-                  </motion.p>
-                </AnimatePresence>
-              </motion.div>
-              <motion.div className="field" variants={rise}>
-                <span className="field-label">{t("onboarding.voice.field")}</span>
-                <Select label={t("onboarding.voice.field")} value={d.tone} options={TONES.map((t) => ({ value: t.id, label: t.label }))} onChange={(tone) => up({ tone })} />
-              </motion.div>
-              <motion.p className="muted small" variants={rise}>{t("onboarding.voice.note")}</motion.p>
-              <motion.div variants={rise}><Button onClick={() => go(8)}>{t("ui.common.continue")}</Button></motion.div>
-            </>)}
-
-            {d.step === 8 && (<>
-              <motion.div className="bell" variants={rise} animate={{ rotate: [0, -14, 12, -8, 6, 0] }} transition={{ duration: 1, delay: 0.4 }}>{Icon.bell}</motion.div>
-              <motion.h1 variants={rise}>{t("onboarding.reminders.title")}</motion.h1>
-              <motion.p className="muted" variants={rise}>{t("onboarding.reminders.intro", { name })}</motion.p>
-              <motion.div className="field" variants={rise}><span className="field-label">{t("onboarding.reminders.field")}</span>
-                <Select label={t("onboarding.reminders.aria")} value={ownTime ? CUSTOM_TIME : d.reminder}
-                  options={[...REMINDERS.map((r) => ({ value: r.time, label: t("onboarding.reminders.option", { label: r.label(), time: fmtTime(r.time) }) })), { value: CUSTOM_TIME, label: t("onboarding.reminders.other") }]}
-                  onChange={(t) => { if (t === CUSTOM_TIME) setOwnTime(true); else { setOwnTime(false); up({ reminder: t }); } }} />
-                {ownTime && <TimePicker label={t("onboarding.reminders.aria")} value={d.reminder} onChange={(v) => up({ reminder: v })} />}
-              </motion.div>
-              <motion.div className="stack tight" variants={rise}>
-                <Button onClick={async () => {
-                  const on = await requestReminders(d.reminder, d.tone, name);
-                  if (!on) toast(remindersSupported ? t("notifications.permission.blocked") : t("notifications.permission.web"), { kind: "bad" });
-                  go(9);
-                }}>{t("onboarding.reminders.turn_on")}</Button>
-                <Button variant="text" onClick={() => go(9)}>{t("ui.common.not_now")}</Button>
-              </motion.div>
-            </>)}
-
-            {d.step === 9 && (<>
-              <motion.h1 variants={rise}>{t("onboarding.final.title")}</motion.h1>
-              <motion.div className="card stack" variants={rise}>
-                <p>{DISCLAIMER}</p>
-                <p className="muted small">{t("safety.disclaimer.illustrative")}</p>
-              </motion.div>
-              <motion.div variants={rise}><Switch checked={adult} onChange={setAdult} label={t("onboarding.final.adult")} hint={t("onboarding.final.adult_hint")} /></motion.div>
-              <motion.div variants={rise}><Button disabled={!adult} onClick={() => go(10)}>{t("onboarding.final.meet", { name })}</Button></motion.div>
-            </>)}
-
-            {d.step === 10 && <Hatch species={d.species} coat={d.coat} breed={d.breed} name={name} tone={d.tone} onDone={finish} />}
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
+          {d.step === HATCH && <Hatch species={d.species} coat={d.coat} breed={d.breed} name={name} tone={d.tone} onDone={finish} />}
+        </div>
+      </div>
     </div>
   );
 }

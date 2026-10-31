@@ -75,8 +75,8 @@ export function Me() {
       {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
 
       <motion.div variants={rise}>
-        <Group title={t("me.profile.g_help")}>
-          <Row icon={Icon.paw} label={t("help.tutorial.label")} onClick={() => { haptic.tap(); openTutorial(); }} />
+        <Group title={t("me.profile.g_pet")}>
+          <Row icon={Icon.paw} label={t("me.profile.row_pet")} onClick={() => setPage("pet")} />
         </Group>
       </motion.div>
       <motion.div variants={rise}>
@@ -87,7 +87,7 @@ export function Me() {
         </Group>
       </motion.div>
       <motion.div variants={rise}>
-        <Group title={t("me.profile.g_personal")}>
+        <Group title={t("me.profile.g_experience")}>
           <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
           <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
           <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
@@ -101,7 +101,8 @@ export function Me() {
         </Group>
       </motion.div>
       <motion.div variants={rise}>
-        <Group title={t("me.profile.g_app")}>
+        <Group title={t("me.profile.g_help")}>
+          <Row icon={Icon.paw} label={t("help.tutorial.label")} onClick={() => { haptic.tap(); openTutorial(); }} />
           <Row icon={Icon.download} label={t("me.profile.row_updates")} value={APP_VERSION.name} onClick={() => setPage("updates")}
             badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
           <Row icon={Icon.info} label={t("me.profile.row_about")} onClick={() => setPage("about")} />

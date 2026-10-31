@@ -7,7 +7,7 @@ import { NewPassword } from "./screens/Account";
 import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
 import { trackSummary } from "./progress";
-import { trackState } from "./tracks";
+import { listTracks, trackState } from "./tracks";
 import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, viewCompanion, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
@@ -118,7 +118,9 @@ function Shell() {
   const view = useActiveView();
   const [tab, setTab] = useState<Tab>("pets");
   // Inside the Pets tab: the grid, or one recovery track (the companion home screen).
-  const [track, setTrack] = useState(false);
+  // With exactly one active pet, the app opens straight to it (nothing stored changes).
+  const activeTracks = listTracks(data, ["active"]).filter((x) => x.companion).length;
+  const [track, setTrack] = useState(() => activeTracks === 1);
   const openTrack = () => { setTab("pets"); setTrack(true); };
   const [quick, setQuick] = useState(false);
   // The plan page for the pet chosen in the + menu.
@@ -252,7 +254,7 @@ function Shell() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" variants={fade} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<GhostPage />}>
-              {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
+              {tab === "pets" && (track && view ? <WithTrack><Home onBack={activeTracks > 1 ? () => { dir.current = -1; setTrack(false); } : undefined} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
               {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
               {tab === "insights" && <WithTrack><Report /></WithTrack>}
               {tab === "you" && <WithTrack><Me /></WithTrack>}

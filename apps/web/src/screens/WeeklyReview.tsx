@@ -44,7 +44,7 @@ export function WeeklyReview() {
 
   return (
     <motion.section className="card stack" aria-label={t("insights.review.title")} variants={rise}>
-      <h2>{t("insights.review.title")}</h2>
+      <h3>{t("insights.review.title")}</h3>
       <div className="segmented" role="tablist" aria-label={t("insights.review.which")}>
         {weeks.map((w) => (
           <button key={w.value} type="button" role="tab" aria-selected={which === w.value} className="seg" onClick={() => setWhich(w.value)}>
@@ -110,7 +110,7 @@ export function Observations() {
   const tried = strategyResults(data, habit.id).filter((s) => s.total >= 2);
   return (
     <motion.section className="card stack" aria-label={t("insights.patterns.aria")} variants={rise}>
-      <h2>{t("insights.patterns.title")}</h2>
+      
       {o.items.length === 0
         ? <p className="muted">{o.needed > 0
             ? (o.needed === 1 ? t("insights.patterns.not_enough_one") : t("insights.patterns.not_enough_other", { n: o.needed }))

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { HabitClass } from "@detox/engine";
 import { concernInAny, hasCrisis } from "../guard";
@@ -75,13 +75,28 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
   if (!habit) return null;
   const set = (p: Partial<RecoveryPlan>) => setPlan((x) => ({ ...x, ...p }));
   const blocked = planConcern(plan) !== null;
+  const refs = { why: useRef<HTMLElement>(null), first: useRef<HTMLElement>(null), ifThen: useRef<HTMLElement>(null) };
+  const missing = [
+    plan.reasons.length === 0 && { k: "why" as const, label: t("sheets.plan.sec_why") },
+    !plan.firstStep && { k: "first" as const, label: t("sheets.plan.sec_first") },
+    plan.ifThen.length === 0 && { k: "ifThen" as const, label: t("sheets.plan.if_then") },
+  ].filter((x): x is { k: "why" | "first" | "ifThen"; label: string } => !!x);
   return (
     <div className="stack">
       <p className="track-context small"><span className="muted">{t("sheets.plan.for")}</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
       <p className="muted">{t("sheets.plan.intro")}</p>
-      <section className="card stack"><WhySection plan={plan} set={set} /></section>
-      <section className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
-      <section className="card stack" aria-label={t("sheets.plan.if_then_aria")}>
+      {missing.length > 0 && (
+        <section className="card stack" aria-label={t("sheets.plan.finish")}>
+          <h2>{t("sheets.plan.finish")}</h2>
+          <div className="group-body">{missing.map((m) => (
+            <button key={m.k} type="button" className="srow" onClick={() => { haptic.select(); refs[m.k].current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+              <span className="srow-label">{m.label}</span><span className="srow-chev" aria-hidden>{Icon.chevR}</span>
+            </button>))}</div>
+        </section>
+      )}
+      <section ref={refs.why} className="card stack"><WhySection plan={plan} set={set} /></section>
+      <section ref={refs.first} className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
+      <section ref={refs.ifThen} className="card stack" aria-label={t("sheets.plan.if_then_aria")}>
         <h2>{t("sheets.plan.if_then")}</h2>
         {plan.ifThen.length === 0
           ? <p className="muted small">{t("sheets.plan.if_then_empty")}</p>
