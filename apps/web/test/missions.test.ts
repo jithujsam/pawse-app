@@ -60,9 +60,15 @@ describe("adoption", () => {
     expect(j(c.id).missions[0].id).toBe("raise_name");
     expect(m(c.id).healthCap).toBe(70);
   });
-  it("rescue is for dogs only: a cat asked to be a rescue is raised", () => {
+  it("rescue is open to every model and breed: a cat, a fox and a husky can all be rescued", () => {
     actions.createTrack({ name: "Cards", cls: "impulse_buying", unit: "money", species: "cat", companionName: "Miso", adoption: "rescue" });
-    expect(getData().companions.at(-1)!.adoption).toBe("raise");
+    expect(getData().companions.at(-1)!.adoption).toBe("rescue");
+    actions.createTrack({ name: "Pins", cls: "doomscrolling", unit: "minutes", species: "fox", companionName: "Ember", adoption: "rescue" });
+    expect(getData().companions.at(-1)!.adoption).toBe("rescue");
+    actions.createTrack({ name: "Vape", cls: "smoking", unit: "count", species: "dog", breed: "husky", companionName: "Koda", adoption: "rescue" });
+    const c = getData().companions.at(-1)!;
+    expect(c.adoption).toBe("rescue");
+    expect(c.breed).toBe("husky");
   });
 });
 

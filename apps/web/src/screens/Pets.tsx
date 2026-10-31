@@ -38,7 +38,9 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   const tracks = useMemo(() => listTracks(data, ["active", "paused"]).filter((t) => t.companion).map(({ habit }) => {
     const view = viewCompanion(data, habit.companionId, t0);
     const status = dayStatus(data, habit.id, t0, t0);
-    return { habit, view, status, paused: trackState(data, habit.id).status === "paused", wellness: companionMissions(data, habit.companionId, t0)?.healthCap ?? 100 };
+    const missions = companionMissions(data, habit.companionId, t0);
+    // A rescue shows its conditions here too, the same as on the pet's own screen.
+    return { habit, view, status, paused: trackState(data, habit.id).status === "paused", wellness: missions?.healthCap ?? 100, condition: missions?.mode === "rescue" ? missions.traits : undefined };
   }), [data, t0]);
   const open = (id: string) => { haptic.tap(); actions.selectTrack(id); onOpen(id); };
 
@@ -191,7 +193,7 @@ export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p
   );
 }
 
-/** Raise or rescue. Rescue is for dogs only. */
+/** Raise or rescue, for every pet and breed. */
 function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
   const canRescue = RESCUE_SPECIES.includes(pet.species);
   const mode: AdoptionMode = canRescue && pet.adoption === "rescue" ? "rescue" : "raise";

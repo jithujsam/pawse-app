@@ -433,7 +433,7 @@ export interface Deduction {
   streakBefore: number;
 }
 
-/** A new pet's adoption fields. Rescue & Rebuild is for dogs only; any other species is raised. */
+/** A new pet's adoption fields. Rescue & Rebuild is open to every species. */
 export const adoptionFields = (species: Species, adoption?: AdoptionMode): Pick<Companion, "adoption" | "missions"> =>
   ({ adoption: adoption === "rescue" && RESCUE_SPECIES.includes(species) ? "rescue" : "raise", missions: emptyMemory() });
 

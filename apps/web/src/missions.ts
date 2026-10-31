@@ -11,8 +11,8 @@ import type { AppData, Companion, MissionMemory, Species } from "./types";
  * the app's data into it. Only the pop-ups already shown are stored.
  */
 
-/** Species that can be adopted as a rescue. Others are always raised. */
-export const RESCUE_SPECIES: readonly Species[] = ["dog"];
+/** Species that can be adopted as a rescue: every pet, whatever its model or breed. */
+export const RESCUE_SPECIES: readonly Species[] = ["dog", "cat", "fox"];
 
 export const emptyMemory = (): MissionMemory => ({ v: MISSION_SET_VERSION, done: [], seen: [] });
 export const memoryOf = (c: Companion | undefined): MissionMemory => ({ ...emptyMemory(), ...(c?.missions ?? {}) });

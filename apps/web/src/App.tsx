@@ -30,7 +30,11 @@ import { QuickSheet } from "./screens/QuickSheet";
 import { PlanPage } from "./screens/Plan";
 import { SubPage } from "./ui/Settings";
 import { Icon, PawLoader } from "./ui/Controls";
-import { OPEN_QUICK, updateWidget } from "./widget";
+import { OPEN_QUICK, updateWidget, type WidgetPet } from "./widget";
+import { widgetFrames } from "./widget-art";
+import { moodFor } from "./Companion";
+import { dayStatus } from "./recovery";
+import { companionMissions } from "./missions";
 import { today } from "./dates";
 import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
@@ -166,15 +170,38 @@ function Shell() {
     const t0 = today();
     // With app lock on, the home screen widgets show each pet with no mood, so nothing about today sits outside the PIN.
     const locked = vault.hasPin();
+    let live = true;
     const pets = data.companions.flatMap((c) => {
       const habit = data.habits.find((h) => h.companionId === c.id);
-      if (!habit || viewCompanion(data, c.id, t0).dead) return [];
+      const view = viewCompanion(data, c.id, t0);
+      if (!habit || view.dead) return [];
       const status = trackSummary(data, habit.id, t0).today;
       const paused = trackState(data, habit.id).status === "paused";
       const mood = locked || paused ? "idle" : status === "lapse" ? "sad" : status === "met" || status === "urge" ? "happy" : "idle";
-      return [{ species: c.species, mood, ...(locked ? {} : { name: c.name }) } as const];
+      // The pet as the Pets tab draws it: the same mood, and a rescue's conditions. A locked app shows neither.
+      const day = dayStatus(data, habit.id, t0, t0);
+      const checked = day === "met" || day === "lapse" || day === "urge";
+      const missions = locked ? null : companionMissions(data, c.id, t0);
+      const look = {
+        species: c.species, coat: c.coat, breed: c.breed, stage: view.stage, age: view.age,
+        mood: locked ? "idle" as const : moodFor(view.stage, { checkedToday: checked, slippedToday: day === "lapse", age: view.age, notTracking: paused || day === "rest" || day === "paused" }),
+        condition: missions?.mode === "rescue" ? missions.traits : undefined,
+      };
+      return [{ pet: { species: c.species, ...(c.breed ? { breed: c.breed } : {}), mood, ...(locked ? {} : { name: c.name }) } as WidgetPet, look }];
     });
-    updateWidget(pets, t0);
+    // Pictures of each pet as it is now. Until they are ready, or if the phone can't draw 3D, the widget keeps its drawn art.
+    void (async () => {
+      const out: WidgetPet[] = [];
+      for (const [i, { pet, look }] of pets.entries()) {
+        if (i >= 6) { out.push(pet); continue; }
+        const frames = await widgetFrames(look);
+        const idleFrames = frames && look.mood !== "idle" ? await widgetFrames({ ...look, mood: "idle" }) : null;
+        out.push({ ...pet, ...(frames ? { frames } : {}), ...(idleFrames ? { idleFrames } : {}) });
+        if (!live) return;
+      }
+      if (live) updateWidget(out, t0);
+    })();
+    return () => { live = false; };
   }, [data, pinTick]);
   // With no recovery track left (removed on another device, say), only the Pets grid makes sense.
   const hasTrack = !!view?.habit;
