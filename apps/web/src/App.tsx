@@ -120,19 +120,6 @@ function Shell() {
   // The plan page for the pet chosen in the + menu.
   const [planHabit, setPlanHabit] = useState<string | null>(null);
   const dir = useRef(1);
-  const appRef = useRef<HTMLDivElement>(null);
-  // The shell eases in when the app opens and again when you come back to it after a while away.
-  useEffect(() => {
-    let hiddenAt = 0;
-    const onVis = () => {
-      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
-      const el = appRef.current;
-      if (!el || !hiddenAt || Date.now() - hiddenAt < 2000) return;
-      el.classList.remove("app-wake"); void el.offsetWidth; el.classList.add("app-wake");
-    };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
-  }, []);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
   const { session, ready, recovering } = useSession();
   const updateDot = useUpdatePending() !== null;
@@ -149,8 +136,6 @@ function Shell() {
   useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
   const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
   const lifted = useRunLift(ready && (!session || data.settings.onboarded || syncSettled || waited));
-  const species = view?.companion.species;
-  useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
   useEffect(() => { applyLook(theme, accent); }, [theme, accent]);
   const uid = session?.user.id;
@@ -220,7 +205,7 @@ function Shell() {
   }
 
   return (
-    <div className="app app-wake" ref={appRef}>
+    <div className="app">
       <div className="stage">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" variants={fade} initial="enter" animate="center" exit="exit">

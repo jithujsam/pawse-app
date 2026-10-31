@@ -54,7 +54,6 @@ export function Onboarding() {
   const [ownTime, setOwnTime] = useState(() => !REMINDERS.some((r) => r.time === loadDraft().reminder));
   const up = (p: Partial<Draft>) => setD((s) => ({ ...s, ...p }));
   useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
-  useEffect(() => { document.documentElement.dataset.pet = d.species; }, [d.species]);
 
   const go = (n: number) => { haptic.select(); up({ step: n }); };
   const name = d.companionName.trim() || NAMES[d.species][0];

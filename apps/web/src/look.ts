@@ -10,10 +10,9 @@ if (typeof matchMedia !== "undefined") matchMedia("(prefers-color-scheme: dark)"
 export function applyLook(theme: Settings["theme"] = "system", accent: Settings["accent"] = "pet") {
   const root = document.documentElement;
   if (theme === "system") delete root.dataset.theme; else root.dataset.theme = theme;
-  if (accent === "pet") delete root.dataset.accent; else root.dataset.accent = accent;
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   // The status bar follows the page's own ground colour: pure black in dark mode, so AMOLED pixels stay off.
-  const fallback = dark ? "#000000" : "#faf7f2";
+  const fallback = dark ? "#000000" : "#FAFAF9";
   const paint = () => document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", groundHex() ?? fallback));
   paint();
   requestAnimationFrame(paint);
