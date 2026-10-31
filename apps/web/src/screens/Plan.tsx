@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import type { HabitClass } from "@detox/engine";
 import { concernInAny, hasCrisis } from "../guard";
 import { t } from "../text";
 import { haptic } from "../haptics";
@@ -24,40 +23,6 @@ const GOAL_OPTIONS: Opt<GoalChoice>[] = [...GOALS.map((g) => ({ value: g.id, lab
 
 export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; onChange: (g: RecoveryPlan["goal"]) => void }) {
   return <Select label={t("sheets.plan.goal")} value={value ?? "none"} options={GOAL_OPTIONS} onChange={(g) => onChange(g === "none" ? null : g)} />;
-}
-
-/**
- * Why it matters and where it's hard. Onboarding step one of the plan leaves out hard situations
- * (situations={false}): onboarding has just asked what sets it off, and asking twice adds nothing.
- */
-export function WhySection({ plan, set, situations = true }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; situations?: boolean }) {
-  return (<>
-    <div className="field"><span className="field-label">{t("sheets.plan.aiming")}</span><GoalPicker value={plan.goal} onChange={(goal) => set({ goal })} /></div>
-    <div className="field"><span className="field-label">{t("sheets.plan.why")}</span>
-      <MultiSelect label={t("sheets.plan.reasons_aria")} options={plainOpts(REASONS)} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder={t("sheets.plan.pick_fit")} /></div>
-    {situations && <div className="field"><span className="field-label">{t("sheets.plan.hardest")}</span>
-      <MultiSelect label={t("sheets.plan.hard_aria")} options={plainOpts(SITUATIONS)} value={plan.situations} onChange={(v) => set({ situations: v })} max={8} placeholder={t("sheets.plan.pick_fit")} /></div>}
-  </>);
-}
-
-/** A first step and what helps. Onboarding step two of the plan. */
-export function HelpSection({ plan, set, cls = "custom" }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; cls?: HabitClass }) {
-  return (<>
-    <div className="field">
-      <span className="field-label">{t("sheets.plan.first_step")}</span>
-      <SelectOther label={t("sheets.plan.first_step_aria")} options={plainOpts(FIRST_STEPS[cls])} value={plan.firstStep} onChange={(firstStep) => set({ firstStep })} maxLength={140} placeholder={t("sheets.plan.first_step_placeholder")} otherPlaceholder={t("sheets.plan.first_step_own")} />
-    </div>
-    <div className="field">
-      <span className="field-label">{t("sheets.plan.try_first")}</span>
-      <MultiSelect label={t("sheets.plan.strategies_aria")} allowOther={false} options={STRATEGIES.map((s) => ({ value: s.id, label: `${s.title}: ${s.hint}` }))}
-        value={plan.strategies} onChange={(v) => set({ strategies: v as RecoveryPlan["strategies"] })} max={STRATEGIES.length} placeholder={t("sheets.plan.strategies_placeholder")} />
-      <span className="muted small">{t("sheets.plan.strategies_note")}</span>
-    </div>
-    <label className="field"><span className="field-label">{t("sheets.plan.reach")}</span>
-      <GuardedInput className="input" autoComplete="off" maxLength={40} value={plan.supportName} placeholder={t("sheets.plan.reach_placeholder")} onChange={(e) => set({ supportName: e.target.value })} />
-      <span className="muted small">{t("sheets.plan.reach_note")}</span>
-    </label>
-  </>);
 }
 
 /**

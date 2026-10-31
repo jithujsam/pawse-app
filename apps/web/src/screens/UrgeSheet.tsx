@@ -166,7 +166,6 @@ function Checklist({ items }: { items: string[] }) {
 
 /** Paced breathing, 4 in, 4 hold, 6 out, for as long as the person wants. Counts up, never down. */
 function Breathing() {
-  const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
   const reduce = useReducedMotion();

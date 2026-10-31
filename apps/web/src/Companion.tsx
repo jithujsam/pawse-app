@@ -20,7 +20,6 @@ export type Gesture =
 export type Reaction = "petted" | "giggle" | "dizzy" | "stroke";
 
 /** The art's own colour per species, used for small accents (age bar, chart). */
-export const ACCENT: Record<Species, string> = { dog: "#c98a4b", cat: "#8f8f9c", fox: "#e47c3c" };
 
 /** Grey creeps into the face with age, softly: the companion should always still look like itself. */
 
