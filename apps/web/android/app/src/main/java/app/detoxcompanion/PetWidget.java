@@ -106,8 +106,11 @@ public abstract class PetWidget extends AppWidgetProvider {
         if (pet == null) return p;
         String species = pet.optString("species", "dog");
         String mood = today ? pet.optString("mood", "idle") : "idle";
+        String breed = pet.optString("breed", "");
         for (int i = 0; i < (still ? 1 : FRAMES); i++) {
-            int art = context.getResources().getIdentifier("widget_" + species + "_" + mood + "_" + i, "drawable", context.getPackageName());
+            // A breed with its own art uses it (widget_dog_husky_happy_0); otherwise the species' art.
+            int art = breed.isEmpty() ? 0 : context.getResources().getIdentifier("widget_" + species + "_" + breed + "_" + mood + "_" + i, "drawable", context.getPackageName());
+            if (art == 0) art = context.getResources().getIdentifier("widget_" + species + "_" + mood + "_" + i, "drawable", context.getPackageName());
             if (art != 0) p.setImageViewResource(FRAME_IDS[i], art);
         }
         String name = pet.optString("name", "");
@@ -129,7 +132,7 @@ public abstract class PetWidget extends AppWidgetProvider {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(PAGE, 0);
     }
 
-    /** The stored pets as a JSON array of {species, mood, name?}. Empty when nothing has been written yet. */
+    /** The stored pets as a JSON array of {species, breed?, mood, name?}. Empty when nothing has been written yet. */
     static JSONArray pets(Context context) {
         SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         try {

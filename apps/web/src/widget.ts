@@ -4,7 +4,8 @@ import type { Species } from "./types";
 /** What each home screen pet widget shows: one card per pet, with its species, mood and name. Android only. */
 export type WidgetMood = "happy" | "idle" | "sad";
 /** `name` is left out while the app is locked, so no name sits outside the PIN. */
-export interface WidgetPet { species: Species; mood: WidgetMood; name?: string }
+/** `breed` picks the breed's own widget art (a Husky is not drawn as a Shiba Inu). */
+export interface WidgetPet { species: Species; breed?: string; mood: WidgetMood; name?: string }
 interface WidgetPlugin { update(o: { pets: WidgetPet[]; day: string }): Promise<void> }
 const Widget = registerPlugin<WidgetPlugin>("Widget");
 
