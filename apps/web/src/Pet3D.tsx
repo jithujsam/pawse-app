@@ -184,9 +184,17 @@ function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
   return { balls, glints, lids, brows, tears, tongue, eyeR, eyes: eyes.map((e) => e.c) };
 }
 
-interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean }
+/**
+ * How well a rescued pet is, per trait, 0..1 (1 = well; missing = well). Each trait moves its own part (PRD §23.7):
+ * coat dulls the fur, energy slows the animation, posture lowers the head, calm flattens the ears, play stills the
+ * tail, trust turns the head away from you.
+ */
+export type PetCondition = Partial<Record<"coat" | "posture" | "energy" | "trust" | "calm" | "curiosity" | "play" | "rest", number>>;
+const well = (c: PetCondition | undefined, k: keyof PetCondition) => Math.max(0, Math.min(1, c?.[k] ?? 1));
 
-function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced }: Props) {
+interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean; condition?: PetCondition }
+
+function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced, condition }: Props) {
   const isHusky = species === "dog" && breed === "husky";
   const gltf = useLoader(GLTFLoader, modelFor(species, breed), (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
   useEffect(() => markPet3d("ok"), []);
@@ -240,6 +248,8 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
   // Coat colour and age greying, applied to cloned materials so other instances are untouched.
   useEffect(() => {
     const grey = STAGE_GREY[stage];
+    // A rough coat: duller and darker, never a different colour.
+    const rough = 1 - well(condition, "coat");
     // The Husky is a different model, so its fur is its own material, and its coats are its own colours.
     const colours = COAT[isHusky ? "husky" : species];
     const tint = new THREE.Color(colours[coat ?? ""] ?? Object.values(colours)[0]);
@@ -254,14 +264,14 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
         const isFur = species === "cat" || m.name === furName;
         const base = isFur ? tint.clone() : (m.userData.base as THREE.Color).clone();
         // Age: the coat loses colour and lightens a touch, like a greying muzzle, not a tint.
-        if (isFur || m.name === "Main_Light") { const hsl = { h: 0, s: 0, l: 0 }; base.getHSL(hsl); base.setHSL(hsl.h, hsl.s * (1 - grey * 1.4), Math.min(0.9, hsl.l + grey * 0.12)); }
+        if (isFur || m.name === "Main_Light") { const hsl = { h: 0, s: 0, l: 0 }; base.getHSL(hsl); base.setHSL(hsl.h, hsl.s * (1 - grey * 1.4) * (1 - rough * 0.55), Math.min(0.9, hsl.l + grey * 0.12) * (1 - rough * 0.3)); }
         m.color.copy(base);
         if (species === "cat" && m.userData.map) { m.map = coat === "tuxedo" ? tuxedoMap(m.userData.map) : m.userData.map; m.needsUpdate = true; }
         m.roughness = 0.85; m.metalness = 0;
       }
     });
     catEyes.forEach((e) => (e.visible = coat === "tuxedo"));
-  }, [scene, species, coat, stage, catEyes, isHusky]);
+  }, [scene, species, coat, stage, catEyes, isHusky, condition?.coat]);
 
   // Cross-fade between clips whenever the state changes.
   const current = useRef<THREE.AnimationAction | null>(null);
@@ -340,11 +350,15 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
       });
     }
     // Ears perk or droop; the tail wags when it is glad and hangs when it is not.
-    ears.forEach((b, i) => pose(b, (bb) => { bb.rotateX(-e.ears * 0.5); bb.rotateZ((i === 0 ? 1 : -1) * e.ears * 0.25); }));
-    tail.forEach((b, i) => pose(b, (bb) => { bb.rotateY(live ? Math.sin(t * 9 - i) * 0.5 * e.tail * (1 - i * 0.3) : 0); bb.rotateX(e.tail > 0.3 ? 0 : 0.35 * (1 - e.tail)); }));
+    // A fearful rescue keeps its ears back; one that hasn't learned to play barely moves its tail.
+    const earLift = e.ears - (1 - well(condition, "calm")) * 0.7;
+    const wag = e.tail * (0.15 + 0.85 * well(condition, "play"));
+    ears.forEach((b, i) => pose(b, (bb) => { bb.rotateX(-earLift * 0.5); bb.rotateZ((i === 0 ? 1 : -1) * earLift * 0.25); }));
+    tail.forEach((b, i) => pose(b, (bb) => { bb.rotateY(live ? Math.sin(t * 9 - i) * 0.5 * wag * (1 - i * 0.3) : 0); bb.rotateX(wag > 0.3 ? 0 : 0.35 * (1 - wag)); }));
     if (mood !== "dying") pose(head, (b) => {
-      b.rotateX(STAGE_DROOP[stage] + (mood === "sick" || mood === "sad" ? 0.08 : 0) - (live ? Math.sin(t * 6) * 0.05 * e.bob : 0));
-      b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35);
+      b.rotateX(STAGE_DROOP[stage] + (1 - well(condition, "posture")) * 0.24 + (mood === "sick" || mood === "sad" ? 0.08 : 0) - (live ? Math.sin(t * 6) * 0.05 * e.bob : 0));
+      // Low trust: it looks away rather than at you.
+      b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35 * well(condition, "trust") + (1 - well(condition, "trust")) * 0.45);
       b.rotateZ(live ? Math.sin(t * 1.1) * 0.14 * e.tilt + 0.1 * e.tilt : 0.1 * e.tilt);
       if (stage === "baby") b.scale.multiplyScalar(1.22);
     });
@@ -355,9 +369,9 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
     if (reduced) return;
     const step = Math.min(dt, 0.05);
     const sickSlow = mood === "sick" || mood === "sad" ? 0.7 : 1;
-    mixer.update(step * STAGE_SPEED[stage] * sickSlow);
+    mixer.update(step * STAGE_SPEED[stage] * sickSlow * (0.55 + 0.45 * well(condition, "energy")));
     drive(state.clock.elapsedTime, step, true);
-    if (mood !== "dying" && species !== "cat") pose(neck, (b) => b.rotateX(STAGE_DROOP[stage] * 0.5));
+    if (mood !== "dying" && species !== "cat") pose(neck, (b) => b.rotateX(STAGE_DROOP[stage] * 0.5 + (1 - well(condition, "posture")) * 0.12));
     if (flinch.current > 0) {
       flinch.current = Math.max(0, flinch.current - step);
       scene.rotation.z = Math.sin(flinch.current * 40) * 0.05 * flinch.current * 2;

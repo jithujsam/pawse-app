@@ -990,7 +990,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 39,
-      "end": 51,
+      "end": 59,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1038,6 +1038,50 @@
           "id": "pets.picker.personality",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "pets.picker.adoption",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.raise",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.rescue",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.raise_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.rescue_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.goal",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.picker.goal_days",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "pets.picker.goal_hint",
+          "kind": "text",
+          "placeholders": [
+            "days"
+          ]
         }
       ]
     },
@@ -1047,8 +1091,8 @@
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 53,
-      "end": 63,
+      "start": 61,
+      "end": 71,
       "entries": [
         {
           "id": "pets.add.label",

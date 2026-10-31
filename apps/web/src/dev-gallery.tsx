@@ -8,11 +8,11 @@ import { blank } from "./persist";
 import { defaultTrackState } from "./tracks";
 import { shiftDays } from "./progress";
 import { today } from "./dates";
-import { MissionsSheet } from "./screens/MissionsSheet";
+import { JourneyMoment, MissionsSheet } from "./screens/MissionsSheet";
 import { Home } from "./screens/Home";
 
 /** Seeds one track with `days` goal-met days ending yesterday (and optionally a slip today), then shows the Missions button. */
-function MissionsDemo({ mode, days, slip, home }: { mode: "raise" | "rescue"; days: number; slip: boolean; home: boolean }) {
+function MissionsDemo({ mode, days, slip, home, moment }: { mode: "raise" | "rescue"; days: number; slip: boolean; home: boolean; moment: boolean }) {
   const [ready] = useState(() => {
     const T = today(), d = blank();
     actions.applyRemote({
@@ -22,9 +22,12 @@ function MissionsDemo({ mode, days, slip, home }: { mode: "raise" | "rescue"; da
       cleanDays: Array.from({ length: days }, (_, i) => ({ habitId: "h1", day: shiftDays(T, -(days - i)) })),
     });
     if (slip) actions.logSlip("h1", {});
-    return true;
+    else if (moment) actions.markClean("h1");
+    return moment ? actions.recordMissions("c1") ?? true : true;
   });
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(true);
+  if (ready && moment && typeof ready === "object") return <main className="screen"><JourneyMoment event={shown ? ready : null} companionId="c1" onClose={() => setShown(false)} /></main>;
   if (ready && home) return <Home />;
   return <main className="screen" style={{ padding: 16 }}>{ready && <><button className="btn" onClick={() => setOpen(true)}>Missions</button><MissionsSheet open={open} onClose={() => setOpen(false)} companionId="c1" /></>}</main>;
 }
@@ -40,7 +43,7 @@ export function Gallery() {
       <figure key={l} style={{ margin: 0, textAlign: "center", font: "12px sans-serif" }}><Pet3D species={sp} coat={parts[3]} stage={st} mood={m} gesture={g} age={a} size={+parts[4] || 180} fallback={<b>fallback</b>} /><figcaption>{l}</figcaption></figure>))}</div>;
   }
   // #gallery/missions/<raise|rescue>/<goal-met days>[/slip]: the Missions button and sheet over seeded data, for layout checks.
-  if (parts[1] === "missions") return <MissionsDemo mode={parts[2] === "rescue" ? "rescue" : "raise"} days={Number(parts[3] ?? 8)} slip={parts[4] === "slip"} home={parts.includes("home")} />;
+  if (parts[1] === "missions") return <MissionsDemo mode={parts[2] === "rescue" ? "rescue" : "raise"} days={Number(parts[3] ?? 8)} slip={parts[4] === "slip"} home={parts.includes("home")} moment={parts.includes("moment")} />;
   // #gallery/solo3d/<species>/<mood>: one 3D pet alone on a clear background, for widget images.
   if (parts[1] === "solo3d") return <div id="solo" style={{ width: 256, display: "inline-block" }}><Pet3D species={parts[2] as Species3D} stage="young" mood={(parts[3] as Mood) || "happy"} age={12} size={256} fallback={<b>fallback</b>} /></div>;
   // #gallery/pet/<species>/<mood>: one pet alone on a clear background, for widget images.

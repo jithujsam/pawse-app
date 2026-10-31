@@ -164,7 +164,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
         <div className="pet-stage-live">
           <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} accessory={track.wear}
-            stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} />
+            stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
         {/* A fixed slot: the bubble can change its text without moving anything below it. */}
         <div className="speech-slot">

@@ -7,6 +7,7 @@ import { haptic } from "./haptics";
 import { coatFor, mix } from "./pets";
 import { Burst, PawLoader } from "./ui/Controls";
 import { has3D, markPet3d, webglOk, type Species3D } from "./pet3d-support";
+import type { PetCondition } from "./Pet3D";
 const Pet3D = lazy(() => import("./Pet3D").then((m) => ({ default: m.Pet3D })));
 import type { Accessory, Personality, Species } from "./types";
 
@@ -45,6 +46,8 @@ interface ArtProps {
   accessory?: Accessory | null;
   /** Eyes shut for a moment. */
   blink?: boolean;
+  /** A rescued pet's condition per trait (see PetCondition in Pet3D.tsx). Missing means well. */
+  condition?: PetCondition;
 }
 
 /** Where things sit on each species' head, in art units. */
@@ -57,13 +60,15 @@ const HEAD: Record<Species, { cy: number; eyeY: number; eyeDX: number; eyeR: num
   panda: { cy: 98, eyeY: 96, eyeDX: 18, eyeR: 5.5, top: 56, neck: 140 },
 };
 
-export function CompanionArt({ species, coat, breed, stage, mood, age, size = 280, look = { x: 0, y: 0 }, gesture = "none", accessory = null, blink = false }: ArtProps) {
+export function CompanionArt({ species, coat, breed, stage, mood, age, size = 280, look = { x: 0, y: 0 }, gesture = "none", accessory = null, blink = false, condition }: ArtProps) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const c = coatFor(species, coat, breed);
   const t = Math.max(0, Math.min(1, age / 100));
   // Age dulls the coat a little, never into something unrecognisable.
-  const fur = mix(c.fur, "#a3a3a3", t * 0.28);
-  const shade = mix(c.shade, "#858585", t * 0.28);
+  // A rescue's rough coat: duller and darker until the coat condition heals.
+  const rough = 1 - Math.max(0, Math.min(1, condition?.coat ?? 1));
+  const fur = mix(mix(c.fur, "#a3a3a3", t * 0.28), "#7d756c", rough * 0.45);
+  const shade = mix(mix(c.shade, "#858585", t * 0.28), "#5f5850", rough * 0.45);
   const belly = mix(c.belly, "#e3e3e3", t * 0.2);
   const ink = "#2a2320";
   const h = HEAD[species];
@@ -78,7 +83,8 @@ export function CompanionArt({ species, coat, breed, stage, mood, age, size = 28
       : mood === "dying" || g === "nap" ? "closed"
         : g === "petted" || g === "giggle" || (mood === "happy" && g === "hop") ? "happy"
           : "open";
-  const lid = eyes === "open" ? (blink ? 1 : g === "yawn" ? 0.55 : tired ? 0.38 : mood === "sad" ? 0.3 : g === "side" ? 0.35 : 0) : 0;
+  const lowEnergy = (condition?.energy ?? 1) < 0.5;
+  const lid = eyes === "open" ? (blink ? 1 : g === "yawn" ? 0.55 : tired ? 0.38 : mood === "sad" ? 0.3 : g === "side" ? 0.35 : lowEnergy ? 0.3 : 0) : 0;
   const brows: "sad" | "side" | null = mood === "hurt" || mood === "sad" ? "sad" : g === "side" ? "side" : null;
   const mouth: "smile" | "grin" | "o" | "frown" | "flat" | "talk" =
     g === "talk" ? "talk"
@@ -315,7 +321,7 @@ export function PetPortrait({ still, ...art }: ArtProps & { still?: boolean }) {
   if (!t.on || still) return <CompanionArt {...art} />;
   return (
     <Suspense fallback={<Waiting3D size={size} />}>
-      <Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} reduced={!!reduce}
+      <Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={art.gesture} condition={art.condition} reduced={!!reduce}
         size={size} onFail={t.fail} loading={<Waiting3D size={size} />} fallback={<CompanionArt {...art} />} />
     </Suspense>
   );
@@ -422,7 +428,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); haptic.tap(); play("petted", 1200); setHearts((h) => h + 1); onReact?.("petted"); } }}
       whileTap={interactive ? { scale: 0.97 } : undefined}>
       {t3d.on
-        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} reduced={!!reduce}
+        ? <Suspense fallback={<Waiting3D size={art.size ?? 280} />}><Pet3D species={art.species as Species3D} coat={art.coat} breed={art.breed} stage={art.stage} mood={art.mood} age={art.age} gesture={gesture} look={look} condition={art.condition} reduced={!!reduce}
             size={art.size ?? 280} onFail={t3d.fail} loading={<Waiting3D size={art.size ?? 280} />} fallback={<CompanionArt {...art} look={look} gesture={gesture} blink={blink} />} /></Suspense>
         : <CompanionArt {...art} look={look} gesture={gesture} blink={blink && gesture !== "nap"} />}
       <Burst burst={hearts} kind="heart" count={6} />
