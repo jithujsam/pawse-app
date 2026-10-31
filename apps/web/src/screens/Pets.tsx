@@ -81,7 +81,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
                   aria-label={t("pets.grid.card", { pet: view.companion.name, track: habit.name, line })}>
                   <span className="pet-card-art" aria-hidden>
-                    <PetPortrait still={layout === "list" || i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} condition={condition} size={layout === "list" ? 52 : 84} />
+                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} condition={condition} size={layout === "list" ? 84 : 100} />
                   </span>
                   <b className="pet-card-name">{view.companion.name}</b>
                   <span className="pet-card-track small">{habit.name}</span>
