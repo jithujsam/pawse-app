@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { JOURNEY_TARGETS, recoveryDays, STAGE_LABEL, type AdoptionMode, type JourneyTarget } from "@detox/engine";
+import { STAGE_LABEL, type AdoptionMode } from "@detox/engine";
 import { RESCUE_SPECIES } from "../missions";
 import { moodFor, PetPortrait } from "../Companion";
 import { has3D, STYLE_3D } from "../pet3d-support";
@@ -148,8 +148,8 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
   );
 }
 
-export interface PetPick { species: Species; coat: string; breed: string; personality: Personality; name: string; adoption?: AdoptionMode; target?: JourneyTarget }
-export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "", adoption: "raise", target: 30 });
+export interface PetPick { species: Species; coat: string; breed: string; personality: Personality; name: string; adoption?: AdoptionMode }
+export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "", adoption: "raise" });
 
 /**
  * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Used when setting
@@ -185,11 +185,10 @@ export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial
   );
 }
 
-/** Raise or rescue (rescue is for dogs only), and the journey goal. */
+/** Raise or rescue. Rescue is for dogs only. */
 function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
   const canRescue = RESCUE_SPECIES.includes(pet.species);
   const mode: AdoptionMode = canRescue && pet.adoption === "rescue" ? "rescue" : "raise";
-  const target = pet.target ?? 30;
   return (
     <>
       {canRescue && (
@@ -205,17 +204,6 @@ function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPi
           <span className="muted small">{mode === "rescue" ? t("pets.picker.rescue_hint") : t("pets.picker.raise_hint")}</span>
         </div>
       )}
-      <div className="field"><span className="field-label">{t("pets.picker.goal")}</span>
-        <div className="segmented" role="radiogroup" aria-label={t("pets.picker.goal")}>
-          {JOURNEY_TARGETS.map((n) => (
-            <button key={n} type="button" role="radio" aria-checked={target === n} className="seg" onClick={() => { haptic.select(); onChange({ target: n }); }}>
-              {target === n && <motion.span layoutId="target-pill" className="seg-pill" transition={spring.snappy} />}
-              <span className="seg-label">{t("pets.picker.goal_days", { n })}</span>
-            </button>
-          ))}
-        </div>
-        <span className="muted small">{t("pets.picker.goal_hint", { days: recoveryDays(target) })}</span>
-      </div>
     </>
   );
 }
@@ -233,7 +221,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   const close = () => { reset(); onClose(); };
   const save = () => {
     const petName = pet.name.trim() || NAMES[pet.species][0];
-    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality, adoption: pet.adoption, target: pet.target });
+    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality, adoption: pet.adoption });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
     toast(t("pets.add.added", { name: petName, what: what.trim() }), { kind: "good" });

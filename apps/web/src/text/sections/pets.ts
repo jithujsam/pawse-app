@@ -50,11 +50,8 @@ export const petsPicker = defineSection("pets.picker", { screen: "Home", title: 
   adoption: "Adoption",
   raise: "Raise a puppy",
   rescue: "Rescue a puppy",
-  raise_hint: "A healthy puppy. Your goal-met days teach it six skills.",
-  rescue_hint: "A neglected puppy with six conditions. It heals only with goal-met days in a row; a slip sets it back.",
-  goal: "Goal",
-  goal_days: "{n} days",
-  goal_hint: "Recovery takes {days} goal-met days in a row; the rest of the goal is about staying consistent.",
+  raise_hint: "A healthy puppy. 21 goal-met days in a row teach it six skills.",
+  rescue_hint: "A neglected puppy with six conditions. 21 goal-met days in a row heal it; a slip starts it over.",
 });
 // @copy-section-end pets.picker
 

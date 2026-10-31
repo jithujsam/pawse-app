@@ -887,3 +887,53 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 .journey-moment[data-good="false"] .moment-icon { background: var(--soft); color: var(--accent); }
 .journey-moment .moment-icon .ico { width: 28px; height: 28px; }
 .journey-moment h2, .journey-moment p { margin: 0; }
+.journey-count { padding: 18px; display: grid; gap: 10px; }
+.journey-count h3, .journey-count p { margin: 0; }
+.journey-count h3 { font-size: 16px; font-weight: 650; }
+.journey-big { font: 700 30px/1.1 var(--font); }
+.day-boxes { display: grid; grid-template-columns: repeat(21, 1fr); gap: 3px; }
+.day-boxes i { height: 10px; border-radius: 3px; background: var(--raised); display: block; }
+.day-boxes i[data-on="true"] { background: var(--positive); }
+.issue-card[data-tier="1"] .mission-pill.issue { background: var(--soft); color: var(--text); }
+.issue-card[data-tier="2"] .mission-pill.issue { background: var(--warning); color: var(--on-warning); }
+.issue-card[data-tier="3"] .mission-pill.issue { background: var(--negative); color: var(--on-status); }
+.conditions { display: grid; gap: 6px; }
+.condition-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; background: var(--raised); border-radius: var(--radius-sm); overflow: hidden; }
+.condition-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 12px 16px; font-size: 15px; }
+.condition-list li + li { border-top: 1px solid var(--line); }
+.condition-list li[data-status="current"] { background: var(--soft); }
+.condition-list li[data-status="waiting"] .condition-name { color: var(--muted); }
+.condition-name { font-weight: 600; min-width: 0; }
+.condition-done { display: inline-flex; align-items: center; gap: 4px; color: var(--positive); font: 650 13px var(--font); }
+.condition-done .ico { width: 14px; height: 14px; }
+.condition-day { color: var(--muted); font: 600 13px var(--font); font-variant-numeric: tabular-nums; }
+.condition-why { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+.reward-chips { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.reward-chips li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--positive-soft); font: 600 13px var(--font); }
+.reward-chips .ico { width: 14px; height: 14px; color: var(--positive); }
+.slip-rules ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--muted); }
+.journey-count { padding: 18px; display: grid; gap: 10px; }
+.journey-count h3, .journey-count p { margin: 0; }
+.journey-count h3 { font-size: 16px; font-weight: 650; }
+.journey-big { font: 700 30px/1.1 var(--font); }
+.day-boxes { display: grid; grid-template-columns: repeat(21, 1fr); gap: 3px; }
+.day-boxes i { height: 10px; border-radius: 3px; background: var(--raised); display: block; }
+.day-boxes i[data-on="true"] { background: var(--positive); }
+.issue-card[data-tier="1"] .mission-pill.issue { background: var(--soft); color: var(--text); }
+.issue-card[data-tier="2"] .mission-pill.issue { background: var(--warning); color: var(--on-warning); }
+.issue-card[data-tier="3"] .mission-pill.issue { background: var(--negative); color: var(--on-status); }
+.conditions { display: grid; gap: 6px; }
+.condition-list { list-style: none; margin: 0; padding: 0; display: grid; background: var(--raised); border-radius: var(--radius-sm); overflow: hidden; }
+.condition-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 12px 16px; font-size: 15px; }
+.condition-list li + li { border-top: 1px solid var(--line); }
+.condition-list li[data-status="current"] { background: var(--soft); }
+.condition-list li[data-status="waiting"] .condition-name { color: var(--muted); }
+.condition-name { font-weight: 600; min-width: 0; }
+.condition-done { display: inline-flex; align-items: center; gap: 4px; color: var(--positive); font: 650 13px var(--font); }
+.condition-done .ico { width: 14px; height: 14px; }
+.condition-day { color: var(--muted); font: 600 13px var(--font); font-variant-numeric: tabular-nums; }
+.condition-why { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+.reward-chips { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.reward-chips li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--positive-soft); font: 600 13px var(--font); }
+.reward-chips .ico { width: 14px; height: 14px; color: var(--positive); }
+.slip-rules ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--muted); }

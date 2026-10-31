@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { JOURNEY_TARGETS, type AdoptionMode, type JourneyEvent, type JourneyTarget, type MissionState } from "@detox/engine";
-import { companionMissions, type CompanionMissions } from "../missions";
-import { currentWord, healedWord, missionText } from "../mission-text";
+import { CONSISTENCY_DAYS, ISSUE_DAYS, RECOVERY_DAYS, THRIVING_REWARD_EVERY, type Journey, type JourneyEvent } from "@detox/engine";
+import { companionMissions } from "../missions";
+import { healedWord, missionText, rewardName, tierWord } from "../mission-text";
 import { spring } from "../motion";
 import { today } from "../dates";
-import { actions, useData } from "../store";
+import { useData } from "../store";
 import { haptic } from "../haptics";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
@@ -14,8 +14,9 @@ import { t, tt } from "../text";
 import type { Tone } from "../types";
 
 /**
- * Missions: the pet's recovery (Rescue) or training (Raise). A summary with the percentage and the one rule that
- * matters, the journey goal, then the six conditions in treatment order. Everything comes from companionMissions().
+ * Missions: the pet's 21-day journey. One big count (21 days to recover, then 21 days of consistency), an issue to
+ * clear if a slip brought one, and the six conditions with the day each heals on. Everything comes from
+ * companionMissions(), so the sheet never works anything out itself.
  */
 export function MissionsSheet({ open, onClose, companionId }: { open: boolean; onClose: () => void; companionId: string }) {
   return <Sheet open={open} onClose={onClose} label={t("missions.sheet.label")}>{open && <Body companionId={companionId} />}</Sheet>;
@@ -28,123 +29,150 @@ function Body({ companionId }: { companionId: string }) {
   const m = companionMissions(data, companionId, today());
   if (!companion || !m) return null;
   const name = companion.name;
-  const habit = data.habits.find((h) => h.id === (companion.trackId ?? "") || h.companionId === companion.id);
+  const j = m.journey;
+  const habit = data.habits.find((h) => h.id === companion.trackId || h.companionId === companion.id);
   return (
     <div className="missions">
       <header className="missions-head">
         <h2 className="missions-title">{t("missions.sheet.title")}</h2>
         <p className="muted">{m.mode === "rescue" ? t("missions.sheet.subtitle_rescue", { name }) : t("missions.sheet.subtitle_raise", { name })}</p>
       </header>
-      <Summary m={m} />
+      <Count j={j} name={name} />
       {m.setback && <p className="banner reassure" role="status">{tt("missions.sheet.setback", tone, { name })}</p>}
-      <Goal m={m} companionId={companionId} disabled={!!companion.diedOn} />
-      {m.journey.missions.map((s) => <MissionCard key={s.id} s={s} mode={m.mode} />)}
+      {j.issue && <IssueCard j={j} name={name} />}
+      {j.phase === "recovery" ? <Conditions j={j} name={name} /> : <AfterRecovery j={j} />}
       {habit?.cls === "alcohol" && <p className="banner safety small" role="note">{t("missions.sheet.safety_alcohol")}</p>}
       {m.mode === "rescue" && <p className="muted small">{t("missions.sheet.fiction", { name })}</p>}
     </div>
   );
 }
 
-function Summary({ m }: { m: CompanionMissions }) {
-  const j = m.journey;
-  const rescue = m.mode === "rescue";
-  const last = missionText(j.missions[5].id).title;
+/** 21 boxes: the days done so far in this stage. */
+function Boxes({ done }: { done: number }) {
   return (
-    <section className="card missions-summary" aria-live="polite">
-      <div className="missions-pct">
-        <b>{j.recovered ? (rescue ? t("missions.sheet.recovered") : t("missions.sheet.trained")) : rescue ? t("missions.sheet.pct_rescue", { pct: j.pct }) : t("missions.sheet.pct_raise", { pct: j.pct })}</b>
-        {j.recovered && <span className="mission-pill done">{Icon.check}</span>}
-      </div>
-      <div className="progress mission-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={j.pct} aria-label={t("missions.sheet.bar_aria", { pct: j.pct })}>
-        <motion.i initial={false} animate={{ width: `${j.pct}%` }} transition={spring.calm} />
-      </div>
-      {!j.recovered ? (
-        <>
-          <p className="small">{rescue ? t("missions.sheet.plan_rescue", { days: j.recoveryDays }) : t("missions.sheet.plan_raise", { days: j.recoveryDays })}</p>
-          <p className="small muted">{rescue ? t("missions.sheet.rule_rescue") : t("missions.sheet.rule_raise")}</p>
-        </>
-      ) : j.complete ? (
-        <p className="small">{t("missions.sheet.journey_done", { target: j.target })}</p>
-      ) : (
-        <>
-          <p className="small">{t("missions.sheet.keep_up", { target: j.target, days: j.goalMetDays })}</p>
-          <p className="small muted">{rescue ? t("missions.sheet.relapse_risk", { n: m.slipsInWindow, condition: last }) : t("missions.sheet.relapse_risk_raise", { n: m.slipsInWindow, condition: last })}</p>
-        </>
-      )}
+    <span className="day-boxes" role="meter" aria-valuemin={0} aria-valuemax={21} aria-valuenow={done} aria-label={t("missions.sheet.boxes_aria", { n: done })}>
+      {Array.from({ length: 21 }, (_, i) => <i key={i} data-on={i < done} />)}
+    </span>
+  );
+}
+
+const toGo = (n: number) => (n === 1 ? t("missions.sheet.to_go_one") : t("missions.sheet.to_go_other", { n }));
+
+/** The one number that matters: days to go in this stage. */
+function Count({ j, name }: { j: Journey; name: string }) {
+  const rescue = j.mode === "rescue";
+  if (j.phase === "recovery") return (
+    <section className="card journey-count">
+      <h3>{rescue ? t("missions.sheet.recovery_rescue", { name }) : t("missions.sheet.recovery_raise", { name })}</h3>
+      <b className="journey-big">{toGo(RECOVERY_DAYS - j.run)}</b>
+      <Boxes done={j.run} />
+      <span className="small">{t("missions.sheet.day_of", { n: j.run })}</span>
+      <p className="small muted">{t("missions.sheet.rule_recovery")}</p>
+    </section>
+  );
+  if (j.phase === "consistency") return (
+    <section className="card journey-count" data-phase="consistency">
+      <h3>{rescue ? t("missions.sheet.consistency_title", { name }) : t("missions.sheet.consistency_title_raise", { name })}</h3>
+      <p className="small">{t("missions.sheet.consistency_sub")}</p>
+      <b className="journey-big">{toGo(CONSISTENCY_DAYS - j.consistency)}</b>
+      <Boxes done={j.consistency} />
+      <span className="small">{t("missions.sheet.day_of", { n: j.consistency })}</span>
+      <p className="small muted">{t("missions.sheet.rule_after", { name })}</p>
+    </section>
+  );
+  return (
+    <section className="card journey-count" data-phase="thriving">
+      <h3>{t("missions.sheet.thriving_title", { name })}</h3>
+      <p className="small">{t("missions.sheet.thriving_days", { n: j.thriving, k: THRIVING_REWARD_EVERY - (j.thriving % THRIVING_REWARD_EVERY) })}</p>
+      <p className="small muted">{t("missions.sheet.rule_after", { name })}</p>
     </section>
   );
 }
 
-/** The journey goal. It can be made longer, never shorter, so it can't be used to speed recovery up. */
-function Goal({ m, companionId, disabled }: { m: CompanionMissions; companionId: string; disabled: boolean }) {
-  const current = m.journey.target;
+function IssueCard({ j, name }: { j: Journey; name: string }) {
+  const issue = j.issue!;
+  const words = missionText(issue.id);
   return (
-    <section className="missions-goal" aria-label={t("missions.sheet.goal")}>
-      <div className="row"><span className="mission-label">{t("missions.sheet.goal")}</span></div>
-      <div className="segmented" role="radiogroup" aria-label={t("missions.sheet.goal")}>
-        {JOURNEY_TARGETS.map((n) => (
-          <button key={n} type="button" role="radio" aria-checked={current === n} className="seg" disabled={disabled || n < current}
-            onClick={() => { if (n > current) { haptic.select(); actions.setJourneyTarget(companionId, n as JourneyTarget); } }}>
-            {current === n && <motion.span layoutId="goal-pill" className="seg-pill" transition={spring.snappy} />}
-            <span className="seg-label">{t("missions.sheet.goal_days", { n })}</span>
-          </button>
-        ))}
-      </div>
-      <p className="muted small">{t("missions.sheet.goal_hint")}</p>
-    </section>
-  );
-}
-
-/** One condition (or skill): headline, why it matters, and where it stands. */
-export function MissionCard({ s, mode }: { s: MissionState; mode: AdoptionMode }) {
-  const words = missionText(s.id);
-  return (
-    <article className="mission-card" data-status={s.status}>
-      <div className="mission-top">
-        <h3>{words.title}</h3>
-        {s.status === "healed" && <span className="mission-pill done">{Icon.check}{healedWord(mode)}</span>}
-        {s.status === "current" && <span className="mission-pill current">{currentWord(mode)}</span>}
-        {s.status === "waiting" && <span className="mission-pill">{t("missions.sheet.next")}</span>}
-      </div>
+    <article className="mission-card issue-card" data-tier={issue.tier}>
+      <div className="mission-top"><h3>{words.title}</h3><span className="mission-pill issue">{tierWord(issue.tier)}</span></div>
       <p className="mission-why">{words.why}</p>
-      {s.status === "current" && (
-        <div className="mission-meter">
-          <span className="days-boxes" role="meter" aria-valuemin={0} aria-valuemax={s.need} aria-valuenow={s.have} aria-label={t("missions.sheet.progress_aria", { have: s.have, need: s.need })}>
-            {Array.from({ length: s.need }, (_, i) => <i key={i} data-on={i < s.have} />)}
-          </span>
-          <b>{t("missions.sheet.days_in_row", { have: s.have, need: s.need })}</b>
-        </div>
-      )}
-      {s.status === "waiting" && <p className="mission-days muted">{t("missions.sheet.needs_days", { need: s.need })}</p>}
+      <div className="mission-meter">
+        <span className="days-boxes" role="meter" aria-valuemin={0} aria-valuemax={issue.need} aria-valuenow={issue.have} aria-label={t("missions.sheet.issue_days", { have: issue.have, need: issue.need })}>
+          {Array.from({ length: issue.need }, (_, i) => <i key={i} data-on={i < issue.have} />)}
+        </span>
+        <b>{t("missions.sheet.issue_days", { have: issue.have, need: issue.need })}</b>
+      </div>
+      {j.phase === "consistency" && <p className="small muted">{t("missions.sheet.issue_note", { name })}</p>}
     </article>
   );
 }
 
+/** The six conditions (or skills) in one compact list, each with the day of the 21 it heals on. */
+function Conditions({ j, name }: { j: Journey; name: string }) {
+  const label = j.mode === "rescue" ? t("missions.sheet.conditions", { name }) : t("missions.sheet.skills", { name });
+  return (
+    <section className="conditions" aria-label={label}>
+      <h3 className="group-title">{label}</h3>
+      <ul className="condition-list">
+        {j.missions.map((s) => (
+          <li key={s.id} data-status={s.status}>
+            <span className="condition-name">{missionText(s.id).title}</span>
+            {s.status === "healed" ? <span className="condition-done">{Icon.check}{healedWord(j.mode)}</span> : <span className="condition-day">{t("missions.sheet.heals_on", { n: s.at })}</span>}
+            {s.status === "current" && <span className="condition-why">{missionText(s.id).why}</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** After recovery: rewards earned, and the slip rule spelled out so it's never a surprise. */
+function AfterRecovery({ j }: { j: Journey }) {
+  return (
+    <>
+      {j.rewards > 0 && (
+        <section aria-label={t("missions.sheet.rewards")}>
+          <h3 className="group-title">{t("missions.sheet.rewards")}</h3>
+          <ul className="reward-chips">{Array.from({ length: j.rewards }, (_, i) => <li key={i}>{Icon.paw}{rewardName(i + 1)}</li>)}</ul>
+        </section>
+      )}
+      <section className="slip-rules" aria-label={t("missions.sheet.slips_title")}>
+        <h3 className="group-title">{t("missions.sheet.slips_title")}</h3>
+        <ul className="small">
+          <li>{t("missions.sheet.slips_one")}</li>
+          <li>{t("missions.sheet.slips_two")}</li>
+          <li>{t("missions.sheet.slips_three")}</li>
+          <li>{t("missions.sheet.slips_during")}</li>
+        </ul>
+      </section>
+    </>
+  );
+}
+
 /**
- * The pop-up for a journey event: a condition healed, full recovery, the goal reached (celebrated), or a condition
- * coming back after a slip (calm, with how to heal it again).
+ * The pop-up for a journey event: a condition healed, recovery, a reward or an issue cleared (celebrated), or a slip
+ * that brought an issue or started recovery over (calm, with what it takes to put right).
  */
 export function JourneyMoment({ event, companionId, onClose }: { event: JourneyEvent | null; companionId: string; onClose: () => void }) {
   const data = useData();
   const tone: Tone = data.settings.tone;
   const companion = data.companions.find((c) => c.id === companionId);
   const m = companion ? companionMissions(data, companionId, today()) : null;
-  const good = event?.kind === "healed" || event?.kind === "recovered" || event?.kind === "complete";
+  const good = event?.kind === "healed" || event?.kind === "recovered" || event?.kind === "reward" || event?.kind === "cleared";
   useEffect(() => { if (event) (good ? haptic.success : haptic.warn)(); }, [event, good]);
   const content = () => {
     if (!event || !companion || !m) return null;
     const name = companion.name;
     const rescue = m.mode === "rescue";
-    const cond = event.mission ? missionText(event.mission).title : "";
+    const what = event.id ? missionText(event.id).title : "";
     const current = m.journey.missions.find((x) => x.status === "current");
-    const next = current ? t("missions.moment.next_up", { condition: missionText(current.id).title, need: current.need }) : null;
-    const again = event.mission ? m.journey.missions.find((x) => x.id === event.mission) : undefined;
     switch (event.kind) {
-      case "healed": return { title: rescue ? t("missions.moment.healed_title", { condition: cond }) : t("missions.moment.learned_title", { condition: cond }), body: tt("missions.moment.healed_body", tone, { name }), extra: next };
+      case "healed": return { title: rescue ? t("missions.moment.healed_title", { condition: what }) : t("missions.moment.learned_title", { condition: what }), body: tt("missions.moment.healed_body", tone, { name }), extra: current ? t("missions.moment.next_up", { condition: missionText(current.id).title, n: current.at }) : null };
       case "recovered": return { title: rescue ? t("missions.moment.recovered_title", { name }) : t("missions.moment.trained_title", { name }), body: tt("missions.moment.recovered_body", tone, { name }), extra: null };
-      case "complete": return { title: t("missions.moment.complete_title"), body: tt("missions.moment.complete_body", tone, { name }), extra: null };
-      case "relapse": return { title: t("missions.moment.relapse_title", { condition: cond }), body: tt("missions.moment.relapse_body", tone, { name }), extra: again ? t("missions.moment.heal_again", { need: again.need }) : null };
-      case "reset": return { title: t("missions.moment.reset_title", { condition: cond }), body: tt("missions.moment.reset_body", tone), extra: next };
+      case "reward": return { title: rewardName(event.n ?? 1), body: tt("missions.moment.reward_body", tone, { name }), extra: null };
+      case "cleared": return { title: t("missions.moment.cleared_title", { issue: what }), body: tt("missions.moment.cleared_body", tone, { name }), extra: null };
+      case "issue": return { title: what, body: tt("missions.moment.issue_body", tone, { name }), extra: t("missions.moment.issue_clear", { need: ISSUE_DAYS[event.tier ?? 1] }) };
+      case "restart": return { title: t("missions.moment.restart_title"), body: tt("missions.moment.restart_body", tone, { name }), extra: t("missions.moment.restart_extra") };
     }
   };
   const c = content();

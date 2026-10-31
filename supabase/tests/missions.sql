@@ -1,4 +1,4 @@
--- Checks for 0008. Run on a fresh local Postgres after local-auth-stub.sql and migrations 0001–0009.
+-- Checks for 0008. Run on a fresh local Postgres after local-auth-stub.sql and migrations 0001–0010.
 -- Each check prints PASS or FAIL.
 \set ON_ERROR_STOP 1
 insert into auth.users values ('aaaaaaaa-0000-4000-8000-00000000080a','a8@x'), ('bbbbbbbb-0000-4000-8000-00000000080b','b8@x') on conflict do nothing;
@@ -24,14 +24,16 @@ insert into entries (id,habit_id,companion_id,occurred_on,client_created_at) val
 -- Track two: 3 goal-met days.
 insert into clean_days (habit_id,day) select 'd0000000-0000-4000-8000-0000000008ab', d::date from generate_series('2026-10-02'::date, '2026-10-04'::date, '1 day') d;
 
--- Track one (raise, no mode): goal-met 09-02..09-09 with a slip on 09-05, one day before arrival ignored.
--- Run: 09-02,03,04 heal 1 then 2 (1 + 2 days), slip resets the 3rd (raise keeps what's learned), then 06..09 = 4 days: 3rd healed (3) + 1.
-select pg_temp.check('an existing pet reads as raise and is folded day by day', (select adoption_mode = 'raise' and healed = 3 and progress = 1 and goal_met_days = 7 from mission_journey('c0000000-0000-4000-8000-0000000008aa')));
-select pg_temp.check('tracks are counted separately: a rescue with 3 days has healed 2', (select adoption_mode = 'rescue' and healed = 2 and progress = 0 and pct = 14 and recovery_days = 21 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
-insert into entries (id,habit_id,companion_id,occurred_on,client_created_at) values ('e0000000-0000-4000-8000-0000000008ab','d0000000-0000-4000-8000-0000000008ab','c0000000-0000-4000-8000-0000000008ab','2026-10-05',1);
-select pg_temp.check('a rescue slip brings back the last condition healed', (select healed = 1 and progress = 0 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
-update companions set missions = '{"v":2,"done":[],"seen":[],"target":120}' where id = 'c0000000-0000-4000-8000-0000000008ab';
-select pg_temp.check('a 120-day goal needs 60 days to recover', (select recovery_days = 60 and target = 120 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
+-- Track one (raise, no mode): goal-met 09-02..09-09 with a slip on 09-05 (starts recovery over), one day before arrival ignored.
+select pg_temp.check('an existing pet reads as raise; a slip in recovery starts the 21 days over', (select adoption_mode = 'raise' and phase = 'recovery' and run = 4 and goal_met_days = 7 from mission_journey('c0000000-0000-4000-8000-0000000008aa')));
+select pg_temp.check('tracks are counted separately', (select adoption_mode = 'rescue' and run = 3 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
+-- 21 days in a row recover the rescue; then a single slip is a minor issue, and two in a week a moderate one.
+insert into clean_days (habit_id,day) select 'd0000000-0000-4000-8000-0000000008ab', d::date from generate_series('2026-10-05'::date, '2026-10-25'::date, '1 day') d;
+select pg_temp.check('21 days in a row: recovered, consistency counting', (select phase = 'consistency' and run = 21 and consistency = 3 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
+insert into entries (id,habit_id,companion_id,occurred_on,client_created_at) values ('e0000000-0000-4000-8000-0000000008ab','d0000000-0000-4000-8000-0000000008ab','c0000000-0000-4000-8000-0000000008ab','2026-10-26',1);
+select pg_temp.check('after recovery one slip is a minor issue (3 days), not a restart', (select phase = 'consistency' and issue_tier = 1 and issue_need = 3 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
+insert into entries (id,habit_id,companion_id,occurred_on,client_created_at) values ('e0000000-0000-4000-8000-0000000008ac','d0000000-0000-4000-8000-0000000008ab','c0000000-0000-4000-8000-0000000008ab','2026-10-27',1);
+select pg_temp.check('a second slip in a week: moderate (7 days)', (select issue_tier = 2 and issue_need = 7 and issue_have = 0 from mission_journey('c0000000-0000-4000-8000-0000000008ab')));
 select pg_temp.check('the same goal-met day cannot be added twice', (select count(*) = 1 from clean_days where habit_id = 'd0000000-0000-4000-8000-0000000008ab' and day = '2026-10-02'));
 do $$ begin insert into clean_days (habit_id,day) values ('d0000000-0000-4000-8000-0000000008ab','2026-10-02'); raise notice 'FAIL duplicate day accepted';
 exception when unique_violation then raise notice 'PASS a duplicate goal-met day is refused'; end $$;

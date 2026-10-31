@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { AdoptionMode, HabitClass, JourneyTarget } from "@detox/engine";
+import type { AdoptionMode, HabitClass } from "@detox/engine";
 import { LiveCompanion, PetPortrait } from "../Companion";
 import { DISCLAIMER, hatchLine, TONES, tonePreview } from "../copy";
 import { concernIn } from "../guard";
@@ -37,12 +37,12 @@ const STORY = [
 const DRAFT = "companion/onboarding-draft";
 interface Draft {
   step: number; species: Species; companionName: string; userName: string; what: string; cls: HabitClass; amountLabel: string;
-  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; breed: string; personality: Personality; adoption: AdoptionMode; target: JourneyTarget;
+  baseline: Baseline | null; triggers: string[]; tone: Tone; reminder: string; coat: string; breed: string; personality: Personality; adoption: AdoptionMode;
   plan: RecoveryPlan;
 }
 const initial: Draft = {
   step: 1, species: "dog", companionName: "", userName: "", what: "", cls: "custom", amountLabel: "",
-  baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", breed: "", personality: "playful", adoption: "raise", target: 30,
+  baseline: null, triggers: [], tone: "honest", reminder: "20:00", coat: "", breed: "", personality: "playful", adoption: "raise",
   plan: emptyPlan(),
 };
 const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.min(LAST - 1, Math.max(1, d.step)) }; } catch { return initial; } };
@@ -68,7 +68,7 @@ export function Onboarding() {
   const pickWhat = (text: string) => up({ what: text, cls: inferClass(text) });
   const finish = () => {
     try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
-    actions.finishOnboarding({ species: d.species, coat: d.coat || coatsFor(d.species, d.breed)[0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan, adoption: d.adoption, target: d.target });
+    actions.finishOnboarding({ species: d.species, coat: d.coat || coatsFor(d.species, d.breed)[0].id, breed: d.breed || undefined, personality: d.personality, companionName: name, userName: d.userName, intake: { what: d.what, measure: measureForLabel(d.amountLabel), amountLabel: d.amountLabel, triggers: [], cls: d.cls }, tone: d.tone, reminder: d.reminder, baseline: d.baseline, plan: planBlocked ? null : d.plan, adoption: d.adoption });
   };
 
   const showChrome = d.step > 0 && d.step < LAST;
@@ -88,8 +88,8 @@ export function Onboarding() {
             {d.step === 1 && (<>
               <motion.h1 variants={rise}>{t("onboarding.pet.title")}</motion.h1>
               <motion.p className="muted" variants={rise}>{t("onboarding.pet.intro")}</motion.p>
-              <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName, adoption: d.adoption, target: d.target }}
-                onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}), ...(p.adoption ? { adoption: p.adoption } : {}), ...(p.target ? { target: p.target } : {}) })} /></motion.div>
+              <motion.div variants={rise}><PetStep pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName, adoption: d.adoption }}
+                onChange={(p) => up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}), ...(p.personality ? { personality: p.personality } : {}), ...(p.name !== undefined ? { companionName: p.name } : {}), ...(p.adoption ? { adoption: p.adoption } : {}) })} /></motion.div>
               <motion.label className="field" variants={rise}><span className="field-label">{t("onboarding.pet.call_you", { name: d.companionName.trim() || "they" })}</span>
                 <GuardedInput className="input" autoComplete="given-name" value={d.userName} placeholder={t("onboarding.pet.call_you_placeholder")} maxLength={30} onChange={(e) => up({ userName: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") go(2); }} />
               </motion.label>

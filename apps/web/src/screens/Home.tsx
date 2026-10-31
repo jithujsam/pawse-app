@@ -82,7 +82,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
   const [missionsOpen, setMissionsOpen] = useState(false);
-  const activeMissions = missions && !missions.journey.recovered ? 6 - missions.journey.healed : 0;
+  // The badge: conditions still to heal in recovery, or 1 while an issue needs clearing.
+  const activeMissions = !missions ? 0 : missions.journey.phase === "recovery" ? missions.journey.missions.filter((x) => x.status !== "healed").length : missions.journey.issue ? 1 : 0;
   const plan = recoveryPlan(view);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)

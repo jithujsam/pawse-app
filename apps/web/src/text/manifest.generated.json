@@ -990,7 +990,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 39,
-      "end": 59,
+      "end": 56,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1063,25 +1063,6 @@
           "id": "pets.picker.rescue_hint",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "pets.picker.goal",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "pets.picker.goal_days",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "pets.picker.goal_hint",
-          "kind": "text",
-          "placeholders": [
-            "days"
-          ]
         }
       ]
     },
@@ -1091,8 +1072,8 @@
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 61,
-      "end": 71,
+      "start": 58,
+      "end": 68,
       "entries": [
         {
           "id": "pets.add.label",
@@ -1436,11 +1417,11 @@
     {
       "id": "missions.sheet",
       "screen": "Missions sheet",
-      "title": "Recovery summary and conditions",
+      "title": "The 21-day journey",
       "source": "src/screens/MissionsSheet.tsx, src/screens/Home.tsx",
       "file": "src/text/sections/missions.ts",
       "start": 3,
-      "end": 45,
+      "end": 54,
       "entries": [
         {
           "id": "missions.sheet.label",
@@ -1491,107 +1472,104 @@
           ]
         },
         {
-          "id": "missions.sheet.pct_rescue",
+          "id": "missions.sheet.recovery_rescue",
           "kind": "text",
           "placeholders": [
-            "pct"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.pct_raise",
+          "id": "missions.sheet.recovery_raise",
           "kind": "text",
           "placeholders": [
-            "pct"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.bar_aria",
+          "id": "missions.sheet.consistency_title",
           "kind": "text",
           "placeholders": [
-            "pct"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.plan_rescue",
+          "id": "missions.sheet.consistency_title_raise",
           "kind": "text",
           "placeholders": [
-            "days"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.plan_raise",
-          "kind": "text",
-          "placeholders": [
-            "days"
-          ]
-        },
-        {
-          "id": "missions.sheet.rule_rescue",
+          "id": "missions.sheet.consistency_sub",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.rule_raise",
+          "id": "missions.sheet.thriving_title",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.to_go_one",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.recovered",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.trained",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.keep_up",
-          "kind": "text",
-          "placeholders": [
-            "days",
-            "target"
-          ]
-        },
-        {
-          "id": "missions.sheet.relapse_risk",
-          "kind": "text",
-          "placeholders": [
-            "condition",
-            "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.relapse_risk_raise",
-          "kind": "text",
-          "placeholders": [
-            "condition",
-            "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.journey_done",
-          "kind": "text",
-          "placeholders": [
-            "target"
-          ]
-        },
-        {
-          "id": "missions.sheet.goal",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.goal_days",
+          "id": "missions.sheet.to_go_other",
           "kind": "text",
           "placeholders": [
             "n"
           ]
         },
         {
-          "id": "missions.sheet.goal_hint",
+          "id": "missions.sheet.day_of",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.boxes_aria",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.rule_recovery",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "missions.sheet.rule_after",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.thriving_days",
+          "kind": "text",
+          "placeholders": [
+            "k",
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.conditions",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.skills",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
         },
         {
           "id": "missions.sheet.healed",
@@ -1604,22 +1582,29 @@
           "placeholders": []
         },
         {
-          "id": "missions.sheet.in_treatment",
+          "id": "missions.sheet.heals_on",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.issue_minor",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.learning",
+          "id": "missions.sheet.issue_moderate",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.next",
+          "id": "missions.sheet.issue_serious",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.days_in_row",
+          "id": "missions.sheet.issue_days",
           "kind": "text",
           "placeholders": [
             "have",
@@ -1627,19 +1612,63 @@
           ]
         },
         {
-          "id": "missions.sheet.needs_days",
+          "id": "missions.sheet.issue_note",
           "kind": "text",
           "placeholders": [
-            "need"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.progress_aria",
+          "id": "missions.sheet.rewards",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.reward_1",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.reward_2",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.reward_3",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.reward_month",
           "kind": "text",
           "placeholders": [
-            "have",
-            "need"
+            "n"
           ]
+        },
+        {
+          "id": "missions.sheet.slips_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.slips_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.slips_two",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.slips_three",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.slips_during",
+          "kind": "text",
+          "placeholders": []
         },
         {
           "id": "missions.sheet.fiction",
@@ -1665,11 +1694,11 @@
     {
       "id": "missions.moment",
       "screen": "Missions pop-up",
-      "title": "Healed, recovered, back again",
+      "title": "Healed, recovered, rewards, issues",
       "source": "src/screens/MissionsSheet.tsx",
       "file": "src/text/sections/missions.ts",
-      "start": 47,
-      "end": 86,
+      "start": 56,
+      "end": 100,
       "entries": [
         {
           "id": "missions.moment.aria",
@@ -1705,38 +1734,36 @@
           ]
         },
         {
-          "id": "missions.moment.complete_title",
+          "id": "missions.moment.cleared_title",
+          "kind": "text",
+          "placeholders": [
+            "issue"
+          ]
+        },
+        {
+          "id": "missions.moment.restart_title",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "missions.moment.relapse_title",
-          "kind": "text",
-          "placeholders": [
-            "condition"
-          ]
-        },
-        {
-          "id": "missions.moment.reset_title",
-          "kind": "text",
-          "placeholders": [
-            "condition"
-          ]
         },
         {
           "id": "missions.moment.next_up",
           "kind": "text",
           "placeholders": [
             "condition",
-            "need"
+            "n"
           ]
         },
         {
-          "id": "missions.moment.heal_again",
+          "id": "missions.moment.issue_clear",
           "kind": "text",
           "placeholders": [
             "need"
           ]
+        },
+        {
+          "id": "missions.moment.restart_extra",
+          "kind": "text",
+          "placeholders": []
         },
         {
           "id": "missions.moment.ok",
@@ -1758,34 +1785,43 @@
           ]
         },
         {
-          "id": "missions.moment.complete_body",
+          "id": "missions.moment.reward_body",
           "kind": "voice",
           "placeholders": [
             "name"
           ]
         },
         {
-          "id": "missions.moment.relapse_body",
+          "id": "missions.moment.issue_body",
           "kind": "voice",
           "placeholders": [
             "name"
           ]
         },
         {
-          "id": "missions.moment.reset_body",
+          "id": "missions.moment.cleared_body",
           "kind": "voice",
-          "placeholders": []
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.restart_body",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
         }
       ]
     },
     {
       "id": "missions.content",
       "screen": "Missions sheet",
-      "title": "Conditions and skills",
+      "title": "Conditions, skills and issues",
       "source": "src/mission-text.ts",
       "file": "src/text/sections/missions.ts",
-      "start": 88,
-      "end": 115,
+      "start": 102,
+      "end": 139,
       "entries": [
         {
           "id": "missions.content.rescue_coat_title",
@@ -1904,6 +1940,56 @@
         },
         {
           "id": "missions.content.raise_strong_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_stomach_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_stomach_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_restless_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_restless_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_itch_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_itch_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_fear_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_fear_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_withdrawn_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.issue_withdrawn_why",
           "kind": "text",
           "placeholders": []
         }

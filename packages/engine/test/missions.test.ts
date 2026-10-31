@@ -1,148 +1,130 @@
 import { describe, expect, it } from "vitest";
-import { journey, missionHealthCap, MISSIONS, missionsFor, petTraits, recoveryDays, RELAPSE_SLIPS, setbackState, slipsInWindowOn, stepDays, type DayRecord } from "../src";
+import { HEAL_AT, journey, missionHealthCap, MISSIONS, missionsFor, petTraits, setbackState, slipTier, type DayRecord } from "../src";
 
 const D0 = Date.UTC(2026, 0, 1);
 const day = (i: number) => new Date(D0 + i * 86_400_000).toISOString().slice(0, 10);
-/** A pattern string: m = goal met, s = slip, . = nothing recorded. */
-const days = (p: string): DayRecord[] => [...p].map((c, i) => ({ day: day(i), met: c === "m", slip: c === "s" }));
+/** m = goal met, s = slip, S = heavy slip, . = nothing recorded. */
+const days = (p: string): DayRecord[] => [...p].map((c, i) => ({ day: day(i), met: c === "m", slip: c === "s" || c === "S", heavy: c === "S" }));
 const m = (n: number) => "m".repeat(n);
+const J = (p: string, mode: "rescue" | "raise" = "rescue") => journey(mode, days(p));
 
-describe("the schedule", () => {
-  it("recovery is half the target and never under 21 days", () => {
-    expect([30, 60, 120].map(recoveryDays)).toEqual([21, 30, 60]);
+describe("recovery: 21 goal-met days in a row", () => {
+  it("a new rescue is at day 0 of 21 with the coat healing first", () => {
+    expect(J("")).toMatchObject({ phase: "recovery", run: 0, pct: 0 });
+    expect(J("").missions.map((x) => x.status)).toEqual(["current", "waiting", "waiting", "waiting", "waiting", "waiting"]);
   });
-  it("the six conditions take 1, 2, 3, 4, 5, 6 days in a row on a 30-day journey, and scale up for longer ones", () => {
-    expect(stepDays(30)).toEqual([1, 2, 3, 4, 5, 6]);
-    for (const t of [30, 60, 120]) {
-      const s = stepDays(t);
-      expect(s.reduce((a, b) => a + b, 0)).toBe(recoveryDays(t));
-      expect(s.every((x, i) => x >= 1 && (i === 0 || x >= s[i - 1]))).toBe(true);
-    }
-    expect(stepDays(60)).toEqual([1, 3, 5, 5, 7, 9]);
-    expect(stepDays(120)).toEqual([3, 6, 8, 12, 14, 17]);
+  it("conditions heal on days 1, 3, 6, 10, 15 and 21", () => {
+    expect(HEAL_AT).toEqual([1, 3, 6, 10, 15, 21]);
+    expect([1, 3, 6, 10, 15].map((n) => J(m(n)).missions.filter((x) => x.status === "healed").length)).toEqual([1, 2, 3, 4, 5]);
+    expect(J(m(21))).toMatchObject({ phase: "consistency", run: 21, pct: 100, recoveredOn: day(20) });
   });
-  it("each mode has six conditions or skills, in treatment order", () => {
-    expect(missionsFor("rescue").map((x) => x.id)).toEqual(["rescue_coat", "rescue_energy", "rescue_noise", "rescue_play", "rescue_alone", "rescue_trust"]);
-    expect(missionsFor("raise")).toHaveLength(6);
-    expect(new Set(MISSIONS.map((x) => x.id)).size).toBe(12);
+  it("a slip starts recovery over at day 0", () => {
+    const j = J(m(20) + "s");
+    expect(j).toMatchObject({ phase: "recovery", run: 0 });
+    expect(j.events.at(-1)).toMatchObject({ kind: "restart", n: 20 });
+    expect(J(m(20) + "s" + m(20)).phase).toBe("recovery");
+    expect(J(m(20) + "s" + m(21)).phase).toBe("consistency");
   });
-});
-
-describe("recovering", () => {
-  it("a new rescue starts at 0% with the first condition in treatment", () => {
-    const j = journey("rescue", 30, []);
-    expect(j).toMatchObject({ healed: 0, progress: 0, pct: 0, recovered: false });
-    expect(j.missions.map((x) => x.status)).toEqual(["current", "waiting", "waiting", "waiting", "waiting", "waiting"]);
-  });
-  it("heals one condition at each step: 1, 3, 6, 10, 15 and 21 days with no slip", () => {
-    const healedAt = [1, 3, 6, 10, 15, 21].map((n) => journey("rescue", 30, days(m(n))).healed);
-    expect(healedAt).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(journey("rescue", 30, days(m(20))).healed).toBe(5);
-  });
-  it("shows recovery as a percentage, 100 at 21 days", () => {
-    expect(journey("rescue", 30, days(m(2))).pct).toBe(9);
-    expect(journey("rescue", 30, days(m(10))).pct).toBe(47);
-    expect(journey("rescue", 30, days(m(21)))).toMatchObject({ pct: 100, recovered: true, recoveredOn: day(20) });
-  });
-  it("days with nothing recorded don't count and don't break the run", () => {
-    expect(journey("rescue", 30, days("m.m..m")).healed).toBe(2);
-  });
-  it("a 60-day journey needs 30 days, a 120-day journey 60", () => {
-    expect(journey("rescue", 60, days(m(29))).recovered).toBe(false);
-    expect(journey("rescue", 60, days(m(30))).recovered).toBe(true);
-    expect(journey("rescue", 120, days(m(60))).recovered).toBe(true);
+  it("days with nothing recorded neither count nor break the run", () => {
+    expect(J("m.m..m").run).toBe(3);
   });
   it("is the same every time for the same records", () => {
-    expect(journey("rescue", 30, days("mmsmm.m"))).toEqual(journey("rescue", 30, days("mmsmm.m")));
+    expect(J("mmsmm.mSm")).toEqual(J("mmsmm.mSm"));
   });
 });
 
-describe("a slip during recovery", () => {
-  it("resets the condition in treatment and brings back the last one healed", () => {
-    const before = journey("rescue", 30, days(m(8))); // 3 healed, 2 days on the 4th
-    expect(before).toMatchObject({ healed: 3, progress: 2 });
-    const after = journey("rescue", 30, days(m(8) + "s"));
-    expect(after).toMatchObject({ healed: 2, progress: 0 });
-    expect(after.events.at(-1)).toMatchObject({ kind: "relapse", mission: "rescue_noise", lost: 2 });
-    expect(after.pct).toBeLessThan(before.pct);
+describe("the slip formula after recovery", () => {
+  it("scores: 1, +1 for a 2nd and a 3rd slip in 7 days, +1 for 3 in 30 days, +1 for a heavy slip; capped at 3", () => {
+    expect(slipTier([day(0)], day(0), false)).toBe(1);
+    expect(slipTier([day(0)], day(0), true)).toBe(2);
+    expect(slipTier([day(0), day(5)], day(5), false)).toBe(2);
+    expect(slipTier([day(0), day(20)], day(20), false)).toBe(1);
+    expect(slipTier([day(0), day(10), day(20)], day(20), false)).toBe(2);
+    expect(slipTier([day(0), day(2), day(4)], day(4), false)).toBe(3);
+    expect(slipTier([day(0), day(2), day(4)], day(4), true)).toBe(3);
   });
-  it("the returned condition must be healed again from scratch", () => {
-    expect(journey("rescue", 30, days(m(8) + "s" + m(2))).healed).toBe(2);
-    expect(journey("rescue", 30, days(m(8) + "s" + m(3))).healed).toBe(3);
+  it("a one-off slip: a minor issue cleared by 3 goal-met days in a row, then consistency carries on", () => {
+    const j = J(m(21) + m(5) + "s");
+    expect(j.issue).toMatchObject({ id: "issue_stomach", tier: 1, need: 3, have: 0 });
+    expect(j.consistency).toBe(5);
+    const k = J(m(21) + m(5) + "s" + m(3));
+    expect(k.issue).toBeNull();
+    expect(k.consistency).toBe(5);
+    expect(k.events.at(-1)).toMatchObject({ kind: "cleared", id: "issue_stomach" });
+    expect(J(m(21) + m(5) + "s" + m(4)).consistency).toBe(6);
   });
-  it("one slip a week keeps a rescue from ever fully recovering", () => {
-    expect(journey("rescue", 30, days(("mmmmmms").repeat(10))).recovered).toBe(false);
+  it("twice in a week: the old fear comes back, 7 days in a row", () => {
+    expect(J(m(21) + "s" + "mm" + "s").issue).toMatchObject({ id: "issue_fear", tier: 2, need: 7 });
   });
-  it("a raised puppy only loses the skill in progress, never one learned", () => {
-    const j = journey("raise", 30, days(m(8) + "s"));
-    expect(j).toMatchObject({ healed: 3, progress: 0 });
-    expect(j.events.at(-1)).toMatchObject({ kind: "reset", lost: 2 });
+  it("three times in a week: withdrawn, 14 days in a row", () => {
+    expect(J(m(21) + "smsms").issue).toMatchObject({ id: "issue_withdrawn", tier: 3, need: 14 });
   });
-  it("a slip on the same day as a goal-met mark counts as a slip", () => {
-    expect(journey("rescue", 30, [{ day: day(0), met: true, slip: true }]).healed).toBe(0);
+  it("a heavy slip counts as bigger", () => {
+    expect(J(m(21) + "S").issue).toMatchObject({ tier: 2 });
+  });
+  it("a slip while an issue is still active makes it at least one tier worse and restarts its count", () => {
+    const j = J(m(21) + "smm" + "......." + "s");
+    expect(j.issue).toMatchObject({ tier: 2, have: 0 });
+    expect(J(m(21) + "S" + "s").issue).toMatchObject({ tier: 3 });
+    expect(J(m(21) + "s" + m(3) + "..........s").issue).toMatchObject({ tier: 1 });
+  });
+  it("minor issues take turns", () => {
+    const ids = [0, 1, 2].map((k) => J(m(21) + ("s" + m(40)).repeat(k) + "s").issue!.id);
+    expect(ids).toEqual(["issue_stomach", "issue_restless", "issue_itch"]);
+  });
+  it("never goes back to the 21-day restart once recovered", () => {
+    expect(J(m(21) + "sssssss").phase).toBe("consistency");
   });
 });
 
-describe("after recovery", () => {
-  it("each slip counts toward a relapse; 5 within 30 days bring the deepest condition back", () => {
-    const base = m(21);
-    expect(journey("rescue", 30, days(base + "s")).slipsInWindow).toBe(1);
-    expect(journey("rescue", 30, days(base + "s".repeat(RELAPSE_SLIPS - 1))).recovered).toBe(true);
-    const j = journey("rescue", 30, days(base + "s".repeat(RELAPSE_SLIPS)));
-    expect(j).toMatchObject({ recovered: false, healed: 5, progress: 0 });
-    expect(j.events.at(-1)).toMatchObject({ kind: "relapse", mission: "rescue_trust" });
-    expect(journey("rescue", 30, days(base + "s".repeat(5) + m(6))).recovered).toBe(true);
+describe("consistency and thriving", () => {
+  it("21 days of consistency, with rewards at 7, 14 and 21, then thriving", () => {
+    const j = J(m(42));
+    expect(j).toMatchObject({ phase: "thriving", consistency: 21, rewards: 3 });
+    expect(j.events.filter((e) => e.kind === "reward").map((e) => e.day)).toEqual([day(27), day(34), day(41)]);
   });
-  it("slips more than 30 days apart don't add up", () => {
-    const spaced = m(21) + ("s" + m(30)).repeat(6);
-    expect(journey("rescue", 30, days(spaced)).recovered).toBe(true);
-    const j = journey("rescue", 30, days(m(21) + "s" + m(3)));
-    expect(slipsInWindowOn(j, day(24), [day(21)])).toBe(1);
-    expect(slipsInWindowOn(j, day(52), [day(21)])).toBe(0);
+  it("a reward every 30 well days while thriving", () => {
+    expect(J(m(72)).rewards).toBe(4);
   });
-  it("the journey is complete at the target with the pet recovered", () => {
-    expect(journey("rescue", 30, days(m(29))).complete).toBe(false);
-    const j = journey("rescue", 30, days(m(30)));
-    expect(j.complete).toBe(true);
-    expect(j.events.map((e) => e.kind)).toContain("complete");
+  it("after day 42 a one-off slip is only minor", () => {
+    expect(J(m(42) + "s").issue).toMatchObject({ tier: 1 });
   });
 });
 
 describe("the health bar", () => {
-  it("a rescue starts at 10% and turns green with recovery, 100% once recovered", () => {
-    expect([0, 3, 10, 20, 21].map((n) => missionHealthCap(journey("rescue", 30, days(m(n)))))).toEqual([10, 25, 50, 95, 100]);
+  it("a rescue goes from 10% to 100% over the 21 days", () => {
+    expect([0, 7, 14, 21].map((n) => missionHealthCap(J(m(n))))).toEqual([10, 40, 70, 100]);
   });
-  it("a raised puppy's bar is never limited", () => {
-    expect(missionHealthCap(journey("raise", 30, []))).toBe(100);
+  it("an issue lowers it by 15, 30 or 50 and it comes back as the issue clears", () => {
+    expect(missionHealthCap(J(m(21) + "s"))).toBe(85);
+    expect(missionHealthCap(J(m(21) + "S"))).toBe(70);
+    expect(missionHealthCap(J(m(21) + "smsms"))).toBe(50);
+    expect(missionHealthCap(J(m(21) + "smsms" + m(7)))).toBe(75);
   });
-});
-
-describe("setbacks", () => {
-  const base = { lastGoalMet: null, today: "2026-11-10" };
-  it("active on the slip day and the next; ends early with a goal-met day", () => {
-    expect(setbackState({ ...base, lastSlip: "2026-11-10", daysSinceSlip: 0 }).active).toBe(true);
-    expect(setbackState({ ...base, lastSlip: "2026-11-09", daysSinceSlip: 1 }).active).toBe(true);
-    expect(setbackState({ ...base, lastSlip: "2026-11-08", daysSinceSlip: 2 }).active).toBe(false);
-    expect(setbackState({ ...base, lastSlip: "2026-11-09", lastGoalMet: "2026-11-10", daysSinceSlip: 1 }).active).toBe(false);
+  it("a raised puppy in training isn't limited", () => {
+    expect(missionHealthCap(J("", "raise"))).toBe(100);
   });
 });
 
-describe("the pet's look", () => {
-  it("each condition drives its own traits: healing the coat changes only the coat", () => {
-    const t0 = petTraits(journey("rescue", 30, []));
-    expect(Object.values(t0).every((v) => v === 0)).toBe(true);
-    const t1 = petTraits(journey("rescue", 30, days(m(1))));
-    expect(t1.coat).toBe(1);
-    expect(t1.trust).toBe(0);
-    expect(t1.energy).toBe(0);
+describe("modes, setbacks, look", () => {
+  it("six conditions or skills per mode", () => {
+    expect(missionsFor("rescue")).toHaveLength(6);
+    expect(missionsFor("raise")).toHaveLength(6);
+    expect(new Set(MISSIONS.map((x) => x.id)).size).toBe(12);
   });
-  it("a recovered rescue looks fully well; a raised puppy starts healthy", () => {
-    expect(Object.values(petTraits(journey("rescue", 30, days(m(21))))).every((v) => v === 1)).toBe(true);
-    expect(Object.values(petTraits(journey("raise", 30, []))).every((v) => v === 0.7)).toBe(true);
+  it("a setback lasts the slip day and the next, ending with a goal-met day", () => {
+    const b = { lastGoalMet: null, today: "2026-11-10" };
+    expect(setbackState({ ...b, lastSlip: "2026-11-10", daysSinceSlip: 0 }).active).toBe(true);
+    expect(setbackState({ ...b, lastSlip: "2026-11-08", daysSinceSlip: 2 }).active).toBe(false);
+    expect(setbackState({ ...b, lastSlip: "2026-11-09", lastGoalMet: "2026-11-10", daysSinceSlip: 1 }).active).toBe(false);
   });
-  it("a setback makes the pet quieter, not sick", () => {
-    const t = petTraits(journey("rescue", 30, days(m(21))), { setback: true });
+  it("the coat heals on day 1; trust only at 21", () => {
+    expect(petTraits(J(m(1)))).toMatchObject({ coat: 1, trust: 0 });
+    expect(Object.values(petTraits(J(m(21)))).every((v) => v === 1)).toBe(true);
+  });
+  it("an issue shows on its own traits and fades as it clears", () => {
+    const t = petTraits(J(m(21) + "smsms"));
+    expect(t.trust).toBeCloseTo(0.3);
     expect(t.coat).toBe(1);
-    expect(t.energy).toBeCloseTo(0.8);
   });
 });

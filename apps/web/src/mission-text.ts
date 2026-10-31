@@ -2,7 +2,7 @@ import type { AdoptionMode } from "@detox/engine";
 import { t, type PlainId } from "./text";
 
 /**
- * The words for each condition (Rescue) or skill (Raise), by mission id. Every id is written out in full so the
+ * The words for each condition (Rescue), skill (Raise) or issue, by id. Every id is written out in full so the
  * catalogue can see it is used (test/copy-catalogue.test.ts) and a typo is a compile error. Mission content is
  * tone-neutral: it describes the fictional pet, not the person.
  */
@@ -21,6 +21,11 @@ const CONTENT: Record<string, Content> = {
   raise_explore: { title: "missions.content.raise_explore_title", why: "missions.content.raise_explore_why" },
   raise_calm: { title: "missions.content.raise_calm_title", why: "missions.content.raise_calm_why" },
   raise_strong: { title: "missions.content.raise_strong_title", why: "missions.content.raise_strong_why" },
+  issue_stomach: { title: "missions.content.issue_stomach_title", why: "missions.content.issue_stomach_why" },
+  issue_restless: { title: "missions.content.issue_restless_title", why: "missions.content.issue_restless_why" },
+  issue_itch: { title: "missions.content.issue_itch_title", why: "missions.content.issue_itch_why" },
+  issue_fear: { title: "missions.content.issue_fear_title", why: "missions.content.issue_fear_why" },
+  issue_withdrawn: { title: "missions.content.issue_withdrawn_title", why: "missions.content.issue_withdrawn_why" },
 };
 
 export function missionText(id: string): { title: string; why: string } {
@@ -31,7 +36,13 @@ export function missionText(id: string): { title: string; why: string } {
 
 /** Rescue heals conditions; Raise learns skills. */
 export const healedWord = (mode: AdoptionMode) => (mode === "rescue" ? t("missions.sheet.healed") : t("missions.sheet.learned"));
-export const currentWord = (mode: AdoptionMode) => (mode === "rescue" ? t("missions.sheet.in_treatment") : t("missions.sheet.learning"));
+
+const TIER: Record<1 | 2 | 3, PlainId> = { 1: "missions.sheet.issue_minor", 2: "missions.sheet.issue_moderate", 3: "missions.sheet.issue_serious" };
+export const tierWord = (tier: 1 | 2 | 3) => t(TIER[tier] as never);
+
+/** A reward's name: the three consistency rewards, then a month of thriving each. */
+export const rewardName = (n: number) =>
+  n === 1 ? t("missions.sheet.reward_1") : n === 2 ? t("missions.sheet.reward_2") : n === 3 ? t("missions.sheet.reward_3") : t("missions.sheet.reward_month", { n: n - 3 });
 
 /** Mission ids that have words. The tests check every engine mission is here. */
 export const MISSION_TEXT_IDS = Object.keys(CONTENT);

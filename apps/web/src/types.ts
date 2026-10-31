@@ -53,7 +53,7 @@ export interface MissionMemory {
   done: string[];
   /** Journey events already shown ("<kind>:<mission>:<day>"), so each shows once. */
   seen: string[];
-  /** The journey length the person chose: 30, 60 or 120 days. Missing means 30. */
+  /** Legacy (4.1.0 journey goal); read and ignored. */
   target?: number;
 }
 
