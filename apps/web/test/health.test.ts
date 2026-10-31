@@ -48,7 +48,8 @@ describe("health", () => {
     expect(conditions(d, v).some((c) => c.id === "lonely" || /lonely|hasn't heard|misses/i.test(`${c.name} ${c.what} ${c.why}`))).toBe(false);
     expect(v.states.every((s) => s.neglectMonths === 0 && s.damageMonths === 0)).toBe(true);
     expect(v.age).toBe(0);
-    expect(healthReport(d, v, "honest").heart).toBe(100);
+    // A raised puppy with nothing logged sits at its starting wellness (70); quiet days never lower it.
+    expect(healthReport(d, v, "honest").heart).toBe(70);
   });
   it("the heart is the one primary number: a slip day lowers it, the same records always give the same value, and no separate life-expectancy figure is reported", () => {
     const good = world("dog", 0, { clean: 9 });

@@ -1,5 +1,7 @@
 import type { AdoptionMode } from "@detox/engine";
-import { t, type PlainId } from "./text";
+import type { HabitClass } from "@detox/engine";
+import { t, tt, type PlainId, type ToneId } from "./text";
+import type { Tone } from "./types";
 
 /**
  * The words for each condition (Rescue), skill (Raise) or issue, by id. Every id is written out in full so the
@@ -46,3 +48,18 @@ export const rewardName = (n: number) =>
 
 /** Mission ids that have words. The tests check every engine mission is here. */
 export const MISSION_TEXT_IDS = Object.keys(CONTENT);
+
+/** Which talking-pet pack a habit gets. Anything that isn't one of these five (custom, sensitive) gets the generic pack. */
+const PACK: Partial<Record<HabitClass, string>> = { food_spending: "food", smoking: "smoking", alcohol: "alcohol", doomscrolling: "scroll", impulse_buying: "shop" };
+const PACK_IDS: Record<string, Record<"story" | "thanks" | "slip", ToneId>> = {
+  food: { story: "packs.lines.food_story", thanks: "packs.lines.food_thanks", slip: "packs.lines.food_slip" },
+  smoking: { story: "packs.lines.smoking_story", thanks: "packs.lines.smoking_thanks", slip: "packs.lines.smoking_slip" },
+  alcohol: { story: "packs.lines.alcohol_story", thanks: "packs.lines.alcohol_thanks", slip: "packs.lines.alcohol_slip" },
+  scroll: { story: "packs.lines.scroll_story", thanks: "packs.lines.scroll_thanks", slip: "packs.lines.scroll_slip" },
+  shop: { story: "packs.lines.shop_story", thanks: "packs.lines.shop_thanks", slip: "packs.lines.shop_slip" },
+  any: { story: "packs.lines.any_story", thanks: "packs.lines.any_thanks", slip: "packs.lines.any_slip" },
+};
+export const packFor = (cls: HabitClass | undefined) => PACK[cls ?? "custom"] ?? "any";
+
+/** A line from the habit's talking-pet pack, in the person's Voice. No typed text is ever put into it. */
+export const packLine = (cls: HabitClass | undefined, kind: "story" | "thanks" | "slip", tone: Tone) => tt(PACK_IDS[packFor(cls)][kind] as never, tone);

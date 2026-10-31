@@ -67,6 +67,7 @@ function Count({ j, name }: { j: Journey; name: string }) {
       <b className="journey-big">{toGo(RECOVERY_DAYS - j.run)}</b>
       <Boxes done={j.run} />
       <span className="small">{t("missions.sheet.day_of", { n: j.run })}</span>
+      {j.bestRun > j.run && <span className="small muted">{t("missions.sheet.best", { best: j.bestRun, total: j.goalMetDays })}</span>}
       <p className="small muted">{t("missions.sheet.rule_recovery")}</p>
     </section>
   );
@@ -136,15 +137,7 @@ function AfterRecovery({ j }: { j: Journey }) {
           <ul className="reward-chips">{Array.from({ length: j.rewards }, (_, i) => <li key={i}>{Icon.paw}{rewardName(i + 1)}</li>)}</ul>
         </section>
       )}
-      <section className="slip-rules" aria-label={t("missions.sheet.slips_title")}>
-        <h3 className="group-title">{t("missions.sheet.slips_title")}</h3>
-        <ul className="small">
-          <li>{t("missions.sheet.slips_one")}</li>
-          <li>{t("missions.sheet.slips_two")}</li>
-          <li>{t("missions.sheet.slips_three")}</li>
-          <li>{t("missions.sheet.slips_during")}</li>
-        </ul>
-      </section>
+      <p className="small muted">{t("missions.sheet.slips_rule")}</p>
     </>
   );
 }

@@ -91,6 +91,8 @@ export interface Journey {
   phase: Phase;
   /** Goal-met days in a row in recovery, 0..21 (21 once recovered). */
   run: number;
+  /** The longest recovery run so far, so a restart never hides the effort already made. */
+  bestRun: number;
   /** Days of consistency so far, 0..21. */
   consistency: number;
   /** Well days since thriving began. */
@@ -124,7 +126,7 @@ export function journey(mode: AdoptionMode, days: readonly DayRecord[]): Journey
   const defs = missionsFor(mode);
   const events: JourneyEvent[] = [];
   let phase: Phase = "recovery";
-  let run = 0, consistency = 0, thriving = 0, rewards = 0, goalMetDays = 0, minorCount = 0;
+  let run = 0, bestRun = 0, consistency = 0, thriving = 0, rewards = 0, goalMetDays = 0, minorCount = 0;
   let issue: Issue | null = null;
   let recoveredOn: string | null = null, lastSlip: string | null = null, lastMet: string | null = null;
   const slipsSince: string[] = [];
@@ -149,6 +151,7 @@ export function journey(mode: AdoptionMode, days: readonly DayRecord[]): Journey
     goalMetDays++;
     if (phase === "recovery") {
       run++;
+      bestRun = Math.max(bestRun, run);
       const healed = HEAL_AT.indexOf(run);
       if (healed >= 0) events.push({ day: r.day, kind: "healed", id: defs[healed].id });
       if (run === RECOVERY_DAYS) { phase = "consistency"; recoveredOn = r.day; events.push({ day: r.day, kind: "recovered", id: null }); }
@@ -165,28 +168,34 @@ export function journey(mode: AdoptionMode, days: readonly DayRecord[]): Journey
     }
   }
   return {
-    mode, phase, run, consistency, thriving, issue, recoveredOn, rewards, events, lastSlip, lastMet, goalMetDays,
+    mode, phase, run, bestRun, consistency, thriving, issue, recoveredOn, rewards, events, lastSlip, lastMet, goalMetDays,
     pct: Math.round((run / RECOVERY_DAYS) * 100),
     missions: defs.map((d, i) => ({ id: d.id, at: HEAL_AT[i], status: run >= HEAL_AT[i] ? "healed" : (i === 0 ? 0 : HEAL_AT[i - 1]) <= run ? "current" : "waiting" })),
   };
 }
 
-// ---------- the health bar ----------
+// ---------- wellness: the pet's one number ----------
 
-/** Where a rescued pet's health bar starts: 2 of 20 boxes green. */
+/** Where a rescued pet's bar starts in recovery (2 of 20 boxes green); a raised puppy starts at 70. */
 export const RESCUE_HEALTH_START = 10;
+export const RAISE_HEALTH_START = 70;
 
 /**
- * How much of the health bar the journey allows, 0..100, in whole boxes (5%). A rescue in recovery starts at 10% and
- * turns green day by day to 100% at day 21. After recovery an issue lowers it (15, 30 or 50 points by tier), coming
- * back as the issue clears. A raised puppy in training is never limited, but issues apply to it too.
+ * Wellness W, 0..100 in whole boxes (5%): the only bar on Home, and what the heart shows (docs/MISSION_FORMULA.md).
+ * Recovery: rescue 10 + 90 x run/21, raise 70 + 30 x run/21. After recovery: 100, minus an active issue's
+ * 15, 30 or 50 points, which come back as the issue clears.
  */
-export function missionHealthCap(j: Pick<Journey, "mode" | "phase" | "run" | "issue">): number {
+export function wellness(j: Pick<Journey, "mode" | "phase" | "run" | "issue">): number {
   const round5 = (x: number) => Math.min(100, Math.max(0, Math.round(x / 5) * 5));
-  if (j.phase === "recovery") return j.mode === "rescue" ? round5(RESCUE_HEALTH_START + ((100 - RESCUE_HEALTH_START) * j.run) / RECOVERY_DAYS) : 100;
+  if (j.phase === "recovery") {
+    const start = j.mode === "rescue" ? RESCUE_HEALTH_START : RAISE_HEALTH_START;
+    return round5(start + ((100 - start) * j.run) / RECOVERY_DAYS);
+  }
   if (!j.issue) return 100;
   return round5(100 - ISSUE_HEALTH[j.issue.tier] * (1 - j.issue.have / j.issue.need));
 }
+/** Earlier name, kept for callers. */
+export const missionHealthCap = wellness;
 
 // ---------- setbacks ----------
 

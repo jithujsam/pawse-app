@@ -1172,7 +1172,7 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 14,
-      "end": 26,
+      "end": 30,
       "entries": [
         {
           "id": "home.hero.hero_aria",
@@ -1214,11 +1214,6 @@
           "placeholders": []
         },
         {
-          "id": "home.hero.day",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "home.hero.bar_aria",
           "kind": "text",
           "placeholders": [
@@ -1232,6 +1227,38 @@
             "green",
             "total"
           ]
+        },
+        {
+          "id": "home.hero.recover_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "home.hero.recover_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "home.hero.issue_line",
+          "kind": "text",
+          "placeholders": [
+            "issue",
+            "n"
+          ]
+        },
+        {
+          "id": "home.hero.consistency_line",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "home.hero.thriving_line",
+          "kind": "text",
+          "placeholders": []
         }
       ]
     },
@@ -1241,8 +1268,8 @@
       "title": "Paused card",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 28,
-      "end": 33,
+      "start": 32,
+      "end": 37,
       "entries": [
         {
           "id": "home.paused.aria",
@@ -1262,8 +1289,8 @@
       "title": "Weekly summary",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 35,
-      "end": 43,
+      "start": 39,
+      "end": 47,
       "entries": [
         {
           "id": "home.week.title",
@@ -1305,8 +1332,8 @@
       "title": "Today's check-in messages",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 45,
-      "end": 49,
+      "start": 49,
+      "end": 53,
       "entries": [
         {
           "id": "home.today.slip_blocks_goal",
@@ -1321,8 +1348,8 @@
       "title": "Milestone dialog",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 51,
-      "end": 58,
+      "start": 55,
+      "end": 62,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -1354,8 +1381,8 @@
       "title": "First-run tips",
       "source": "src/ui/Coach.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 60,
-      "end": 73,
+      "start": 64,
+      "end": 77,
       "entries": [
         {
           "id": "home.coach.s1_title",
@@ -1421,7 +1448,7 @@
       "source": "src/screens/MissionsSheet.tsx, src/screens/Home.tsx",
       "file": "src/text/sections/missions.ts",
       "start": 3,
-      "end": 54,
+      "end": 51,
       "entries": [
         {
           "id": "missions.sheet.label",
@@ -1646,27 +1673,15 @@
           ]
         },
         {
-          "id": "missions.sheet.slips_title",
+          "id": "missions.sheet.best",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "best",
+            "total"
+          ]
         },
         {
-          "id": "missions.sheet.slips_one",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.slips_two",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.slips_three",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.slips_during",
+          "id": "missions.sheet.slips_rule",
           "kind": "text",
           "placeholders": []
         },
@@ -1697,8 +1712,8 @@
       "title": "Healed, recovered, rewards, issues",
       "source": "src/screens/MissionsSheet.tsx",
       "file": "src/text/sections/missions.ts",
-      "start": 56,
-      "end": 100,
+      "start": 53,
+      "end": 97,
       "entries": [
         {
           "id": "missions.moment.aria",
@@ -1820,8 +1835,8 @@
       "title": "Conditions, skills and issues",
       "source": "src/mission-text.ts",
       "file": "src/text/sections/missions.ts",
-      "start": 102,
-      "end": 139,
+      "start": 99,
+      "end": 136,
       "entries": [
         {
           "id": "missions.content.rescue_coat_title",
@@ -1996,13 +2011,114 @@
       ]
     },
     {
+      "id": "packs.lines",
+      "screen": "Pet screen",
+      "title": "Talking-pet packs, by habit",
+      "source": "src/mission-text.ts, src/screens/Home.tsx",
+      "file": "src/text/sections/packs.ts",
+      "start": 9,
+      "end": 102,
+      "entries": [
+        {
+          "id": "packs.lines.food_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.food_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.food_slip",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.smoking_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.smoking_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.smoking_slip",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.alcohol_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.alcohol_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.alcohol_slip",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.scroll_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.scroll_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.scroll_slip",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.shop_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.shop_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.shop_slip",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.any_story",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.any_thanks",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "packs.lines.any_slip",
+          "kind": "voice",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "calendar.note",
       "screen": "Journey",
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 75,
-      "end": 87,
+      "start": 79,
+      "end": 91,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2064,8 +2180,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 89,
-      "end": 97,
+      "start": 93,
+      "end": 101,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2104,8 +2220,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 99,
-      "end": 108,
+      "start": 103,
+      "end": 112,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2151,8 +2267,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 110,
-      "end": 132,
+      "start": 114,
+      "end": 136,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2271,8 +2387,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 134,
-      "end": 146,
+      "start": 138,
+      "end": 150,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2327,8 +2443,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 148,
-      "end": 158,
+      "start": 152,
+      "end": 162,
       "entries": [
         {
           "id": "calendar.milestones.title",

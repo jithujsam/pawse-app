@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { fmtDay, fmtMonth, fmtTime, today } from "../dates";
-import { lostMonths, money } from "../format";
+import { money } from "../format";
 import { tt, t } from "../text";
 import { haptic } from "../haptics";
 import { rise, spring } from "../motion";
@@ -137,7 +137,7 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onSlipSaved }: { da
               <AnimatePresence initial={false}>
                 {dayEntries.map((e) => (
                   <motion.div layout className="item" key={e.id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, marginTop: 0 }} transition={spring.soft}>
-                    <div className="row"><b className="neg">{lostMonths(e.months)}</b>
+                    <div className="row"><b className="neg">{STATUS_LABEL.lapse}</b>
                       {!locked && <button className="icon-btn danger" aria-label={t("calendar.day.delete_aria")} onClick={() => remove(e.id)}>{Icon.trash}</button>}</div>
                     {e.amount !== null && <span>{habit.unit === "money" ? money(data.settings.currency, e.amount) : habit.unit === "minutes" ? t("calendar.day.minutes", { n: e.amount }) : e.amount}</span>}
                     {Object.entries(e.values).filter(([k, v]) => typeof v === "string" && v && habit.fields.find((f) => f.id === k)?.type === "text").map(([k, v]) => <span key={k} className="muted small">{String(v)}</span>)}

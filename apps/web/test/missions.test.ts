@@ -54,11 +54,11 @@ describe("adoption", () => {
     expect(j(c.id).missions[0]).toMatchObject({ id: "rescue_coat", status: "current", at: 1 });
     expect(m(c.id).healthCap).toBe(10);
   });
-  it("a new Raise pet learns skills and its health bar is never limited in training", () => {
+  it("a new Raise pet learns skills and starts healthy, at 70", () => {
     actions.createTrack({ name: "Scrolling", cls: "doomscrolling", unit: "minutes", species: "dog", companionName: "Mochi", adoption: "raise" });
     const c = getData().companions.at(-1)!;
     expect(j(c.id).missions[0].id).toBe("raise_name");
-    expect(m(c.id).healthCap).toBe(100);
+    expect(m(c.id).healthCap).toBe(70);
   });
   it("rescue is for dogs only: a cat asked to be a rescue is raised", () => {
     actions.createTrack({ name: "Cards", cls: "impulse_buying", unit: "money", species: "cat", companionName: "Miso", adoption: "rescue" });
@@ -161,12 +161,12 @@ describe("existing pets", () => {
 });
 
 describe("the health bar and heart", () => {
-  it("a rescue's bar and heart start low and rise day by day; a raised puppy's are unchanged", () => {
+  it("a rescue's bar and heart start low and rise day by day; a raised puppy starts at 70", () => {
     const heart = (id: string) => healthReport(getData(), viewCompanion(getData(), id), "honest");
     const { CA, CB } = phone(7000);
     expect(shownHealth(viewCompanion(getData(), CB).age, m(CB).healthCap)).toBe(10);
     expect(heart(CB)).toMatchObject({ heart: 10, title: "Scout is still recovering" });
-    expect(heart(CA).heart).toBe(100);
+    expect(heart(CA).heart).toBe(70);
     const { CB: CB2 } = phone(7100, { metB: 14 });
     expect(m(CB2).healthCap).toBe(70);
   });

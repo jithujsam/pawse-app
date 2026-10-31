@@ -11,3 +11,23 @@ describe("mission words", () => {
     expect([1, 2, 3, 4, 5].map(rewardName)).toEqual(["One week strong", "Two weeks strong", "Fully consistent", "Month 1 thriving", "Month 2 thriving"]);
   });
 });
+
+import { packFor, packLine } from "../src/mission-text";
+
+describe("talking-pet packs", () => {
+  it("each named habit gets its own pack; custom or sensitive habits get the generic one", () => {
+    expect(packFor("food_spending")).toBe("food");
+    expect(packFor("smoking")).toBe("smoking");
+    expect(packFor("custom")).toBe("any");
+    expect(packFor(undefined)).toBe("any");
+  });
+  it("lines exist in every Voice and never use body or weight words", () => {
+    for (const cls of ["food_spending", "smoking", "alcohol", "doomscrolling", "impulse_buying", "custom"] as const)
+      for (const kind of ["story", "thanks", "slip"] as const)
+        for (const tone of ["gentle", "honest", "brutal"] as const) {
+          const line = packLine(cls, kind, tone);
+          expect(line.length).toBeGreaterThan(10);
+          expect(line).not.toMatch(/\b(weight|fat|calorie|diet|body)\b/i);
+        }
+  });
+});

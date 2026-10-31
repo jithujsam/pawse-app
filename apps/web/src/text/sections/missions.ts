@@ -38,11 +38,8 @@ export const missionsSheet = defineSection("missions.sheet", { screen: "Missions
   reward_2: "Two weeks strong",
   reward_3: "Fully consistent",
   reward_month: "Month {n} thriving",
-  slips_title: "How slips work now",
-  slips_one: "One slip: a minor issue, 3 days in a row to clear.",
-  slips_two: "Two in a week, or a heavy slip: 7 days in a row.",
-  slips_three: "Three in a week: 14 days in a row.",
-  slips_during: "A slip while an issue is still clearing makes it one step worse.",
+  best: "Best run {best} · {total} goal-met days in total",
+  slips_rule: "From now on: one slip takes 3 days in a row to put right, two in a week 7, three in a week 14.",
   fiction: "These describe {name}, not you.",
   safety_alcohol: "Stopping alcohol suddenly can be dangerous for some people. If you drink heavily or daily, talk to a doctor before you stop. Goals here are not medical advice.",
   setback: tones(

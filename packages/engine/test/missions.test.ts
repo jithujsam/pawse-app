@@ -101,8 +101,11 @@ describe("the health bar", () => {
     expect(missionHealthCap(J(m(21) + "smsms"))).toBe(50);
     expect(missionHealthCap(J(m(21) + "smsms" + m(7)))).toBe(75);
   });
-  it("a raised puppy in training isn't limited", () => {
-    expect(missionHealthCap(J("", "raise"))).toBe(100);
+  it("a raised puppy starts at 70 and grows to 100 over the 21 days", () => {
+    expect([0, 21].map((n) => missionHealthCap(J(m(n), "raise")))).toEqual([70, 100]);
+  });
+  it("best run survives a restart", () => {
+    expect(J(m(18) + "s" + m(2))).toMatchObject({ run: 2, bestRun: 18 });
   });
 });
 

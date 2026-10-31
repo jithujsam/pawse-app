@@ -641,7 +641,7 @@ This builds on §15, §19.4 and §21.9. It changes how words are kept and checke
 
 ## 23. Pet missions amendment (2026-10-31)
 
-This builds on §19.6 and §20 and adds to §5.1. It changes no damage-engine math: the §5.3 pacing table and the health bar (§19.10) stand. Owner decision (2026-10-31): mission recovery needs 21 goal-met days in a row, and a slip in that time starts it over. This deliberately departs from §19.6 for missions only; days of care, streaks and milestones elsewhere are unchanged. Rules: `packages/engine/src/missions.ts`.
+This builds on §19.6 and §20 and adds to §5.1. It changes no damage-engine math: the §5.3 pacing table and the health bar (§19.10) stand. Owner decision (2026-10-31): mission recovery needs 21 goal-met days in a row, and a slip in that time starts it over. This deliberately departs from §19.6 for missions only; days of care, streaks and milestones elsewhere are unchanged. Rules: `packages/engine/src/missions.ts`. The full formula, with a worked example, is `docs/MISSION_FORMULA.md` (2026-11-01: Home shows only wellness W; talking-pet packs for rescues).
 
 1. **Adoption modes.** A new pet is *Raise a puppy* (healthy; learns six skills) or *Rescue a puppy* (neglected; heals six conditions). Rescue is for dogs only. Chosen once. Every pet from before missions reads as Raise; nothing about it is rewritten. There is no goal length to choose.
 2. **Recovery (days 1 to 21, strict).** 21 goal-met days in a row. Six conditions heal along the way, mildest first, on days 1, 3, 6, 10, 15 and 21: itchy, patchy coat; low energy; startles at noises; doesn't know how to play; afraid of being left alone; afraid of people. A slip starts the 21 days over. Days with nothing recorded, rest days and paused days count neither way.

@@ -36,11 +36,11 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
   // so it is never a saved value. Quiet days are missing data, not a slip, so they don't lower it.
   let heart = 100 - v.age * 0.9 - (slipped ? 15 : 0) + Math.min(10, reserve);
   heart = Math.round(Math.max(3, Math.min(slipped ? 80 : 100, heart)));
-  // A rescued pet arrives in poor shape: its missions limit how full the heart can be (10% at the start, 100% when
-  // every mission is recovered), the same limit the health bar shows.
-  const cap = companionMissions(d, v.companion.id, t0)?.healthCap ?? 100;
-  const rehab = cap < 100 && Math.round((heart * cap) / 100) < heart;
-  heart = Math.max(3, Math.round((heart * cap) / 100));
+  // The heart shows the pet's wellness W, the same number as the bar (docs/MISSION_FORMULA.md). A rescue still in
+  // recovery is low because of where it started, not because of anything the person did, so it gets its own words.
+  const m = companionMissions(d, v.companion.id, t0);
+  if (m) heart = Math.max(3, m.healthCap);
+  const rehab = !!m && m.mode === "rescue" && m.journey.phase === "recovery";
   const level: Level = heart >= 85 ? "thriving" : heart >= 68 ? "healthy" : heart >= 48 ? "okay" : heart >= 28 ? "unwell" : "critical";
   const g = tone === "gentle", b = tone === "brutal";
   const lines: Record<Level, [string, string]> = {
@@ -57,7 +57,7 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
     unwell: [`${name} isn't doing well`, `${b ? "Straight talk: " : ""}${name} is unwell${slipped ? " and feeling today's slip" : ""}. Keeping the habit in check for a while is what helps most. You can do this, one day at a time.`],
     critical: [`${name} needs you`, `${name} is very weak right now. ${g ? "It's not too late." : "This is the moment to change course."} A good day today starts the healing, and every day after adds to it.`],
   };
-  const [title, body] = rehab && !slipped && level !== "thriving" ? rehabLines(name, tone, cap) : lines[level];
+  const [title, body] = rehab && !slipped && level !== "thriving" ? rehabLines(name, tone, heart) : lines[level];
   return { level, heart, title, body, silent };
 }
 

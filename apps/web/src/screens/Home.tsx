@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { HEALTH_SEGMENTS, healthSegments, STAGE_LABEL } from "@detox/engine";
+import { HEALTH_SEGMENTS } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, dyingBanner, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
+import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
 import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
@@ -22,7 +22,8 @@ import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { JourneyMoment, MissionsSheet } from "./MissionsSheet";
 import type { JourneyEvent } from "@detox/engine";
-import { companionMissions, shownHealth } from "../missions";
+import { companionMissions } from "../missions";
+import { missionText, packLine } from "../mission-text";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
@@ -75,9 +76,17 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const days = daysTogether(companion.bornOn, today());
   const missions = companionMissions(data, companion.id, t0);
   // A rescued pet's bar starts mostly red and turns green as its missions are completed (PRD §23.9).
-  const healthPct = shownHealth(age, missions?.healthCap ?? 100);
-  const seg = (missions?.healthCap ?? 100) < 100 ? { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) } : healthSegments(age);
-  const danger = age >= 80;
+  // One number for the pet: wellness W (docs/MISSION_FORMULA.md). The slip-damage engine still runs underneath for
+  // history, but Home shows only W, so the bar, the heart and the line under it always agree.
+  const healthPct = missions?.healthCap ?? 100;
+  const seg = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
+  const danger = false;
+  const j = missions?.journey;
+  // Only a rescue has a past home to talk about (talking-pet packs, src/text/sections/packs.ts).
+  const rescue = missions?.mode === "rescue";
+  const journeyLine = !j ? "" : j.issue ? t("home.hero.issue_line", { issue: missionText(j.issue.id).title, n: j.issue.need - j.issue.have })
+    : j.phase === "recovery" ? (21 - j.run === 1 ? t("home.hero.recover_one") : t("home.hero.recover_other", { n: 21 - j.run }))
+      : j.phase === "consistency" ? t("home.hero.consistency_line", { n: 21 - j.consistency }) : t("home.hero.thriving_line");
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
@@ -111,7 +120,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
     if (!actions.markClean(habit.id)) { haptic.warn(); setNote(t("home.today.slip_blocks_goal")); return; }
     haptic.success();
     setJust("clean"); setSparks((s) => s + 1);
-    setNote(say("cleanThanks", personality, tone));
+    setNote(rescue ? packLine(habit.cls, "thanks", tone) : say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
     // A condition healed (or full recovery) is shown first; a days-of-care milestone waits until it's closed.
     const ev = actions.recordMissions(companion.id);
@@ -123,14 +132,15 @@ export function Home({ onBack }: { onBack?: () => void }) {
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
-    setNote(d.binge && SCARS_ON ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
+    setNote(d.binge && SCARS_ON ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : rescue ? packLine(habit.cls, "slip", tone) : say("slip", personality, tone));
     // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
     void scheduleCare("slip", careOpts());
     // A slip can bring a condition back: say so plainly, with how to heal it again.
     const ev = actions.recordMissions(companion.id);
     if (ev) setTimeout(() => setMoment(ev), 1200);
   }
-  const react = (r: Reaction) => setNote(say(r, personality, tone));
+  // A stroke tells the pet's story (its talking-pet pack); other taps keep their playful answers.
+  const react = (r: Reaction) => setNote(rescue && r === "stroke" ? packLine(habit.cls, "story", tone) : say(r, personality, tone));
 
   const ws = weekStart(t0);
   const strip = Array.from({ length: 7 }, (_, i) => {
@@ -162,7 +172,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
       <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
-        <div className="hero-name"><h2>{companion.name}</h2><span className="stage-tag">{STAGE_LABEL[view.stage]}</span></div>
+        <div className="hero-name"><h2>{companion.name}</h2></div>
         <div className="pet-stage-live">
           <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} accessory={track.wear}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
@@ -191,14 +201,13 @@ export function Home({ onBack }: { onBack?: () => void }) {
             <span className="small">{t("missions.sheet.button")}</span>
           </motion.button>
         </div>
-        <div className="agetext"><span>{t("home.hero.day")} <b><AnimatedNumber value={days} /></b></span><span className="muted">{t("home.hero.vital_health")} <AnimatedNumber value={healthPct} />%</span></div>
+        <div className="agetext"><span><b>{journeyLine}</b></span><span className="muted"><AnimatedNumber value={healthPct} />%</span></div>
         <div className={`healthbar${danger ? " danger" : ""}`} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
           aria-valuetext={t("home.hero.bar_text", { green: seg.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
           {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < seg.green ? "ok" : "hurt"} />)}
         </div>
       </motion.section>
 
-      {age >= 90 && <motion.div className="banner danger" role="status" variants={rise}>{dyingBanner(tone, companion.name, age)}</motion.div>}
 
       {trackPaused && (
         <motion.section className="card row paused-card" aria-label={t("home.paused.aria")} variants={rise}>

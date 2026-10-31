@@ -19,9 +19,13 @@ export const homeHero = defineSection("home.hero", { screen: "Pet screen", title
   vital_health: "Health",
   vital_history: "History",
   vital_conditions: "Conditions",
-  day: "Day",
   bar_aria: "{name}'s health",
   bar_text: "{green} of {total} segments healthy",
+  recover_one: "1 goal-met day to recover",
+  recover_other: "{n} goal-met days to recover",
+  issue_line: "{issue}: {n} days to clear",
+  consistency_line: "{n} days of consistency to go",
+  thriving_line: "Thriving",
 });
 // @copy-section-end home.hero
 
