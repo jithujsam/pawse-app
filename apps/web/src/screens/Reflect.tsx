@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { fmtDay, today } from "../dates";
+import { today } from "../dates";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions, useData } from "../store";
@@ -14,7 +14,7 @@ import { toast } from "../ui/Toast";
  * and an if-then plan ("if I'm bored at 10pm, then I'll…") roughly doubles follow-through in studies
  * of implementation intentions. One entry per day; mood is required, words are optional.
  */
-const MOODS = [{ n: 1, e: "😞", l: t("insights.reflect.mood_1") }, { n: 2, e: "😕", l: t("insights.reflect.mood_2") }, { n: 3, e: "😐", l: t("insights.reflect.mood_3") }, { n: 4, e: "🙂", l: t("insights.reflect.mood_4") }, { n: 5, e: "😄", l: t("insights.reflect.mood_5") }];
+export const MOODS = [{ n: 1, l: t("insights.reflect.mood_1") }, { n: 2, l: t("insights.reflect.mood_2") }, { n: 3, l: t("insights.reflect.mood_3") }, { n: 4, l: t("insights.reflect.mood_4") }, { n: 5, l: t("insights.reflect.mood_5") }];
 const PROMPTS = [
   t("insights.reflect.prompt_1"), t("insights.reflect.prompt_2"), t("insights.reflect.prompt_3"),
   t("insights.reflect.prompt_4"), t("insights.reflect.prompt_5"), t("insights.reflect.prompt_6"),
@@ -28,7 +28,6 @@ export function Reflect() {
   const [body, setBody] = useState(existing?.body ?? "");
   const [open, setOpen] = useState(false);
   const prompt = PROMPTS[new Date().getDate() % PROMPTS.length];
-  const recent = [...data.journal].filter((j) => j.day !== t0).slice(-1).reverse();
 
   // Same care as the slip sheet: distress comes first, and nothing is saved.
   const concern = concernIn(body, "crisis");
@@ -44,7 +43,7 @@ export function Reflect() {
     <div className="stack tight reflect">
       <div className="row"><b>{t("insights.reflect.title")}</b>{existing && !open && <span className="muted small">{t("insights.reflect.done")}</span>}</div>
       <Select label={t("insights.reflect.mood_aria")} value={mood || undefined} placeholder={t("insights.reflect.mood_placeholder")}
-        options={MOODS.map((m) => ({ value: m.n, label: `${m.e}  ${m.l}` }))}
+        options={MOODS.map((m) => ({ value: m.n, label: m.l }))}
         onChange={(n) => { setMood(n); setOpen(true); }} />
       <AnimatePresence initial={false}>
         {open && (
@@ -55,16 +54,6 @@ export function Reflect() {
           </motion.div>
         )}
       </AnimatePresence>
-      {recent.length > 0 && !open && (
-        <div className="list">
-          {recent.map((j) => (
-            <div className="item" key={j.day}>
-              <div className="row"><b>{fmtDay(j.day)}</b><span aria-label={MOODS[j.mood - 1]?.l}>{MOODS[j.mood - 1]?.e}</span></div>
-              {j.body && <span className="small">{j.body}</span>}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -80,8 +80,6 @@ export const calendarNote = defineSection("calendar.note", { screen: "Journey", 
 export const calendarAge = defineSection("calendar.age", { screen: "Journey", title: "Age this month", source: "src/screens/Calendar.tsx" }, {
   aria: "Age this month",
   label: "{name}'s age this month",
-  one_point: "The curve starts drawing from {name}'s second day.",
-  none: "No age history for this month yet.",
   chart: "Visible age over the month",
 });
 // @copy-section-end calendar.age
@@ -124,12 +122,13 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
 // @copy-section calendar.stats
 export const calendarStats = defineSection("calendar.stats", { screen: "Journey", title: "Calendar totals", source: "src/screens/Journey.tsx" }, {
   title: "Journey",
-  so_far: "So far",
-  together: "Days together",
+  this_month: "This month",
+  met_of: "{met} of {days} days met",
+  runs: "Your runs",
+  current_run: "Current run",
+  best_run: "Best run",
   goal_met_days: "Goal-met days",
-  healed: "Life healed",
-  months_short: "mo",
-  best: "Best streak",
+  notes: "Notes",
   day: "day",
   days: "days",
 });
@@ -143,6 +142,6 @@ export const calendarMilestones = defineSection("calendar.milestones", { screen:
   progress: "{care} of {next} days of care: days with your goal met or an urge managed. They add up and never reset.",
   done: "Every milestone reached. {name} is proud of you.",
   badge: "{n} days",
-  badge_reached: "{n} days, reached",
+  reached: "Reached",
 });
 // @copy-section-end calendar.milestones

@@ -5,7 +5,7 @@ import { t } from "../text";
 import { addDays, fmtDay, today, weekStart } from "../dates";
 import { weekdayOf } from "../progress";
 import { haptic } from "../haptics";
-import { rise, spring } from "../motion";
+import { spring } from "../motion";
 import { adjustmentIdeas, observations, STATUS_LABEL, strategy, strategyResults, weekReview } from "../recovery";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
@@ -43,8 +43,8 @@ export function WeeklyReview() {
   const weeks: { value: Which; label: string }[] = [{ value: "last", label: t("insights.review.last_week") }, { value: "this", label: t("insights.review.this_week") }];
 
   return (
-    <motion.section className="card stack" aria-label={t("insights.review.title")} variants={rise}>
-      <h2>{t("insights.review.title")}</h2>
+    <section className="card stack" aria-label={t("insights.review.title")}>
+      <h3>{t("insights.review.title")}</h3>
       <div className="segmented" role="tablist" aria-label={t("insights.review.which")}>
         {weeks.map((w) => (
           <button key={w.value} type="button" role="tab" aria-selected={which === w.value} className="seg" onClick={() => setWhich(w.value)}>
@@ -88,16 +88,16 @@ export function WeeklyReview() {
           </div>
         )}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
 /** A small check-in: one mood and an optional line. */
 export function CheckIn() {
   return (
-    <motion.section className="card stack tight checkin-lite" aria-label={t("insights.review.check_in")} variants={rise}>
+    <section className="card stack tight checkin-lite" aria-label={t("insights.review.check_in")}>
       <Reflect />
-    </motion.section>
+    </section>
   );
 }
 
@@ -109,8 +109,7 @@ export function Observations() {
   const o = observations(data, habit);
   const tried = strategyResults(data, habit.id).filter((s) => s.total >= 2);
   return (
-    <motion.section className="card stack" aria-label={t("insights.patterns.aria")} variants={rise}>
-      <h2>{t("insights.patterns.title")}</h2>
+    <section className="card stack" aria-label={t("insights.patterns.aria")}>
       {o.items.length === 0
         ? <p className="muted">{o.needed > 0
             ? (o.needed === 1 ? t("insights.patterns.not_enough_one") : t("insights.patterns.not_enough_other", { n: o.needed }))
@@ -128,6 +127,6 @@ export function Observations() {
           {tried.map((s) => <div className="row small" key={s.id}><span>{strategy(s.id).title}</span><span>{t("insights.patterns.tried_row", { managed: s.managed, total: s.total })}</span></div>)}
         </div>
       )}
-    </motion.section>
+    </section>
   );
 }

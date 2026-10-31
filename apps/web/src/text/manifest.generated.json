@@ -2200,7 +2200,7 @@
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
       "start": 79,
-      "end": 87,
+      "end": 85,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2215,18 +2215,6 @@
           ]
         },
         {
-          "id": "calendar.age.one_point",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "calendar.age.none",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "calendar.age.chart",
           "kind": "text",
           "placeholders": []
@@ -2239,8 +2227,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 89,
-      "end": 98,
+      "start": 87,
+      "end": 96,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2286,8 +2274,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 100,
-      "end": 122,
+      "start": 98,
+      "end": 120,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2406,8 +2394,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 124,
-      "end": 136,
+      "start": 122,
+      "end": 135,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2415,12 +2403,30 @@
           "placeholders": []
         },
         {
-          "id": "calendar.stats.so_far",
+          "id": "calendar.stats.this_month",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "calendar.stats.together",
+          "id": "calendar.stats.met_of",
+          "kind": "text",
+          "placeholders": [
+            "days",
+            "met"
+          ]
+        },
+        {
+          "id": "calendar.stats.runs",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "calendar.stats.current_run",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "calendar.stats.best_run",
           "kind": "text",
           "placeholders": []
         },
@@ -2430,17 +2436,7 @@
           "placeholders": []
         },
         {
-          "id": "calendar.stats.healed",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "calendar.stats.months_short",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "calendar.stats.best",
+          "id": "calendar.stats.notes",
           "kind": "text",
           "placeholders": []
         },
@@ -2462,8 +2458,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 138,
-      "end": 148,
+      "start": 137,
+      "end": 147,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -2507,11 +2503,9 @@
           ]
         },
         {
-          "id": "calendar.milestones.badge_reached",
+          "id": "calendar.milestones.reached",
           "kind": "text",
-          "placeholders": [
-            "n"
-          ]
+          "placeholders": []
         }
       ]
     },
@@ -2538,12 +2532,44 @@
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
       "start": 9,
-      "end": 21,
+      "end": 26,
       "entries": [
         {
           "id": "insights.week.title",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "insights.week.summary",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.week.count_one",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "insights.week.count_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "insights.week.strip_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.week.day_aria",
+          "kind": "text",
+          "placeholders": [
+            "date",
+            "status"
+          ]
         },
         {
           "id": "insights.week.slips",
@@ -2593,40 +2619,20 @@
       "title": "Urges managed",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 23,
-      "end": 34,
+      "start": 28,
+      "end": 35,
       "entries": [
-        {
-          "id": "insights.urges.aria",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.urges.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.urges.this_week",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "insights.urges.empty",
-          "kind": "text",
-          "placeholders": []
-        },
         {
           "id": "insights.urges.managed",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "insights.urges.noticed",
+          "id": "insights.urges.of",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "n"
+          ]
         },
         {
           "id": "insights.urges.all",
@@ -2649,8 +2655,8 @@
       "title": "Money kept",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 36,
-      "end": 55,
+      "start": 37,
+      "end": 56,
       "entries": [
         {
           "id": "insights.money.aria",
@@ -2749,8 +2755,8 @@
       "title": "When it happens",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 57,
-      "end": 67,
+      "start": 58,
+      "end": 68,
       "entries": [
         {
           "id": "insights.when.title",
@@ -2802,8 +2808,8 @@
       "title": "Since you started",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 69,
-      "end": 80,
+      "start": 70,
+      "end": 81,
       "entries": [
         {
           "id": "insights.since.title",
@@ -2856,8 +2862,8 @@
       "title": "Written summary",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 82,
-      "end": 88,
+      "start": 83,
+      "end": 89,
       "entries": [
         {
           "id": "insights.summary.aria",
@@ -2882,8 +2888,8 @@
       "title": "Slips per week",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 90,
-      "end": 96,
+      "start": 91,
+      "end": 97,
       "entries": [
         {
           "id": "insights.chart.title",
@@ -2910,8 +2916,8 @@
       "title": "If nothing changes",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 98,
-      "end": 106,
+      "start": 99,
+      "end": 107,
       "entries": [
         {
           "id": "insights.forecast.title",
@@ -2955,8 +2961,8 @@
       "title": "How was today?",
       "source": "src/screens/Reflect.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 108,
-      "end": 128,
+      "start": 109,
+      "end": 129,
       "entries": [
         {
           "id": "insights.reflect.title",
@@ -3051,8 +3057,8 @@
       "title": "Weekly review",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 130,
-      "end": 156,
+      "start": 131,
+      "end": 157,
       "entries": [
         {
           "id": "insights.review.check_in",
@@ -3191,8 +3197,8 @@
       "title": "Weekly review headline",
       "source": "src/recovery.ts",
       "file": "src/text/sections/insights.ts",
-      "start": 158,
-      "end": 168,
+      "start": 159,
+      "end": 169,
       "entries": [
         {
           "id": "insights.goal_line.nothing_open",
@@ -3251,8 +3257,8 @@
       "title": "What your records show",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 170,
-      "end": 183,
+      "start": 171,
+      "end": 184,
       "entries": [
         {
           "id": "insights.patterns.aria",
@@ -4827,7 +4833,7 @@
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 150,
-      "end": 189,
+      "end": 195,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4836,6 +4842,36 @@
         },
         {
           "id": "sheets.plan.goal_none",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.finish",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.sec_goal",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.sec_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.sec_first",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.sec_helps",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.plan.sec_support",
           "kind": "text",
           "placeholders": []
         },
@@ -5025,8 +5061,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 191,
-      "end": 213,
+      "start": 197,
+      "end": 219,
       "entries": [
         {
           "id": "sheets.memorial.life",
