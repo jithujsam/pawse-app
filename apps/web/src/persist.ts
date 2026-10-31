@@ -37,6 +37,15 @@ const rows = <T>(xs: unknown, ...schemas: RowSchema<T>[]): T[] =>
   Array.isArray(xs) ? xs.flatMap((x) => { for (const s of schemas) { const p = s.safeParse(x); if (p.success) return [p.data as T]; } return []; }) : [];
 const text = (v: unknown, max: number) => typeof v === "string" && v.length <= max;
 
+/** A companion whose mission memory or mode is damaged is kept without them: progress is recomputed, and losing the pet would cost far more. */
+const CompanionWithoutMissions: RowSchema<Companion> = {
+  safeParse: (x) => {
+    if (!x || typeof x !== "object") return { success: false };
+    const { missions: _m, adoption, ...rest } = x as Record<string, unknown>;
+    return CompanionSchema.safeParse(adoption === "raise" || adoption === "rescue" ? { ...rest, adoption } : rest) as { success: boolean; data?: Companion };
+  },
+};
+
 /** Keeps every row that is valid on its own, so one damaged row never costs the whole history. */
 function salvage(raw: unknown): V1 | Loose | null {
   const v = raw && typeof raw === "object" ? (raw as { v?: unknown }).v : undefined;
@@ -45,7 +54,7 @@ function salvage(raw: unknown): V1 | Loose | null {
   const s = (v === 1 ? LegacySettingsSchema : SettingsSchema).safeParse(r.settings);
   const obj = (x: unknown) => (x && typeof x === "object" ? Object.entries(x as Record<string, unknown>) : []);
   const common = {
-    companions: rows<Companion>(r.companions, CompanionSchema),
+    companions: rows<Companion>(r.companions, CompanionSchema, CompanionWithoutMissions),
     entries: rows<Entry>(r.entries, EntrySchema),
     cleanDays: rows<CleanDay>(r.cleanDays, CleanDaySchema),
     urges: rows<Urge>(r.urges, UrgeSchema),

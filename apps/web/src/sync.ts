@@ -3,7 +3,7 @@ import { kv } from "./db";
 import { actions, getData, onCommit } from "./store";
 import { supabase } from "./supabase";
 import { withTimeout } from "./net";
-import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, TRACK_COLUMNS, type Pulled, type Table } from "./syncmap";
+import { adoptAccount, diff, indexRows, merge, OPTIONAL_TABLES, PUSH_ORDER, slipBeatsClean, tombstone, toRemote, TRACK_COLUMNS, MISSION_COLUMNS, type Pulled, type Table } from "./syncmap";
 
 /**
  * Offline-first sync. Every local change is recorded as a pending key; pushes are batched upserts in
@@ -156,6 +156,14 @@ async function sendRows(t: Table, rows: Record<string, unknown>[]): Promise<{ co
   // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
   if (error && t === "companions" && /coat|personality/i.test(error.message)) {
     batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
+    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
+  }
+  // Before migration 0008 the server has no adoption mode or missions: keep syncing companions without them.
+  // A server without 0006 has no 0008 either, so its missing habit_id drops these too; the 0006 step below then drops habit_id.
+  // Mission memory then stays on this phone; progress itself is always recomputed from goal-met days.
+  if (error && t === "companions" && [...MISSION_COLUMNS, ...TRACK_COLUMNS.companions].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
+    const drop = new Set<string>(MISSION_COLUMNS);
+    batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
     ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
   }
   // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.

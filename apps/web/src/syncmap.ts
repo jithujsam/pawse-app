@@ -1,4 +1,5 @@
-import { LegacySettingsSchema, TrackStateSchema } from "@detox/schema";
+import { CompanionSchema, LegacySettingsSchema, TrackStateSchema } from "@detox/schema";
+import { mergeMemory } from "./missions";
 import { defaultTrackState, PER_TRACK_KEYS, trackFromLegacy, trackState, type LegacyTrackSettings } from "./tracks";
 import type { AppData, CleanDay, Companion, Entry, Habit, JournalEntry, Settings, TrackState, Urge } from "./types";
 
@@ -77,6 +78,8 @@ export function legacyProfileCopy(d: AppData): Record<string, unknown> {
 const trackColumn = (t: TrackState) => { const { description: _d, startedOn: _s, status: _st, ...rest } = t; return rest; };
 /** Columns added by migration 0006. A server without them keeps syncing the rest. */
 export const TRACK_COLUMNS = { habits: ["description", "started_on", "status", "archived_at", "track"], companions: ["habit_id"] } as const;
+/** Companion columns from migration 0008 (missions). A server without them gets companions without them. */
+export const MISSION_COLUMNS = ["adoption_mode", "missions"] as const;
 
 export interface Upsert { table: Table; row: Record<string, unknown> }
 
@@ -87,7 +90,9 @@ export function toRemote(key: string, d: AppData, userId: string, t: number): Up
   const base = { user_id: userId, client_updated_at: t };
   switch (l.kind) {
     case "s": return [{ table: "profiles", row: { id: userId, settings: { ...legacyProfileCopy(d), ...portableSettings(l.row) }, client_updated_at: t, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone?.slice(0, 64) ?? null } }];
-    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, breed: l.row.breed ?? null, personality: l.row.personality ?? null, habit_id: l.row.trackId ?? null, deleted_at: null } }];
+    case "c": return [{ table: "companions", row: { ...base, id: l.row.id, species: l.row.species, name: l.row.name, born_on: l.row.bornOn, died_on: l.row.diedOn, final_age: l.row.finalAge, coat: l.row.coat ?? null, breed: l.row.breed ?? null, personality: l.row.personality ?? null, habit_id: l.row.trackId ?? null, deleted_at: null,
+      // Null leaves an existing pet's mode unset on the server, which reads as raise; a mode never changes once set.
+      adoption_mode: l.row.adoption ?? null, missions: l.row.missions ?? null } }];
     case "h": {
       const tr = trackState(d, l.row.id);
       return [{ table: "habits", row: {
@@ -162,6 +167,19 @@ function remoteTrack(r: R, h: Habit, local: TrackState | undefined, legacy: Lega
 }
 
 /**
+ * Adoption mode and mission memory from a companions row. A mode, once known, is kept (it's chosen once). Mission
+ * memory is a union of both sides, so a completion or celebration seen on either phone is never lost. A malformed
+ * value is ignored and this phone's stands.
+ */
+function remoteMissions(r: R, local: Companion | undefined): Pick<Companion, "adoption" | "missions"> {
+  const mode = r.adoption_mode === "raise" || r.adoption_mode === "rescue" ? r.adoption_mode : undefined;
+  const parsed = r.missions == null ? undefined : CompanionSchema.shape.missions.safeParse(r.missions);
+  const memory = mergeMemory(local?.missions, parsed?.success ? parsed.data : undefined);
+  const adoption = local?.adoption ?? mode;
+  return { ...(adoption ? { adoption } : {}), ...(memory ? { missions: memory } : {}) };
+}
+
+/**
  * Merges pulled rows into local data. A row only wins when it is newer than an unsent local change
  * to the same key (last write wins, by the time each phone made the change).
  */
@@ -187,7 +205,8 @@ export function merge(d: AppData, p: Pulled, pending: Record<string, number>): {
     if (r.deleted_at) { companions = companions.filter((c) => c.id !== r.id); continue; }
     const owner = r.habit_id ? String(r.habit_id) : companions.find((c) => c.id === r.id)?.trackId;
     companions = upsert(companions, { id: String(r.id), species: r.species as Companion["species"], name: String(r.name), bornOn: String(r.born_on), diedOn: (r.died_on as string) ?? null, finalAge: num(r.final_age),
-      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.breed ? { breed: String(r.breed) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}), ...(owner ? { trackId: owner } : {}) });
+      ...(r.coat ? { coat: String(r.coat) } : {}), ...(r.breed ? { breed: String(r.breed) } : {}), ...(r.personality ? { personality: r.personality as Companion["personality"] } : {}), ...(owner ? { trackId: owner } : {}),
+      ...remoteMissions(r, companions.find((c) => c.id === r.id)) });
   }
   const sortedHabits = [...p.habits].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0));
   for (const r of sortedHabits) {

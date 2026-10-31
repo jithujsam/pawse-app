@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import {
   baselineMonths, cleanDaysToAge, cleanDaysToUndo, computeSeverity, floorAge, healthAgeFromMonths, healthRules, simulate, STAGE_LABEL, stageForAge,
-  type DayInput, type DayState, type HabitClass, type Stage,
+  type AdoptionMode, type DayInput, type DayState, type HabitClass, type MissionLevel, type Stage,
 } from "@detox/engine";
 import { addDays, iso, today, weekStart } from "./dates";
 import { dayStatus, EDIT_DAYS, outcomeDays, petDayInputs, quietDays, shiftDays, streaks, trackIndex, withPause, withResume } from "./progress";
@@ -14,6 +14,7 @@ import { money } from "./format";
 import { kv, idbAvailable } from "./db";
 import { withTimeout } from "./net";
 import { blank, migrateIds, normalize, normalizeWithReport, uuid } from "./persist";
+import { emptyMemory, mergeMemory, missionUpdate, RESCUE_SPECIES, withPetDay } from "./missions";
 import { canRecord, defaultTrackState, firstEventDay, focusedTrackId, trackState } from "./tracks";
 import { newKey, open as vaultOpen, seal, type Sealed, type VaultKey } from "./vault";
 import { localCurrency } from "./region";
@@ -373,7 +374,15 @@ export function mergeAdditive(local: AppData, incoming: AppData): AppData {
   const merged = normalize({
     ...local,
     settings: local.settings.onboarded ? local.settings : incoming.settings,
-    companions: add(local.companions, incoming.companions, (c) => c.id),
+    // A companion on both sides keeps this phone's version, plus the backup's mission completions and celebrations
+    // (they only ever grow) and its adoption mode if this phone has none.
+    companions: add(local.companions, incoming.companions, (c) => c.id).map((c) => {
+      const other = incoming.companions.find((x) => x.id === c.id);
+      if (!other || local.companions.every((x) => x.id !== c.id)) return c;
+      const missions = mergeMemory(c.missions, other.missions);
+      const adoption = c.adoption ?? other.adoption;
+      return { ...c, ...(adoption ? { adoption } : {}), ...(missions ? { missions } : {}) };
+    }),
     habits: add(local.habits, incoming.habits, (h) => h.id),
     entries: add(local.entries, incoming.entries, (e) => e.id).sort((a, b) => a.createdAt - b.createdAt),
     cleanDays: add(local.cleanDays, incoming.cleanDays, (c) => `${c.habitId}|${c.day}`),
@@ -426,6 +435,10 @@ export interface Deduction {
   streakBefore: number;
 }
 
+/** A new pet's adoption fields. Rescue & Rebuild is for dogs only; any other species is raised. */
+export const adoptionFields = (species: Species, adoption?: AdoptionMode): Pick<Companion, "adoption" | "missions"> =>
+  ({ adoption: adoption === "rescue" && RESCUE_SPECIES.includes(species) ? "rescue" : "raise", missions: emptyMemory() });
+
 const STAGE_FLOOR: Partial<Record<Stage, Stage>> = { young: "baby", adult: "young", middle: "adult", old: "middle", frail: "old" };
 const STAGE_MIN: Record<Stage, number> = { baby: 0, young: 10, adult: 30, middle: 50, old: 70, frail: 80, dead: 100 };
 
@@ -451,10 +464,10 @@ export const actions = {
     commit({ ...data, settings: { ...data.settings, ...rest, ...safeName } });
   },
 
-  finishOnboarding(o: { species: Species; coat?: string; breed?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null }): boolean {
+  finishOnboarding(o: { species: Species; coat?: string; breed?: string; personality?: Personality; companionName: string; userName?: string; intake: Intake; tone: Tone; reminder: string; baseline: Baseline | null; plan?: RecoveryPlan | null; adoption?: AdoptionMode }): boolean {
     if (concernInAny([o.companionName, o.userName, o.intake.what, o.intake.amountLabel, ...o.intake.triggers, ...planTexts(o.plan)])) return false;
     const companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim() || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim() || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, ...adoptionFields(o.species, o.adoption) };
     const habitId = uid();
     const habit: Habit = {
       id: habitId, name: o.intake.what.trim().slice(0, 60) || "My habit", cls: o.intake.cls, classWeight: weightFor(o.intake.cls),
@@ -636,6 +649,25 @@ export const actions = {
   restoreEntry: (e: Entry) => { if (!data.entries.some((x) => x.id === e.id)) commit({ ...data, entries: [...data.entries, e].sort((a, b) => a.createdAt - b.createdAt) }); },
   unmarkClean: (habitId: string, day: string) => commit({ ...data, cleanDays: data.cleanDays.filter((c) => !(c.habitId === habitId && c.day === day)) }),
   /** Records which milestones a track has celebrated. */
+  /**
+   * Remembers mission completions and celebrations reached by now for a companion, and returns the one milestone to
+   * celebrate (at most one). Writes nothing when nothing is new, so calling it after every change is safe.
+   */
+  recordMissions(companionId: string): { id: string; level: MissionLevel } | null {
+    const u = missionUpdate(data, companionId, today());
+    if (!u) return null;
+    commit({ ...data, companions: data.companions.map((c) => (c.id === companionId ? { ...c, missions: u.memory } : c)) });
+    return u.celebrate;
+  },
+
+  /** Counts today as a day with the pet (an optional mission extra). At most one write a day. */
+  notePetDay(companionId: string) {
+    const c = data.companions.find((x) => x.id === companionId);
+    if (!c || c.diedOn) return;
+    const memory = withPetDay(c, today());
+    if (memory) commit({ ...data, companions: data.companions.map((x) => (x.id === companionId ? { ...x, missions: memory } : x)) });
+  },
+
   setCelebrated: (habitId: string, seen: number[]) => { if (data.habits.some((h) => h.id === habitId)) commit(withTrack(data, habitId, (s) => ({ ...s, celebrated: seen }))); },
   /** A new companion on a track celebrates its milestones afresh, once each. */
   resetCelebrations: (habitId?: string) => { const id = focused(habitId); if (trackState(data, id).celebrated.length) commit(withTrack(data, id, (s) => ({ ...s, celebrated: [] }))); },
@@ -691,13 +723,13 @@ export const actions = {
    * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
    * phone. Returns its habit id, or null at the 50-track limit.
    */
-  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality }): string | null {
-    return actions.createTrack({ name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, focus: true });
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality; adoption?: AdoptionMode }): string | null {
+    return actions.createTrack({ adoption: o.adoption, name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, focus: true });
   },
 
-  adopt(habitId: string, name: string, species: Species, personality?: Personality) {
+  adopt(habitId: string, name: string, species: Species, personality?: Personality, adoption?: AdoptionMode) {
     const habit = data.habits.find((h) => h.id === habitId)!;
-    const companion: Companion = { id: uid(), species, personality, name: (concernIn(name) ? "" : name.trim()) || defaultPetName(species), bornOn: today(), diedOn: null, finalAge: null, trackId: habit.id };
+    const companion: Companion = { id: uid(), species, personality, name: (concernIn(name) ? "" : name.trim()) || defaultPetName(species), bornOn: today(), diedOn: null, finalAge: null, trackId: habit.id, ...adoptionFields(species, adoption) };
     commit({
       ...data,
       companions: [...data.companions, companion],
@@ -713,13 +745,13 @@ export const actions = {
    */
   createTrack(o: {
     name: string; description?: string; cls: HabitClass; unit: Measure; amountLabel?: string; triggers?: string[]; fields?: Habit["fields"];
-    species: Species; companionName: string; coat?: string; breed?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean;
+    species: Species; companionName: string; coat?: string; breed?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean; adoption?: AdoptionMode;
   }): string | null {
     const name = o.name.trim().slice(0, 60);
     if (!name || data.habits.length >= 50) return null;
     if (concernInAny([o.name, o.description, o.amountLabel, o.companionName, ...(o.triggers ?? []), ...fieldTexts(o.fields ?? []), ...planTexts(o.plan)])) return null;
     const habitId = uid(), companionId = uid();
-    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId };
+    const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId, ...adoptionFields(o.species, o.adoption) };
     const habit: Habit = {
       id: habitId, name, cls: o.cls, classWeight: weightFor(o.cls), companionId, unit: o.unit,
       fields: o.fields ?? starterFields({ what: name, measure: o.unit, amountLabel: o.amountLabel, cls: o.cls, triggers: o.triggers ?? [] }),

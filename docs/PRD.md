@@ -638,3 +638,15 @@ This builds on §15, §19.4 and §21.9. It changes how words are kept and checke
 3. **Words match behaviour.** Privacy statements, reminder hints and status lines were checked against the code (docs/COPY_GLOSSARY.md). Photos stay on the phone; other records are saved privately to the account; AI wording sends only what the privacy page lists.
 4. **One vocabulary.** The tabs are Home, Journey, Insights and Me (each screen heading matches its tab, as the PRD names them); the creature is a pet; a counted day is a goal-met day; the Voice setting is Gentle, Honest or Direct (`brutal` stays the stored id).
 5. **A keyed catalogue.** Screen text lives in `apps/web/src/text` under stable ids with section markers; every Voice line has all three versions; a read-only inspector (`/#copy` in a dev build) and a generated manifest list all of it.
+
+## 23. Pet missions amendment (2026-10-31, in progress)
+
+This builds on §19.6 and §20 and adds to §5.1. It changes no damage-engine math: the §5.3 pacing table and the health bar (§19.10) stand.
+
+1. **Adoption modes.** A new pet is either *Raise a Puppy* (a healthy puppy that develops) or *Rescue & Rebuild* (a neglected puppy that is rehabilitated). Rescue is offered for dogs only. The mode is chosen once and never changes. Every pet from before missions reads as Raise; nothing about it is rewritten.
+2. **One mission engine.** `packages/engine/src/missions.ts`, pure and data-driven. Each mode has six missions. Every mission starts at Level 6 and moves to 5, 4, 3, 2, 1 and then completed (Rescue: "Recovered"; Raise: "Mastered"). Lower numbers are progress.
+3. **What moves it.** Distinct goal-met days without a slip, counted from the day the pet arrived (cumulative, not a streak), against the thresholds 3, 7, 12, 18, 24, 30. Urges managed and days with the pet are optional extras and never gate a level. Pets from before missions count their past goal-met days and see one celebration, not a backlog.
+4. **Scales.** Rescue shows a condition: -10, -8, -6, -4, -2, -1, then 0 at Recovered, never above 0. Raise shows development: 0, 20, 40, 60, 80, 90, then 100 at Mastered. These describe the fictional pet, never the person.
+5. **Never stored, never lost.** Levels, values, setbacks and the pet's look are recomputed from the track's records each time, on the phone (`apps/web/src/missions.ts`) and on the server (`mission_progress` view, migration 0008). Only completions and celebrations are stored, and only ever grow (union across phones and backups), so a correction never takes a completion back. A day can't count twice, and goal-met days can't be recorded for the future.
+6. **Setbacks.** A slip changes only its own day. For the slip day and the next (ending early with a goal-met day), the pet is quieter and Missions offers reassurance. A setback never lowers a level or a completion and never shows the pet as suffering.
+7. **The look.** Each mission drives its own visible traits (coat, posture, energy, trust, calm, curiosity, play, rest), never one overall number. A rescued pet starts low on all of them; a raised puppy starts healthy and grows.
