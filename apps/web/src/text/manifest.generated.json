@@ -3332,23 +3332,20 @@
           "placeholders": []
         },
         {
-          "id": "me.profile.tracking",
+          "id": "me.profile.line",
           "kind": "text",
           "placeholders": [
-            "track"
-          ]
-        },
-        {
-          "id": "me.profile.summary",
-          "kind": "text",
-          "placeholders": [
-            "personality",
-            "species",
-            "wellness"
+            "habit",
+            "n"
           ]
         },
         {
           "id": "me.profile.g_help",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.profile.g_pet",
           "kind": "text",
           "placeholders": []
         },
@@ -3358,7 +3355,7 @@
           "placeholders": []
         },
         {
-          "id": "me.profile.g_personal",
+          "id": "me.profile.g_experience",
           "kind": "text",
           "placeholders": []
         },
@@ -3368,12 +3365,12 @@
           "placeholders": []
         },
         {
-          "id": "me.profile.g_app",
+          "id": "me.profile.g_dev",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "me.profile.g_dev",
+          "id": "me.profile.row_pet",
           "kind": "text",
           "placeholders": []
         },

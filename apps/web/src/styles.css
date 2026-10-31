@@ -139,9 +139,6 @@ p { text-wrap: pretty; }
 .srow:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; border-radius: var(--radius); }
 @media (hover: hover) { .srow:hover { background: var(--raised); } }
 .subpage { position: fixed; inset: 0; z-index: 15; background: var(--ground); display: flex; flex-direction: column; max-width: 520px; margin: 0 auto; }
-.subpage-top { display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) var(--pad) 6px; }
-.subpage-top h2 { font: 400 30px/36px var(--serif); }
-.subpage-body.screen { padding-top: 12px; }
 .pet-stage { display: grid; place-items: center; }
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .theme-opt[data-on="true"] { border-color: var(--accent); }
@@ -151,7 +148,6 @@ p { text-wrap: pretty; }
 .ward[data-on="true"] { outline: 1.5px solid var(--text); background: var(--soft); }
 .ward:disabled { opacity: .5; cursor: default; }
 .profile-card { border: 0; width: 100%; display: flex; align-items: center; gap: 16px; text-align: left; color: var(--text); background: var(--surface); border-radius: var(--radius); padding: 16px; cursor: pointer; }
-.profile-art { width: 84px; display: grid; place-items: center; flex: none; }
 .profile-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
 .profile-name { font: 600 18px/24px var(--font); }
 .profile-card:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
@@ -399,7 +395,7 @@ textarea.input { padding: 12px 16px; height: auto; min-height: 84px; }
 .unlock { background: var(--soft); border-radius: 14px; padding: 8px 14px; font-size: 14px; }
 .agetext { width: 100%; display: flex; justify-content: space-between; font-size: 14px; }
 .ripple { position: absolute; inset: 0; border-radius: inherit; background: var(--negative); z-index: 2; pointer-events: none; }
-.banner { background: var(--raised); border-radius: var(--radius-sm); padding: 14px 18px; font-weight: 600; overflow: hidden; }
+.banner { background: var(--raised); border-radius: var(--radius-sm); padding: 16px; font: 500 14px/20px var(--font); overflow: hidden; }
 .banner.danger { color: var(--negative); background: var(--negative-soft); }
 .checkin { display: flex; flex-direction: column; gap: 20px; background: var(--surface); border-radius: var(--radius); padding: 20px; }
 .clean-btn[data-done="true"] { background: var(--positive); color: var(--on-status); }
@@ -777,6 +773,8 @@ button.plan-card:focus-visible { outline: 2px solid var(--accent); outline-offse
 .days-boxes i { height: 8px; border-radius: 999px; background: var(--surface); display: block; }
 .days-boxes i[data-on="true"] { background: var(--positive); }
 .banner.safety { background: var(--surface); border: 1px solid var(--line); font-weight: 500; margin: 0; }
+.safety-note { display: flex; gap: 12px; align-items: flex-start; background: var(--raised); border-radius: var(--radius-sm); padding: 16px; font: 500 14px/20px var(--font); }
+.safety-note .srow-ico { color: var(--muted); margin-top: 0; }
 .journey-moment .moment-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--positive); color: var(--on-status); }
 .journey-moment[data-good="false"] .moment-icon { background: var(--soft); color: var(--accent); }
 .journey-moment .moment-icon .ico { width: 28px; height: 28px; }

@@ -2,14 +2,13 @@ import { openTutorial } from "../ui/Tutorial";
 import { companionMissions } from "../missions";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { STAGE_LABEL } from "@detox/engine";
 import { LiveCompanion, PetImage, PetPortrait } from "../Companion";
+import { TopBar } from "../ui/TopBar";
 import { BREEDS, PERSONALITIES, SPECIES, breedFor, coatsFor } from "../pets";
 import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
 import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
 import { concernIn } from "../guard";
-import { money } from "../format";
 import { t } from "../text";
 import { APP_NAME, CONTACT_EMAIL } from "../brand";
 import { Dropdown } from "../ui/Dropdown";
@@ -18,9 +17,9 @@ import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
 import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
-import { rise, spring, stagger } from "../motion";
+import { spring } from "../motion";
 import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
-import { daysTogether, trackSummary } from "../progress";
+import { daysTogether } from "../progress";
 import { companionsOf, trackState } from "../tracks";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
@@ -32,13 +31,12 @@ import { Account } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
 import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, showUpdate, useUpdate, useUpdatePending } from "../update";
-import type { Field, FieldType, Settings } from "../types";
+import type { Field, FieldType } from "../types";
 
 const TYPES: { value: FieldType; label: string }[] = [
   { value: "choice", label: t("me.questions.t_choice") }, { value: "multi", label: t("me.questions.t_multi") }, { value: "scale", label: t("me.questions.t_scale") }, { value: "text", label: t("me.questions.t_text") },
   { value: "number", label: t("me.questions.t_number") }, { value: "money", label: t("me.questions.t_money") }, { value: "yesno", label: t("me.questions.t_yesno") }, { value: "photo", label: t("me.questions.t_photo") },
 ];
-const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", fox: "Fox" };
 
 type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
 
@@ -54,64 +52,53 @@ export function Me() {
   const [sim, setSim] = useState(false);
   const { session } = useSession();
   const sync = useSyncStatus();
-  const together = daysTogether(companion.bornOn, today());
   const close = () => setPage(null);
   const [showProf] = useState(() => {
     try { const show = ["alcohol", "smoking"].includes(habit.cls) && !localStorage.getItem("detox-prof-note"); if (show) localStorage.setItem("detox-prof-note", "1"); return show; } catch { return false; }
   });
 
   return (
-    <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
-      <motion.h1 variants={rise}>{t("me.profile.title")}</motion.h1>
-      <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
-        <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
+    <main className="screen">
+      <TopBar title={t("me.profile.title")} />
+      <button className="profile-card" onClick={() => { haptic.tap(); setPage("pet"); }}>
+        <PetImage round species={companion.species} coat={companion.coat} breed={companion.breed} mood="idle" size={64} />
         <span className="profile-text">
-          <b className="profile-name">{companion.name}</b>
-          <span className="muted small">{t("me.profile.summary", { species: SPECIES_LABEL[companion.species], personality: PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label ?? "", wellness: companionMissions(data, companion.id, today())?.healthCap ?? 100 })}</span>
-          <span className="small">{t("me.profile.tracking", { track: habit.name })}</span>
+          <b className="profile-name t-title">{companion.name}</b>
+          <span className="t-caption muted">{t("me.profile.line", { habit: habit.name, n: companionMissions(data, companion.id, today())?.healthCap ?? 100 })}</span>
         </span>
         <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
-      </motion.button>
-      {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
+      </button>
+      {showProf && <div className="banner safety-note" role="note"><span className="srow-ico" aria-hidden>{Icon.info}</span><span>{PROFESSIONAL_NOTE}</span></div>}
 
-      <motion.div variants={rise}>
-        <Group title={t("me.profile.g_help")}>
-          <Row icon={Icon.paw} label={t("help.tutorial.label")} onClick={() => { haptic.tap(); openTutorial(); }} />
-        </Group>
-      </motion.div>
-      <motion.div variants={rise}>
-        <Group title={t("me.profile.g_recovery")}>
-          <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={track.plan?.goal ? { stop: t("me.profile.goal_stop"), reduce: t("me.profile.goal_reduce"), understand: t("me.profile.goal_understand") }[track.plan.goal] : t("me.profile.goal_none")} onClick={() => setPage("plan")} />
-          <Row icon={Icon.bell} label={t("me.profile.row_reminders")} value={settings.remindersOn ? fmtTime(settings.reminder) : t("me.profile.off")} onClick={() => setPage("reminders")} />
-          <Row icon={Icon.list} label={t("me.profile.row_questions")} value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
-        </Group>
-      </motion.div>
-      <motion.div variants={rise}>
-        <Group title={t("me.profile.g_personal")}>
-          <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
-          <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={THEME_LABEL[settings.theme]} onClick={() => setPage("appearance")} />
-          <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
-        </Group>
-      </motion.div>
-      <motion.div variants={rise}>
-        <Group title={t("me.profile.g_privacy")}>
-          {configured && <Row icon={Icon.cloud} label={t("me.profile.row_account")} value={session ? (sync.state === "error" ? t("me.profile.needs_attention") : t("me.profile.on")) : t("me.profile.off")} onClick={() => setPage("account")} />}
-          <Row icon={Icon.lock} label={t("me.profile.row_lock")} value={vault.hasPin() ? t("me.profile.on") : t("me.profile.off")} onClick={() => setPage("security")} />
-          <Row icon={Icon.data} label={t("me.profile.row_data")} onClick={() => setPage("data")} />
-        </Group>
-      </motion.div>
-      <motion.div variants={rise}>
-        <Group title={t("me.profile.g_app")}>
-          <Row icon={Icon.download} label={t("me.profile.row_updates")} value={APP_VERSION.name} onClick={() => setPage("updates")}
-            badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
-          <Row icon={Icon.info} label={t("me.profile.row_about")} onClick={() => setPage("about")} />
-        </Group>
-      </motion.div>
-      {import.meta.env.DEV && <motion.div variants={rise}>
+      <Group title={t("me.profile.g_pet")}>
+        <Row icon={Icon.paw} label={t("me.profile.row_pet")} onClick={() => setPage("pet")} />
+      </Group>
+      <Group title={t("me.profile.g_recovery")}>
+        <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={track.plan?.goal ? { stop: t("me.profile.goal_stop"), reduce: t("me.profile.goal_reduce"), understand: t("me.profile.goal_understand") }[track.plan.goal] : t("me.profile.goal_none")} onClick={() => setPage("plan")} />
+        <Row icon={Icon.bell} label={t("me.profile.row_reminders")} value={settings.remindersOn ? fmtTime(settings.reminder) : t("me.profile.off")} onClick={() => setPage("reminders")} />
+        <Row icon={Icon.list} label={t("me.profile.row_questions")} value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
+      </Group>
+      <Group title={t("me.profile.g_experience")}>
+        <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
+        <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={THEME_LABEL[settings.theme]} onClick={() => setPage("appearance")} />
+        <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
+      </Group>
+      <Group title={t("me.profile.g_privacy")}>
+        {configured && <Row icon={Icon.cloud} label={t("me.profile.row_account")} value={session ? (sync.state === "error" ? t("me.profile.needs_attention") : t("me.profile.on")) : t("me.profile.off")} onClick={() => setPage("account")} />}
+        <Row icon={Icon.lock} label={t("me.profile.row_lock")} value={vault.hasPin() ? t("me.profile.on") : t("me.profile.off")} onClick={() => setPage("security")} />
+        <Row icon={Icon.data} label={t("me.profile.row_data")} onClick={() => setPage("data")} />
+      </Group>
+      <Group title={t("me.profile.g_help")}>
+        <Row icon={Icon.paw} label={t("help.tutorial.label")} onClick={() => { haptic.tap(); openTutorial(); }} />
+        <Row icon={Icon.download} label={t("me.profile.row_updates")} value={APP_VERSION.name} onClick={() => setPage("updates")}
+          badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
+        <Row icon={Icon.info} label={t("me.profile.row_about")} onClick={() => setPage("about")} />
+      </Group>
+      {import.meta.env.DEV && (
         <Group title={t("me.profile.g_dev")}>
           <Row icon={Icon.flask} label={t("me.profile.row_sim")} onClick={() => setSim(true)} />
         </Group>
-      </motion.div>}
+      )}
 
       <SubPage open={page === "plan"} title={t("me.profile.row_plan")} onClose={close}><PlanPage key={habit.id} habitId={habit.id} /></SubPage>
       <SubPage open={page === "pet"} title={t("me.profile.page_pet")} onClose={close}><PetPage /></SubPage>
@@ -126,7 +113,7 @@ export function Me() {
       <SubPage open={page === "about"} title={t("me.profile.row_about")} onClose={close}><AboutPage /></SubPage>
       <SubPage open={page === "updates"} title={t("me.profile.row_updates")} onClose={close}><UpdatesPage /></SubPage>
       {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} breed={companion.breed} name={companion.name} habit={habit} />}
-    </motion.main>
+    </main>
   );
 }
 
@@ -136,10 +123,8 @@ function PetPage() {
   const { companion } = view;
   const habit = view.habit ?? data.habits[0];
   const { settings } = data;
-  const track = trackState(data, habit.id);
   const [name, setName] = useState(companion.name);
   const hall = companionsOf(data, habit.id).filter((c) => c.diedOn);
-  const { best, care } = trackSummary(data, habit.id, today());
   // Classic rules can only be switched on if the history wouldn't already mean death under them.
   const classicDead = settings.petLife !== "classic" && !canAllowPassingAway(data);
   const save = () => {
@@ -317,7 +302,6 @@ function QuestionsPage() {
 }
 
 function DataPage() {
-  const { companion } = useActiveView()!;
   const { session } = useSession();
   const [confirm, setConfirm] = useState(false);
   function exportData() {
