@@ -1,6 +1,6 @@
 # Detox Companion
 
-Read docs/PRD.md before any work. It is the source of truth.
+docs/PRD.md is the source of truth, but it is large (~42 KB). Do not read it whole: `grep -n '^#' docs/PRD.md` for the outline, then read only the sections the task touches (engine: 5.3; copy/safety: 22; AI: 10). Skip docs/PAWSE_*.md audit/log/report files unless the task names them.
 
 ## Rules
 - The damage engine lives only in packages/engine and stays pure TypeScript with no I/O.
