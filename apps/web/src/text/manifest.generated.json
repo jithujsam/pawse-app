@@ -917,15 +917,10 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 3,
-      "end": 22,
+      "end": 20,
       "entries": [
         {
           "id": "pets.grid.title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "pets.grid.intro",
           "kind": "text",
           "placeholders": []
         },
@@ -941,11 +936,6 @@
         },
         {
           "id": "pets.grid.add",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "pets.grid.add_hint",
           "kind": "text",
           "placeholders": []
         },
@@ -1018,8 +1008,8 @@
       "title": "Pet menu",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 24,
-      "end": 41,
+      "start": 22,
+      "end": 39,
       "entries": [
         {
           "id": "pets.menu.label",
@@ -1116,8 +1106,8 @@
       "title": "Pet picker",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 43,
-      "end": 60,
+      "start": 41,
+      "end": 58,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1199,8 +1189,8 @@
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 62,
-      "end": 72,
+      "start": 60,
+      "end": 70,
       "entries": [
         {
           "id": "pets.add.label",
@@ -4645,10 +4635,15 @@
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 109,
-      "end": 131,
+      "end": 125,
       "entries": [
         {
           "id": "sheets.quick.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.quick.pets_aria",
           "kind": "text",
           "placeholders": []
         },
@@ -4710,41 +4705,6 @@
           "id": "sheets.quick.plan",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "sheets.quick.plan_hint",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.choose_label",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.whose",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.each",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.choose_pet",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.pet_aria",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.open_plan",
-          "kind": "text",
-          "placeholders": []
         }
       ]
     },
@@ -4754,8 +4714,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 133,
-      "end": 154,
+      "start": 127,
+      "end": 148,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4866,8 +4826,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 156,
-      "end": 195,
+      "start": 150,
+      "end": 189,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -5065,8 +5025,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 197,
-      "end": 219,
+      "start": 191,
+      "end": 213,
       "entries": [
         {
           "id": "sheets.memorial.life",

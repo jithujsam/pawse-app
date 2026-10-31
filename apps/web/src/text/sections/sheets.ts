@@ -108,25 +108,19 @@ export const sheetsUrge = defineSection("sheets.urge", { screen: "Urge support",
 
 // @copy-section sheets.quick
 export const sheetsQuick = defineSection("sheets.quick", { screen: "Quick check-in", title: "The + menu", source: "src/screens/QuickSheet.tsx" }, {
-  title: "What's going on?",
-  urge: "Having an urge",
+  title: "Log today",
+  pets_aria: "Which pet",
+  urge: "Had an urge",
   urge_hint: "Get through it",
   urge_managed: "{n} managed today",
-  met: "Goal met today",
+  met: "Goal met",
   met_slipped: "Today already has a slip",
   met_streak_one: "1 day so far",
   met_streak_other: "{n} days so far",
   met_hint: "Helps your pet heal",
   slip: "I slipped",
   slip_hint: "Log it in seconds",
-  plan: "Make or edit a plan",
-  plan_hint: "Goal, reasons, what helps",
-  choose_label: "Choose a pet for the plan",
-  whose: "Whose plan?",
-  each: "Each pet has its own plan.",
-  choose_pet: "Choose a pet",
-  pet_aria: "Pet",
-  open_plan: "Open plan",
+  plan: "Open plan",
 });
 // @copy-section-end sheets.quick
 

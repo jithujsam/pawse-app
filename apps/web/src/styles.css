@@ -97,14 +97,13 @@ p { text-wrap: pretty; }
 .pet-card { border: 0; background: var(--surface); color: var(--text); border-radius: var(--radius); padding: 16px; display: grid; grid-template-rows: auto auto auto 1fr; justify-items: center; text-align: center; gap: 4px; cursor: pointer; min-width: 0; font: inherit; }
 .pet-card[data-active="true"] { outline: 1.5px solid var(--text); outline-offset: -1.5px; }
 .pet-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.pet-card-art { width: 112px; height: 112px; display: grid; place-items: center; border-radius: 50%; background: var(--raised); overflow: hidden; margin-bottom: 6px; }
+.pet-card-art { width: 96px; height: 96px; display: grid; place-items: center; border-radius: 50%; overflow: hidden; margin-bottom: 4px; }
 .pet-card-name { font: 600 18px/24px var(--font); max-width: 100%; overflow-wrap: anywhere; }
 .pet-card-track { max-width: 100%; overflow-wrap: anywhere; }
-.pet-card-status { color: var(--muted); align-self: end; font: 500 12px/16px var(--font); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pet-card-status[data-s="met"], .pet-card-status[data-s="urge"] { color: var(--positive); }
-.pet-card-add { background: transparent; outline: 1.5px dashed var(--control); outline-offset: -1.5px; grid-template-rows: auto auto auto; align-content: center; }
+.pet-card-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); align-self: end; font: 500 12px/16px var(--font); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pet-card-add { min-height: 168px; background: transparent; outline: 1.5px dashed var(--control); outline-offset: -1.5px; grid-template-rows: auto auto auto; align-content: center; }
 .pet-card-add .pet-card-name, .pet-card-add .pet-card-track { white-space: normal; }
-.pet-card-plus { width: 96px; height: 96px; display: grid; place-items: center; color: var(--muted); margin-bottom: 6px; }
+.pet-card-plus { width: 48px; height: 48px; display: grid; place-items: center; color: var(--muted); margin-bottom: 6px; }
 .pet-card-plus .ico { width: 32px; height: 32px; stroke-width: 2.2; }
 .track-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--muted); font: 500 14px/20px var(--font); padding: 6px 8px 6px 0; cursor: pointer; }
 .fab:disabled { opacity: .45; cursor: default; }
@@ -849,7 +848,6 @@ html[data-keyboard="open"] .sheet { max-height: calc(92vh - var(--kb, 0px)); }
 html[data-keyboard="open"] .tabbar { display: none; }
 
 /* ---------- Pets: grid or list ---------- */
-.pets-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .layout-toggle { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--raised); flex: none; }
 .layout-toggle button { border: 0; background: none; color: var(--muted); width: 40px; height: 36px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; }
 .layout-toggle button[aria-checked="true"] { background: var(--surface); color: var(--text); }
@@ -861,6 +859,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .pet-grid[data-layout="list"] .pet-card-status { align-self: start; }
 .pet-grid[data-layout="list"] .pet-card-add { grid-template-columns: 56px 1fr; padding: 12px; }
 .pet-grid[data-layout="list"] .pet-card-plus { grid-row: 1 / span 2; width: 56px; height: 56px; }
+.pet-grid[data-layout="list"] .pet-card-add { min-height: 0; }
 
 /* ---------- How Pawse works ---------- */
 .tutorial { position: fixed; inset: 0; z-index: 40; background: var(--ground); display: flex; flex-direction: column; padding: calc(16px + env(safe-area-inset-top)) var(--pad) calc(20px + env(safe-area-inset-bottom)); max-width: 520px; margin: 0 auto; }
@@ -949,3 +948,14 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .wbar { height: 6px; border-radius: 999px; background: var(--raised); overflow: hidden; }
 .wbar > i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
 .strip-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 500 12px/16px var(--font); }
+
+/* ---------- top app bar (large title, then a slim sticky bar) ---------- */
+.topbar-large { position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; margin-top: calc(8px - var(--pad)); }
+.topbar-large h1 { flex: 1; min-width: 0; }
+.topbar-sentinel { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; pointer-events: none; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.topbar-stick { position: sticky; top: 0; height: 0; z-index: 4; margin: calc(-1 * var(--section)) 0; flex: none; }
+.topbar-small { position: absolute; top: 0; left: calc(-1 * var(--pad)); right: calc(-1 * var(--pad)); height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) var(--pad) 0; display: flex; align-items: center; gap: 12px; background: var(--ground); border-bottom: 1px solid var(--line); visibility: hidden; opacity: 0; transition: opacity .15s; }
+.topbar-small[data-on] { visibility: visible; opacity: 1; }
+.topbar-title { flex: 1; min-width: 0; font: 600 18px/24px var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .topbar-small { transition: none; } }

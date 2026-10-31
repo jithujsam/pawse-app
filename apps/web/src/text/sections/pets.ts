@@ -2,12 +2,10 @@ import { defineSection } from "../core";
 
 // @copy-section pets.grid
 export const petsGrid = defineSection("pets.grid", { screen: "Home", title: "Pets grid", source: "src/screens/Pets.tsx" }, {
-  title: "Home",
-  intro: "Each pet looks after one recovery track.",
+  title: "Pets",
   empty_title: "No recovery tracks yet",
   empty_body: "Pick one behaviour you'd like to understand or change, and a pet will keep you company while you work on it.",
-  add: "Add a recovery track",
-  add_hint: "A new pet for another habit",
+  add: "Add a pet",
   tracks: "Recovery tracks",
   not_checked_in: "Not recorded",
   paused: "Paused",
