@@ -169,11 +169,11 @@ describe("tracks never affect each other", () => {
 describe("track lifecycle", () => {
   it("creates a track with its own pet and nothing borrowed from another", () => {
     load(twoTracks());
-    const id = actions.createTrack({ name: "  Betting  ", description: "Weekend bets", cls: "custom", unit: "money", species: "owl", companionName: "Hoot", focus: true })!;
+    const id = actions.createTrack({ name: "  Betting  ", description: "Weekend bets", cls: "custom", unit: "money", species: "fox", companionName: "Hoot", focus: true })!;
     const d = getData();
     const t = listTracks(d).find((x) => x.id === id)!;
     expect(t).toMatchObject({ name: "Betting", description: "Weekend bets", status: "active", startedOn: t0 });
-    expect(t.companion).toMatchObject({ species: "owl", name: "Hoot", trackId: id, bornOn: t0 });
+    expect(t.companion).toMatchObject({ species: "fox", name: "Hoot", trackId: id, bornOn: t0 });
     expect(focusedTrackId(d)).toBe(id);
     expect(actions.createTrack({ name: "   ", cls: "custom", unit: "none", species: "dog", companionName: "x" })).toBeNull();
     expect(checkTracks(d)).toEqual([]);

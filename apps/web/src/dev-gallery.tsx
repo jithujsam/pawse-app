@@ -1,5 +1,4 @@
-import { CompanionArt, type Gesture, type Mood } from "./Companion";
-import { COATS, SPECIES } from "./pets";
+import { type Gesture, type Mood } from "./Companion";
 import { Pet3D, type Species3D } from "./Pet3D";
 import type { Stage } from "@detox/engine";
 import { useState } from "react";
@@ -64,20 +63,9 @@ export function Gallery() {
   if (parts[1] === "update") return <UpdateDemo />;
   // #gallery/missions/<raise|rescue>/<goal-met days>[/slip]: the Missions button and sheet over seeded data, for layout checks.
   if (parts[1] === "missions") return <MissionsDemo mode={parts[2] === "rescue" ? "rescue" : "raise"} days={Number(parts[3] ?? 8)} slip={parts[4] === "slip"} home={parts.includes("home")} moment={parts.includes("moment")} page={parts.find((x) => ["me", "pets", "tutorial"].includes(x))} />;
-  // #gallery/solo3d/<species>/<mood>: one 3D pet alone on a clear background, for widget images.
-  if (parts[1] === "solo3d") return <div id="solo" style={{ width: 256, display: "inline-block" }}><Pet3D species={parts[2] as Species3D} stage="young" mood={(parts[3] as Mood) || "happy"} age={12} size={256} fallback={<b>fallback</b>} /></div>;
-  // #gallery/pet/<species>/<mood>: one pet alone on a clear background, for widget images.
-  const [, , sp, md] = location.hash.slice(1).split("/");
-  if (sp) return <div id="solo" style={{ width: 256, display: "inline-block" }}><CompanionArt species={sp as never} stage="young" mood={(md as Mood) || "happy"} age={12} size={256} /></div>;
-  const moods: [Mood, Gesture, Stage, number][] = [["happy", "none", "baby", 2], ["idle", "none", "adult", 35], ["sad", "none", "adult", 40], ["hurt", "none", "young", 20], ["happy", "petted", "young", 15], ["sick", "none", "old", 74], ["dying", "none", "frail", 92], ["idle", "side", "adult", 30]];
-  return (
-    <div style={{ padding: 12, display: "grid", gap: 8 }}>
-      {SPECIES.map((s) => (
-        <div key={s.id} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {COATS[s.id].map((c) => <CompanionArt key={c.id} species={s.id} coat={c.id} stage="young" mood="happy" age={12} size={120} />)}
-          {moods.map(([m, g, st, a], i) => <CompanionArt key={i} species={s.id} stage={st} mood={m} gesture={g} age={a} size={120} accessory={i === 1 ? "scarf" : i === 4 ? "flowers" : i === 7 ? "glasses" : null} />)}
-        </div>
-      ))}
-    </div>
-  );
+  // #gallery/solo3d/<species>/<mood>/<breed>/<coat>: one 3D pet alone on a clear background, for the portraits (breed "_" = none).
+  if (parts[1] === "solo3d") {
+    document.body.style.background = "transparent"; document.documentElement.style.background = "transparent";
+    return <div id="solo" style={{ width: 256, display: "inline-block" }}><Pet3D species={parts[2] as Species3D} breed={parts[4] && parts[4] !== "_" ? parts[4] : undefined} coat={parts[5] || undefined} stage="young" mood={(parts[3] as Mood) || "happy"} age={12} size={256} fallback={<b>fallback</b>} /></div>;
+  }  return null;
 }

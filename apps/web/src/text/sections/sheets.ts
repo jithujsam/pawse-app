@@ -212,10 +212,7 @@ export const sheetsMemorial = defineSection("sheets.memorial", { screen: "Memori
   adopt: "Adopt a new {kind}",
   kind_dog: "puppy",
   kind_cat: "kitten",
-  kind_rabbit: "bunny",
   kind_fox: "kit",
-  kind_owl: "owlet",
-  kind_panda: "cub",
   day: "day",
   days: "days",
 });

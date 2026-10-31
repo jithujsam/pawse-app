@@ -231,7 +231,7 @@ describe("recovery tracks", () => {
 
   it("a slip on one track only ages that track's pet", () => {
     load([]);
-    const id = actions.addTrack({ what: "Online shopping", cls: "impulse_buying", measure: "money", species: "rabbit", name: "Pip" });
+    const id = actions.addTrack({ what: "Online shopping", cls: "impulse_buying", measure: "money", species: "fox", name: "Pip" });
     const pet = getData().habits.find((h) => h.id === id)!.companionId;
     actions.logSlip(id, { amount: 500 });
     expect(viewCompanion(getData(), pet).age).toBeGreaterThan(0);

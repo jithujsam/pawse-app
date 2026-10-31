@@ -13,7 +13,7 @@ import { money } from "../format";
 import { t } from "../text";
 import type { Species } from "../types";
 
-const BABY: Record<Species, string> = { dog: t("sheets.memorial.kind_dog"), cat: t("sheets.memorial.kind_cat"), rabbit: t("sheets.memorial.kind_rabbit"), fox: t("sheets.memorial.kind_fox"), owl: t("sheets.memorial.kind_owl"), panda: t("sheets.memorial.kind_panda") };
+const BABY: Record<Species, string> = { dog: t("sheets.memorial.kind_dog"), cat: t("sheets.memorial.kind_cat"), fox: t("sheets.memorial.kind_fox") };
 const slow = (delay: number) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.2, delay, ease: [0.22, 0.8, 0.3, 1] as const } });
 
 export function Memorial({ view, onDone }: { view: CompanionView; onDone: () => void }) {

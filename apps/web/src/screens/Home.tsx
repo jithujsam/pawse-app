@@ -27,7 +27,6 @@ import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
-import { ACCESSORIES } from "../pets";
 import { t } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
@@ -173,7 +172,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
         <div className="hero-name"><h2>{companion.name}</h2></div>
         <div className="pet-stage-live">
-          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} accessory={track.wear}
+          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
         {/* A fixed slot: the bubble can change its text without moving anything below it. */}
@@ -259,10 +258,9 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
             initial={{ scale: 0.7, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} transition={spring.bouncy}>
             <Burst burst={days} kind="spark" count={14} />
             <motion.div className="big-num" initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ ...spring.bouncy, delay: 0.15 }}>{days}</motion.div>
-            <LiveCompanion species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} accessory={track.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
+            <LiveCompanion species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
             <h2>{milestoneLine(tone, name, days).title}</h2>
             <p className="muted">{milestoneLine(tone, name, days).body}</p>
-            <UnlockNote days={days} />
             <Button onClick={onClose}>{t("home.milestone.keep_going")}</Button>
           </motion.div>
         </motion.div>
@@ -272,8 +270,3 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
   );
 }
 
-function UnlockNote({ days }: { days: number }) {
-  const a = ACCESSORIES.find((x) => x.days === days);
-  if (!a) return null;
-  return <p className="unlock"><b>{t("home.milestone.unlock_prefix")}</b> {t("home.milestone.unlock", { item: a.label })}</p>;
-}

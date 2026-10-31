@@ -1476,7 +1476,7 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 55,
-      "end": 62,
+      "end": 60,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -1485,18 +1485,6 @@
         },
         {
           "id": "home.milestone.keep_going",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.milestone.unlock",
-          "kind": "text",
-          "placeholders": [
-            "item"
-          ]
-        },
-        {
-          "id": "home.milestone.unlock_prefix",
           "kind": "text",
           "placeholders": []
         }
@@ -2171,8 +2159,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 64,
-      "end": 76,
+      "start": 62,
+      "end": 74,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2234,8 +2222,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 78,
-      "end": 86,
+      "start": 76,
+      "end": 84,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2274,8 +2262,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 88,
-      "end": 97,
+      "start": 86,
+      "end": 95,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2321,8 +2309,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 99,
-      "end": 121,
+      "start": 97,
+      "end": 119,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2441,8 +2429,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 123,
-      "end": 135,
+      "start": 121,
+      "end": 133,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2497,8 +2485,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 137,
-      "end": 147,
+      "start": 135,
+      "end": 145,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -3520,7 +3508,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 38,
-      "end": 72,
+      "end": 65,
       "entries": [
         {
           "id": "me.pet.days",
@@ -3564,48 +3552,6 @@
         },
         {
           "id": "me.pet.personality",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.pet.wardrobe",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.pet.days_of_care",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "me.pet.day_of_care",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "me.pet.accessory",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.pet.none",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.pet.unlocks",
-          "kind": "text",
-          "placeholders": [
-            "label",
-            "n"
-          ]
-        },
-        {
-          "id": "me.pet.care_note",
           "kind": "text",
           "placeholders": []
         },
@@ -3711,8 +3657,8 @@
       "title": "Voice",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 74,
-      "end": 82,
+      "start": 67,
+      "end": 75,
       "entries": [
         {
           "id": "me.voice.intro",
@@ -3751,8 +3697,8 @@
       "title": "Reminders",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 84,
-      "end": 97,
+      "start": 77,
+      "end": 90,
       "entries": [
         {
           "id": "me.reminders.daily",
@@ -3818,8 +3764,8 @@
       "title": "Check-in questions",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 99,
-      "end": 120,
+      "start": 92,
+      "end": 113,
       "entries": [
         {
           "id": "me.questions.intro",
@@ -3919,8 +3865,8 @@
       "title": "Your data",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 122,
-      "end": 138,
+      "start": 115,
+      "end": 131,
       "entries": [
         {
           "id": "me.data.backup",
@@ -3995,8 +3941,8 @@
       "title": "Appearance",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 140,
-      "end": 158,
+      "start": 133,
+      "end": 141,
       "entries": [
         {
           "id": "me.appearance.theme",
@@ -4022,56 +3968,6 @@
           "id": "me.appearance.theme_hint",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "me.appearance.colour",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_pet",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_coral",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_ocean",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_forest",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_berry",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_plum",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_slate",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.appearance.accent_hint",
-          "kind": "text",
-          "placeholders": []
         }
       ]
     },
@@ -4081,8 +3977,8 @@
       "title": "Feel and region",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 160,
-      "end": 173,
+      "start": 143,
+      "end": 156,
       "entries": [
         {
           "id": "me.feel.haptics",
@@ -4148,8 +4044,8 @@
       "title": "About and help",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 175,
-      "end": 193,
+      "start": 158,
+      "end": 176,
       "entries": [
         {
           "id": "me.about.version",
@@ -5183,7 +5079,7 @@
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 197,
-      "end": 222,
+      "end": 219,
       "entries": [
         {
           "id": "sheets.memorial.life",
@@ -5272,22 +5168,7 @@
           "placeholders": []
         },
         {
-          "id": "sheets.memorial.kind_rabbit",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "sheets.memorial.kind_fox",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.memorial.kind_owl",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.memorial.kind_panda",
           "kind": "text",
           "placeholders": []
         },
@@ -6933,12 +6814,6 @@
       "id": "lists.personalities",
       "group": "lists",
       "source": "src/pets.ts PERSONALITIES",
-      "voices": false
-    },
-    {
-      "id": "lists.accessories",
-      "group": "lists",
-      "source": "src/pets.ts ACCESSORIES",
       "voices": false
     },
     {

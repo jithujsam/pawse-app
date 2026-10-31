@@ -56,8 +56,6 @@ export const homeToday = defineSection("home.today", { screen: "Pet screen", tit
 export const homeMilestone = defineSection("home.milestone", { screen: "Pet screen", title: "Milestone dialog", source: "src/screens/Home.tsx" }, {
   aria: "Milestone",
   keep_going: "Keep going",
-  unlock: "{item}. Put it on in Me → Your pet.",
-  unlock_prefix: "New:",
 });
 // @copy-section-end home.milestone
 
