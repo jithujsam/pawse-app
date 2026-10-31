@@ -1390,6 +1390,697 @@
       ]
     },
     {
+      "id": "missions.sheet",
+      "screen": "Missions sheet",
+      "title": "Header, summary and card labels",
+      "source": "src/screens/MissionsSheet.tsx, src/screens/Home.tsx",
+      "file": "src/text/sections/missions.ts",
+      "start": 3,
+      "end": 80,
+      "entries": [
+        {
+          "id": "missions.sheet.label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.button",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.button_aria_one",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.button_aria_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.button_aria_done",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.subtitle",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.mode_rescue",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.mode_raise",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.overall",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.overall_aria",
+          "kind": "text",
+          "placeholders": [
+            "passed",
+            "total"
+          ]
+        },
+        {
+          "id": "missions.sheet.goal_met_one",
+          "kind": "text",
+          "placeholders": [
+            "n",
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.goal_met_other",
+          "kind": "text",
+          "placeholders": [
+            "n",
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.active",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.completed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.count_active",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.count_completed",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.how_levels",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.level",
+          "kind": "text",
+          "placeholders": [
+            "level"
+          ]
+        },
+        {
+          "id": "missions.sheet.condition",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.development",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.value_rehab",
+          "kind": "text",
+          "placeholders": [
+            "value"
+          ]
+        },
+        {
+          "id": "missions.sheet.value_growth",
+          "kind": "text",
+          "placeholders": [
+            "value"
+          ]
+        },
+        {
+          "id": "missions.sheet.bar_rehab_aria",
+          "kind": "text",
+          "placeholders": [
+            "value"
+          ]
+        },
+        {
+          "id": "missions.sheet.bar_growth_aria",
+          "kind": "text",
+          "placeholders": [
+            "value"
+          ]
+        },
+        {
+          "id": "missions.sheet.progress",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.progress_days",
+          "kind": "text",
+          "placeholders": [
+            "have",
+            "need"
+          ]
+        },
+        {
+          "id": "missions.sheet.next",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.next_level",
+          "kind": "text",
+          "placeholders": [
+            "level"
+          ]
+        },
+        {
+          "id": "missions.sheet.next_done_rescue",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.next_done_raise",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.status",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.status_recovered",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.status_mastered",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.done_title_rescue",
+          "kind": "text",
+          "placeholders": [
+            "title"
+          ]
+        },
+        {
+          "id": "missions.sheet.done_title_raise",
+          "kind": "text",
+          "placeholders": [
+            "title"
+          ]
+        },
+        {
+          "id": "missions.sheet.more",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.less",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.unlocks",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.requirements",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.requirement",
+          "kind": "text",
+          "placeholders": [
+            "name",
+            "need"
+          ]
+        },
+        {
+          "id": "missions.sheet.requirement_done",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.extra",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.extra_urges",
+          "kind": "text",
+          "placeholders": [
+            "have",
+            "target"
+          ]
+        },
+        {
+          "id": "missions.sheet.extra_pet_days",
+          "kind": "text",
+          "placeholders": [
+            "have",
+            "name",
+            "target"
+          ]
+        },
+        {
+          "id": "missions.sheet.extra_note",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.milestones",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.milestones_none",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.milestone_level",
+          "kind": "text",
+          "placeholders": [
+            "level"
+          ]
+        },
+        {
+          "id": "missions.sheet.milestone_done_rescue",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.milestone_done_raise",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.fiction",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.setback",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.all_done",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.encourage",
+          "kind": "voice",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.encourage_one",
+          "kind": "voice",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "missions.status",
+      "screen": "Missions sheet",
+      "title": "Level names",
+      "source": "src/mission-text.ts",
+      "file": "src/text/sections/missions.ts",
+      "start": 82,
+      "end": 99,
+      "entries": [
+        {
+          "id": "missions.status.rescue_starting",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_first_steps",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_stabilizing",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_recovering",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_strong",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_final",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.rescue_done",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_starting",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_first_steps",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_stabilizing",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_recovering",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_strong",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_final",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.status.raise_done",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "missions.content",
+      "screen": "Missions sheet",
+      "title": "Mission titles and stories",
+      "source": "src/mission-text.ts",
+      "file": "src/text/sections/missions.ts",
+      "start": 101,
+      "end": 152,
+      "entries": [
+        {
+          "id": "missions.content.rescue_trust_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_trust_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_trust_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_trust_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_physical_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_physical_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_physical_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_physical_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_fear_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_fear_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_fear_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_fear_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_confidence_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_confidence_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_confidence_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_confidence_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_play_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_play_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_play_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_play_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_safe_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_safe_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_safe_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_safe_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_bond_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_bond_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_bond_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_bond_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_play_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_play_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_play_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_play_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_explore_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_explore_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_explore_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_explore_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_strong_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_strong_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_strong_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_strong_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_confidence_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_confidence_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_confidence_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_confidence_unlock",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routines_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routines_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routines_effect",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routines_unlock",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "calendar.note",
       "screen": "Journey",
       "title": "What a day says about itself",
