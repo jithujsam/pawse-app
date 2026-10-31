@@ -1,60 +1,56 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { MISSIONS, missionState, missionStates } from "@detox/engine";
+import { MISSIONS, missionState } from "@detox/engine";
 import { MissionCard } from "../src/screens/MissionsSheet";
 import { MISSION_TEXT_IDS, missionText } from "../src/mission-text";
+import { shownHealth } from "../src/missions";
 
-/** The mission card, rendered as the sheet shows it, in both modes. */
-const card = (id: string, days: number, initialOpen = false, completed: string[] = []) => {
+/** The mission card, rendered as the sheet shows it: headline, why, how severe, days left. */
+const card = (id: string, days: number, completed: string[] = []) => {
   const def = MISSIONS.find((m) => m.id === id)!;
   const s = missionState(def, { goalMetDays: days, completed });
-  const html = renderToString(createElement(MissionCard, { s, mode: def.mode, name: "Scout", goalMetDays: days, initialOpen }));
-  return html.replace(/<!-- -->/g, "").replace(/&#x27;/g, "'");
+  return renderToString(createElement(MissionCard, { s, mode: def.mode })).replace(/<!-- -->/g, "").replace(/&#x27;/g, "'");
 };
+const redBoxes = (h: string) => (h.match(/data-on="true"/g) ?? []).length;
 
 describe("mission cards", () => {
   it("every mission has words", () => {
-    expect(MISSION_TEXT_IDS.sort()).toEqual(MISSIONS.map((m) => m.id).sort());
-    for (const m of MISSIONS) expect(missionText(m.id).title).not.toMatch(/^missions\./);
+    expect([...MISSION_TEXT_IDS].sort()).toEqual(MISSIONS.map((m) => m.id).sort());
+    for (const m of MISSIONS) expect(missionText(m.id).why.length).toBeGreaterThan(10);
   });
-  it("a rescue card shows title, level, condition, progress, next milestone and status", () => {
+  it("a rescue card is a headline, why it matters, how severe and the goal-met days left", () => {
     const h = card("rescue_trust", 8);
-    for (const s of ["Rebuilding Trust", "Level 4 / 6", "Condition", "-6 / 0", "Progress", "8 / 12 goal-met days", "Next milestone", "Level 3", "Stabilising"]) expect(h).toContain(s);
-    expect(h).toContain('aria-expanded="false"');
-    expect(h).not.toContain("Why this matters");
+    for (const s of ["Rebuilding Trust", "The puppy is hesitant around people", "How severe", "Moderate · -6", "22 more goal-met days to recover"]) expect(h).toContain(s);
+    expect(redBoxes(h)).toBe(3);
+    // Nothing else: no levels, statuses or expandable details.
+    expect(h).not.toMatch(/Level|Status|Details|aria-expanded/);
   });
-  it("a raise card shows development out of 100 and never a negative value", () => {
+  it("severity starts at five red boxes and falls to one", () => {
+    expect(card("rescue_fear", 0)).toContain("Severe · -10");
+    expect(redBoxes(card("rescue_fear", 0))).toBe(5);
+    expect(redBoxes(card("rescue_fear", 24))).toBe(1);
+    expect(card("rescue_fear", 29)).toContain("1 more goal-met day to recover");
+  });
+  it("a raise card shows development, never a negative value", () => {
     const h = card("raise_bond", 8);
-    for (const s of ["Building Our Bond", "Level 4 / 6", "Development", "40 / 100", "8 / 12 goal-met days", "Level 3"]) expect(h).toContain(s);
-    expect(h).not.toMatch(/-\d+ \/ 0|Condition/);
+    for (const s of ["Building Our Bond", "Development", "40 / 100", "22 more goal-met days to master"]) expect(h).toContain(s);
+    expect(h).not.toMatch(/-\d|How severe/);
   });
-  it("an expanded card explains why, how it shows, what's next, what it takes and the milestones reached", () => {
-    const h = card("rescue_fear", 13, true);
-    expect(h).toContain('aria-expanded="true"');
-    for (const s of ["Why this matters", "How it shows", "What the next step unlocks", "What it takes", "Reach 18 goal-met days since Scout arrived", "Optional extra", "0 of 5 urges managed", "Milestones reached", "Level 5", "Level 4", "Level 3"]) expect(h).toContain(s);
-  });
-  it("a new mission says no milestones yet", () => {
-    expect(card("rescue_safe", 0, true)).toContain("None yet");
-  });
-  it("a finished rescue mission is Recovered at 0 with a check; a raised one is Mastered at 100", () => {
+  it("a finished mission shows a check and Recovered or Mastered, and nothing to do", () => {
     const r = card("rescue_trust", 30);
-    expect(r).toContain("Rebuilding Trust — Recovered");
-    expect(r).toContain("0 / 0");
-    expect(r).toContain("mission-pill done");
-    expect(r).not.toContain("Next milestone");
-    const g = card("raise_bond", 30);
-    expect(g).toContain("Building Our Bond — Mastered");
-    expect(g).toContain("100 / 100");
+    expect(r).toContain("Recovered");
+    expect(r).toContain('data-done="true"');
+    expect(r).not.toMatch(/How severe|more goal-met/);
+    expect(card("raise_bond", 30)).toContain("Mastered");
+    expect(card("rescue_play", 5, ["rescue_play"])).toContain("Recovered");
   });
-  it("a remembered completion shows as finished even below 30 days", () => {
-    expect(card("rescue_play", 5, false, ["rescue_play"])).toContain("Learning to Play — Recovered");
-  });
-  it("both modes share the same card structure", () => {
-    const strip = (h: string) => h.replace(/>[^<]*</g, "><").replace(/(aria-[a-z]+|id|data-mode|aria-controls)="[^"]*"/g, "");
-    const a = missionStates("rescue", { goalMetDays: 8 })[0], b = missionStates("raise", { goalMetDays: 8 })[0];
-    const ha = renderToString(createElement(MissionCard, { s: a, mode: "rescue", name: "Scout", goalMetDays: 8 }));
-    const hb = renderToString(createElement(MissionCard, { s: b, mode: "raise", name: "Scout", goalMetDays: 8 }));
-    expect(strip(ha)).toEqual(strip(hb));
+});
+
+describe("the health bar", () => {
+  it("is the pet's health limited by its missions", () => {
+    expect(shownHealth(0, 10)).toBe(10);
+    expect(shownHealth(0, 100)).toBe(100);
+    expect(shownHealth(20, 55)).toBe(44);
   });
 });

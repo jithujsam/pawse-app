@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  levelForDays, MISSION_THRESHOLDS, missionMilestoneToCelebrate, missionState, missionStates, MISSIONS, missionsFor, newlyCompleted,
+  levelForDays, missionHealthCap, MISSION_THRESHOLDS, missionMilestoneToCelebrate, missionState, missionStates, MISSIONS, missionsFor, newlyCompleted,
   overallProgress, petTraits, setbackState, thresholdsOf, visualStage, type MissionDef,
 } from "../src";
 
@@ -91,6 +91,20 @@ describe("optional extras never gate a level", () => {
     expect(s.level).toBe(3);
     expect(s.extra).toEqual({ kind: "urgesManaged", have: 2, target: 5, done: false });
     expect(missionState(fear, { goalMetDays: 0, extras: { urgesManaged: 9 } })).toMatchObject({ level: 6, extra: { have: 5, done: true } });
+  });
+});
+
+describe("the health bar", () => {
+  it("a rescue starts at 10% and each level passed turns more boxes green, to 100% when recovered", () => {
+    expect([0, 3, 7, 12, 18, 24, 30].map((n) => missionHealthCap("rescue", missionStates("rescue", { goalMetDays: n })))).toEqual([10, 25, 40, 55, 70, 85, 100]);
+  });
+  it("a raised puppy's bar is never limited", () => {
+    expect(missionHealthCap("raise", missionStates("raise", { goalMetDays: 0 }))).toBe(100);
+  });
+  it("days remaining to complete", () => {
+    expect(missionState(rescue, { goalMetDays: 8 }).remaining).toBe(22);
+    expect(missionState(rescue, { goalMetDays: 40 }).remaining).toBe(0);
+    expect(missionState(rescue, { goalMetDays: 1, completed: ["rescue_trust"] }).remaining).toBe(0);
   });
 });
 

@@ -21,7 +21,7 @@ import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
 import { MissionsSheet } from "./MissionsSheet";
-import { companionMissions } from "../missions";
+import { companionMissions, shownHealth } from "../missions";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
@@ -70,15 +70,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const age = view.age;
   // The bar is the pet's health: green is what is left, red is damage, and a fully red bar is death.
   // Age is shown as days together.
-  const healthPct = 100 - Math.round(age);
   const days = daysTogether(companion.bornOn, today());
-  const seg = healthSegments(age);
+  const missions = companionMissions(data, companion.id, t0);
+  // A rescued pet's bar starts mostly red and turns green as its missions are completed (PRD §23.9).
+  const healthPct = shownHealth(age, missions?.healthCap ?? 100);
+  const seg = (missions?.healthCap ?? 100) < 100 ? { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) } : healthSegments(age);
   const danger = age >= 80;
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
   const [missionsOpen, setMissionsOpen] = useState(false);
-  const missions = companionMissions(data, companion.id, t0);
   const activeMissions = missions?.overall.active ?? 0;
   const plan = recoveryPlan(view);
   const trackPaused = track.status === "paused";
