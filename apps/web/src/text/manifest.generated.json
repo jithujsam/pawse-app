@@ -1392,11 +1392,11 @@
     {
       "id": "missions.sheet",
       "screen": "Missions sheet",
-      "title": "Header and mission cards",
+      "title": "Recovery summary and conditions",
       "source": "src/screens/MissionsSheet.tsx, src/screens/Home.tsx",
       "file": "src/text/sections/missions.ts",
       "start": 3,
-      "end": 38,
+      "end": 45,
       "entries": [
         {
           "id": "missions.sheet.label",
@@ -1433,123 +1433,169 @@
           "placeholders": []
         },
         {
-          "id": "missions.sheet.subtitle",
+          "id": "missions.sheet.subtitle_rescue",
           "kind": "text",
           "placeholders": [
             "name"
           ]
         },
         {
-          "id": "missions.sheet.why",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_6",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_5",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_4",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_3",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_2",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_1",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.severity_value",
+          "id": "missions.sheet.subtitle_raise",
           "kind": "text",
           "placeholders": [
-            "value",
-            "word"
+            "name"
           ]
         },
         {
-          "id": "missions.sheet.severity_aria",
+          "id": "missions.sheet.pct_rescue",
           "kind": "text",
           "placeholders": [
-            "value"
+            "pct"
           ]
         },
         {
-          "id": "missions.sheet.development",
+          "id": "missions.sheet.pct_raise",
+          "kind": "text",
+          "placeholders": [
+            "pct"
+          ]
+        },
+        {
+          "id": "missions.sheet.bar_aria",
+          "kind": "text",
+          "placeholders": [
+            "pct"
+          ]
+        },
+        {
+          "id": "missions.sheet.plan_rescue",
+          "kind": "text",
+          "placeholders": [
+            "days"
+          ]
+        },
+        {
+          "id": "missions.sheet.plan_raise",
+          "kind": "text",
+          "placeholders": [
+            "days"
+          ]
+        },
+        {
+          "id": "missions.sheet.rule_rescue",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.value_growth",
+          "id": "missions.sheet.rule_raise",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.recovered",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.trained",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.keep_up",
           "kind": "text",
           "placeholders": [
-            "value"
+            "days",
+            "target"
           ]
         },
         {
-          "id": "missions.sheet.growth_aria",
+          "id": "missions.sheet.relapse_risk",
           "kind": "text",
           "placeholders": [
-            "value"
+            "condition",
+            "n"
           ]
         },
         {
-          "id": "missions.sheet.days_rescue_one",
+          "id": "missions.sheet.relapse_risk_raise",
+          "kind": "text",
+          "placeholders": [
+            "condition",
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.journey_done",
+          "kind": "text",
+          "placeholders": [
+            "target"
+          ]
+        },
+        {
+          "id": "missions.sheet.goal",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.goal_days",
           "kind": "text",
           "placeholders": [
             "n"
           ]
         },
         {
-          "id": "missions.sheet.days_rescue_other",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.days_raise_one",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.days_raise_other",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.status_recovered",
+          "id": "missions.sheet.goal_hint",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.sheet.status_mastered",
+          "id": "missions.sheet.healed",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "missions.sheet.learned",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.in_treatment",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.learning",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.next",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.days_in_row",
+          "kind": "text",
+          "placeholders": [
+            "have",
+            "need"
+          ]
+        },
+        {
+          "id": "missions.sheet.needs_days",
+          "kind": "text",
+          "placeholders": [
+            "need"
+          ]
+        },
+        {
+          "id": "missions.sheet.progress_aria",
+          "kind": "text",
+          "placeholders": [
+            "have",
+            "need"
+          ]
         },
         {
           "id": "missions.sheet.fiction",
@@ -1557,6 +1603,11 @@
           "placeholders": [
             "name"
           ]
+        },
+        {
+          "id": "missions.sheet.safety_alcohol",
+          "kind": "text",
+          "placeholders": []
         },
         {
           "id": "missions.sheet.setback",
@@ -1568,51 +1619,157 @@
       ]
     },
     {
-      "id": "missions.content",
-      "screen": "Missions sheet",
-      "title": "Mission titles and stories",
-      "source": "src/mission-text.ts",
+      "id": "missions.moment",
+      "screen": "Missions pop-up",
+      "title": "Healed, recovered, back again",
+      "source": "src/screens/MissionsSheet.tsx",
       "file": "src/text/sections/missions.ts",
-      "start": 40,
-      "end": 67,
+      "start": 47,
+      "end": 86,
       "entries": [
         {
-          "id": "missions.content.rescue_trust_title",
+          "id": "missions.moment.aria",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_trust_why",
+          "id": "missions.moment.healed_title",
+          "kind": "text",
+          "placeholders": [
+            "condition"
+          ]
+        },
+        {
+          "id": "missions.moment.learned_title",
+          "kind": "text",
+          "placeholders": [
+            "condition"
+          ]
+        },
+        {
+          "id": "missions.moment.recovered_title",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.trained_title",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.complete_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_physical_title",
+          "id": "missions.moment.relapse_title",
+          "kind": "text",
+          "placeholders": [
+            "condition"
+          ]
+        },
+        {
+          "id": "missions.moment.reset_title",
+          "kind": "text",
+          "placeholders": [
+            "condition"
+          ]
+        },
+        {
+          "id": "missions.moment.next_up",
+          "kind": "text",
+          "placeholders": [
+            "condition",
+            "need"
+          ]
+        },
+        {
+          "id": "missions.moment.heal_again",
+          "kind": "text",
+          "placeholders": [
+            "need"
+          ]
+        },
+        {
+          "id": "missions.moment.ok",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_physical_why",
+          "id": "missions.moment.healed_body",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.recovered_body",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.complete_body",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.relapse_body",
+          "kind": "voice",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.moment.reset_body",
+          "kind": "voice",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "missions.content",
+      "screen": "Missions sheet",
+      "title": "Conditions and skills",
+      "source": "src/mission-text.ts",
+      "file": "src/text/sections/missions.ts",
+      "start": 88,
+      "end": 115,
+      "entries": [
+        {
+          "id": "missions.content.rescue_coat_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_fear_title",
+          "id": "missions.content.rescue_coat_why",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_fear_why",
+          "id": "missions.content.rescue_energy_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_confidence_title",
+          "id": "missions.content.rescue_energy_why",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_confidence_why",
+          "id": "missions.content.rescue_noise_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.rescue_noise_why",
           "kind": "text",
           "placeholders": []
         },
@@ -1627,32 +1784,52 @@
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_safe_title",
+          "id": "missions.content.rescue_alone_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.rescue_safe_why",
+          "id": "missions.content.rescue_alone_why",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.raise_bond_title",
+          "id": "missions.content.rescue_trust_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.raise_bond_why",
+          "id": "missions.content.rescue_trust_why",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.raise_play_title",
+          "id": "missions.content.raise_name_title",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "missions.content.raise_play_why",
+          "id": "missions.content.raise_name_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routine_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_routine_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_fetch_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_fetch_why",
           "kind": "text",
           "placeholders": []
         },
@@ -1667,32 +1844,22 @@
           "placeholders": []
         },
         {
+          "id": "missions.content.raise_calm_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.content.raise_calm_why",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "missions.content.raise_strong_title",
           "kind": "text",
           "placeholders": []
         },
         {
           "id": "missions.content.raise_strong_why",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.content.raise_confidence_title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.content.raise_confidence_why",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.content.raise_routines_title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.content.raise_routines_why",
           "kind": "text",
           "placeholders": []
         }

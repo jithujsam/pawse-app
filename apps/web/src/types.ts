@@ -45,18 +45,16 @@ export interface Companion {
   missions?: MissionMemory;
 }
 
-/** Only-ever-growing mission memory, merged by union across phones. */
+/** What missions can't recompute: the journey target and what has been celebrated. Merged across phones (missions.ts). */
 export interface MissionMemory {
-  /** Mission set version these were earned in (MISSION_SET_VERSION). */
+  /** Mission set version (MISSION_SET_VERSION). */
   v: number;
-  /** Mission ids completed once. A completion is never taken back. */
+  /** Milestones reached at least once ("recovered", "complete"). */
   done: string[];
-  /** Milestone keys already celebrated ("<mission>:<level>"), so each fires once. */
+  /** Journey events already shown ("<kind>:<mission>:<day>"), so each shows once. */
   seen: string[];
-  /** Days with at least one interaction with the pet, counted at most once a day (an optional mission extra). */
-  petDays?: number;
-  /** The last day counted in petDays. */
-  petOn?: string | null;
+  /** The journey length the person chose: 30, 60 or 120 days. Missing means 30. */
+  target?: number;
 }
 
 export interface Habit {

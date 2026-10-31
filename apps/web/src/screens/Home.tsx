@@ -20,7 +20,8 @@ import { LogSheet } from "./LogSheet";
 import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
-import { MissionsSheet } from "./MissionsSheet";
+import { JourneyMoment, MissionsSheet } from "./MissionsSheet";
+import type { JourneyEvent } from "@detox/engine";
 import { companionMissions, shownHealth } from "../missions";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
@@ -44,6 +45,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [note, setNote] = useState<string | null>(null);
   const [sparks, setSparks] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
+  const [moment, setMoment] = useState<JourneyEvent | null>(null);
   const update = useUpdate();
   const [updating, setUpdating] = useState<number | null>(null);
 
@@ -80,7 +82,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
   const [missionsOpen, setMissionsOpen] = useState(false);
-  const activeMissions = missions?.overall.active ?? 0;
+  const activeMissions = missions && !missions.journey.recovered ? 6 - missions.journey.healed : 0;
   const plan = recoveryPlan(view);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
@@ -110,18 +112,24 @@ export function Home({ onBack }: { onBack?: () => void }) {
     setJust("clean"); setSparks((s) => s + 1);
     setNote(say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
+    // A condition healed (or full recovery) is shown first; a days-of-care milestone waits until it's closed.
+    const ev = actions.recordMissions(companion.id);
+    if (ev) setTimeout(() => setMoment(ev), 900);
     const after = getData();
     const m = milestoneToCelebrate(trackSummary(after, habit.id, t0).care, celebratedFor(after, habit.id), MILESTONES);
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
-    else toast(cleanToast(tone, companion.name), { kind: "good", ms: 1000, action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
+    else if (!ev) toast(cleanToast(tone, companion.name), { kind: "good", ms: 1000, action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
   }
   function saved(d: Deduction) {
     setJust("slip"); haptic.heavy();
     setNote(d.binge && SCARS_ON ? say("binge", personality, tone) : d.absorbed >= d.entry.months - 0.01 ? say("shrug", personality, tone, d.streakBefore) : say("slip", personality, tone));
     // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
     void scheduleCare("slip", careOpts());
+    // A slip can bring a condition back: say so plainly, with how to heal it again.
+    const ev = actions.recordMissions(companion.id);
+    if (ev) setTimeout(() => setMoment(ev), 1200);
   }
-  const react = (r: Reaction) => { setNote(say(r, personality, tone)); actions.notePetDay(companion.id); };
+  const react = (r: Reaction) => setNote(say(r, personality, tone));
 
   const ws = weekStart(t0);
   const strip = Array.from({ length: 7 }, (_, i) => {
@@ -217,8 +225,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
       <UrgeSheet open={urge} onClose={() => setUrge(false)} onSlipped={() => { setUrge(false); setTimeout(() => setSheet(true), 350); }} />
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
-      <Milestone days={milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-      {!data.settings.coachSeen && !sheet && !urge && !health && !missionsOpen && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
+      <JourneyMoment event={moment} companionId={companion.id} onClose={() => setMoment(null)} />
+      <Milestone days={moment ? null : milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
+      {!data.settings.coachSeen && !sheet && !urge && !health && !missionsOpen && !moment && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
     </motion.main>
   );
 }

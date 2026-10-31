@@ -64,12 +64,12 @@ export function healthReport(d: AppData, v: CompanionView, tone: Tone): HealthRe
 /** A rescued pet that is still recovering: the heart is low because of where it started, not because of anything the person did. */
 function rehabLines(name: string, tone: Tone, cap: number): [string, string] {
   const body = cap <= 10
-    ? (tone === "gentle" ? `${name} came to you in poor shape. Missions show what ${name} is working through, and every goal-met day helps.`
+    ? (tone === "gentle" ? `${name} came to you in poor shape. Missions show what ${name} is healing from, and every goal-met day helps.`
       : tone === "brutal" ? `${name} arrived in poor shape. Goal-met days are what bring the bar back. Open Missions to see what's left.`
-        : `${name} arrived in poor shape. Each mission level reached turns more of the bar green. Open Missions to see what's next.`)
-    : (tone === "gentle" ? `${name} is getting better, one mission at a time. Every goal-met day helps.`
+        : `${name} arrived in poor shape. Each condition healed turns more of the bar green. Open Missions to see what's next.`)
+    : (tone === "gentle" ? `${name} is getting better, one condition at a time. Every goal-met day helps.`
       : tone === "brutal" ? `${name} is on the way back. Keep the goal-met days coming and the bar keeps turning green.`
-        : `${name} is getting better. Each mission level reached turns more of the bar green.`);
+        : `${name} is getting better. Each condition healed turns more of the bar green.`);
   return [`${name} is still recovering`, body];
 }
 

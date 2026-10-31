@@ -1,170 +1,148 @@
 import { describe, expect, it } from "vitest";
-import {
-  levelForDays, missionHealthCap, MISSION_THRESHOLDS, missionMilestoneToCelebrate, missionState, missionStates, MISSIONS, missionsFor, newlyCompleted,
-  overallProgress, petTraits, setbackState, thresholdsOf, visualStage, type MissionDef,
-} from "../src";
+import { journey, missionHealthCap, MISSIONS, missionsFor, petTraits, recoveryDays, RELAPSE_SLIPS, setbackState, slipsInWindowOn, stepDays, type DayRecord } from "../src";
 
-const rescue = MISSIONS.find((m) => m.id === "rescue_trust")!;
-const raise = MISSIONS.find((m) => m.id === "raise_bond")!;
+const D0 = Date.UTC(2026, 0, 1);
+const day = (i: number) => new Date(D0 + i * 86_400_000).toISOString().slice(0, 10);
+/** A pattern string: m = goal met, s = slip, . = nothing recorded. */
+const days = (p: string): DayRecord[] => [...p].map((c, i) => ({ day: day(i), met: c === "m", slip: c === "s" }));
+const m = (n: number) => "m".repeat(n);
 
-describe("mission sets", () => {
-  it("each mode has six missions with unique ids", () => {
-    expect(missionsFor("rescue").map((m) => m.id)).toEqual(["rescue_trust", "rescue_physical", "rescue_fear", "rescue_confidence", "rescue_play", "rescue_safe"]);
-    expect(missionsFor("raise").map((m) => m.id)).toEqual(["raise_bond", "raise_play", "raise_explore", "raise_strong", "raise_confidence", "raise_routines"]);
-    expect(new Set(MISSIONS.map((m) => m.id)).size).toBe(MISSIONS.length);
+describe("the schedule", () => {
+  it("recovery is half the target and never under 21 days", () => {
+    expect([30, 60, 120].map(recoveryDays)).toEqual([21, 30, 60]);
   });
-  it("new adoptions start every mission at Level 6", () => {
-    for (const mode of ["rescue", "raise"] as const) {
-      const s = missionStates(mode, { goalMetDays: 0 });
-      expect(s).toHaveLength(6);
-      expect(s.every((x) => x.level === 6 && !x.completed && x.status === "starting")).toBe(true);
-      expect(s.every((x) => x.value === (mode === "rescue" ? -10 : 0))).toBe(true);
+  it("the six conditions take 1, 2, 3, 4, 5, 6 days in a row on a 30-day journey, and scale up for longer ones", () => {
+    expect(stepDays(30)).toEqual([1, 2, 3, 4, 5, 6]);
+    for (const t of [30, 60, 120]) {
+      const s = stepDays(t);
+      expect(s.reduce((a, b) => a + b, 0)).toBe(recoveryDays(t));
+      expect(s.every((x, i) => x >= 1 && (i === 0 || x >= s[i - 1]))).toBe(true);
     }
+    expect(stepDays(60)).toEqual([1, 3, 5, 5, 7, 9]);
+    expect(stepDays(120)).toEqual([3, 6, 8, 12, 14, 17]);
+  });
+  it("each mode has six conditions or skills, in treatment order", () => {
+    expect(missionsFor("rescue").map((x) => x.id)).toEqual(["rescue_coat", "rescue_energy", "rescue_noise", "rescue_play", "rescue_alone", "rescue_trust"]);
+    expect(missionsFor("raise")).toHaveLength(6);
+    expect(new Set(MISSIONS.map((x) => x.id)).size).toBe(12);
   });
 });
 
-// PRD §23 schedule: cumulative goal-met days since adoption.
-describe("level schedule", () => {
-  const table: [number, number, number, number][] = [
-    // days, level, rescue condition, raise score
-    [0, 6, -10, 0], [2, 6, -10, 0], [3, 5, -8, 20], [6, 5, -8, 20], [7, 4, -6, 40], [11, 4, -6, 40],
-    [12, 3, -4, 60], [17, 3, -4, 60], [18, 2, -2, 80], [23, 2, -2, 80], [24, 1, -1, 90], [29, 1, -1, 90], [30, 0, 0, 100], [400, 0, 0, 100],
-  ];
-  it.each(table)("%i goal-met days → Level %i, condition %i, score %i", (days, level, cond, score) => {
-    const r = missionState(rescue, { goalMetDays: days });
-    const g = missionState(raise, { goalMetDays: days });
-    expect(r.level).toBe(level);
-    expect(g.level).toBe(level);
-    expect(r.value).toBe(cond);
-    expect(g.value).toBe(score);
-    expect(r.completed).toBe(level === 0);
+describe("recovering", () => {
+  it("a new rescue starts at 0% with the first condition in treatment", () => {
+    const j = journey("rescue", 30, []);
+    expect(j).toMatchObject({ healed: 0, progress: 0, pct: 0, recovered: false });
+    expect(j.missions.map((x) => x.status)).toEqual(["current", "waiting", "waiting", "waiting", "waiting", "waiting"]);
   });
-  it("the condition reaches exactly 0 and never goes positive; the score reaches exactly 100", () => {
-    for (let d = 0; d <= 100; d++) {
-      expect(missionState(rescue, { goalMetDays: d }).value).toBeLessThanOrEqual(0);
-      expect(missionState(raise, { goalMetDays: d }).value).toBeLessThanOrEqual(100);
-    }
-    expect(missionState(rescue, { goalMetDays: 30 }).value).toBe(0);
-    expect(missionState(raise, { goalMetDays: 30 }).value).toBe(100);
+  it("heals one condition at each step: 1, 3, 6, 10, 15 and 21 days with no slip", () => {
+    const healedAt = [1, 3, 6, 10, 15, 21].map((n) => journey("rescue", 30, days(m(n))).healed);
+    expect(healedAt).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(journey("rescue", 30, days(m(20))).healed).toBe(5);
   });
-  it("shows the next milestone and the step progress", () => {
-    const s = missionState(rescue, { goalMetDays: 8 });
-    expect(s).toMatchObject({ level: 4, value: -6, status: "stabilizing", nextAt: 12, nextLevel: 3, prevAt: 7, days: 8, reached: [5, 4] });
-    const done = missionState(rescue, { goalMetDays: 31 });
-    expect(done).toMatchObject({ level: 0, nextAt: null, nextLevel: null, status: "done", reached: [5, 4, 3, 2, 1, 0] });
+  it("shows recovery as a percentage, 100 at 21 days", () => {
+    expect(journey("rescue", 30, days(m(2))).pct).toBe(9);
+    expect(journey("rescue", 30, days(m(10))).pct).toBe(47);
+    expect(journey("rescue", 30, days(m(21)))).toMatchObject({ pct: 100, recovered: true, recoveredOn: day(20) });
   });
-  it("is idempotent and ignores junk input", () => {
-    expect(missionState(rescue, { goalMetDays: 12 })).toEqual(missionState(rescue, { goalMetDays: 12 }));
-    expect(levelForDays(-5)).toBe(6);
-    expect(levelForDays(Number.NaN)).toBe(6);
-    expect(levelForDays(12.9)).toBe(3);
+  it("days with nothing recorded don't count and don't break the run", () => {
+    expect(journey("rescue", 30, days("m.m..m")).healed).toBe(2);
   });
-  it("thresholds are configurable and validated", () => {
-    const fast: MissionDef = { ...rescue, thresholds: [1, 2, 3, 4, 5, 6] };
-    expect(missionState(fast, { goalMetDays: 6 }).completed).toBe(true);
-    expect(thresholdsOf({ thresholds: [5, 4, 3, 2, 1, 0] })).toBe(MISSION_THRESHOLDS);
-    expect(thresholdsOf({ thresholds: [1, 2, 3] })).toBe(MISSION_THRESHOLDS);
+  it("a 60-day journey needs 30 days, a 120-day journey 60", () => {
+    expect(journey("rescue", 60, days(m(29))).recovered).toBe(false);
+    expect(journey("rescue", 60, days(m(30))).recovered).toBe(true);
+    expect(journey("rescue", 120, days(m(60))).recovered).toBe(true);
+  });
+  it("is the same every time for the same records", () => {
+    expect(journey("rescue", 30, days("mmsmm.m"))).toEqual(journey("rescue", 30, days("mmsmm.m")));
   });
 });
 
-describe("completion is kept", () => {
-  it("a latched completion stays Recovered even if a correction lowers the count", () => {
-    const s = missionState(rescue, { goalMetDays: 4, completed: ["rescue_trust"] });
-    expect(s).toMatchObject({ level: 0, completed: true, value: 0 });
-    expect(missionState(MISSIONS[1], { goalMetDays: 4, completed: ["rescue_trust"] }).level).toBe(5);
+describe("a slip during recovery", () => {
+  it("resets the condition in treatment and brings back the last one healed", () => {
+    const before = journey("rescue", 30, days(m(8))); // 3 healed, 2 days on the 4th
+    expect(before).toMatchObject({ healed: 3, progress: 2 });
+    const after = journey("rescue", 30, days(m(8) + "s"));
+    expect(after).toMatchObject({ healed: 2, progress: 0 });
+    expect(after.events.at(-1)).toMatchObject({ kind: "relapse", mission: "rescue_noise", lost: 2 });
+    expect(after.pct).toBeLessThan(before.pct);
   });
-  it("lists newly completed missions once", () => {
-    const states = missionStates("rescue", { goalMetDays: 30 });
-    expect(newlyCompleted(states, [])).toHaveLength(6);
-    expect(newlyCompleted(states, states.map((s) => s.id))).toEqual([]);
+  it("the returned condition must be healed again from scratch", () => {
+    expect(journey("rescue", 30, days(m(8) + "s" + m(2))).healed).toBe(2);
+    expect(journey("rescue", 30, days(m(8) + "s" + m(3))).healed).toBe(3);
   });
-  it("overall progress", () => {
-    expect(overallProgress(missionStates("raise", { goalMetDays: 7 }))).toMatchObject({ passed: 12, total: 36, completed: 0, active: 6 });
-    expect(overallProgress(missionStates("raise", { goalMetDays: 30 })).pct).toBe(1);
+  it("one slip a week keeps a rescue from ever fully recovering", () => {
+    expect(journey("rescue", 30, days(("mmmmmms").repeat(10))).recovered).toBe(false);
+  });
+  it("a raised puppy only loses the skill in progress, never one learned", () => {
+    const j = journey("raise", 30, days(m(8) + "s"));
+    expect(j).toMatchObject({ healed: 3, progress: 0 });
+    expect(j.events.at(-1)).toMatchObject({ kind: "reset", lost: 2 });
+  });
+  it("a slip on the same day as a goal-met mark counts as a slip", () => {
+    expect(journey("rescue", 30, [{ day: day(0), met: true, slip: true }]).healed).toBe(0);
   });
 });
 
-describe("optional extras never gate a level", () => {
-  it("tracks the extra separately", () => {
-    const fear = MISSIONS.find((m) => m.id === "rescue_fear")!;
-    const s = missionState(fear, { goalMetDays: 12, extras: { urgesManaged: 2 } });
-    expect(s.level).toBe(3);
-    expect(s.extra).toEqual({ kind: "urgesManaged", have: 2, target: 5, done: false });
-    expect(missionState(fear, { goalMetDays: 0, extras: { urgesManaged: 9 } })).toMatchObject({ level: 6, extra: { have: 5, done: true } });
+describe("after recovery", () => {
+  it("each slip counts toward a relapse; 5 within 30 days bring the deepest condition back", () => {
+    const base = m(21);
+    expect(journey("rescue", 30, days(base + "s")).slipsInWindow).toBe(1);
+    expect(journey("rescue", 30, days(base + "s".repeat(RELAPSE_SLIPS - 1))).recovered).toBe(true);
+    const j = journey("rescue", 30, days(base + "s".repeat(RELAPSE_SLIPS)));
+    expect(j).toMatchObject({ recovered: false, healed: 5, progress: 0 });
+    expect(j.events.at(-1)).toMatchObject({ kind: "relapse", mission: "rescue_trust" });
+    expect(journey("rescue", 30, days(base + "s".repeat(5) + m(6))).recovered).toBe(true);
+  });
+  it("slips more than 30 days apart don't add up", () => {
+    const spaced = m(21) + ("s" + m(30)).repeat(6);
+    expect(journey("rescue", 30, days(spaced)).recovered).toBe(true);
+    const j = journey("rescue", 30, days(m(21) + "s" + m(3)));
+    expect(slipsInWindowOn(j, day(24), [day(21)])).toBe(1);
+    expect(slipsInWindowOn(j, day(52), [day(21)])).toBe(0);
+  });
+  it("the journey is complete at the target with the pet recovered", () => {
+    expect(journey("rescue", 30, days(m(29))).complete).toBe(false);
+    const j = journey("rescue", 30, days(m(30)));
+    expect(j.complete).toBe(true);
+    expect(j.events.map((e) => e.kind)).toContain("complete");
   });
 });
 
 describe("the health bar", () => {
-  it("a rescue starts at 10% and each level passed turns more boxes green, to 100% when recovered", () => {
-    expect([0, 3, 7, 12, 18, 24, 30].map((n) => missionHealthCap("rescue", missionStates("rescue", { goalMetDays: n })))).toEqual([10, 25, 40, 55, 70, 85, 100]);
+  it("a rescue starts at 10% and turns green with recovery, 100% once recovered", () => {
+    expect([0, 3, 10, 20, 21].map((n) => missionHealthCap(journey("rescue", 30, days(m(n)))))).toEqual([10, 25, 50, 95, 100]);
   });
   it("a raised puppy's bar is never limited", () => {
-    expect(missionHealthCap("raise", missionStates("raise", { goalMetDays: 0 }))).toBe(100);
-  });
-  it("days remaining to complete", () => {
-    expect(missionState(rescue, { goalMetDays: 8 }).remaining).toBe(22);
-    expect(missionState(rescue, { goalMetDays: 40 }).remaining).toBe(0);
-    expect(missionState(rescue, { goalMetDays: 1, completed: ["rescue_trust"] }).remaining).toBe(0);
-  });
-});
-
-describe("celebrations", () => {
-  it("one celebration for the furthest new milestone, then none again", () => {
-    const states = missionStates("rescue", { goalMetDays: 12 });
-    const c = missionMilestoneToCelebrate(states, [])!;
-    expect(c.level).toBe(3);
-    expect(c.seen).toHaveLength(18);
-    expect(missionMilestoneToCelebrate(states, c.seen)).toBeNull();
-    const next = missionMilestoneToCelebrate(missionStates("rescue", { goalMetDays: 18 }), c.seen)!;
-    expect(next.level).toBe(2);
+    expect(missionHealthCap(journey("raise", 30, []))).toBe(100);
   });
 });
 
 describe("setbacks", () => {
   const base = { lastGoalMet: null, today: "2026-11-10" };
-  it("active on the slip day and the next, never longer", () => {
+  it("active on the slip day and the next; ends early with a goal-met day", () => {
     expect(setbackState({ ...base, lastSlip: "2026-11-10", daysSinceSlip: 0 }).active).toBe(true);
     expect(setbackState({ ...base, lastSlip: "2026-11-09", daysSinceSlip: 1 }).active).toBe(true);
     expect(setbackState({ ...base, lastSlip: "2026-11-08", daysSinceSlip: 2 }).active).toBe(false);
-    expect(setbackState({ ...base, lastSlip: null, daysSinceSlip: null }).active).toBe(false);
-  });
-  it("ends early with a goal-met day after the slip", () => {
     expect(setbackState({ ...base, lastSlip: "2026-11-09", lastGoalMet: "2026-11-10", daysSinceSlip: 1 }).active).toBe(false);
-  });
-  it("never changes levels or completions", () => {
-    const before = missionStates("rescue", { goalMetDays: 30, completed: ["rescue_trust"] });
-    expect(before.every((s) => s.completed)).toBe(true);
   });
 });
 
 describe("the pet's look", () => {
-  it("a rescued pet starts low on every trait and recovers per mission", () => {
-    const start = petTraits("rescue", missionStates("rescue", { goalMetDays: 0 }));
-    expect(Object.values(start).every((v) => v === 0)).toBe(true);
-    // Only Physical Recovery done: coat, posture and energy move; trust does not.
-    const states = missionStates("rescue", { goalMetDays: 0, completed: ["rescue_physical"] });
-    const t = petTraits("rescue", states);
-    expect(t.coat).toBe(1);
-    expect(t.energy).toBe(1);
-    expect(t.trust).toBe(0);
-    expect(t.posture).toBe(0.5); // shared with Building Confidence
+  it("each condition drives its own traits: healing the coat changes only the coat", () => {
+    const t0 = petTraits(journey("rescue", 30, []));
+    expect(Object.values(t0).every((v) => v === 0)).toBe(true);
+    const t1 = petTraits(journey("rescue", 30, days(m(1))));
+    expect(t1.coat).toBe(1);
+    expect(t1.trust).toBe(0);
+    expect(t1.energy).toBe(0);
   });
-  it("a raised puppy starts healthy and grows", () => {
-    expect(Object.values(petTraits("raise", missionStates("raise", { goalMetDays: 0 }))).every((v) => v === 0.7)).toBe(true);
-    expect(Object.values(petTraits("raise", missionStates("raise", { goalMetDays: 30 }))).every((v) => v === 1)).toBe(true);
+  it("a recovered rescue looks fully well; a raised puppy starts healthy", () => {
+    expect(Object.values(petTraits(journey("rescue", 30, days(m(21))))).every((v) => v === 1)).toBe(true);
+    expect(Object.values(petTraits(journey("raise", 30, []))).every((v) => v === 0.7)).toBe(true);
   });
   it("a setback makes the pet quieter, not sick", () => {
-    const states = missionStates("rescue", { goalMetDays: 30 });
-    const t = petTraits("rescue", states, { setback: true });
+    const t = petTraits(journey("rescue", 30, days(m(21))), { setback: true });
     expect(t.coat).toBe(1);
     expect(t.energy).toBeCloseTo(0.8);
-    expect(t.play).toBeCloseTo(0.75);
-  });
-  it("visual stages", () => {
-    expect(visualStage(missionStates("rescue", { goalMetDays: 0 }))).toBe("initial");
-    expect(visualStage(missionStates("rescue", { goalMetDays: 3 }))).toBe("early");
-    expect(visualStage(missionStates("rescue", { goalMetDays: 12 }))).toBe("mid");
-    expect(visualStage(missionStates("rescue", { goalMetDays: 18 }))).toBe("late");
-    expect(visualStage(missionStates("rescue", { goalMetDays: 30 }))).toBe("recovered");
   });
 });

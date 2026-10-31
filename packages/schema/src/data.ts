@@ -36,7 +36,9 @@ export const CompanionSchema = z.object({
   missions: z.object({
     v: z.number().int().min(1).max(100),
     done: z.array(z.string().regex(/^[a-z_]{1,40}$/)).max(100),
-    seen: z.array(z.string().regex(/^[a-z_]{1,40}:[0-6]$/)).max(1000),
+    seen: z.array(z.string().regex(/^[a-z_]{1,40}(:[a-z_0-9]{1,40})?(:\d{4}-\d{2}-\d{2})?$/)).max(1000),
+    target: z.union([z.literal(30), z.literal(60), z.literal(120)]).optional(),
+    // Older builds kept a pet-days count here; read and ignored.
     petDays: z.number().int().min(0).max(100000).optional(),
     petOn: day.nullable().optional(),
   }).optional(),

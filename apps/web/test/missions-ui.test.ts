@@ -1,56 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { MISSIONS, missionState } from "@detox/engine";
+import { journey, MISSIONS, type DayRecord } from "@detox/engine";
 import { MissionCard } from "../src/screens/MissionsSheet";
 import { MISSION_TEXT_IDS, missionText } from "../src/mission-text";
-import { shownHealth } from "../src/missions";
 
-/** The mission card, rendered as the sheet shows it: headline, why, how severe, days left. */
-const card = (id: string, days: number, completed: string[] = []) => {
-  const def = MISSIONS.find((m) => m.id === id)!;
-  const s = missionState(def, { goalMetDays: days, completed });
-  return renderToString(createElement(MissionCard, { s, mode: def.mode })).replace(/<!-- -->/g, "").replace(/&#x27;/g, "'");
-};
-const redBoxes = (h: string) => (h.match(/data-on="true"/g) ?? []).length;
+const days = (n: number): DayRecord[] => Array.from({ length: n }, (_, i) => ({ day: `2026-01-${String(i + 1).padStart(2, "0")}`, met: true, slip: false }));
+const cards = (mode: "rescue" | "raise", n: number) =>
+  journey(mode, 30, days(n)).missions.map((s) => renderToString(createElement(MissionCard, { s, mode })).replace(/<!-- -->/g, "").replace(/&#x27;/g, "'"));
+const on = (h: string) => (h.match(/data-on="true"/g) ?? []).length;
 
-describe("mission cards", () => {
-  it("every mission has words", () => {
+describe("condition cards", () => {
+  it("every condition and skill has words", () => {
     expect([...MISSION_TEXT_IDS].sort()).toEqual(MISSIONS.map((m) => m.id).sort());
     for (const m of MISSIONS) expect(missionText(m.id).why.length).toBeGreaterThan(10);
   });
-  it("a rescue card is a headline, why it matters, how severe and the goal-met days left", () => {
-    const h = card("rescue_trust", 8);
-    for (const s of ["Rebuilding Trust", "The puppy is hesitant around people", "How severe", "Moderate · -6", "22 more goal-met days to recover"]) expect(h).toContain(s);
-    expect(redBoxes(h)).toBe(3);
-    // Nothing else: no levels, statuses or expandable details.
-    expect(h).not.toMatch(/Level|Status|Details|aria-expanded/);
+  it("healed, in treatment and next, with days in a row; no negative numbers anywhere", () => {
+    const c = cards("rescue", 8); // coat, energy, noise healed; 2 of 4 on play
+    expect(c[0]).toContain("Itchy, patchy coat");
+    expect(c[0]).toContain("Healed");
+    expect(c[3]).toContain("In treatment");
+    expect(c[3]).toContain("2 of 4 days in a row");
+    expect(on(c[3])).toBe(2);
+    expect(c[4]).toContain("Needs 5 goal-met days in a row");
+    expect(c[5]).toContain("Afraid of people");
+    for (const h of c) expect(h).not.toMatch(/-\d/);
   });
-  it("severity starts at five red boxes and falls to one", () => {
-    expect(card("rescue_fear", 0)).toContain("Severe · -10");
-    expect(redBoxes(card("rescue_fear", 0))).toBe(5);
-    expect(redBoxes(card("rescue_fear", 24))).toBe(1);
-    expect(card("rescue_fear", 29)).toContain("1 more goal-met day to recover");
-  });
-  it("a raise card shows development, never a negative value", () => {
-    const h = card("raise_bond", 8);
-    for (const s of ["Building Our Bond", "Development", "40 / 100", "22 more goal-met days to master"]) expect(h).toContain(s);
-    expect(h).not.toMatch(/-\d|How severe/);
-  });
-  it("a finished mission shows a check and Recovered or Mastered, and nothing to do", () => {
-    const r = card("rescue_trust", 30);
-    expect(r).toContain("Recovered");
-    expect(r).toContain('data-done="true"');
-    expect(r).not.toMatch(/How severe|more goal-met/);
-    expect(card("raise_bond", 30)).toContain("Mastered");
-    expect(card("rescue_play", 5, ["rescue_play"])).toContain("Recovered");
-  });
-});
-
-describe("the health bar", () => {
-  it("is the pet's health limited by its missions", () => {
-    expect(shownHealth(0, 10)).toBe(10);
-    expect(shownHealth(0, 100)).toBe(100);
-    expect(shownHealth(20, 55)).toBe(44);
+  it("a raised puppy's cards say learned and learning", () => {
+    const c = cards("raise", 1);
+    expect(c[0]).toContain("Learned");
+    expect(c[1]).toContain("Learning");
   });
 });

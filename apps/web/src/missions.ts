@@ -1,122 +1,101 @@
 import {
-  MISSION_SET_VERSION, missionHealthCap, missionMilestoneToCelebrate, missionStates, newlyCompleted, overallProgress, petTraits, setbackState, visualStage,
-  type AdoptionMode, type MissionLevel, type MissionState, type VisualStage, type VisualTrait,
+  DEFAULT_TARGET, isJourneyTarget, journey, MISSION_SET_VERSION, missionHealthCap, petTraits, setbackState, slipsInWindowOn,
+  type AdoptionMode, type DayRecord, type Journey, type JourneyEvent, type JourneyTarget, type VisualTrait,
 } from "@detox/engine";
-import { daysFrom, streaks, trackIndex } from "./progress";
+import { daysFrom, trackIndex } from "./progress";
 import type { AppData, Companion, MissionMemory, Species } from "./types";
 
 /**
  * Pet missions for one companion (PRD §23), worked out from its track's own records each time, like every other
  * recovery number (progress.ts). The engine (packages/engine/src/missions.ts) holds the rules; this file only reads
- * the app's data into it.
- *
- * - Progress: distinct goal-met days without a slip, from the day the pet arrived up to today. A set of days, so
- *   the same day never counts twice and the result is the same however often it's worked out.
- * - A slip only changes its own day: it never removes earlier days, levels or completions.
- * - Completions once reached are remembered (MissionMemory.done), so a later correction never takes one back.
+ * the app's data into it. Only the journey target and the celebrations already shown are stored.
  */
 
 /** Species that can be adopted as a rescue. Others are always raised. */
 export const RESCUE_SPECIES: readonly Species[] = ["dog"];
 
-export const emptyMemory = (): MissionMemory => ({ v: MISSION_SET_VERSION, done: [], seen: [], petDays: 0, petOn: null });
+export const emptyMemory = (target: JourneyTarget = DEFAULT_TARGET): MissionMemory => ({ v: MISSION_SET_VERSION, done: [], seen: [], target });
 export const memoryOf = (c: Companion | undefined): MissionMemory => ({ ...emptyMemory(), ...(c?.missions ?? {}) });
 /** Every pet from before missions is raised. */
 export const adoptionOf = (c: Companion | undefined): AdoptionMode => c?.adoption ?? "raise";
+export const targetOf = (c: Companion | undefined): JourneyTarget => (isJourneyTarget(c?.missions?.target) ? c!.missions!.target as JourneyTarget : DEFAULT_TARGET);
 
-/** Unions two mission memories: completions and celebrations only ever grow, whichever phone saw them first. */
+/** Keeps the most recent celebration keys only, so the list stays small. */
+const SEEN_MAX = 200;
+
+/** Merges two mission memories (sync, backups): celebrations seen on either side stay seen; the target chosen last wins. */
 export function mergeMemory(a: MissionMemory | undefined, b: MissionMemory | undefined): MissionMemory | undefined {
   if (!a) return b;
   if (!b) return a;
-  const pick = (a.petDays ?? 0) >= (b.petDays ?? 0) ? a : b;
   return {
     v: Math.max(a.v, b.v),
     done: [...new Set([...a.done, ...b.done])].sort(),
-    seen: [...new Set([...a.seen, ...b.seen])].sort(),
-    petDays: pick.petDays ?? 0,
-    petOn: pick.petOn ?? null,
+    seen: [...new Set([...a.seen, ...b.seen])].sort().slice(-SEEN_MAX),
+    target: a.target ?? b.target,
   };
 }
 
 /** The track a companion belongs to. */
-function trackOf(d: AppData, c: Companion): string | undefined {
-  return c.trackId ?? d.habits.find((h) => h.companionId === c.id)?.id;
+const trackOf = (d: AppData, c: Companion) => c.trackId ?? d.habits.find((h) => h.companionId === c.id)?.id;
+
+/** One record per day with a goal-met mark or a slip, from the pet's arrival to today (or its passing). */
+export function dayRecords(d: AppData, companionId: string, today: string): DayRecord[] {
+  const c = d.companions.find((x) => x.id === companionId);
+  const habitId = c && trackOf(d, c);
+  if (!c || !habitId) return [];
+  const idx = trackIndex(d, habitId, today);
+  const last = c.diedOn && c.diedOn < today ? c.diedOn : today;
+  const days = [...new Set([...idx.met, ...idx.slips.keys()])].filter((x) => x >= c.bornOn && x <= last).sort();
+  return days.map((day) => ({ day, met: idx.met.has(day), slip: idx.slips.has(day) }));
 }
 
 export interface CompanionMissions {
   mode: AdoptionMode;
-  goalMetDays: number;
-  states: MissionState[];
-  overall: ReturnType<typeof overallProgress>;
+  journey: Journey;
   setback: boolean;
   traits: Record<VisualTrait, number>;
-  stage: VisualStage;
   memory: MissionMemory;
-  /** How much of the health bar the missions allow, 0..100: a rescue starts at 10, a raised puppy is always 100. */
+  /** How much of the health bar the journey allows, 0..100: a rescue starts at 10, a raised puppy is always 100. */
   healthCap: number;
-  /** The next milestone over all missions: the lowest threshold still ahead, or null when everything is done. */
-  next: { at: number; level: MissionLevel; toGo: number } | null;
-}
-
-/** Distinct goal-met days without a slip on a track, from `from` up to today. */
-export function goalMetDaysSince(d: AppData, habitId: string, from: string, today: string, until?: string | null): number {
-  const idx = trackIndex(d, habitId, today);
-  let n = 0;
-  for (const day of idx.met) if (day >= from && day <= today && (!until || day <= until) && !idx.slips.has(day)) n++;
-  return n;
+  /** After recovery: slips in the last 30 days, toward a relapse at 5. */
+  slipsInWindow: number;
 }
 
 export function companionMissions(d: AppData, companionId: string, today: string): CompanionMissions | null {
   const c = d.companions.find((x) => x.id === companionId);
   if (!c) return null;
-  const habitId = trackOf(d, c);
   const mode = adoptionOf(c);
   const memory = memoryOf(c);
-  const goalMetDays = habitId ? goalMetDaysSince(d, habitId, c.bornOn, today, c.diedOn) : 0;
-  const urgesManaged = habitId ? d.urges.filter((u) => u.habitId === habitId && u.outcome === "rode_it_out" && u.day >= c.bornOn && u.day <= today).length : 0;
-  const states = missionStates(mode, { goalMetDays, completed: memory.done, extras: { urgesManaged, petDays: memory.petDays ?? 0 } });
-  let setback = false;
-  if (habitId && !c.diedOn) {
-    const idx = trackIndex(d, habitId, today);
-    const { lastSlip } = streaks(idx);
-    let lastGoalMet: string | null = null;
-    for (const day of idx.met) if (!idx.slips.has(day) && day <= today && (!lastGoalMet || day > lastGoalMet)) lastGoalMet = day;
-    setback = setbackState({ lastSlip, lastGoalMet, today, daysSinceSlip: lastSlip ? daysFrom(lastSlip, today) : null }).active;
-  }
-  const ahead = states.filter((s) => s.nextAt !== null).sort((a, b) => a.nextAt! - b.nextAt!)[0];
+  const records = dayRecords(d, companionId, today);
+  const j = journey(mode, targetOf(c), records);
+  const setback = !c.diedOn && setbackState({ lastSlip: j.lastSlip, lastGoalMet: j.lastMet, today, daysSinceSlip: j.lastSlip ? daysFrom(j.lastSlip, today) : null }).active;
   return {
-    mode, goalMetDays, states, overall: overallProgress(states), setback,
-    traits: petTraits(mode, states, { setback }), stage: visualStage(states), memory, healthCap: missionHealthCap(mode, states),
-    next: ahead ? { at: ahead.nextAt!, level: ahead.nextLevel!, toGo: Math.max(0, ahead.nextAt! - goalMetDays) } : null,
+    mode, journey: j, setback, traits: petTraits(j, { setback }), memory, healthCap: missionHealthCap(j),
+    slipsInWindow: slipsInWindowOn(j, today, records.filter((r) => r.slip).map((r) => r.day)),
   };
 }
+
+const PRIORITY: JourneyEvent["kind"][] = ["complete", "recovered", "healed", "relapse", "reset"];
+export const eventKey = (e: JourneyEvent) => `${e.kind}:${e.mission ?? "all"}:${e.day}`;
 
 /**
- * What to remember after a change: completions reached now and the milestone to celebrate (one at most). Null when
- * nothing new happened, so callers don't write (and sync) an unchanged companion.
+ * Today's most important journey event not shown yet (a condition healed, recovery, the journey done, or a
+ * condition coming back), with the memory that marks it shown. Null when there's nothing new, so callers don't write
+ * (and sync) an unchanged companion.
  */
-export function missionUpdate(d: AppData, companionId: string, today: string): { memory: MissionMemory; celebrate: { id: string; level: MissionLevel } | null } | null {
+export function missionUpdate(d: AppData, companionId: string, today: string): { memory: MissionMemory; event: JourneyEvent } | null {
   const m = companionMissions(d, companionId, today);
   if (!m) return null;
-  const done = newlyCompleted(m.states, m.memory.done);
-  const cel = missionMilestoneToCelebrate(m.states, m.memory.seen);
-  if (!done.length && !cel) return null;
-  return {
-    memory: { ...m.memory, done: [...new Set([...m.memory.done, ...done])].sort(), seen: cel?.seen ?? m.memory.seen },
-    celebrate: cel ? { id: cel.id, level: cel.level } : null,
-  };
-}
-
-/** Counts today as a day with the pet, at most once a day. Null when today is already counted. */
-export function withPetDay(c: Companion, today: string): MissionMemory | null {
-  const m = memoryOf(c);
-  if (m.petOn === today) return null;
-  return { ...m, petDays: (m.petDays ?? 0) + 1, petOn: today };
+  const fresh = m.journey.events.filter((e) => e.day === today && !m.memory.seen.includes(eventKey(e)));
+  if (!fresh.length) return null;
+  const event = [...fresh].sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind))[0];
+  const done = event.kind === "recovered" || event.kind === "complete" ? [...new Set([...m.memory.done, event.kind])].sort() : m.memory.done;
+  return { event, memory: { ...m.memory, done, seen: [...m.memory.seen, ...fresh.map(eventKey)].slice(-SEEN_MAX) } };
 }
 
 /**
  * The health bar's percentage for a pet: its health from slips and goal-met days (100 - age), limited by how far its
- * missions have come. A rescued pet's bar starts mostly red and turns green as missions are completed.
+ * recovery has come. A rescued pet's bar starts mostly red and turns green as it recovers.
  */
 export function shownHealth(age: number, healthCap: number): number {
   return Math.max(0, Math.min(100, Math.round(((100 - age) * healthCap) / 100)));

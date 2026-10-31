@@ -867,3 +867,23 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 .severity i[data-on="true"] { background: var(--negative); }
 .mission-bar { height: 8px; background: var(--surface); }
 .vitals.four { grid-template-columns: repeat(4, 1fr); }
+.missions-summary { padding: 18px; display: grid; gap: 10px; }
+.missions-summary p { margin: 0; }
+.missions-pct { display: flex; align-items: center; justify-content: space-between; }
+.missions-pct b { font: 650 22px var(--font); }
+.missions-goal { display: grid; gap: 8px; }
+.missions-goal p { margin: 0; }
+.missions-goal .seg:disabled { opacity: .45; cursor: default; }
+.mission-card[data-status="healed"] { background: var(--positive-soft); }
+.mission-card[data-status="waiting"] { opacity: .8; }
+.mission-pill.current { background: var(--soft); color: var(--text); }
+.mission-pill:not(.done):not(.current) { background: var(--surface); color: var(--muted); }
+.days-boxes { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.days-boxes i { height: 8px; border-radius: 999px; background: var(--surface); display: block; }
+.days-boxes i[data-on="true"] { background: var(--positive); }
+.mission-card .mission-meter { grid-template-columns: 1fr auto; }
+.banner.safety { background: var(--surface); border: 1px solid var(--line); font-weight: 500; margin: 0; }
+.journey-moment .moment-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--positive); color: var(--on-status); }
+.journey-moment[data-good="false"] .moment-icon { background: var(--soft); color: var(--accent); }
+.journey-moment .moment-icon .ico { width: 28px; height: 28px; }
+.journey-moment h2, .journey-moment p { margin: 0; }
