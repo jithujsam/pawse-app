@@ -7,7 +7,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import java.io.File;
 import android.net.Uri;
 import android.provider.Settings;
 import android.view.View;
@@ -32,6 +35,12 @@ public abstract class PetWidget extends AppWidgetProvider {
     static final String ACTION_STEP = "app.detoxcompanion.widget.STEP";
     static final String EXTRA_STEP = "step";
     static final int FRAMES = 6;
+    /** Where WidgetPlugin keeps the pictures of each pet, taken from the app's 3D model. */
+    static final String FRAME_DIR = "widget";
+
+    static String frameName(int pet, String set, int frame) {
+        return "p" + pet + "_" + set + "_" + frame + ".png";
+    }
     /** The most pages a widget holds. Each page keeps its six frames in memory. */
     static final int MAX_PAGES = 6;
     static final int[] FRAME_IDS = {
@@ -73,7 +82,7 @@ public abstract class PetWidget extends AppWidgetProvider {
             ? ContextCompat.getColor(context, R.color.widget_name)
             : Color.WHITE;
         v.removeAllViews(R.id.widget_pages);
-        for (int i = 0; i < count; i++) v.addView(R.id.widget_pages, petView(context, pets.optJSONObject(i), today, still, nameColor));
+        for (int i = 0; i < count; i++) v.addView(R.id.widget_pages, petView(context, i, pets.optJSONObject(i), today, still, nameColor));
         if (count > 0) v.setDisplayedChild(R.id.widget_pages, ((storedPage(context) % count) + count) % count);
         v.setViewVisibility(R.id.widget_pages, count > 0 ? View.VISIBLE : View.GONE);
         v.setViewVisibility(R.id.widget_empty, count == 0 ? View.VISIBLE : View.GONE);
@@ -101,18 +110,35 @@ public abstract class PetWidget extends AppWidgetProvider {
     }
 
     /** One pet, as its own view: its frames cycle here, or one still frame when animations are off, then its name. */
-    static RemoteViews petView(Context context, JSONObject pet, boolean today, boolean still, int nameColor) {
+    static RemoteViews petView(Context context, int index, JSONObject pet, boolean today, boolean still, int nameColor) {
         RemoteViews p = new RemoteViews(context.getPackageName(), still ? R.layout.widget_pet_still : R.layout.widget_pet_item);
         if (pet == null) return p;
         String species = pet.optString("species", "dog");
         String mood = today ? pet.optString("mood", "idle") : "idle";
         String breed = pet.optString("breed", "");
+        // The app's own pictures of this pet, with its breed, coat and conditions as they are now. After midnight
+        // the mood is a day old, so the resting pictures show until the app opens.
+        String set = today && pet.optInt("frames", 0) > 0 ? "a" : pet.optInt("idle", 0) > 0 ? "i" : "a";
+        int have = pet.optInt(set.equals("a") ? "frames" : "idle", 0);
+        if (have > 0) {
+            File dir = new File(context.getFilesDir(), FRAME_DIR);
+            boolean drawn = false;
+            for (int i = 0; i < (still ? 1 : FRAMES); i++) {
+                Bitmap bmp = BitmapFactory.decodeFile(new File(dir, frameName(index, set, i % have)).getPath());
+                if (bmp != null) { p.setImageViewBitmap(FRAME_IDS[i], bmp); drawn = true; }
+            }
+            if (drawn) return withName(p, pet, nameColor);
+        }
         for (int i = 0; i < (still ? 1 : FRAMES); i++) {
             // A breed with its own art uses it (widget_dog_husky_happy_0); otherwise the species' art.
             int art = breed.isEmpty() ? 0 : context.getResources().getIdentifier("widget_" + species + "_" + breed + "_" + mood + "_" + i, "drawable", context.getPackageName());
             if (art == 0) art = context.getResources().getIdentifier("widget_" + species + "_" + mood + "_" + i, "drawable", context.getPackageName());
             if (art != 0) p.setImageViewResource(FRAME_IDS[i], art);
         }
+        return withName(p, pet, nameColor);
+    }
+
+    private static RemoteViews withName(RemoteViews p, JSONObject pet, int nameColor) {
         String name = pet.optString("name", "");
         p.setTextViewText(R.id.widget_name, name);
         p.setTextColor(R.id.widget_name, nameColor);

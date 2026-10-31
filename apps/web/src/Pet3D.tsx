@@ -192,12 +192,14 @@ function buildFace(scene: THREE.Group, head: THREE.Object3D): Face | null {
 export type PetCondition = Partial<Record<"coat" | "posture" | "energy" | "trust" | "calm" | "curiosity" | "play" | "rest", number>>;
 const well = (c: PetCondition | undefined, k: keyof PetCondition) => Math.max(0, Math.min(1, c?.[k] ?? 1));
 
-interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean; condition?: PetCondition }
+interface Props { species: Species3D; coat?: string; breed?: string; stage: Stage; mood: Mood; age: number; gesture?: Gesture; look?: { x: number; y: number }; reduced?: boolean; condition?: PetCondition;
+  /** Widget snapshots: keep the drawing buffer so the canvas can be read, and keep animating while off screen. */
+  capture?: boolean; onReady?: () => void }
 
-function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced, condition }: Props) {
+function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x: 0, y: 0 }, reduced, condition, onReady }: Props) {
   const isHusky = species === "dog" && breed === "husky";
   const gltf = useLoader(GLTFLoader, modelFor(species, breed), (l) => { (l as GLTFLoader).setMeshoptDecoder(MeshoptDecoder); }) as GLTF;
-  useEffect(() => markPet3d("ok"), []);
+  useEffect(() => { markPet3d("ok"); onReady?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const { scene, mixer, actions, head, neck, face, ears, tail, catEyes } = useMemo(() => {
     const scene = cloneSkinned(gltf.scene) as THREE.Group;
     const found: Record<string, THREE.Object3D> = {};
@@ -417,12 +419,12 @@ function fxFor(mood: Mood, gesture: Gesture): "heart" | "zzz" | "drop" | null {
 export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { size: number; fallback: ReactNode; loading?: ReactNode; onFail?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const on = useOnScreen(ref);
-  const fx = props.reduced ? null : fxFor(props.mood, props.gesture ?? "none");
+  const fx = props.reduced || props.capture ? null : fxFor(props.mood, props.gesture ?? "none");
   return (
     <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={describePet(props.species, props.stage, props.mood)} role="img">
       <Guard fallback={fallback} onFail={onFail}>
         <Suspense fallback={loading ?? fallback}>
-          <Canvas frameloop={on && !props.reduced ? "always" : "demand"} dpr={[1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+          <Canvas frameloop={(on || props.capture) && !props.reduced ? "always" : "demand"} dpr={props.capture ? 1 : [1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: !!props.capture }}
             camera={{ fov: 26, position: [0, 0.66, 2.8], near: 0.1, far: 20 }} onCreated={({ camera }) => camera.lookAt(0, 0.5, 0)}>
             <hemisphereLight args={["#fff8ee", "#b8a48c", 1.6]} />
             <directionalLight position={[2, 3, 2.5]} intensity={1.6} />
