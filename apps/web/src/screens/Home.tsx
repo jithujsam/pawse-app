@@ -20,6 +20,8 @@ import { LogSheet } from "./LogSheet";
 import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
 import { HealthSheet, Heart, type HealthTab } from "./HealthSheet";
+import { MissionsSheet } from "./MissionsSheet";
+import { companionMissions } from "../missions";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
@@ -75,6 +77,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
   const [health, setHealth] = useState<HealthTab | null>(null);
+  const [missionsOpen, setMissionsOpen] = useState(false);
+  const missions = companionMissions(data, companion.id, t0);
+  const activeMissions = missions?.overall.active ?? 0;
   const plan = recoveryPlan(view);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
@@ -115,7 +120,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
     // Tells the notification plan about the slip: it drops any thank-you planned for today and adds nothing.
     void scheduleCare("slip", careOpts());
   }
-  const react = (r: Reaction) => setNote(say(r, personality, tone));
+  const react = (r: Reaction) => { setNote(say(r, personality, tone)); actions.notePetDay(companion.id); };
 
   const ws = weekStart(t0);
   const strip = Array.from({ length: 7 }, (_, i) => {
@@ -161,7 +166,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
             </motion.p>
           </AnimatePresence>
         </div>
-        <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
+        <div className="vitals four" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
               aria-label={v.id === "health" ? t("home.hero.health_aria", { title: report.title, heart: report.heart }) : v.label}>
@@ -170,6 +175,11 @@ export function Home({ onBack }: { onBack?: () => void }) {
               <span className="small">{v.id === "health" ? `${report.heart}` : v.label}</span>
             </motion.button>
           ))}
+          <motion.button className="vital" onClick={() => { haptic.tap(); setMissionsOpen(true); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
+            aria-label={activeMissions === 0 ? t("missions.sheet.button_aria_done") : activeMissions === 1 ? t("missions.sheet.button_aria_one", { n: 1 }) : t("missions.sheet.button_aria_other", { n: activeMissions })}>
+            <span className="vital-ico">{Icon.paw}{activeMissions > 0 && <i className="care-badge">{activeMissions}</i>}</span>
+            <span className="small">{t("missions.sheet.button")}</span>
+          </motion.button>
         </div>
         <div className="agetext"><span>{t("home.hero.day")} <b><AnimatedNumber value={days} /></b></span><span className="muted">{t("home.hero.vital_health")} <AnimatedNumber value={healthPct} />%</span></div>
         <div className={`healthbar${danger ? " danger" : ""}`} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
@@ -202,11 +212,12 @@ export function Home({ onBack }: { onBack?: () => void }) {
         </div>
       </motion.section>
 
+      <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
       <UrgeSheet open={urge} onClose={() => setUrge(false)} onSlipped={() => { setUrge(false); setTimeout(() => setSheet(true), 350); }} />
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
       <Milestone days={milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-      {!data.settings.coachSeen && !sheet && !urge && !health && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
+      {!data.settings.coachSeen && !sheet && !urge && !health && !missionsOpen && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
     </motion.main>
   );
 }

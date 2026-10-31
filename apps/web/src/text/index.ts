@@ -12,6 +12,7 @@ import { privacyFlows, privacySummary } from "./sections/privacy";
 import { safetyCrisis, safetyDisclaimer, safetyHelplines, safetyProfessional, safetyRestriction, safetySupport } from "./sections/safety";
 import { lockScreen, securityLock, securityPin } from "./sections/security";
 import { sheetsHealth, sheetsLog, sheetsMemorial, sheetsPlan, sheetsQuick, sheetsReflection, sheetsUrge } from "./sections/sheets";
+import { missionsContent, missionsSheet, missionsStatus } from "./sections/missions";
 import { navLoading, navTabs, petLook, uiCommon, uiSelect, uiSettings } from "./sections/system";
 import { updateDialog, updateToasts } from "./sections/update";
 import { welcomeAccount, welcomeRestoring, welcomeStory } from "./sections/welcome";
@@ -26,6 +27,7 @@ export const SECTIONS = [
   onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingTriggers, onboardingWhy, onboardingHelp, onboardingVoice, onboardingReminders, onboardingFinal, onboardingHatch,
   petsGrid, petsMenu, petsPicker, petsAdd,
   homeHeader, homeHero, homePaused, homeWeek, homeToday, homeMilestone, homeCoach,
+  missionsSheet, missionsStatus, missionsContent,
   calendarNote, calendarAge, calendarMonth, calendarDay, calendarStats, calendarMilestones,
   insightsHeader, insightsWeek, insightsUrges, insightsMoney, insightsWhen, insightsSince, insightsSummary, insightsChart, insightsForecast, insightsReflect, insightsReview, insightsGoalLine, insightsPatterns,
   meProfile, mePet, meVoice, meReminders, meQuestions, meData, meAppearance, meFeel, meAbout,
