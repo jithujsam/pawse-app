@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, greeting, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
-import { addDays, fmtDay, today } from "../dates";
 import { HEALTH_SEGMENTS } from "@detox/engine";
+import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
+import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
+import { addDays, fmtDay, parse, today, weekStart } from "../dates";
 import { haptic } from "../haptics";
-import { spring } from "../motion";
+import { rise, spring, stagger } from "../motion";
 import { scheduleCare } from "../notify";
-import { actions, getData, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
-import { celebratedFor, daysTogether, milestoneProgress, milestoneToCelebrate, trackSummary } from "../progress";
-import { sceneFor } from "../scene";
-import { PetScene } from "../ui/PetScene";
+import { actions, getData, recoveryPlan, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
+import { celebratedFor, daysTogether, milestoneToCelebrate, trackSummary } from "../progress";
 import { trackState } from "../tracks";
+import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
 import { say } from "../voice";
@@ -28,7 +27,8 @@ import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
 import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
-import { t, tt } from "../text";
+import { ACCESSORIES } from "../pets";
+import { t } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
 export function Home({ onBack }: { onBack?: () => void }) {
@@ -78,6 +78,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // One number for the pet: wellness W (docs/MISSION_FORMULA.md). The slip-damage engine still runs underneath for
   // history, but Home shows only W, so the bar, the heart and the line under it always agree.
   const healthPct = missions?.healthCap ?? 100;
+  const seg = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
+  const danger = false;
   const j = missions?.journey;
   // Only a rescue has a past home to talk about (talking-pet packs, src/text/sections/packs.ts).
   const rescue = missions?.mode === "rescue";
@@ -90,6 +92,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [missionsOpen, setMissionsOpen] = useState(false);
   // The badge: conditions still to heal in recovery, or 1 while an issue needs clearing.
   const activeMissions = !missions ? 0 : missions.journey.phase === "recovery" ? missions.journey.missions.filter((x) => x.status !== "healed").length : missions.journey.issue ? 1 : 0;
+  const plan = recoveryPlan(view);
   const trackPaused = track.status === "paused";
   const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
@@ -98,6 +101,16 @@ export function Home({ onBack }: { onBack?: () => void }) {
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
   const gesture: Gesture = "none";
+  const speechRef = useRef<HTMLParagraphElement>(null);
+  // The whole line always shows: if it doesn't fit the speech slot at this size, the font steps down until it does.
+  useLayoutEffect(() => {
+    const el = speechRef.current;
+    const slot = el?.parentElement;
+    if (!el || !slot) return;
+    el.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.offsetHeight > slot.clientHeight && size > 11) { size -= 1; el.style.fontSize = `${size}px`; }
+  }, [line]);
 
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
@@ -128,112 +141,94 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // A stroke tells the pet's story (its talking-pet pack); other taps keep their playful answers.
   const react = (r: Reaction) => setNote(rescue && r === "stroke" ? packLine(habit.cls, "story", tone) : say(r, personality, tone));
 
-  const days28 = Array.from({ length: 28 }, (_, i) => { const d = addDays(t0, i - 27); return { d, s: dayStatus(data, habit.id, d, t0) }; });
-  const scene = sceneFor({ wellness: healthPct, rescue, slipToday: slippedToday, milestoneToday: milestone !== null, hour: new Date().getHours() });
-  const nextMilestone = milestoneProgress(progress.care, MILESTONES).next;
-  const [editing, setEditing] = useState(false);
-  const hasRequired = habit.fields.some((f) => f.required);
-  const loggedLine = cleanToday ? tt("calendar.note.met", tone) : slippedToday ? STATUS_LABEL.lapse : progress.today === "urge" ? tt("calendar.note.urge_managed", tone)
-    : trackPaused ? pausedLine(tone, companion.name) : tt("calendar.note.rest", tone);
+  const ws = weekStart(t0);
+  const strip = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(ws, i);
+    const s = dayStatus(data, habit.id, d, t0);
+    return { d, s, label: parse(d).toLocaleDateString(undefined, { weekday: "narrow" }) };
+  });
 
-  // I slipped: with no required question the slip is logged at once, and the toast can undo it or open the form for details.
-  function slip() {
-    if (hasRequired) { setSheet(true); return; }
-    const d = actions.logSlip(habit.id, {}, t0, null);
-    if (!d) { haptic.warn(); return; }
-    saved(d);
-    const id = d.entry.id;
-    toast(t("home.scene.slip_logged"), { kind: "bad", extra: { label: t("ui.common.undo"), run: () => { actions.deleteEntry(id); setJust(null); } },
-      action: { label: t("home.scene.add_details"), run: () => { actions.deleteEntry(id); setSheet(true); } } });
-  }
-
-  const meta = [streak > 0 ? t("home.scene.run", { n: streak }) : null, nextMilestone ? t("home.scene.next", { n: nextMilestone }) : null].filter((x): x is string => !!x).join(" · ");
-  const bar = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
-  const nothing = !checkedIn && !resting;
+  const weekMet = strip.filter((x) => x.s === "met").length;
 
   return (
-    <main className="screen scene-screen">
-      <PetScene scene={scene} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
-        <div className="hs-bar">
-          {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
-          <span className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</span>
+    <motion.main className="screen" style={{ ["--pet" as string]: ACCENT[companion.species] }} variants={stagger} initial="hidden" animate="show">
+      <AnimatePresence>
+        {update && (
+          <motion.button className="update-banner" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
+            <span><b>{t("home.header.update_title")}</b><span className="small">{update.notes ? t("home.header.update_version_notes", { version: update.name, notes: update.notes }) : t("home.header.update_version", { version: update.name })}</span></span>
+            <span className="update-cta">{updating === null ? t("home.header.update_cta") : updating > 0 ? `${updating}%` : t("home.header.update_downloading")}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+      {onBack && <motion.button className="track-back" variants={rise} onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></motion.button>}
+      <motion.header className="greet" variants={rise}>
+        <div>
+          <h1>{greeting(tone, new Date().getHours(), data.settings.userName)}</h1>
         </div>
-        <h1 className="hs-name">{companion.name}</h1>
-        {meta && <p className="hs-meta">{meta}</p>}
-        <div className="hs-stage">
-          <Burst burst={sparks} kind="spark" count={10} />
-          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
-            stage={view.stage} mood={mood} age={age} size={290} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
+      </motion.header>
+
+      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>
+        <Burst burst={sparks} kind="spark" count={10} />
+        <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
+        <div className="hero-name"><h2>{companion.name}</h2></div>
+        <div className="pet-stage-live">
+          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} accessory={track.wear}
+            stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
-        <AnimatePresence mode="wait">
-          <motion.p key={line} className="speech" aria-live="polite" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
-            {line}
-          </motion.p>
-        </AnimatePresence>
-        <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
+        {/* A fixed slot: the bubble can change its text without moving anything below it. */}
+        <div className="speech-slot">
+          <AnimatePresence mode="wait">
+            <motion.p key={line} ref={speechRef} className="speech" aria-live="polite"
+              initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
+              {line}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+        <div className="vitals four" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
-            <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
+            <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
               aria-label={v.id === "health" ? t("home.hero.health_aria", { title: report.title, heart: report.heart }) : v.label}>
               <span className="vital-ico">{v.id === "health" ? <Heart value={report.heart} level={report.level} size={24} /> : v.icon}
                 {v.id === "conditions" && conds.length > 0 && <i className="care-badge" data-tone={conds.some((c) => c.tone === "serious") ? "bad" : "warn"}>{conds.length}</i>}</span>
-              <span>{v.id === "health" ? `${report.heart}` : v.label}</span>
+              <span className="small">{v.id === "health" ? `${report.heart}` : v.label}</span>
             </motion.button>
           ))}
-          <motion.button className="vital" onClick={() => { haptic.tap(); setMissionsOpen(true); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
+          <motion.button className="vital" onClick={() => { haptic.tap(); setMissionsOpen(true); }} whileTap={{ scale: 0.9 }} transition={spring.snappy}
             aria-label={activeMissions === 0 ? t("missions.sheet.button_aria_done") : activeMissions === 1 ? t("missions.sheet.button_aria_one", { n: 1 }) : t("missions.sheet.button_aria_other", { n: activeMissions })}>
             <span className="vital-ico">{Icon.paw}{activeMissions > 0 && <i className="care-badge">{activeMissions}</i>}</span>
-            <span>{t("missions.sheet.button")}</span>
+            <span className="small">{t("missions.sheet.button")}</span>
           </motion.button>
         </div>
-        <div className="agetext"><b>{journeyLine}</b><span className="muted">{healthPct}%</span></div>
-        <div className="healthbar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
-          aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
-          {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
+        <div className="agetext"><span><b>{journeyLine}</b></span><span className="muted"><AnimatedNumber value={healthPct} />%</span></div>
+        <div className={`healthbar${danger ? " danger" : ""}`} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
+          aria-valuetext={t("home.hero.bar_text", { green: seg.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
+          {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < seg.green ? "ok" : "hurt"} />)}
         </div>
-      </PetScene>
+      </motion.section>
 
-      <div className="scene-body">
-        <AnimatePresence>
-          {update && (
-            <motion.button className="update-banner" disabled={updating !== null} onClick={() => { haptic.tap(); setUpdating(0); void runUpdate(update, setUpdating).finally(() => setUpdating(null)); }}
-              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={spring.soft}>
-              <span><b>{t("home.header.update_title")}</b><span className="small">{update.notes ? t("home.header.update_version_notes", { version: update.name, notes: update.notes }) : t("home.header.update_version", { version: update.name })}</span></span>
-              <span className="update-cta">{updating === null ? t("home.header.update_cta") : updating > 0 ? `${updating}%` : t("home.header.update_downloading")}</span>
-            </motion.button>
-          )}
-        </AnimatePresence>
 
-        {trackPaused && (
-          <section className="card row paused-card" aria-label={t("home.paused.aria")}>
-            <span className="small">{pauseHint(tone)}</span>
-            <Button variant="secondary" onClick={() => { if (actions.resumeTrack(habit.id)) { haptic.select(); toast(resumeToast(tone), { kind: "good" }); } }}>{t("home.paused.resume")}</Button>
-          </section>
-        )}
+      {trackPaused && (
+        <motion.section className="card row paused-card" aria-label={t("home.paused.aria")} variants={rise}>
+          <span className="small">{pauseHint(tone)}</span>
+          <Button variant="secondary" onClick={() => { if (actions.resumeTrack(habit.id)) { haptic.select(); toast(resumeToast(tone), { kind: "good" }); } }}>{t("home.paused.resume")}</Button>
+        </motion.section>
+      )}
 
-        <section className="card today" aria-label={t("home.scene.today")}>
-          <div className="today-head"><h2>{fmtDay(t0)}</h2>{nothing && <p>{tt("calendar.note.nothing", tone)}</p>}</div>
-          {nothing ? (
-            <>
-              <div className="today-actions">
-                <Button onClick={clean}>{t("home.scene.goal_met")}</Button>
-                <Button variant="secondary" onClick={slip}>{t("home.scene.slipped")}</Button>
-              </div>
-              <Button variant="text" className="today-urge" onClick={() => { haptic.tap(); setUrge(true); }}>{t("home.scene.urge")}</Button>
-            </>
-          ) : (
-            <>
-              <div className="today-done"><span>{loggedLine}</span><Button variant="text" onClick={() => setEditing((e) => !e)}>{t("home.scene.edit")}</Button></div>
-              {editing && <DayDetail day={t0} standalone onMarkMet={clean} onSlipSaved={saved} />}
-            </>
-          )}
-          <div className="today-trail">
-            <div className="strip28" role="img" aria-label={t("home.scene.strip_aria")}>
-              {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
+      {/* Today's record, between the pet and the week: mark it, log a slip, or leave it untracked. */}
+      <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />
+
+      <motion.section className="checkin" aria-label={t("home.week.title")} variants={rise}>
+        <div className="row"><h2>{t("home.week.title")}</h2><span className="muted small">{weekMet === 1 ? t("home.week.count_one", { n: weekMet }) : t("home.week.count_other", { n: weekMet })}</span></div>
+        <div className="weekstrip" aria-label={t("home.week.strip_aria")}>
+          {strip.map((x) => (
+            <div key={x.d} className="wday" data-s={x.s} data-today={x.d === t0} aria-label={t("home.week.day_aria", { date: fmtDay(x.d), status: STATUS_LABEL[x.s] })}>
+              <span className="muted small">{x.label}</span>
+              <motion.i layout initial={false} animate={{ scale: x.s === "unrecorded" || x.s === "future" ? 0.7 : 1 }} transition={spring.bouncy} />
             </div>
-            <div className="strip-meta"><span>{t("home.scene.strip_aria")}</span><span>{t("home.scene.well", { n: healthPct })}</span></div>
-          </div>
-        </section>
-      </div>
+          ))}
+        </div>
+      </motion.section>
 
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
@@ -241,7 +236,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
       <JourneyMoment event={moment} companionId={companion.id} onClose={() => setMoment(null)} />
       <Milestone days={moment ? null : milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-    </main>
+    </motion.main>
   );
 }
 
@@ -254,6 +249,7 @@ const VITALS: { id: HealthTab; label: string; icon: React.JSX.Element | null }[]
 function Milestone({ days, name, onClose, view }: { days: number | null; name: string; onClose: () => void; view: NonNullable<ReturnType<typeof useActiveView>> }) {
   const data = useData();
   const tone = data.settings.tone;
+  const track = trackState(data, view.companion.trackId ?? view.habit?.id ?? "");
   useEffect(() => { if (days) haptic.success(); }, [days]);
   return createPortal(
     <AnimatePresence>
@@ -263,9 +259,10 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
             initial={{ scale: 0.7, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }} transition={spring.bouncy}>
             <Burst burst={days} kind="spark" count={14} />
             <motion.div className="big-num" initial={{ scale: 0.4 }} animate={{ scale: 1 }} transition={{ ...spring.bouncy, delay: 0.15 }}>{days}</motion.div>
-            <LiveCompanion species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
+            <LiveCompanion species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} accessory={track.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={170} interactive={false} />
             <h2>{milestoneLine(tone, name, days).title}</h2>
             <p className="muted">{milestoneLine(tone, name, days).body}</p>
+            <UnlockNote days={days} />
             <Button onClick={onClose}>{t("home.milestone.keep_going")}</Button>
           </motion.div>
         </motion.div>
@@ -275,3 +272,8 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
   );
 }
 
+function UnlockNote({ days }: { days: number }) {
+  const a = ACCESSORIES.find((x) => x.days === days);
+  if (!a) return null;
+  return <p className="unlock"><b>{t("home.milestone.unlock_prefix")}</b> {t("home.milestone.unlock", { item: a.label })}</p>;
+}

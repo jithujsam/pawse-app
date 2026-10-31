@@ -87,7 +87,7 @@ describe("care data", () => {
   });
   it("older companions without a coat get the species' first coat", () => {
     expect(coatFor("dog").id).toBe(COATS.dog[0].id);
-    expect(coatFor("fox", "nope").id).toBe(COATS.fox[0].id);
+    expect(coatFor("owl", "nope").id).toBe(COATS.owl[0].id);
   });
   it("mixes colours", () => {
     expect(mix("#000000", "#ffffff", 0.5)).toBe("#808080");

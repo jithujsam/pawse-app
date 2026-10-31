@@ -90,24 +90,33 @@ export type CondKey = "appetite" | "smoking" | "alcohol" | "food_spending" | "do
 export const CONDITION_TEXT: Record<CondKey, Partial<Record<Species, [string, string]>> & { all: [string, string] }> = {
   appetite: {
     all: ["Run down", "Tired and quiet after a hard day."],
+    rabbit: ["Run down", "Quiet and a little withdrawn after a hard day."],
     cat: ["Run down", "Curled up and quiet after a hard day."],
+    owl: ["Run down", "Unsettled and quiet after a hard day."],
+    panda: ["Run down", "Slow and quiet after a hard day."],
   },
   smoking: {
     all: ["Chest cold", "A rattly chest and short breath."],
     dog: ["Kennel cough", "A dry, honking cough that's tiring for dogs."],
     cat: ["Feline asthma", "Tight airways and wheezing."],
+    rabbit: ["Snuffles", "A sniffly nose and sneezing, common in rabbits."],
+    owl: ["Wheezy breathing", "Air sacs irritated, so breathing is hard work."],
   },
   alcohol: {
     all: ["Tired liver", "Sluggish, sleepy and slow to bounce back."],
+    rabbit: ["Wobbly balance", "Unsteady and dizzy, a sign something's off."],
   },
   food_spending: {
     all: ["Tummy trouble", "An upset stomach and low energy."],
     dog: ["Upset stomach", "An upset tummy and low energy."],
     cat: ["Hairballs and tummy trouble", "An unsettled stomach."],
+    rabbit: ["Bloat", "A tight, uncomfortable tummy."],
   },
   doomscrolling: {
     all: ["Sleepless nights", "Restless and not resting properly."],
     cat: ["Stress overgrooming", "Licking too much when anxious."],
+    rabbit: ["Stress thumping", "Thumping and jumpy, can't settle."],
+    owl: ["Sleep upset", "Owls need deep daytime rest."],
   },
   impulse_buying: {
     all: ["Anxious and jumpy", "On edge and hard to settle."],
@@ -118,6 +127,8 @@ export const CONDITION_TEXT: Record<CondKey, Partial<Record<Species, [string, st
   aging: {
     all: ["Stiff joints", "Moving slowly, achy in the mornings."],
     cat: ["Kidney strain", "Older cats' kidneys tire easily."],
+    rabbit: ["Dental trouble", "Sore teeth make eating harder."],
+    owl: ["Dull feathers", "Feathers losing their shine."],
   },
 };
 const pick = (k: CondKey, s: Species) => CONDITION_TEXT[k][s] ?? CONDITION_TEXT[k].all;
@@ -134,7 +145,7 @@ export function conditions(d: AppData, v: CompanionView): Condition[] {
 
   if (slipped) {
     const [n, w] = pick("appetite", s);
-    out.push({ id: "appetite", name: n, what: w, why: `There was a slip today, and ${name} feels it.`, fix: "1 goal-met day and they perk up.", days: 1, tone: "mild" });
+    out.push({ id: "appetite", name: n, what: w, why: `There was a slip today, and ${name} feels it.`, fix: "1 goal-met day and they perk up.", days: 1, tone: s === "rabbit" ? "moderate" : "mild" });
   }
   if (week.length >= 2 || (week.length >= 1 && v.age >= 30)) {
     const [n, w] = pick(habit.cls as CondKey, s);

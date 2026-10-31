@@ -48,50 +48,48 @@ export function CalendarSections() {
   const pts = spark.map((v, i) => `${(i / Math.max(1, spark.length - 1)) * W},${H - (v / max) * (H - 6) - 3}`);
   const path = pts.length ? `M${pts.join(" L")}` : "";
 
-  const tracked = month.met + month.urge + month.lapse + month.unrecorded;
-
   return (
     <>
-      <section className="stack" aria-label={t("calendar.stats.this_month")}>
-        <h2>{t("calendar.stats.this_month")}</h2>
-        <div className="card stack cal">
-          <p className="t-label muted">{t("calendar.stats.met_of", { met: month.met, days: tracked })}</p>
-          <div className="row">
-            <button className="icon-btn" aria-label={t("calendar.month.previous")} onClick={() => monthShift(-1)}>{Icon.chevL}</button>
-            <h3 key={cursor}>{fmtMonth(`${cursor}-01`)}</h3>
-            <button className="icon-btn" aria-label={t("calendar.month.next")} onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
-          </div>
-          <div className="grid7" aria-hidden>{t("calendar.month.weekdays").split(" ").map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
+      <motion.section className="card stack" aria-label={t("calendar.age.aria")} variants={rise}>
+        <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{spark.length ? Math.round(spark[spark.length - 1]) : "–"}</b></div>
+        {spark.length > 1
+          ? <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>
+              <motion.path key={`f${cursor}`} d={`${path} L${W},${H} L0,${H} Z`} fill="var(--chart)" fillOpacity={0.12} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
+              <motion.path key={cursor} d={path} fill="none" stroke="var(--chart)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, ease: "easeOut" }} />
+            </svg>
+          : <p className="muted small">{spark.length === 1 ? t("calendar.age.one_point", { name: companion.name }) : t("calendar.age.none")}</p>}
+      </motion.section>
+
+      <motion.section className="card stack cal" variants={rise}>
+        <div className="row">
+          <button className="icon-btn" aria-label={t("calendar.month.previous")} onClick={() => monthShift(-1)}>{Icon.chevL}</button>
+          <AnimatePresence mode="wait" initial={false}><motion.h2 key={cursor} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>{fmtMonth(`${cursor}-01`)}</motion.h2></AnimatePresence>
+          <button className="icon-btn" aria-label={t("calendar.month.next")} onClick={() => monthShift(1)} disabled={cursor >= thisMonth}>{Icon.chevR}</button>
+        </div>
+        <div className="grid7" aria-hidden>{t("calendar.month.weekdays").split(" ").map((d, i) => <div className="dow" key={i}>{d}</div>)}</div>
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div key={cursor} className="grid7"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
             drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2}
             onDragEnd={(_, i) => { if (i.offset.x > 70) monthShift(-1); else if (i.offset.x < -70 && cursor < thisMonth) monthShift(1); }}>
             {cells.map((d, i) => d ? (
-              <button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit={editable(d) || undefined} aria-haspopup="dialog"
-                aria-label={t(editable(d) ? "calendar.month.day_edit_aria" : "calendar.month.day_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(d); setSheet(true); }}>
+              <motion.button key={d} type="button" className="day" data-s={status(d)} data-today={d === t0} data-edit={editable(d) || undefined} aria-haspopup="dialog"
+                aria-label={t(editable(d) ? "calendar.month.day_edit_aria" : "calendar.month.day_aria", { date: fmtDay(d), status: STATUS_LABEL[status(d)] })} onClick={() => { haptic.select(); setSel(d); setSheet(true); }}
+                initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring.bouncy, delay: Math.min(i, 35) * 0.008 }}>
                 <span>{Number(d.slice(8))}</span>
-                <i className="mark" data-s={status(d)} aria-hidden />
-              </button>
+              </motion.button>
             ) : <span key={`b${i}`} />)}
           </motion.div>
-          <div className="legend">
-            <span><i className="mark" data-s="met" />{STATUS_LABEL.met} · {month.met}</span>
-            <span><i className="mark" data-s="urge" />{STATUS_LABEL.urge} · {month.urge}</span>
-            <span><i className="mark" data-s="lapse" />{STATUS_LABEL.lapse} · {month.lapse}</span>
-            <span><i className="mark" data-s="rest" />{STATUS_LABEL.rest} · {month.rest + month.paused}</span>
-            <span><i className="mark" data-s="unrecorded" />{STATUS_LABEL.unrecorded}</span>
-          </div>
-          <p className="muted small">{t("calendar.month.note")}</p>
+        </AnimatePresence>
+        <div className="legend">
+          <span><i style={{ background: "var(--positive)" }} />{STATUS_LABEL.met} · {month.met}</span>
+          <span><i data-s="urge" />{STATUS_LABEL.urge} · {month.urge}</span>
+          <span><i style={{ background: "var(--negative)" }} />{STATUS_LABEL.lapse} · {month.lapse}</span>
+          <span><i data-s="rest" />{STATUS_LABEL.rest} · {month.rest + month.paused}</span>
+          <span><i style={{ background: "var(--raised)" }} />{STATUS_LABEL.unrecorded}</span>
         </div>
-        {spark.length >= 7 && spark.some((v) => v > 0) && (
-          <div className="card stack" aria-label={t("calendar.age.aria")}>
-            <div className="row"><span className="muted small">{t("calendar.age.label", { name: companion.name })}</span><b>{Math.round(spark[spark.length - 1])}</b></div>
-            <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("calendar.age.chart")}>
-              {[0, 1 / 3, 2 / 3, 1].map((g) => <line key={g} x1="0" x2={W} y1={3 + g * (H - 6)} y2={3 + g * (H - 6)} stroke="var(--line)" />)}
-              <path d={path} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            </svg>
-          </div>
-        )}
-      </section>
+        <p className="muted small">{t("calendar.month.note")}</p>
+      </motion.section>
       <Sheet open={sheet} onClose={() => setSheet(false)} label={t("calendar.day.aria", { date: fmtDay(sel) })}>
         <DayDetail day={sel} standalone />
       </Sheet>

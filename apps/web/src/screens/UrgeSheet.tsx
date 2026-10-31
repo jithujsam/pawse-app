@@ -108,7 +108,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   if (phase === "won") return (
     <motion.div className="stack center-text urge-won" variants={stagger} initial="hidden" animate="show">
       <Burst burst={1} kind="spark" count={14} />
-      <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
+      <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} accessory={track.wear} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
       <motion.h2 variants={rise}>{win}</motion.h2>
       <motion.p className="muted" variants={rise}>{managed === 1 ? t("sheets.urge.managed_one") : t("sheets.urge.managed_other", { n: managed })}</motion.p>
       {helped && (
@@ -166,6 +166,7 @@ function Checklist({ items }: { items: string[] }) {
 
 /** Paced breathing, 4 in, 4 hold, 6 out, for as long as the person wants. Counts up, never down. */
 function Breathing() {
+  const data = useData();
   const view = useActiveView()!;
   const { companion } = view;
   const reduce = useReducedMotion();
@@ -180,7 +181,7 @@ function Breathing() {
       <div className="breath">
         <motion.div className="breath-ring" animate={reduce ? undefined : { scale: step.scale }} transition={{ duration: step.secs, ease: "easeInOut" }} />
         <motion.div animate={reduce ? undefined : { scale: step.scale * 0.92 }} transition={{ duration: step.secs, ease: "easeInOut" }}>
-          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality="calm" stage={view.stage} mood="idle" age={view.age} size={130} interactive={false} />
+          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality="calm" accessory={trackState(data, view.habit!.id).wear} stage={view.stage} mood="idle" age={view.age} size={130} interactive={false} />
         </motion.div>
       </div>
       <AnimatePresence mode="wait"><motion.p className="breath-label" aria-live="polite" key={step.label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>{step.label}</motion.p></AnimatePresence>

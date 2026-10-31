@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="200 265 850 710">
   <!-- Pawse paw: one pad and four toes, no background. -->
-  <g fill="#111110">
+  <g fill="#FC7837">
       <ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/>
     <ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/>
     <ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/>

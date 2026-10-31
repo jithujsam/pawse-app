@@ -16,11 +16,11 @@ export const homeHero = defineSection("home.hero", { screen: "Pet screen", title
   hero_aria: "{name}, day {day}, health {health}%",
   vitals_aria: "{name}'s health",
   health_aria: "Health: {title}, {heart} of 100",
-  bar_text: "{green} of {total} segments healthy",
   vital_health: "Health",
   vital_history: "History",
   vital_conditions: "Conditions",
   bar_aria: "{name}'s health",
+  bar_text: "{green} of {total} segments healthy",
   recover_one: "1 goal-met day to recover",
   recover_other: "{n} goal-met days to recover",
   issue_line: "{issue}: {n} days to clear",
@@ -29,28 +29,22 @@ export const homeHero = defineSection("home.hero", { screen: "Pet screen", title
 });
 // @copy-section-end home.hero
 
-// @copy-section home.scene
-export const homeScene = defineSection("home.scene", { screen: "Pet screen", title: "Scene readouts and Today", source: "src/screens/Home.tsx" }, {
-  well: "{n}% well",
-  run: "Day {n} run",
-  next: "Next: day {n}",
-  today: "Today",
-  goal_met: "Goal met",
-  slipped: "I slipped",
-  urge: "Had an urge",
-  edit: "Edit",
-  slip_logged: "Slip logged",
-  add_details: "Add details",
-  strip_aria: "Last 28 days",
-});
-// @copy-section-end home.scene
-
 // @copy-section home.paused
 export const homePaused = defineSection("home.paused", { screen: "Pet screen", title: "Paused card", source: "src/screens/Home.tsx" }, {
   aria: "Paused",
   resume: "Resume",
 });
 // @copy-section-end home.paused
+
+// @copy-section home.week
+export const homeWeek = defineSection("home.week", { screen: "Pet screen", title: "Weekly summary", source: "src/screens/Home.tsx" }, {
+  title: "Weekly summary",
+  count_one: "{n} goal-met day",
+  count_other: "{n} goal-met days",
+  strip_aria: "This week",
+  day_aria: "{date}: {status}",
+});
+// @copy-section-end home.week
 
 // @copy-section home.today
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {
@@ -62,6 +56,8 @@ export const homeToday = defineSection("home.today", { screen: "Pet screen", tit
 export const homeMilestone = defineSection("home.milestone", { screen: "Pet screen", title: "Milestone dialog", source: "src/screens/Home.tsx" }, {
   aria: "Milestone",
   keep_going: "Keep going",
+  unlock: "{item}. Put it on in Me → Your pet.",
+  unlock_prefix: "New:",
 });
 // @copy-section-end home.milestone
 
@@ -83,6 +79,8 @@ export const calendarNote = defineSection("calendar.note", { screen: "Journey", 
 export const calendarAge = defineSection("calendar.age", { screen: "Journey", title: "Age this month", source: "src/screens/Calendar.tsx" }, {
   aria: "Age this month",
   label: "{name}'s age this month",
+  one_point: "The curve starts drawing from {name}'s second day.",
+  none: "No age history for this month yet.",
   chart: "Visible age over the month",
 });
 // @copy-section-end calendar.age
@@ -110,12 +108,12 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
   before: "Before: {text}",
   next_time: "Next time: {text}",
   photo_alt: "Photo attached to this slip",
-  mark_met: "Goal met",
+  mark_met: "😊 Goal met",
   marked_met: "Goal met",
   remove_met: "Undo goal met",
   removed_met: "Goal met removed",
-  log_slip: "Log slip",
-  log_another: "Log another",
+  log_slip: "😔 Log slip",
+  log_another: "😔 Log another",
   locked: "Locked. Only the last 4 days can be changed.",
   future: "This day hasn't happened yet.",
   minutes: "{n} min",
@@ -125,13 +123,12 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
 // @copy-section calendar.stats
 export const calendarStats = defineSection("calendar.stats", { screen: "Journey", title: "Calendar totals", source: "src/screens/Journey.tsx" }, {
   title: "Journey",
-  this_month: "This month",
-  met_of: "{met} of {days} days met",
-  runs: "Your runs",
-  current_run: "Current run",
-  best_run: "Best run",
+  so_far: "So far",
+  together: "Days together",
   goal_met_days: "Goal-met days",
-  notes: "Notes",
+  healed: "Life healed",
+  months_short: "mo",
+  best: "Best streak",
   day: "day",
   days: "days",
 });
@@ -145,6 +142,6 @@ export const calendarMilestones = defineSection("calendar.milestones", { screen:
   progress: "{care} of {next} days of care: days with your goal met or an urge managed. They add up and never reset.",
   done: "Every milestone reached. {name} is proud of you.",
   badge: "{n} days",
-  reached: "Reached",
+  badge_reached: "{n} days, reached",
 });
 // @copy-section-end calendar.milestones

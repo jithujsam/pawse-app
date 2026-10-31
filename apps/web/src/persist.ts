@@ -42,14 +42,9 @@ const CompanionWithoutMissions: RowSchema<Companion> = {
   safeParse: (x) => {
     if (!x || typeof x !== "object") return { success: false };
     const { missions: _m, adoption, ...rest } = x as Record<string, unknown>;
-    return CompanionSchema.safeParse(adoption === "raise" || adoption === "rescue" ? { ...rest, adoption } : rest) as unknown as { success: boolean; data?: Companion };
+    return CompanionSchema.safeParse(adoption === "raise" || adoption === "rescue" ? { ...rest, adoption } : rest) as { success: boolean; data?: Companion };
   },
 };
-
-/** Rabbits, owls and pandas are gone in 5.0: those pets become a golden Shiba, keeping their name and history. */
-const RETIRED_SPECIES = new Set(["rabbit", "owl", "panda"]);
-const retireSpecies = (c: Companion): Companion =>
-  RETIRED_SPECIES.has(c.species as string) ? { ...c, species: "dog", breed: "shiba", coat: "golden" } : c;
 
 /** Keeps every row that is valid on its own, so one damaged row never costs the whole history. */
 function salvage(raw: unknown): V1 | Loose | null {
@@ -59,7 +54,7 @@ function salvage(raw: unknown): V1 | Loose | null {
   const s = (v === 1 ? LegacySettingsSchema : SettingsSchema).safeParse(r.settings);
   const obj = (x: unknown) => (x && typeof x === "object" ? Object.entries(x as Record<string, unknown>) : []);
   const common = {
-    companions: rows<Companion>(r.companions, CompanionSchema as unknown as RowSchema<Companion>, CompanionWithoutMissions),
+    companions: rows<Companion>(r.companions, CompanionSchema, CompanionWithoutMissions),
     entries: rows<Entry>(r.entries, EntrySchema),
     cleanDays: rows<CleanDay>(r.cleanDays, CleanDaySchema),
     urges: rows<Urge>(r.urges, UrgeSchema),
@@ -113,7 +108,7 @@ export function normalizeWithReport(raw: unknown): { data: AppData; report: Load
   const person = Object.fromEntries(Object.entries(up.settings).filter(([k]) => !(PER_TRACK_KEYS as readonly string[]).includes(k)));
   // Pets are always 3D now (the drawing is only the fallback), so the old style switch is dropped.
   delete person.pet3d;
-  const d = repairTracks({ ...up, companions: up.companions.map(retireSpecies), settings: { ...defaultSettings(), ...person } } as AppData);
+  const d = repairTracks({ ...up, settings: { ...defaultSettings(), ...person } } as AppData);
   // Rows whose parents are gone can't be shown or synced; they're left out and counted.
   const companions = new Set(d.companions.map((c) => c.id));
   const habits = d.habits.filter((h) => companions.has(h.companionId));

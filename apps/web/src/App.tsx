@@ -7,7 +7,7 @@ import { NewPassword } from "./screens/Account";
 import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
 import { trackSummary } from "./progress";
-import { listTracks, trackState } from "./tracks";
+import { trackState } from "./tracks";
 import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, viewCompanion, type Boot } from "./store";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
@@ -116,18 +116,27 @@ function Shell() {
   useMidnight();
   const data = useData();
   const view = useActiveView();
-  const species = view?.companion.species;
-  useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const [tab, setTab] = useState<Tab>("pets");
   // Inside the Pets tab: the grid, or one recovery track (the companion home screen).
-  // With exactly one active pet, the app opens straight to it (nothing stored changes).
-  const activeTracks = listTracks(data, ["active"]).filter((x) => x.companion).length;
-  const [track, setTrack] = useState(() => activeTracks === 1);
+  const [track, setTrack] = useState(false);
   const openTrack = () => { setTab("pets"); setTrack(true); };
   const [quick, setQuick] = useState(false);
   // The plan page for the pet chosen in the + menu.
   const [planHabit, setPlanHabit] = useState<string | null>(null);
   const dir = useRef(1);
+  const appRef = useRef<HTMLDivElement>(null);
+  // The shell eases in when the app opens and again when you come back to it after a while away.
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      const el = appRef.current;
+      if (!el || !hiddenAt || Date.now() - hiddenAt < 2000) return;
+      el.classList.remove("app-wake"); void el.offsetWidth; el.classList.add("app-wake");
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
   const [memorialSeen, setMemorialSeen] = useState<string | null>(null);
   const { session, ready, recovering } = useSession();
   const updateDot = useUpdatePending() !== null;
@@ -144,6 +153,8 @@ function Shell() {
   useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
   const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
   const lifted = useRunLift(ready && (!session || data.settings.onboarded || syncSettled || waited));
+  const species = view?.companion.species;
+  useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
   useEffect(() => { applyLook(theme, accent); }, [theme, accent]);
   const uid = session?.user.id;
@@ -236,12 +247,12 @@ function Shell() {
   }
 
   return (
-    <div className="app">
+    <div className="app app-wake" ref={appRef}>
       <div className="stage">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" variants={fade} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<GhostPage />}>
-              {tab === "pets" && (track && view ? <WithTrack><Home onBack={activeTracks > 1 ? () => { dir.current = -1; setTrack(false); } : undefined} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
+              {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
               {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
               {tab === "insights" && <WithTrack><Report /></WithTrack>}
               {tab === "you" && <WithTrack><Me /></WithTrack>}

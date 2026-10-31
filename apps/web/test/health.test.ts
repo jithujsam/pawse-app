@@ -30,7 +30,7 @@ describe("health", () => {
     expect(r.body).not.toMatch(/\b(eat|eating|food|hungry|appetite)\b/i); // a hard day never takes food away from the pet
   });
   it("conditions are species-specific and always say how many days fix them", () => {
-    for (const [sp, chest] of [["dog", /Kennel cough/], ["cat", /asthma/]] as const) {
+    for (const [sp, chest] of [["rabbit", /Snuffles/], ["dog", /Kennel cough/], ["cat", /asthma/]] as const) {
       const d = world(sp, 3, { clean: 0 });
       const c = conditions(d, viewCompanion(d, "c1"));
       expect(c.map((x) => x.name).join("|")).toMatch(/Run down/);

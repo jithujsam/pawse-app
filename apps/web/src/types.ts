@@ -1,7 +1,7 @@
 import type { AdoptionMode, HabitClass } from "@detox/engine";
 
 export type Tone = "gentle" | "honest" | "brutal";
-export type Species = "dog" | "cat" | "fox";
+export type Species = "dog" | "cat" | "rabbit" | "fox" | "owl" | "panda";
 export type Personality = "playful" | "calm" | "sassy" | "wise";
 /** Things to wear, each unlocked by a clean-streak milestone. */
 export type Accessory = "bandana" | "bow" | "flowers" | "scarf" | "glasses" | "crown";

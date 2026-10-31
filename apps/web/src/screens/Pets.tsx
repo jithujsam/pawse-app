@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL, type AdoptionMode } from "@detox/engine";
 import { companionMissions, RESCUE_SPECIES } from "../missions";
 import { moodFor, PetPortrait } from "../Companion";
@@ -170,7 +170,7 @@ export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat:
  * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Used when setting
  * up the app and when adding a recovery track, so a pet is made the same way both times.
  */
-export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void; compact?: boolean }) {
+export function PetStep({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
   const coat = pet.coat || coatsFor(pet.species, pet.breed)[0].id;
   return (
     <div className="stack">
@@ -189,13 +189,13 @@ export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p
       <div className="field"><span className="field-label">{t("pets.picker.name")}</span>
         <SelectOther key={pet.species} label={t("pets.picker.name_aria")} value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
           placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
-      {!compact && <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
-        <Select label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>}
+      <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
+        <Select label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>
       {BREEDS[pet.species] && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
         <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
-      {!compact && <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
-        <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>}
-      {!compact && <Adoption pet={pet} onChange={onChange} />}
+      <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
+        <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>
+      <Adoption pet={pet} onChange={onChange} />
     </div>
   );
 }

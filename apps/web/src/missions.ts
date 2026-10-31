@@ -12,7 +12,7 @@ import type { AppData, Companion, MissionMemory, Species } from "./types";
  */
 
 /** Species that can be adopted as a rescue: every pet, whatever its model or breed. */
-export const RESCUE_SPECIES: readonly Species[] = ["dog", "cat", "fox"];
+export const RESCUE_SPECIES: readonly Species[] = ["dog", "cat", "rabbit", "fox", "owl", "panda"];
 
 export const emptyMemory = (): MissionMemory => ({ v: MISSION_SET_VERSION, done: [], seen: [] });
 export const memoryOf = (c: Companion | undefined): MissionMemory => ({ ...emptyMemory(), ...(c?.missions ?? {}) });

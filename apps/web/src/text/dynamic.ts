@@ -8,7 +8,7 @@ import { PET_LINES, recoveryLine, type Event } from "../voice";
 import { afterSlipLine, lapseHeadline, progressKept, restLine, urgeActedLine, urgeActedNote, urgeManagedLine, urgePauseLine, STATUS_LABEL, STRATEGIES, GOALS, REASONS, SITUATIONS, FIRST_STEPS, REPLACEMENTS } from "../recovery";
 import { AMOUNT_CHOICES, HABIT_CHOICES, MOODS, starterFields } from "../questions";
 import { CONDITION_TEXT } from "../health";
-import { COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
+import { ACCESSORIES, COATS, NAMES, PERSONALITIES, SPECIES } from "../pets";
 import { STYLE_3D } from "../pet3d-support";
 import { BASELINES } from "../screens/Onboarding";
 import { SAVING_FOR } from "../screens/Report";
@@ -94,5 +94,6 @@ export const lists = (): GeneratedLine[] => [
   { id: "lists.styles_3d", group: "lists", title: "3D pet names", source: "src/pet3d-support.ts STYLE_3D", samples: Object.values(STYLE_3D).map((s) => `${s.label}: ${s.note}`) },
   { id: "lists.coats", group: "lists", title: "Coats", source: "src/pets.ts COATS", samples: Object.entries(COATS).map(([sp, c]) => `${sp}: ${c.map((x) => x.label).join(", ")}`) },
   { id: "lists.personalities", group: "lists", title: "Personalities", source: "src/pets.ts PERSONALITIES", samples: PERSONALITIES.map((p) => `${p.label}: ${p.blurb}`) },
+  { id: "lists.accessories", group: "lists", title: "Accessories", source: "src/pets.ts ACCESSORIES", samples: ACCESSORIES.map((a) => `${a.label} (${a.days} days)`) },
   { id: "lists.names", group: "lists", title: "Suggested pet names", source: "src/pets.ts NAMES", samples: Object.entries(NAMES).map(([sp, n]) => `${sp}: ${n.join(", ")}`) },
 ];

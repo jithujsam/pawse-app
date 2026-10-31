@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { useBack } from "../back";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
-import { TopBar } from "./TopBar";
 import { Icon } from "./Controls";
+import { t } from "../text";
 
 /** A titled block of rows, like a phone's own settings. */
 export function Group({ title, children }: { title?: string; children: ReactNode }) {
@@ -39,7 +39,11 @@ export function SubPage({ open, title, onClose, children }: { open: boolean; tit
           initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%", transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } }} transition={spring.soft}
           drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={{ left: 0, right: 0.6 }} dragDirectionLock
           onDragEnd={(_, i) => { if (i.offset.x > 110 || i.velocity.x > 600) onClose(); }}>
-          <div className="screen subpage-body"><TopBar title={title} back={onClose} />{children}</div>
+          <header className="subpage-top">
+            <button className="icon-btn" aria-label={t("ui.common.back")} onClick={onClose}>{Icon.back}</button>
+            <h2>{title}</h2>
+          </header>
+          <div className="screen subpage-body">{children}</div>
         </motion.div>
       )}
     </AnimatePresence>
