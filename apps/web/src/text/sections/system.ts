@@ -76,3 +76,26 @@ export const petLook = defineSection("pet.look", { screen: "Home", title: "How a
   mood_sad: "sad",
 });
 // @copy-section-end pet.look
+
+// @copy-section help.tutorial
+export const helpTutorial = defineSection("help.tutorial", { screen: "How Pawse works", title: "The walkthrough", source: "src/ui/Tutorial.tsx, src/screens/Me.tsx" }, {
+  label: "How {app} works",
+  count: "{n} of {total}",
+  skip: "Skip",
+  back: "Back",
+  next: "Next",
+  done: "Start",
+  p1_title: "Your pet mirrors your habit",
+  p1_body: "Its wellness is the one number to watch. Goal-met days raise it; slips lower it.",
+  p2_title: "Check in every day",
+  p2_body: "Tap + to mark today: goal met, a slip, or an urge you handled. A day you skip counts neither way.",
+  p3_title: "21 days to recover",
+  p3_body: "A rescued pet heals with 21 goal-met days in a row. A slip starts the 21 over, but your best run is always kept. Tap Missions to see what it's healing from.",
+  p4_title: "Then stay consistent",
+  p4_body: "21 more days earn rewards. From then on a slip doesn't restart anything: it gives your pet an issue that a few goal-met days in a row clear.",
+  p5_title: "When an urge hits",
+  p5_body: "Tap + and choose the urge option: a moment to pause, ways through it, and your own reasons, until it passes.",
+  p6_title: "Everything else",
+  p6_body: "Journey is your calendar, Insights shows your patterns, and Me holds your plan, reminders and settings. This guide is always in Me → How {app} works.",
+});
+// @copy-section-end help.tutorial

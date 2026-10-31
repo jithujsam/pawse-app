@@ -194,6 +194,7 @@ export function PawLogo({ size = 96, className = "" }: { size?: number; classNam
 export const PawLoader = ({ size = 88 }: { size?: number }) => <PawLogo size={size} className="paw-load" />;
 
 export const Icon = {
+  grid: <svg viewBox="0 0 24 24" className="ico"><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></svg>,
   back: <svg viewBox="0 0 24 24" className="ico"><path d="M15 5l-7 7 7 7" /></svg>,
   check: <svg viewBox="0 0 24 24" className="ico"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>,
   close: <svg viewBox="0 0 24 24" className="ico"><path d="M6 6l12 12M18 6L6 18" /></svg>,

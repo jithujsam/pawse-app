@@ -317,6 +317,110 @@
       ]
     },
     {
+      "id": "help.tutorial",
+      "screen": "How Pawse works",
+      "title": "The walkthrough",
+      "source": "src/ui/Tutorial.tsx, src/screens/Me.tsx",
+      "file": "src/text/sections/system.ts",
+      "start": 80,
+      "end": 101,
+      "entries": [
+        {
+          "id": "help.tutorial.label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.count",
+          "kind": "text",
+          "placeholders": [
+            "n",
+            "total"
+          ]
+        },
+        {
+          "id": "help.tutorial.skip",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.back",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.next",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.done",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p1_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p1_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p2_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p2_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p3_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p3_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p4_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p4_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p5_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p5_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p6_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "help.tutorial.p6_body",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "welcome.story",
       "screen": "Welcome",
       "title": "Story slides",
@@ -813,7 +917,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 3,
-      "end": 18,
+      "end": 22,
       "entries": [
         {
           "id": "pets.grid.title",
@@ -882,6 +986,29 @@
           "placeholders": [
             "track"
           ]
+        },
+        {
+          "id": "pets.grid.layout",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.grid.layout_grid",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.grid.layout_list",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "pets.grid.line",
+          "kind": "text",
+          "placeholders": [
+            "day",
+            "wellness"
+          ]
         }
       ]
     },
@@ -891,8 +1018,8 @@
       "title": "Pet menu",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 20,
-      "end": 37,
+      "start": 24,
+      "end": 41,
       "entries": [
         {
           "id": "pets.menu.label",
@@ -989,8 +1116,8 @@
       "title": "Pet picker",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 39,
-      "end": 56,
+      "start": 43,
+      "end": 60,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1072,8 +1199,8 @@
       "title": "Add a recovery track",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 58,
-      "end": 68,
+      "start": 62,
+      "end": 72,
       "entries": [
         {
           "id": "pets.add.label",
@@ -1376,72 +1503,6 @@
       ]
     },
     {
-      "id": "home.coach",
-      "screen": "Pet screen",
-      "title": "First-run tips",
-      "source": "src/ui/Coach.tsx",
-      "file": "src/text/sections/home.ts",
-      "start": 64,
-      "end": 77,
-      "entries": [
-        {
-          "id": "home.coach.s1_title",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "home.coach.s1_body",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.s2_title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.s2_body",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.s3_title",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.s3_body",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.of",
-          "kind": "text",
-          "placeholders": [
-            "step",
-            "total"
-          ]
-        },
-        {
-          "id": "home.coach.skip",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.next",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "home.coach.got_it",
-          "kind": "text",
-          "placeholders": []
-        }
-      ]
-    },
-    {
       "id": "missions.sheet",
       "screen": "Missions sheet",
       "title": "The 21-day journey",
@@ -1499,63 +1560,85 @@
           ]
         },
         {
-          "id": "missions.sheet.recovery_rescue",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.recovery_raise",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.consistency_title",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.consistency_title_raise",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.consistency_sub",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.thriving_title",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.to_go_one",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "missions.sheet.to_go_other",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
-        },
-        {
           "id": "missions.sheet.day_of",
           "kind": "text",
           "placeholders": [
             "n"
           ]
+        },
+        {
+          "id": "missions.sheet.day_best",
+          "kind": "text",
+          "placeholders": [
+            "best",
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.unit_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.unit_other",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.for_rescue",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.for_raise",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.for_consistency",
+          "kind": "text",
+          "placeholders": [
+            "name"
+          ]
+        },
+        {
+          "id": "missions.sheet.thriving_big",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.now_healing",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.now_learning",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "missions.sheet.heals_in_one",
+          "kind": "text",
+          "placeholders": [
+            "at"
+          ]
+        },
+        {
+          "id": "missions.sheet.heals_in_other",
+          "kind": "text",
+          "placeholders": [
+            "at",
+            "n"
+          ]
+        },
+        {
+          "id": "missions.sheet.ahead",
+          "kind": "text",
+          "placeholders": []
         },
         {
           "id": "missions.sheet.boxes_aria",
@@ -1585,20 +1668,6 @@
           ]
         },
         {
-          "id": "missions.sheet.conditions",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
-          "id": "missions.sheet.skills",
-          "kind": "text",
-          "placeholders": [
-            "name"
-          ]
-        },
-        {
           "id": "missions.sheet.healed",
           "kind": "text",
           "placeholders": []
@@ -1607,13 +1676,6 @@
           "id": "missions.sheet.learned",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "missions.sheet.heals_on",
-          "kind": "text",
-          "placeholders": [
-            "n"
-          ]
         },
         {
           "id": "missions.sheet.issue_minor",
@@ -1670,14 +1732,6 @@
           "kind": "text",
           "placeholders": [
             "n"
-          ]
-        },
-        {
-          "id": "missions.sheet.best",
-          "kind": "text",
-          "placeholders": [
-            "best",
-            "total"
           ]
         },
         {
@@ -2117,8 +2171,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 79,
-      "end": 91,
+      "start": 64,
+      "end": 76,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2180,8 +2234,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 93,
-      "end": 101,
+      "start": 78,
+      "end": 86,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2220,8 +2274,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 103,
-      "end": 112,
+      "start": 88,
+      "end": 97,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2267,8 +2321,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 114,
-      "end": 136,
+      "start": 99,
+      "end": 121,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2387,8 +2441,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 138,
-      "end": 150,
+      "start": 123,
+      "end": 135,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2443,8 +2497,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 152,
-      "end": 162,
+      "start": 137,
+      "end": 147,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -3299,7 +3353,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 3,
-      "end": 35,
+      "end": 36,
       "entries": [
         {
           "id": "me.profile.title",
@@ -3317,19 +3371,23 @@
           "id": "me.profile.summary",
           "kind": "text",
           "placeholders": [
-            "day",
             "personality",
             "species",
-            "stage"
+            "wellness"
           ]
         },
         {
-          "id": "me.profile.g_plan",
+          "id": "me.profile.g_help",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "me.profile.g_tracking",
+          "id": "me.profile.g_recovery",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.profile.g_personal",
           "kind": "text",
           "placeholders": []
         },
@@ -3461,8 +3519,8 @@
       "title": "Your pet",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 37,
-      "end": 71,
+      "start": 38,
+      "end": 72,
       "entries": [
         {
           "id": "me.pet.days",
@@ -3653,8 +3711,8 @@
       "title": "Voice",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 73,
-      "end": 81,
+      "start": 74,
+      "end": 82,
       "entries": [
         {
           "id": "me.voice.intro",
@@ -3693,8 +3751,8 @@
       "title": "Reminders",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 83,
-      "end": 96,
+      "start": 84,
+      "end": 97,
       "entries": [
         {
           "id": "me.reminders.daily",
@@ -3760,8 +3818,8 @@
       "title": "Check-in questions",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 98,
-      "end": 119,
+      "start": 99,
+      "end": 120,
       "entries": [
         {
           "id": "me.questions.intro",
@@ -3861,8 +3919,8 @@
       "title": "Your data",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 121,
-      "end": 137,
+      "start": 122,
+      "end": 138,
       "entries": [
         {
           "id": "me.data.backup",
@@ -3937,8 +3995,8 @@
       "title": "Appearance",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 139,
-      "end": 157,
+      "start": 140,
+      "end": 158,
       "entries": [
         {
           "id": "me.appearance.theme",
@@ -4023,8 +4081,8 @@
       "title": "Feel and region",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 159,
-      "end": 172,
+      "start": 160,
+      "end": 173,
       "entries": [
         {
           "id": "me.feel.haptics",
@@ -4090,8 +4148,8 @@
       "title": "About and help",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 174,
-      "end": 192,
+      "start": 175,
+      "end": 193,
       "entries": [
         {
           "id": "me.about.version",

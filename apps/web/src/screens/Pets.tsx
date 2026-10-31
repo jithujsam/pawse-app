@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL, type AdoptionMode } from "@detox/engine";
-import { RESCUE_SPECIES } from "../missions";
+import { companionMissions, RESCUE_SPECIES } from "../missions";
 import { moodFor, PetPortrait } from "../Companion";
 import { has3D, STYLE_3D } from "../pet3d-support";
 import { pauseHint, pauseRefused, pauseToast, resumeHint, resumeToast } from "../copy";
@@ -31,21 +31,32 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   const data = useData();
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
+  // Grid or list, remembered on this phone only (a display choice, never synced).
+  const [layout, setLayout] = useState<"grid" | "list">(() => { try { return localStorage.getItem(LAYOUT_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; } });
+  const pickLayout = (v: "grid" | "list") => { haptic.select(); setLayout(v); try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private mode */ } };
   const t0 = today();
   // Archived tracks are read-only and leave the grid; a track whose pet is missing (damaged data) is skipped
   // rather than crashing the grid.
   const tracks = useMemo(() => listTracks(data, ["active", "paused"]).filter((t) => t.companion).map(({ habit }) => {
     const view = viewCompanion(data, habit.companionId, t0);
     const status = dayStatus(data, habit.id, t0, t0);
-    return { habit, view, status, paused: trackState(data, habit.id).status === "paused" };
+    return { habit, view, status, paused: trackState(data, habit.id).status === "paused", wellness: companionMissions(data, habit.companionId, t0)?.healthCap ?? 100 };
   }), [data, t0]);
   const open = (id: string) => { haptic.tap(); actions.selectTrack(id); onOpen(id); };
 
   return (
     <main className="screen">
-      <header className="stack tight">
-        <h1>{t("pets.grid.title")}</h1>
-        <p className="muted small">{t("pets.grid.intro")}</p>
+      <header className="pets-head">
+        <div className="stack tight">
+          <h1>{t("pets.grid.title")}</h1>
+          <p className="muted small">{t("pets.grid.intro")}</p>
+        </div>
+        {tracks.length > 0 && (
+          <div className="layout-toggle" role="radiogroup" aria-label={t("pets.grid.layout")}>
+            <button type="button" role="radio" aria-checked={layout === "grid"} aria-label={t("pets.grid.layout_grid")} onClick={() => pickLayout("grid")}>{Icon.grid}</button>
+            <button type="button" role="radio" aria-checked={layout === "list"} aria-label={t("pets.grid.layout_list")} onClick={() => pickLayout("list")}>{Icon.list}</button>
+          </div>
+        )}
       </header>
 
       {tracks.length === 0 ? (
@@ -55,20 +66,20 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
           <Button onClick={() => setAdding(true)}>{t("pets.grid.add")}</Button>
         </section>
       ) : (
-        <section className="pet-grid" aria-label={t("pets.grid.tracks")}>
-          {tracks.map(({ habit, view, status, paused }, i) => {
+        <section className="pet-grid" data-layout={layout} aria-label={t("pets.grid.tracks")}>
+          {tracks.map(({ habit, view, status, paused, wellness }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
             const day = status === "unrecorded" ? t("pets.grid.not_checked_in") : STATUS_LABEL[status];
-            const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? t("pets.grid.paused_with", { day }) : t("pets.grid.paused")) : `${STAGE_LABEL[view.stage]} · ${day}`;
+            const line = view.dead ? STAGE_LABEL.dead : paused ? (checked ? t("pets.grid.paused_with", { day }) : t("pets.grid.paused")) : t("pets.grid.line", { wellness, day });
             return (
               <div key={habit.id} className="pet-card-wrap">
                 <motion.button className="pet-card" data-active={habit.id === focusedTrackId(data)} data-paused={paused}
                   onClick={() => open(habit.id)} whileTap={{ scale: 0.97 }} transition={spring.snappy}
                   aria-label={t("pets.grid.card", { pet: view.companion.name, track: habit.name, line })}>
                   <span className="pet-card-art" aria-hidden>
-                    <PetPortrait still={i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} size={100} />
+                    <PetPortrait still={layout === "list" || i >= MAX_3D_CARDS} species={view.companion.species} coat={view.companion.coat} breed={view.companion.breed} stage={view.stage} mood={mood} age={view.age} size={layout === "list" ? 52 : 100} />
                   </span>
                   <b className="pet-card-name">{view.companion.name}</b>
                   <span className="pet-card-track small">{habit.name}</span>
@@ -147,6 +158,8 @@ function TrackMenu({ habitId, onClose, onOpen }: { habitId: string | null; onClo
     </Sheet>
   );
 }
+
+const LAYOUT_KEY = "pawse/pets-layout";
 
 export interface PetPick { species: Species; coat: string; breed: string; personality: Personality; name: string; adoption?: AdoptionMode }
 export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "", adoption: "raise" });

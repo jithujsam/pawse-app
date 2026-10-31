@@ -14,6 +14,10 @@ export const petsGrid = defineSection("pets.grid", { screen: "Home", title: "Pet
   paused_with: "Paused · {day}",
   card: "{pet}, {track}. {line}. Open this track.",
   more: "More for {track}",
+  layout: "Layout",
+  layout_grid: "Grid",
+  layout_list: "List",
+  line: "{wellness}% · {day}",
 });
 // @copy-section-end pets.grid
 

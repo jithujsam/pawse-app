@@ -158,6 +158,13 @@ export async function checkNow(): Promise<UpdateCheck> {
   return r;
 }
 
+/** Dev builds only: shows the popup for a made-up version, so its layout can be checked in a browser (/#gallery/update). */
+export function previewUpdate(l: Latest) {
+  if (!import.meta.env.DEV) return;
+  shared = l;
+  showUpdate();
+}
+
 /** Opens the update popup now, whatever Later or Don't remind said. */
 export function showUpdate() {
   forceOpen = true;

@@ -61,21 +61,6 @@ export const homeMilestone = defineSection("home.milestone", { screen: "Pet scre
 });
 // @copy-section-end home.milestone
 
-// @copy-section home.coach
-export const homeCoach = defineSection("home.coach", { screen: "Pet screen", title: "First-run tips", source: "src/ui/Coach.tsx" }, {
-  s1_title: "This is {name}",
-  s1_body: "Tap to say hello. How they look is how things are going.",
-  s2_title: "Check in once a day",
-  s2_body: "Slip or goal met, it takes ten seconds. Honest logs are the whole point.",
-  s3_title: "Patterns live here",
-  s3_body: "Your Journey and Insights fill in as you log.",
-  of: "{step} of {total}",
-  skip: "Skip",
-  next: "Next",
-  got_it: "Got it",
-});
-// @copy-section-end home.coach
-
 // @copy-section calendar.note
 export const calendarNote = defineSection("calendar.note", { screen: "Journey", title: "What a day says about itself", source: "src/screens/Calendar.tsx" }, {
   met: tones("Goal met. Lovely.", "Goal met.", "Goal met. Counts."),

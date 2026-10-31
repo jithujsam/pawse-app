@@ -58,12 +58,15 @@ export function UpdateDialog() {
             {pending.length > 0 && (
               <section className="update-notes" aria-label={c.whatsNew}>
                 <h3>{c.whatsNew}</h3>
-                {pending.map((v) => (
-                  <div key={v.code}>
-                    <h4>v{v.name}</h4>
-                    {(v.notes ?? "").split("\n").map((x) => x.trim()).filter(Boolean).map((n, i) => <p key={i}>{n}</p>)}
-                  </div>
-                ))}
+                {/* One scrolling box for every version's notes; the dialog itself keeps a fixed size. */}
+                <div className="update-notes-list" tabIndex={0}>
+                  {pending.map((v) => (
+                    <div key={v.code} className="update-note">
+                      <h4>v{v.name}</h4>
+                      {(v.notes ?? "").split("\n").map((x) => x.trim()).filter(Boolean).map((n, i) => <p key={i}>{n}</p>)}
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
             <div className="update-actions">

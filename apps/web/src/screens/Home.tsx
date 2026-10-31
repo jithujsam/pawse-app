@@ -14,7 +14,6 @@ import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
-import { Coach } from "../ui/Coach";
 import { say } from "../voice";
 import { LogSheet } from "./LogSheet";
 import { DayDetail } from "./Calendar";
@@ -237,7 +236,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
       <LogSheet open={sheet} habit={habit} name={companion.name} age={age} onClose={() => setSheet(false)} onSaved={saved} />
       <JourneyMoment event={moment} companionId={companion.id} onClose={() => setMoment(null)} />
       <Milestone days={moment ? null : milestone} name={companion.name} onClose={() => setMilestone(null)} view={view} />
-      {!data.settings.coachSeen && !sheet && !urge && !health && !missionsOpen && !moment && <Coach name={companion.name} onDone={() => actions.setSettings({ coachSeen: true })} />}
     </motion.main>
   );
 }

@@ -1,3 +1,5 @@
+import { openTutorial } from "../ui/Tutorial";
+import { companionMissions } from "../missions";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
@@ -65,7 +67,7 @@ export function Me() {
         <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} accessory={track.wear} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
           <b className="profile-name">{companion.name}</b>
-          <span className="muted small">{t("me.profile.summary", { species: SPECIES_LABEL[companion.species], personality: PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label ?? "", stage: STAGE_LABEL[view.stage], day: together })}</span>
+          <span className="muted small">{t("me.profile.summary", { species: SPECIES_LABEL[companion.species], personality: PERSONALITIES.find((p) => p.id === (companion.personality ?? "playful"))?.label ?? "", wellness: companionMissions(data, companion.id, today())?.healthCap ?? 100 })}</span>
           <span className="small">{t("me.profile.tracking", { track: habit.name })}</span>
         </span>
         <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
@@ -73,15 +75,22 @@ export function Me() {
       {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
 
       <motion.div variants={rise}>
-        <Group title={t("me.profile.g_plan")}>
-          <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={track.plan?.goal ? { stop: t("me.profile.goal_stop"), reduce: t("me.profile.goal_reduce"), understand: t("me.profile.goal_understand") }[track.plan.goal] : t("me.profile.goal_none")} onClick={() => setPage("plan")} />
-          <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
+        <Group title={t("me.profile.g_help")}>
+          <Row icon={Icon.paw} label={t("help.tutorial.label")} onClick={() => { haptic.tap(); openTutorial(); }} />
         </Group>
       </motion.div>
       <motion.div variants={rise}>
-        <Group title={t("me.profile.g_tracking")}>
-          <Row icon={Icon.list} label={t("me.profile.row_questions")} value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
+        <Group title={t("me.profile.g_recovery")}>
+          <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={track.plan?.goal ? { stop: t("me.profile.goal_stop"), reduce: t("me.profile.goal_reduce"), understand: t("me.profile.goal_understand") }[track.plan.goal] : t("me.profile.goal_none")} onClick={() => setPage("plan")} />
           <Row icon={Icon.bell} label={t("me.profile.row_reminders")} value={settings.remindersOn ? fmtTime(settings.reminder) : t("me.profile.off")} onClick={() => setPage("reminders")} />
+          <Row icon={Icon.list} label={t("me.profile.row_questions")} value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
+        </Group>
+      </motion.div>
+      <motion.div variants={rise}>
+        <Group title={t("me.profile.g_personal")}>
+          <Row icon={Icon.chat} label={t("me.profile.row_voice")} value={TONES.find((t) => t.id === settings.tone)?.label} onClick={() => setPage("voice")} />
+          <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
+          <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
         </Group>
       </motion.div>
       <motion.div variants={rise}>
@@ -93,8 +102,6 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title={t("me.profile.g_app")}>
-          <Row icon={Icon.palette} label={t("me.profile.row_appearance")} value={`${THEME_LABEL[settings.theme]} · ${ACCENT_OPTS.find((a) => a.id === settings.accent)?.label}`} onClick={() => setPage("appearance")} />
-          <Row icon={Icon.phone} label={t("me.profile.row_feel")} value={placeName()} onClick={() => setPage("feel")} />
           <Row icon={Icon.download} label={t("me.profile.row_updates")} value={APP_VERSION.name} onClick={() => setPage("updates")}
             badge={pending ? { count: 1, label: t("me.profile.update_badge") } : undefined} />
           <Row icon={Icon.info} label={t("me.profile.row_about")} onClick={() => setPage("about")} />

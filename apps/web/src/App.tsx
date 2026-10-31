@@ -34,6 +34,7 @@ import { OPEN_QUICK, updateWidget } from "./widget";
 import { today } from "./dates";
 import { applyLook } from "./look";
 import { UpdateDialog } from "./ui/UpdateDialog";
+import { Tutorial } from "./ui/Tutorial";
 import { useUpdatePending } from "./update";
 import { t } from "./text";
 import { APP_NAME } from "./brand";
@@ -255,6 +256,7 @@ function Shell() {
       </nav>
       <QuickSheet open={quick} onClose={() => setQuick(false)} onPick={() => { setQuick(false); if (tab !== "pets" || !track) { dir.current = -1; openTrack(); } }} onPlan={(id) => { setQuick(false); setPlanHabit(id); }} />
       <UpdateDialog />
+      <Tutorial firstRun />
       <SubPage open={planHabit !== null} title={t("me.profile.row_plan")} onClose={() => setPlanHabit(null)}>{planHabit && <PlanPage key={planHabit} habitId={planHabit} onSaved={() => setPlanHabit(null)} />}</SubPage>
     </div>
   );

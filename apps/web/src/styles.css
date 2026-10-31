@@ -354,7 +354,8 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .update-cta { background: color-mix(in srgb, var(--on-accent) 18%, transparent); border-radius: 999px; padding: 8px 14px; font-weight: 700; white-space: nowrap; }
 
 /* The update pop-up: the headline and versions, then what's new in its own card, then one clear action with the quieter ones below it. */
-.update-dialog { max-width: 400px; justify-items: stretch; text-align: left; gap: 22px; padding: 30px 22px 18px; max-height: 88vh; overflow-y: auto; }
+/* A fixed, device-sized card: header, versions and buttons stay put; only "What's new" scrolls. */
+.update-dialog { max-width: 400px; display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 18px; padding: 26px 20px 18px; height: min(620px, 86dvh); max-height: 86dvh; overflow: hidden; }
 .update-dialog:focus { outline: none; }
 .update-head { display: grid; gap: 8px; justify-items: center; text-align: center; }
 .update-head h2 { font-size: 26px; margin: 0; }
@@ -365,14 +366,13 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .update-versions .pill { border-radius: 999px; padding: 8px 18px; background: var(--control); font-weight: 500; }
 .update-versions .pill.on { background: var(--accent); color: var(--on-accent); }
 .update-arrow { color: var(--accent); display: grid; }
-.update-notes { background: var(--raised); border-radius: var(--radius-sm); padding: 18px; display: grid; gap: 10px; text-align: left; }
+.update-notes { background: var(--raised); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; text-align: left; flex: 1; min-height: 0; }
 .update-notes h3 { text-align: center; font-weight: 600; }
 .update-notes h3 { font-size: 15px; font-weight: 700; margin: 0; }
-.update-notes > div { display: grid; gap: 8px; max-height: 24vh; overflow-y: auto; padding-right: 8px; font-size: 15px; line-height: 1.55; overscroll-behavior: contain; }
-/* A visible, always-on scrollbar for a long update note. Chromium and WebKit only: scrollbar-color would switch these rules off. */
-.update-notes > div::-webkit-scrollbar { width: 6px; }
-.update-notes > div::-webkit-scrollbar-track { background: transparent; }
-.update-notes > div::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 55%, transparent); border-radius: 999px; }
+.update-notes-list { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 14px; font-size: 15px; line-height: 1.5; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+.update-note { display: grid; gap: 4px; }
+.update-note h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--accent); }
+.update-head, .update-versions, .update-actions { flex: none; }
 .update-notes p { margin: 0; }
 .update-actions { display: grid; gap: 10px; width: 100%; }
 .update-actions .btn { width: 100%; min-height: 54px; }
@@ -919,3 +919,66 @@ h1 { font-weight: 500; letter-spacing: -.02em; }
 .reward-chips li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--positive-soft); font: 600 13px var(--font); }
 .reward-chips .ico { width: 14px; height: 14px; color: var(--positive); }
 .issue-card .mission-meter { grid-template-columns: 1fr auto; }
+
+/* ---------- app, not web page: no scrollbars or over-scroll glow anywhere; room above the keyboard ---------- */
+html, body { overscroll-behavior: none; }
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.screen, .sheet, .dd-menu, .update-notes-list { overscroll-behavior: none; }
+html[data-keyboard="open"] .screen { padding-bottom: calc(var(--kb, 0px) + 32px); }
+html[data-keyboard="open"] .scrim { padding-bottom: var(--kb, 0px); }
+html[data-keyboard="open"] .sheet { max-height: calc(92vh - var(--kb, 0px)); }
+html[data-keyboard="open"] .tabbar { display: none; }
+
+/* ---------- Pets: grid or list ---------- */
+.pets-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.layout-toggle { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--raised); flex: none; }
+.layout-toggle button { border: 0; background: none; color: var(--muted); width: 40px; height: 36px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; }
+.layout-toggle button[aria-checked="true"] { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px -2px rgba(0,0,0,.15); }
+.layout-toggle .ico { width: 18px; height: 18px; }
+.pet-grid[data-layout="list"] { grid-template-columns: 1fr; gap: 8px; }
+.pet-grid[data-layout="list"] .pet-card { grid-template-columns: 56px 1fr; grid-template-rows: auto auto auto; justify-items: start; text-align: left; column-gap: 14px; row-gap: 0; padding: 12px 52px 12px 12px; }
+.pet-grid[data-layout="list"] .pet-card-art { width: 56px; height: 56px; margin: 0; grid-row: 1 / span 3; }
+.pet-grid[data-layout="list"] .pet-card-name { font-size: 17px; }
+.pet-grid[data-layout="list"] .pet-card-status { align-self: start; }
+.pet-grid[data-layout="list"] .pet-card-add { grid-template-columns: 56px 1fr; padding: 12px; }
+.pet-grid[data-layout="list"] .pet-card-plus { grid-row: 1 / span 2; width: 56px; height: 56px; }
+
+/* ---------- How Pawse works ---------- */
+.tutorial { position: fixed; inset: 0; z-index: 40; background: var(--ground); display: flex; flex-direction: column; padding: calc(16px + env(safe-area-inset-top)) var(--pad) calc(20px + env(safe-area-inset-bottom)); max-width: 520px; margin: 0 auto; }
+.tutorial-top { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+.tutorial-skip { border: 0; background: none; color: var(--muted); font: 600 15px var(--font); padding: 10px 4px; cursor: pointer; }
+.tutorial-page { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 14px; padding: 0 8px; }
+.tutorial-page h2 { margin: 0; font: 600 28px/1.15 var(--serif); }
+.tutorial-page p { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.5; max-width: 34ch; }
+.tutorial-icon { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--accent); margin-bottom: 8px; }
+.tutorial-icon .ico { width: 44px; height: 44px; }
+.tutorial-dots { display: flex; justify-content: center; gap: 6px; margin: 16px 0; }
+.tutorial-dots i { width: 7px; height: 7px; border-radius: 999px; background: var(--control); transition: width .25s, background .25s; }
+.tutorial-dots i[data-on="true"] { width: 22px; background: var(--accent); }
+.tutorial-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .tutorial-dots i { transition: none; } }
+
+/* ---------- Missions: one focal number, then what's healing now ---------- */
+.missions { gap: 28px; }
+.journey-hero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 8px 0 4px; }
+.journey-num { font: 600 72px/1 var(--serif); letter-spacing: -0.02em; }
+.journey-num.word { font-size: 44px; }
+.journey-unit { font: 600 17px var(--font); margin-top: 6px; }
+.journey-for { color: var(--muted); font-size: 15px; }
+.journey-bar { width: 100%; height: 6px; border-radius: 999px; background: var(--raised); overflow: hidden; margin-top: 22px; }
+.journey-bar i { display: block; height: 100%; border-radius: 999px; background: var(--positive); }
+.journey-meta { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.journey-rule { margin: 14px 0 0; font-size: 14px; color: var(--muted); max-width: 32ch; line-height: 1.5; }
+.eyebrow { font: 650 12px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.now-healing { display: grid; gap: 6px; padding: 22px 20px; border-radius: var(--radius); background: var(--soft); }
+.now-healing h3 { margin: 2px 0 0; font: 600 22px/1.2 var(--serif); }
+.now-healing p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+.now-when { margin-top: 6px; font: 600 14px var(--font); color: var(--accent); }
+.healed-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.healed-chips span { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: var(--positive-soft); color: var(--text); font: 600 13px var(--font); }
+.healed-chips .ico { width: 14px; height: 14px; color: var(--positive); }
+.ahead { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.ahead .eyebrow { display: block; margin-bottom: 4px; }
+.missions-foot { display: grid; gap: 8px; padding-top: 4px; }
+.missions-foot p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }

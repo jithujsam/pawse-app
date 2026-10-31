@@ -2,7 +2,7 @@ import { interpolate, isToneText, pickTone, type Section, type ToneText, type Va
 import { APP_NAME } from "../brand";
 import type { Tone } from "../types";
 import { accountBlockers, accountCheckEmail, accountErrors, accountForm, accountNewPassword, accountSignedIn, accountSync } from "./sections/account";
-import { homeCoach, homeHeader, homeHero, homeMilestone, homePaused, homeToday, homeWeek, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
+import { homeHeader, homeHero, homeMilestone, homePaused, homeToday, homeWeek, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
 import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice } from "./sections/me";
 import { notificationsCatchup, notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
@@ -14,7 +14,7 @@ import { lockScreen, securityLock, securityPin } from "./sections/security";
 import { sheetsHealth, sheetsLog, sheetsMemorial, sheetsPlan, sheetsQuick, sheetsReflection, sheetsUrge } from "./sections/sheets";
 import { packsLines } from "./sections/packs";
 import { missionsContent, missionsMoment, missionsSheet } from "./sections/missions";
-import { navLoading, navTabs, petLook, uiCommon, uiSelect, uiSettings } from "./sections/system";
+import { helpTutorial, navLoading, navTabs, petLook, uiCommon, uiSelect, uiSettings } from "./sections/system";
 import { updateDialog, updateToasts } from "./sections/update";
 import { welcomeAccount, welcomeRestoring, welcomeStory } from "./sections/welcome";
 
@@ -23,11 +23,11 @@ import { welcomeAccount, welcomeRestoring, welcomeStory } from "./sections/welco
  * not here does not exist as far as the app, the tests and the inspector are concerned.
  */
 export const SECTIONS = [
-  navTabs, navLoading, petLook, uiCommon, uiSelect, uiSettings,
+  navTabs, navLoading, petLook, uiCommon, uiSelect, uiSettings, helpTutorial,
   welcomeStory, welcomeAccount, welcomeRestoring,
   onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingTriggers, onboardingWhy, onboardingHelp, onboardingVoice, onboardingReminders, onboardingFinal, onboardingHatch,
   petsGrid, petsMenu, petsPicker, petsAdd,
-  homeHeader, homeHero, homePaused, homeWeek, homeToday, homeMilestone, homeCoach,
+  homeHeader, homeHero, homePaused, homeWeek, homeToday, homeMilestone,
   missionsSheet, missionsMoment, missionsContent, packsLines,
   calendarNote, calendarAge, calendarMonth, calendarDay, calendarStats, calendarMilestones,
   insightsHeader, insightsWeek, insightsUrges, insightsMoney, insightsWhen, insightsSince, insightsSummary, insightsChart, insightsForecast, insightsReflect, insightsReview, insightsGoalLine, insightsPatterns,

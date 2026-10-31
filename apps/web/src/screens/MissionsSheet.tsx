@@ -41,51 +41,36 @@ function Body({ companionId }: { companionId: string }) {
       {m.setback && <p className="banner reassure" role="status">{tt("missions.sheet.setback", tone, { name })}</p>}
       {j.issue && <IssueCard j={j} name={name} />}
       {j.phase === "recovery" ? <Conditions j={j} name={name} /> : <AfterRecovery j={j} />}
-      {habit?.cls === "alcohol" && <p className="banner safety small" role="note">{t("missions.sheet.safety_alcohol")}</p>}
-      {m.mode === "rescue" && <p className="muted small">{t("missions.sheet.fiction", { name })}</p>}
+      <footer className="missions-foot">
+        {habit?.cls === "alcohol" && <p role="note">{t("missions.sheet.safety_alcohol")}</p>}
+        {m.mode === "rescue" && <p>{t("missions.sheet.fiction", { name })}</p>}
+      </footer>
     </div>
   );
 }
 
-/** 21 boxes: the days done so far in this stage. */
-function Boxes({ done }: { done: number }) {
-  return (
-    <span className="day-boxes" role="meter" aria-valuemin={0} aria-valuemax={21} aria-valuenow={done} aria-label={t("missions.sheet.boxes_aria", { n: done })}>
-      {Array.from({ length: 21 }, (_, i) => <i key={i} data-on={i < done} />)}
-    </span>
-  );
-}
-
-const toGo = (n: number) => (n === 1 ? t("missions.sheet.to_go_one") : t("missions.sheet.to_go_other", { n }));
-
-/** The one number that matters: days to go in this stage. */
+/** The one number that matters, large: goal-met days still to go in this stage, with a thin bar under it. */
 function Count({ j, name }: { j: Journey; name: string }) {
   const rescue = j.mode === "rescue";
-  if (j.phase === "recovery") return (
-    <section className="card journey-count">
-      <h3>{rescue ? t("missions.sheet.recovery_rescue", { name }) : t("missions.sheet.recovery_raise", { name })}</h3>
-      <b className="journey-big">{toGo(RECOVERY_DAYS - j.run)}</b>
-      <Boxes done={j.run} />
-      <span className="small">{t("missions.sheet.day_of", { n: j.run })}</span>
-      {j.bestRun > j.run && <span className="small muted">{t("missions.sheet.best", { best: j.bestRun, total: j.goalMetDays })}</span>}
-      <p className="small muted">{t("missions.sheet.rule_recovery")}</p>
+  if (j.phase === "thriving") return (
+    <section className="journey-hero">
+      <b className="journey-num word">{t("missions.sheet.thriving_big")}</b>
+      <span className="journey-for">{t("missions.sheet.thriving_days", { n: j.thriving, k: THRIVING_REWARD_EVERY - (j.thriving % THRIVING_REWARD_EVERY) })}</span>
     </section>
   );
-  if (j.phase === "consistency") return (
-    <section className="card journey-count" data-phase="consistency">
-      <h3>{rescue ? t("missions.sheet.consistency_title", { name }) : t("missions.sheet.consistency_title_raise", { name })}</h3>
-      <p className="small">{t("missions.sheet.consistency_sub")}</p>
-      <b className="journey-big">{toGo(CONSISTENCY_DAYS - j.consistency)}</b>
-      <Boxes done={j.consistency} />
-      <span className="small">{t("missions.sheet.day_of", { n: j.consistency })}</span>
-      <p className="small muted">{t("missions.sheet.rule_after", { name })}</p>
-    </section>
-  );
+  const recovery = j.phase === "recovery";
+  const done = recovery ? j.run : j.consistency;
+  const left = (recovery ? RECOVERY_DAYS : CONSISTENCY_DAYS) - done;
   return (
-    <section className="card journey-count" data-phase="thriving">
-      <h3>{t("missions.sheet.thriving_title", { name })}</h3>
-      <p className="small">{t("missions.sheet.thriving_days", { n: j.thriving, k: THRIVING_REWARD_EVERY - (j.thriving % THRIVING_REWARD_EVERY) })}</p>
-      <p className="small muted">{t("missions.sheet.rule_after", { name })}</p>
+    <section className="journey-hero">
+      <b className="journey-num">{left}</b>
+      <span className="journey-unit">{left === 1 ? t("missions.sheet.unit_one") : t("missions.sheet.unit_other")}</span>
+      <span className="journey-for">{recovery ? (rescue ? t("missions.sheet.for_rescue", { name }) : t("missions.sheet.for_raise", { name })) : t("missions.sheet.for_consistency", { name })}</span>
+      <span className="journey-bar" role="progressbar" aria-valuemin={0} aria-valuemax={21} aria-valuenow={done} aria-label={t("missions.sheet.boxes_aria", { n: done })}>
+        <motion.i initial={false} animate={{ width: `${(done / 21) * 100}%` }} transition={spring.calm} />
+      </span>
+      <span className="journey-meta">{j.bestRun > done && recovery ? t("missions.sheet.day_best", { n: done, best: j.bestRun }) : t("missions.sheet.day_of", { n: done })}</span>
+      <p className="journey-rule">{recovery ? t("missions.sheet.rule_recovery") : t("missions.sheet.rule_after", { name })}</p>
     </section>
   );
 }
@@ -108,22 +93,30 @@ function IssueCard({ j, name }: { j: Journey; name: string }) {
   );
 }
 
-/** The six conditions (or skills) in one compact list, each with the day of the 21 it heals on. */
-function Conditions({ j, name }: { j: Journey; name: string }) {
-  const label = j.mode === "rescue" ? t("missions.sheet.conditions", { name }) : t("missions.sheet.skills", { name });
+/** In recovery: what's healing now gets the attention; healed ones are small chips; the rest is one quiet line. */
+function Conditions({ j }: { j: Journey; name: string }) {
+  const current = j.missions.find((x) => x.status === "current");
+  const healed = j.missions.filter((x) => x.status === "healed");
+  const ahead = j.missions.filter((x) => x.status === "waiting");
+  const rescue = j.mode === "rescue";
+  const left = current ? current.at - j.run : 0;
   return (
-    <section className="conditions" aria-label={label}>
-      <h3 className="group-title">{label}</h3>
-      <ul className="condition-list">
-        {j.missions.map((s) => (
-          <li key={s.id} data-status={s.status}>
-            <span className="condition-name">{missionText(s.id).title}</span>
-            {s.status === "healed" ? <span className="condition-done">{Icon.check}{healedWord(j.mode)}</span> : <span className="condition-day">{t("missions.sheet.heals_on", { n: s.at })}</span>}
-            {s.status === "current" && <span className="condition-why">{missionText(s.id).why}</span>}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <>
+      {current && (
+        <section className="now-healing">
+          <span className="eyebrow">{rescue ? t("missions.sheet.now_healing") : t("missions.sheet.now_learning")}</span>
+          <h3>{missionText(current.id).title}</h3>
+          <p>{missionText(current.id).why}</p>
+          <span className="now-when">{left === 1 ? t("missions.sheet.heals_in_one", { at: current.at }) : t("missions.sheet.heals_in_other", { at: current.at, n: left })}</span>
+        </section>
+      )}
+      {healed.length > 0 && (
+        <section className="healed-chips" aria-label={healedWord(j.mode)}>
+          {healed.map((x) => <span key={x.id}>{Icon.check}{missionText(x.id).title}</span>)}
+        </section>
+      )}
+      {ahead.length > 0 && <p className="ahead"><span className="eyebrow">{t("missions.sheet.ahead")}</span> {ahead.map((x) => missionText(x.id).title).join(" · ")}</p>}
+    </>
   );
 }
 
