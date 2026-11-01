@@ -310,7 +310,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
  * that carries it to its place in the folded room. This measures where every part is now and where it should end up, and hands the
  * numbers to the CSS. Does nothing where scroll-driven animation isn't supported; the room then just scrolls away.
  */
-const FOLD = { nameScale: 0.68, petScale: 0.5, toIcons: 14, toMeter: 22, pad: 18 };
+const FOLD = { nameScale: 0.68, petScale: 0.62, toIcons: 14, toMeter: 22, pad: 18 };
 function foldRoom(screen: HTMLElement | null): (() => void) | void {
   const scene = screen?.querySelector<HTMLElement>(".pscene");
   if (!screen || !scene || !CSS.supports("animation-timeline", "scroll()")) return;

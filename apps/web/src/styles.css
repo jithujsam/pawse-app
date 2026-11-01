@@ -1129,7 +1129,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 @keyframes room-bar { to { transform: translateY(var(--k-bar, 0px)); } }
 @keyframes room-name { to { transform: translateY(var(--k-name, 0px)) scale(.68); } }
 @keyframes room-stage { to { transform: translateY(var(--k-stage, 0px)); } }
-@keyframes room-pet { to { transform: scale(.5); } }
+@keyframes room-pet { to { transform: scale(.62); } } /* keep equal to FOLD.petScale in Home.tsx */
 @keyframes room-speech { to { transform: translateY(var(--k-speech, 0px)); } }
 @keyframes room-vitals { to { transform: translateY(var(--k-vitals, 0px)); } }
 @keyframes room-health { to { transform: translateY(var(--k-health, 0px)); } }
