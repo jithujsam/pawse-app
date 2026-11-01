@@ -172,7 +172,7 @@ export function greeting(tone: Tone, hour: number, name = ""): string {
   return byTone(tone, {
     gentle: p === "night" ? `Still up${to}? Go easy tonight` : `Good ${p}${to}`,
     honest: p === "night" ? `It's late${to}` : `Good ${p}${to}`,
-    brutal: p === "night" ? `Late night${to}. Choose well` : `Good ${p}${to}. Let's make it count`,
+    brutal: p === "night" ? `Late night${to}. Choose well` : `Good ${p}${to}`,
   });
 }
 
