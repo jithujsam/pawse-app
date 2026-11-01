@@ -1102,9 +1102,12 @@ html[data-keyboard="open"] .tabbar { display: none; }
 @supports (animation-timeline: scroll()) {
   .screen.scene-screen { scroll-timeline: --room block; overflow-anchor: none; padding-bottom: 0; position: relative; }
   /* The marker keeps a short page exactly one screen plus the fold distance tall, so it ends the moment the room has folded. A long page
-     ends at its own end (the 48px bottom space sits inside the body). */
+     ends at its own end (the 24px bottom space sits inside the body). */
   .room-end { display: block; position: absolute; top: 0; left: 0; width: 1px; height: calc(100% + var(--room-d, 0px)); visibility: hidden; pointer-events: none; }
-  .scene-body { padding-bottom: 48px; }
+  .scene-body { padding-bottom: 24px; }
+  /* Content scrolling up under the folded room slides under a soft edge instead of being sliced off by a hard line (the room's ground colour
+     fades out over its last 40px, which is about 20px once folded). */
+  .pscene::after { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 40px), transparent); }
   .pscene { position: sticky; top: calc(-1 * var(--room-d, 0px)); z-index: 4; }
   .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .hs-greet, .hs-meta, .health-why, .vital > span:not(.vital-ico), .agetext,
   .pscene::before, .pscene::after, .ps-sun, .ps-moon, .ps-fx {
