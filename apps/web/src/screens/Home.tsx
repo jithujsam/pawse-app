@@ -97,7 +97,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
     : slippedToday && !just ? afterSlipLine(tone, companion.name)
       : progress.today === "rest" ? restLine(tone)
       : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
-  const gesture: Gesture = "none";
+  // A goal met gets a jolly hop while the cheer runs; nothing else plays a gesture.
+  const gesture: Gesture = just === "clean" ? "hop" : "none";
 
   const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
@@ -162,7 +163,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
   return (
     <main className="screen scene-screen">
-      <PetScene scene={scene} ambient={ambient} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
+      {/* While logging (the check-in panel is open, or a choice was just made) the pet stays pinned at the top, and the log scrolls beneath it. */}
+      <PetScene scene={scene} ambient={ambient} className={editing || just !== null ? "pscene-pinned" : undefined} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
         <div className="hs-bar">
           {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
         </div>

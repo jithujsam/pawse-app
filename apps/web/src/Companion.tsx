@@ -26,7 +26,8 @@ export const ACCENT: Record<Species, string> = { dog: "#c98a4b", cat: "#8f8f9c",
 
 /** notTracking: today is paused or not tracked, so the pet isn't waiting for anything. */
 export function moodFor(stage: Stage, opts: { checkedToday: boolean; slippedToday: boolean; justLogged?: "slip" | "clean" | null; age: number; notTracking?: boolean }): Mood {
-  if (opts.justLogged === "slip") return "hurt";
+  // A slip reads as gloomy and sad for the few seconds the reaction runs; the pet then keeps its usual mood.
+  if (opts.justLogged === "slip") return "sad";
   if (opts.justLogged === "clean") return "happy";
   if (opts.age >= 90) return "dying";
   if (opts.slippedToday) return "sad";

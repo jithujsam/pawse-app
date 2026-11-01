@@ -1043,6 +1043,11 @@ html[data-keyboard="open"] .tabbar { display: none; }
 
 /* ---------- the room: where the pet lives ---------- */
 .screen.scene-screen { padding: 0 0 48px; gap: 0; }
+/* Pinned while logging: the pet, name and back button stay at the top; the greeting, speech and vitals drop away and the pet shrinks, so the check-in scrolls beneath it. */
+.pscene.pscene-pinned { position: sticky; top: 0; z-index: 5; padding-bottom: 6px; }
+.pscene.pscene-pinned .hs-greet, .pscene.pscene-pinned .hs-meta, .pscene.pscene-pinned .speech, .pscene.pscene-pinned .vitals, .pscene.pscene-pinned .health-block { display: none; }
+.pscene.pscene-pinned .hs-stage { transform: scale(.52); transform-origin: center top; margin: -30px 0 -150px; }
+.pscene.pscene-pinned .hs-name { font-size: 30px; line-height: 34px; }
 .scene-body { display: flex; flex-direction: column; gap: var(--section); padding: 0 var(--pad); }
 .pscene { --top: color-mix(in srgb, var(--accent) 20%, var(--ground)); --glow: rgba(255,240,220,.5); --ink: var(--text); --ink-soft: var(--muted);
   position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 32px; text-align: center;
