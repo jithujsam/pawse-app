@@ -203,26 +203,26 @@ export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p
   );
 }
 
-/** Raise or rescue, for every pet and breed. */
-function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
+/**
+ * Raise or rescue, for every pet and breed: two cards that say what each is like and why to pick it, marked easier
+ * and harder, so the choice is made knowingly. A pet's mode is fixed once chosen (migration 0008).
+ */
+export function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void }) {
   const canRescue = RESCUE_SPECIES.includes(pet.species);
   const mode: AdoptionMode = canRescue && pet.adoption === "rescue" ? "rescue" : "raise";
+  if (!canRescue) return null;
   return (
-    <>
-      {canRescue && (
-        <div className="field"><span className="field-label">{t("pets.picker.adoption")}</span>
-          <div className="segmented" role="radiogroup" aria-label={t("pets.picker.adoption")}>
-            {(["raise", "rescue"] as const).map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={mode === m} className="seg" onClick={() => { haptic.select(); onChange({ adoption: m }); }}>
-                {mode === m && <motion.span layoutId="adopt-pill" className="seg-pill" transition={spring.snappy} />}
-                <span className="seg-label">{m === "rescue" ? t("pets.picker.rescue") : t("pets.picker.raise")}</span>
-              </button>
-            ))}
-          </div>
-          <span className="muted small">{mode === "rescue" ? t("pets.picker.rescue_hint") : t("pets.picker.raise_hint")}</span>
-        </div>
-      )}
-    </>
+    <div className="field"><span className="field-label">{t("pets.picker.adoption")}</span>
+      <div className="adopt-cards" role="radiogroup" aria-label={t("pets.picker.adoption")}>
+        {(["raise", "rescue"] as const).map((m) => (
+          <button key={m} type="button" role="radio" aria-checked={mode === m} className="adopt-card" data-mode={m} onClick={() => { haptic.select(); onChange({ adoption: m }); }}>
+            <span className="adopt-top"><b>{m === "rescue" ? t("pets.picker.rescue") : t("pets.picker.raise")}</b><span className="adopt-tag">{m === "rescue" ? t("pets.picker.rescue_tag") : t("pets.picker.raise_tag")}</span></span>
+            <span className="small">{m === "rescue" ? t("pets.picker.rescue_hint") : t("pets.picker.raise_hint")}</span>
+            <span className="small muted">{m === "rescue" ? t("pets.picker.rescue_why") : t("pets.picker.raise_why")}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
