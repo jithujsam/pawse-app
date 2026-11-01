@@ -4,7 +4,7 @@ import type { Tone } from "../types";
 import { accountBlockers, accountCheckEmail, accountErrors, accountForm, accountNewPassword, accountSignedIn, accountSync } from "./sections/account";
 import { homeHeader, homeHero, homeMilestone, homePaused, homeToday, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
-import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice } from "./sections/me";
+import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice, meYou } from "./sections/me";
 import { notificationsCatchup, notificationsDaily, notificationsPermission, notificationsQuiet } from "./sections/notifications";
 import { onboardingChange, onboardingChrome, onboardingCount, onboardingFinal, onboardingHatch, onboardingPet, onboardingReminders } from "./sections/onboarding";
 import { petsAdd, petsGrid, petsMenu, petsPicker } from "./sections/pets";
@@ -31,7 +31,7 @@ export const SECTIONS = [
   missionsSheet, missionsMoment, missionsContent, packsLines,
   calendarNote, calendarAge, calendarMonth, calendarDay, calendarStats, calendarMilestones,
   insightsHeader, insightsWeek, insightsUrges, insightsMoney, insightsWhen, insightsSince, insightsSummary, insightsChart, insightsForecast, insightsReflect, insightsReview, insightsGoalLine, insightsPatterns,
-  meProfile, mePet, meVoice, meReminders, meQuestions, meData, meAppearance, meFeel, meAbout,
+  meProfile, mePet, meVoice, meReminders, meQuestions, meData, meAppearance, meFeel, meAbout, meYou,
   sheetsLog, sheetsReflection, sheetsUrge, sheetsQuick, sheetsHealth, sheetsPlan, sheetsMemorial,
   accountForm, accountBlockers, accountErrors, accountSignedIn, accountSync, accountCheckEmail, accountNewPassword,
   securityLock, securityPin, lockScreen,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { fade, rise, stagger } from "../motion";
-import { Icon, PawLoader, PawLogo } from "../ui/Controls";
+import { Button, Icon, PawLoader, PawLogo } from "../ui/Controls";
 import { Account } from "./Account";
 import { Story } from "./Onboarding";
 import { APP_NAME } from "../brand";
@@ -31,6 +31,21 @@ export function Welcome() {
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+}
+
+/** The account couldn't be reached and this phone is empty: say so, instead of starting onboarding as if new. */
+export function RestoreFailed({ onRetry, onFresh }: { onRetry: () => void; onFresh: () => void }) {
+  return (
+    <main className="screen center-screen" role="alert">
+      <PawLogo size={40} />
+      <h1>{t("welcome.restoring.failed_title")}</h1>
+      <p className="muted">{t("welcome.restoring.failed_body")}</p>
+      <div className="stack" style={{ width: "100%", maxWidth: 360 }}>
+        <Button onClick={onRetry}>{t("welcome.restoring.retry")}</Button>
+        <Button variant="text" onClick={onFresh}>{t("welcome.restoring.fresh")}</Button>
+      </div>
+    </main>
   );
 }
 

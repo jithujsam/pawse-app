@@ -20,11 +20,12 @@ import { Button, ConcernNote, GuardedInput, Icon, MultiSelect, plainOpts, Select
 import { Sheet } from "../ui/Sheet";
 import type { Entry, Habit } from "../types";
 
-async function shrink(file: File): Promise<string> {
+/** A photo scaled to at most `max` px on its longest side, as a JPEG data URL. Kept on the phone only. */
+export async function shrink(file: File, max = 640): Promise<string> {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-    const k = Math.min(1, 640 / Math.max(img.width, img.height));
+    const k = Math.min(1, max / Math.max(img.width, img.height));
     const c = document.createElement("canvas");
     c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);

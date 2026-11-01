@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { startSync, useSyncStatus } from "./sync";
+import { startSync, syncNow, useSyncStatus } from "./sync";
 import { kv } from "./db";
-import { Restoring, Welcome } from "./screens/Welcome";
+import { RestoreFailed, Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
 import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
@@ -147,6 +147,7 @@ function Shell() {
   // The restore check waits for the first sync to settle, once. A retry after that (offline, say) must not swap
   // onboarding out for it, or the person loses their place mid-step.
   const restoreSettled = useRef(false);
+  const [startFresh, setStartFresh] = useState(false);
   if (sync.last !== null || sync.state === "error" || sync.state === "offline") restoreSettled.current = true;
   // The boot splash holds until the session check is done, then until the paw has finished a whole run, so nothing
   // is cut off mid-animation. A returning person's data is already on the phone, so the sync can carry on behind
@@ -242,6 +243,8 @@ function Shell() {
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
   if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
+  // An empty phone whose account didn't answer: never fall into onboarding as if new, which would start a second pet history.
+  if (!data.settings.onboarded && sync.state === "error" && !startFresh) return <div className="app"><RestoreFailed onRetry={() => void syncNow()} onFresh={() => setStartFresh(true)} /></div>;
   if (!data.settings.onboarded) return <div className="app"><Suspense fallback={<Loading />}><Onboarding /></Suspense></div>;
 
   if (view?.dead && memorialSeen !== view.companion.id) {

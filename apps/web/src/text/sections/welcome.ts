@@ -26,5 +26,9 @@ export const welcomeAccount = defineSection("welcome.account", { screen: "Welcom
 export const welcomeRestoring = defineSection("welcome.restoring", { screen: "Welcome", title: "Restoring", source: "src/screens/Welcome.tsx" }, {
   title: "One moment",
   body: "Checking your account for an existing pet…",
+  failed_title: "Couldn't reach your account",
+  failed_body: "This phone has no pets saved, and your account didn't answer. Try again before starting fresh, so nothing in your account is left behind.",
+  retry: "Try again",
+  fresh: "Start fresh on this phone",
 });
 // @copy-section-end welcome.restoring
