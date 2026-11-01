@@ -1,6 +1,6 @@
 import { openTutorial } from "../ui/Tutorial";
 import { companionMissions } from "../missions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { LiveCompanion, PetImage, PetPortrait } from "../Companion";
@@ -17,7 +17,7 @@ import { fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
-import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
+import { allowRemindersOnTime, cancelDaily, remindersOnTime, remindersSupported, requestReminders, scheduleDaily, sendTestReminder } from "../notify";
 import { rise, spring, stagger } from "../motion";
 import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
 import { daysTogether, trackSummary } from "../progress";
@@ -226,6 +226,8 @@ function VoicePage() {
 function RemindersPage() {
   const { settings } = useData();
   const { companion } = useActiveView()!;
+  const [onTime, setOnTime] = useState<boolean | null>(null);
+  useEffect(() => { if (settings.remindersOn) void remindersOnTime().then(setOnTime); }, [settings.remindersOn]);
   async function toggle(on: boolean) {
     if (!on) { await cancelDaily(); actions.setSettings({ remindersOn: false }); return; }
     const ok = await requestReminders(settings.reminder, settings.tone, companion.name);
@@ -245,6 +247,19 @@ function RemindersPage() {
         </motion.div>
       )}</AnimatePresence>
       <p className="muted small">{t("me.reminders.note", { name: companion.name })}</p>
+      {settings.remindersOn && remindersSupported && <>
+        {onTime === false && (
+          <div className="banner stack tight" role="note">
+            <b>{t("me.reminders.late_title")}</b>
+            <span className="small">{t("me.reminders.late_body")}</span>
+            <Button variant="secondary" onClick={async () => setOnTime(await allowRemindersOnTime())}>{t("me.reminders.late_allow")}</Button>
+          </div>
+        )}
+        <Button variant="secondary" onClick={async () => {
+          const ok = await sendTestReminder(settings.tone, companion.name);
+          toast(ok ? t("me.reminders.test_sent") : t("me.reminders.test_failed"), { kind: ok ? "good" : "bad" });
+        }}>{t("me.reminders.test")}</Button>
+      </>}
       {/* Both ride on the daily reminder: with it off neither is sent, so they only show while it is on. */}
       <AnimatePresence initial={false}>{settings.remindersOn && (
         <motion.div className="stack" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>

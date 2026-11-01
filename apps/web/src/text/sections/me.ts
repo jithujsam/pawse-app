@@ -87,6 +87,12 @@ export const meReminders = defineSection("me.reminders", { screen: "Me → Remin
   risk_hint: "Once your pattern is clear, a note half an hour before your usual slip time",
   care: "Notes from {name}",
   care_hint: "A thank-you on the evening of a good day, and a morning note after it",
+  test: "Send a test reminder",
+  test_sent: "Sent. It should arrive in about five seconds.",
+  test_failed: "Notifications are off for {app}. Turn them on in your phone's settings, then try again.",
+  late_title: "Reminders may arrive late",
+  late_body: "Your phone holds reminders back to save battery. Allow alarms and reminders so the nudge comes on time.",
+  late_allow: "Allow on-time reminders",
 });
 // @copy-section-end me.reminders
 

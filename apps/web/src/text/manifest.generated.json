@@ -3598,7 +3598,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 78,
-      "end": 91,
+      "end": 97,
       "entries": [
         {
           "id": "me.reminders.daily",
@@ -3655,6 +3655,36 @@
           "id": "me.reminders.care_hint",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "me.reminders.test",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.reminders.test_sent",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.reminders.test_failed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.reminders.late_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.reminders.late_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "me.reminders.late_allow",
+          "kind": "text",
+          "placeholders": []
         }
       ]
     },
@@ -3664,8 +3694,8 @@
       "title": "Check-in questions",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 93,
-      "end": 114,
+      "start": 99,
+      "end": 120,
       "entries": [
         {
           "id": "me.questions.intro",
@@ -3765,8 +3795,8 @@
       "title": "Your data",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 116,
-      "end": 132,
+      "start": 122,
+      "end": 138,
       "entries": [
         {
           "id": "me.data.backup",
@@ -3841,8 +3871,8 @@
       "title": "Appearance",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 134,
-      "end": 155,
+      "start": 140,
+      "end": 161,
       "entries": [
         {
           "id": "me.appearance.theme",
@@ -3942,8 +3972,8 @@
       "title": "Feel and region",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 157,
-      "end": 170,
+      "start": 163,
+      "end": 176,
       "entries": [
         {
           "id": "me.feel.haptics",
@@ -4009,8 +4039,8 @@
       "title": "About and help",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 172,
-      "end": 190,
+      "start": 178,
+      "end": 196,
       "entries": [
         {
           "id": "me.about.version",
