@@ -310,7 +310,7 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
  * that carries it to its place in the folded room. This measures where every part is now and where it should end up, and hands the
  * numbers to the CSS. Does nothing where scroll-driven animation isn't supported; the room then just scrolls away.
  */
-const FOLD = { nameScale: 0.68, petScale: 0.5, gap: 8, pad: 14 };
+const FOLD = { nameScale: 0.68, petScale: 0.5, toIcons: 14, toMeter: 22, pad: 18 };
 function foldRoom(screen: HTMLElement | null): (() => void) | void {
   const scene = screen?.querySelector<HTMLElement>(".pscene");
   if (!screen || !scene || !CSS.supports("animation-timeline", "scroll()")) return;
@@ -321,14 +321,16 @@ function foldRoom(screen: HTMLElement | null): (() => void) | void {
   const measure = () => {
     const bar = q(".hs-bar"), name = q(".hs-name"), stage = q(".hs-stage"), speech = q(".hs-speech"), vitals = q(".vitals"), health = q(".health-block"), meter = q(".healthbar");
     if (!bar || !name || !stage || !speech || !vitals || !health || !meter) return;
-    const { nameScale, petScale, gap, pad } = FOLD;
-    // Where each part ends up (top edge), stacked in the folded room.
+    const { nameScale, petScale, toIcons, toMeter, pad } = FOLD;
+    // Where each part ends up (top edge), stacked in the folded room. The labels under the icons and the "Health 70/100" row fade out, so
+    // only the icons and the health bar remain, with more room between them.
     const dName = top(bar) + bar.offsetHeight;
-    const dStage = dName + name.offsetHeight * nameScale - 10;
+    const dStage = dName + name.offsetHeight * nameScale - 6;
     const dSpeech = dStage + stage.offsetHeight * petScale - 12;
-    const dVitals = dSpeech + speech.offsetHeight + gap;
-    const dHealth = dVitals + vitals.offsetHeight + gap;
-    const folded = dHealth + (top(meter) + meter.offsetHeight - top(health)) + pad;
+    const dVitals = dSpeech + speech.offsetHeight + toIcons;
+    const dMeter = dVitals + (q(".vital-ico")?.offsetHeight ?? 54) + toMeter;
+    const dHealth = dMeter - (top(meter) - top(health));
+    const folded = dMeter + meter.offsetHeight + pad;
     const full = scene.offsetHeight;
     const d = Math.max(0, full - folded);
     const k = (end: number, now: HTMLElement) => (d > 0 ? d + end - top(now) : 0);
