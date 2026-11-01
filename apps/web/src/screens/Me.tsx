@@ -27,7 +27,7 @@ import { shrink } from "./LogSheet";
 import { goalSummary, PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
-import { Button, ConcernNote, GuardedInput, Icon, PawLogo, Select, SelectOther, Switch } from "../ui/Controls";
+import { Button, ConcernNote, GuardedInput, Icon, PawLogo, Select, SelectOther, SwipePicker, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
 import { Account, SignOut } from "./Account";
@@ -180,12 +180,12 @@ function PetPage() {
       </div>
       {has3D(companion.species) && <span className="muted small">{pet3dStatus() === "failed" ? t("me.pet.style_failed") : pet3dStatus() === "unsupported" ? t("me.pet.style_unsupported") : STYLE_3D[companion.species].note}</span>}
       <div className="field"><span className="field-label">{t("me.pet.coat")}</span>
-        <Select label={t("me.pet.coat")} value={companion.coat ?? coatsFor(companion.species, companion.breed)[0].id} options={coatsFor(companion.species, companion.breed).map((c) => ({ value: c.id, label: c.label }))}
+        <SwipePicker label={t("me.pet.coat")} value={companion.coat ?? coatsFor(companion.species, companion.breed)[0].id} options={coatsFor(companion.species, companion.breed).map((c) => ({ value: c.id, label: c.label, swatch: [c.fur, c.belly] as [string, string] }))}
           onChange={(id) => actions.setCompanionLook(companion.id, { coat: id, breed: companion.breed, personality: companion.personality })} />
       </div>
       {BREEDS[companion.species] && <div className="field"><span className="field-label">{t("me.pet.breed")}</span>
-        <Select label={t("me.pet.breed")} value={breedFor(companion.species, companion.breed)?.id ?? ""} options={BREEDS[companion.species]!.map((b) => ({ value: b.id, label: b.label }))}
-          onChange={(id) => actions.setCompanionLook(companion.id, { coat: companion.coat, breed: id, personality: companion.personality })} />
+        <SwipePicker label={t("me.pet.breed")} value={breedFor(companion.species, companion.breed)?.id ?? ""} options={BREEDS[companion.species]!.map((b) => ({ value: b.id, label: b.label }))}
+          onChange={(id) => actions.setCompanionLook(companion.id, { coat: undefined, breed: id, personality: companion.personality })} />
       </div>}
       <div className="field"><span className="field-label">{t("me.pet.personality")}</span>
         <Select label={t("me.pet.personality")} value={companion.personality ?? "playful"} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))}

@@ -103,6 +103,7 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
   const [hearts, setHearts] = useState(0);
   const [sparks, setSparks] = useState(0);
   const lastMove = useRef(0);
+  const recentre = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pokes = useRef<number[]>([]);
   const stroke = useRef<{ x: number; dist: number; down: boolean }>({ x: 0, dist: 0, down: false });
   const touchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -116,9 +117,12 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
       const r = el.getBoundingClientRect();
       setLook({ x: (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2), y: (e.clientY - (r.top + r.height * 0.4)) / (window.innerHeight / 2) });
       lastMove.current = Date.now();
+      // A finger leaves its last position behind; after a moment the pet faces the front again instead of staring at where you last touched.
+      clearTimeout(recentre.current);
+      recentre.current = setTimeout(() => setLook({ x: 0, y: 0 }), 1800);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
+    return () => { window.removeEventListener("pointermove", onMove); clearTimeout(recentre.current); };
   }, [interactive, reduce]);
 
   useEffect(() => {

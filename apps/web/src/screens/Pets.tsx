@@ -17,7 +17,7 @@ import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Personality, Species } from "../types";
-import { Button, Icon, plainOpts, Select, SelectOther } from "../ui/Controls";
+import { Button, Icon, plainOpts, Select, SelectOther, SwipePicker } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 
@@ -170,35 +170,39 @@ export interface PetPick { species: Species; coat: string; breed: string; person
 export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "", adoption: "raise" });
 
 /**
- * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Used when setting
+ * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Adoption is its own step (`Adoption`). Used when setting
  * up the app and when adding a recovery track, so a pet is made the same way both times.
  */
 export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void; compact?: boolean }) {
   const coat = pet.coat || coatsFor(pet.species, pet.breed)[0].id;
+  const breeds = BREEDS[pet.species];
   return (
     <div className="stack">
       <div className="species-grid" role="radiogroup" aria-label={t("pets.picker.group")}>
-        {PICKABLE.map((s) => (
-          <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
-            whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", breed: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
-            <motion.div animate={pet.species === s.id ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
-              <PetPortrait species={s.id} stage="baby" mood={pet.species === s.id ? "happy" : "idle"} age={2} size={68} />
-            </motion.div>
-            <b>{has3D(s.id) ? STYLE_3D[s.id].label : s.label}</b>
-          </motion.button>
-        ))}
+        {PICKABLE.map((s) => {
+          const on = pet.species === s.id;
+          return (
+            <motion.button key={s.id} type="button" role="radio" aria-checked={on} className="species-card" data-on={on}
+              whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", breed: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
+              <motion.div animate={on ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
+                {/* The chosen card shows the chosen breed and colour, so switching them is seen straight away. */}
+                <PetPortrait species={s.id} coat={on ? pet.coat || undefined : undefined} breed={on ? pet.breed || undefined : undefined} stage="baby" mood={on ? "happy" : "idle"} age={2} size={68} />
+              </motion.div>
+              <b>{has3D(s.id) ? STYLE_3D[s.id].label : s.label}</b>
+            </motion.button>
+          );
+        })}
       </div>
       <p className="muted small center-text">{SPECIES.find((s) => s.id === pet.species)!.blurb}</p>
+      {breeds && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
+        <SwipePicker label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={breeds.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id, coat: "" })} /></div>}
+      {!compact && <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
+        <SwipePicker label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label, swatch: [c.fur, c.belly] as [string, string] }))} onChange={(id) => onChange({ coat: id })} /></div>}
       <div className="field"><span className="field-label">{t("pets.picker.name")}</span>
         <SelectOther key={pet.species} label={t("pets.picker.name_aria")} value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
           placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
-      {!compact && <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
-        <Select label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>}
-      {BREEDS[pet.species] && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
-        <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
       {!compact && <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
         <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>}
-      {!compact && <Adoption pet={pet} onChange={onChange} />}
     </div>
   );
 }
@@ -226,10 +230,11 @@ export function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partia
   );
 }
 
-/** Adds a recovery track in two steps: its pet, then what it is for. */
+/** Adds a recovery track in up to three steps: its pet, what it is for, then how to adopt it (only for pets that can be rescued). */
 function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (habitId: string) => void }) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [pet, setPet] = useState<PetPick>(() => firstPet());
+  const total = RESCUE_SPECIES.includes(pet.species) ? 3 : 2;
   const [what, setWhat] = useState("");
   const [amountLabel, setAmountLabel] = useState("");
   const nameConcern = concernIn(pet.name);
@@ -250,7 +255,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   return (
     <Sheet open={open} onClose={close} label={t("pets.add.label")}>
       <div className="stack">
-        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : t("pets.add.step2")}</h2><span className="muted small">{t("pets.add.step_of", { step })}</span></div>
+        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : step === 2 ? t("pets.add.step2") : t("pets.add.step3")}</h2><span className="muted small">{t("pets.add.step_of", { step, total })}</span></div>
         {step === 1 && <>
           <PetStep pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
           <Button disabled={nameConcern !== null} onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.continue")}</Button>
@@ -268,9 +273,17 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
           </div>
           <div className="actions">
             <Button variant="secondary" onClick={() => { haptic.select(); setStep(1); }}>{t("ui.common.back")}</Button>
-            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={total === 3 ? () => { haptic.select(); setStep(3); } : save}>
+              {total === 3 ? t("ui.common.continue") : t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
           </div>
           <p className="muted small">{t("pets.add.note")}</p>
+        </>}
+        {step === 3 && <>
+          <Adoption pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
+          <div className="actions">
+            <Button variant="secondary" onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.back")}</Button>
+            <Button onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+          </div>
         </>}
       </div>
     </Sheet>
