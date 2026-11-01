@@ -6098,7 +6098,8 @@
           "id": "notifications.daily.title",
           "kind": "voice",
           "placeholders": [
-            "name"
+            "name",
+            "who"
           ]
         },
         {
@@ -6120,7 +6121,9 @@
         {
           "id": "notifications.quiet.two_title",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "who"
+          ]
         },
         {
           "id": "notifications.quiet.two_body",
@@ -6131,7 +6134,8 @@
           "id": "notifications.quiet.week_title",
           "kind": "text",
           "placeholders": [
-            "name"
+            "name",
+            "who"
           ]
         },
         {
@@ -6154,14 +6158,16 @@
           "id": "notifications.catchup.title_one",
           "kind": "voice",
           "placeholders": [
-            "names"
+            "names",
+            "who"
           ]
         },
         {
           "id": "notifications.catchup.title_many",
           "kind": "voice",
           "placeholders": [
-            "names"
+            "names",
+            "who"
           ]
         },
         {

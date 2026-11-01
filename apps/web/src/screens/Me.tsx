@@ -334,7 +334,7 @@ function RemindersPage() {
           </div>
         )}
         <Button variant="secondary" onClick={async () => {
-          const ok = await sendTestReminder(settings.tone, companion.name);
+          const ok = await sendTestReminder(settings.tone, companion.name, settings.userName);
           toast(ok ? t("me.reminders.test_sent") : t("me.reminders.test_failed"), { kind: ok ? "good" : "bad" });
         }}>{t("me.reminders.test")}</Button>
       </>}

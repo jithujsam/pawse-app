@@ -34,17 +34,31 @@ describe("notification plan: at most two a day", async () => {
     const day = (d: number) => plan.filter((n) => n.at.toDateString() === at(d, 0).toDateString());
     // Today: bedtime note only (9:00 has passed); it is the day's reminder, so no separate daily note.
     expect(day(0).map((n) => n.kind)).toEqual(["catchup"]);
-    expect(day(0)[0].title).toBe("Biscuit and Pepper need an update");
-    expect(day(0)[0].body).toBe("2 open days. Update before they lock.");
+    expect(day(0)[0].title).toBe("📝 Biscuit and Pepper need an update");
+    expect(day(0)[0].body).toBe("2 open days. Update before they lock. ⏳");
     // Tomorrow both are still open, with a morning note too. On the 22nd the 18th has locked: one day each.
     expect(day(1).map((n) => n.kind)).toEqual(["catchup", "catchup"]);
     expect(day(1)[0].at.getHours()).toBe(9);
-    expect(day(2)[0].body).toBe("1 open day. Update before they lock.");
+    expect(day(2)[0].body).toBe("1 open day. Update before they lock. ⏳");
     // Once every day has locked, only the usual reminder remains.
     expect(day(4).map((n) => n.kind)).toEqual(["daily"]);
     expect(plan.every((n) => !/miss/i.test(`${n.title} ${n.body}`))).toBe(true);
     const gentle = planNotifications({ ...base, tone: "gentle", riskHour: null, catchup: [{ name: "Biscuit", days: ["2026-10-20"] }] });
-    expect(gentle.find((n) => n.kind === "catchup")!.title).toBe("Biscuit is missing you");
+    expect(gentle.find((n) => n.kind === "catchup")!.title).toBe("📝 Biscuit is missing you");
+  });
+  it("uses the pet's name and the person's name, with an emoji, in every voice; no name given means no comma", () => {
+    for (const tone of ["gentle", "honest", "brutal"] as const) {
+      const plan = planNotifications({ ...base, tone, userName: "Jithu", personality: "playful", checkedToday: true, care: { kind: "clean", at: at(0, 18).getTime() }, catchup: [{ name: "Biscuit", days: ["2026-10-20"] }] });
+      const day = (k: string) => plan.find((n) => n.kind === k)!;
+      for (const k of ["daily", "catchup", "thanks", "risk"]) {
+        const n = plan.find((x) => x.kind === k) ?? day("catchup");
+        expect(`${n.title} ${n.body}`, `${tone}/${k}`).toMatch(/Biscuit/);
+        expect(`${n.title} ${n.body}`, `${tone}/${k}`).toMatch(/Jithu/);
+        expect(`${n.title} ${n.body}`, `${tone}/${k}`).toMatch(/\p{Extended_Pictographic}/u);
+      }
+    }
+    const plain = planNotifications({ ...base, riskHour: null, careNotes: false }).find((n) => n.kind === "daily")!;
+    expect(plain.title).toBe("✅ Check in with Biscuit");
   });
   it("nothing open means no catch-up notes", () => {
     expect(planNotifications({ ...base, catchup: [] }).some((n) => n.kind === "catchup")).toBe(false);

@@ -1144,7 +1144,8 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .hs-stage > * { position: relative; }
 .speech { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px 18px; max-width: 94%; text-align: center; font: 500 16px/22px var(--font); margin-top: 16px; }
 .speech::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0; }
-.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; }
+/* The icons and the health bar sit on the same side edges as what is inside the check-in card below (its 24px padding), so nothing overhangs the card's rounded corners. */
+.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 54px); justify-content: space-between; gap: 8px; margin-top: 24px; padding-inline: 24px; }
 .vital { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 6px; cursor: pointer; padding: 0; font: 600 12px/16px var(--font); }
 .vital-ico { position: relative; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--accent); }
 .vital-ico .ico { width: 22px; height: 22px; }
@@ -1153,7 +1154,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .care-badge[data-tone="warn"] { background: var(--warning); color: var(--on-warning); }
 .care-badge[data-tone="bad"] { background: var(--negative); color: var(--on-status); }
 /* Health: label and score, the bar, then what moves it. Set apart from the vitals above and the card below. */
-.health-block { width: 100%; display: grid; gap: 8px; margin-top: 32px; text-align: left; }
+.health-block { width: 100%; display: grid; gap: 8px; margin-top: 32px; text-align: left; padding-inline: 24px; }
 .agetext { width: 100%; display: flex; justify-content: space-between; align-items: baseline; font: 500 14px/20px var(--font); font-variant-numeric: tabular-nums; }
 .agetext b { font-weight: 600; }
 .health-why { margin: 0; color: var(--ink-soft, var(--muted)); font: 500 13px/18px var(--font); }

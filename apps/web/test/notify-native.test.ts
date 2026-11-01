@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 const mem = new Map<string, string>();
 vi.stubGlobal("localStorage", { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) });
 
-const pending = new Map<number, { id: number; schedule: { at: Date } }>();
+const pending = new Map<number, { id: number; schedule: { at: Date }; smallIcon?: string; largeIcon?: string; iconColor?: string }>();
 const cancelled: number[] = [];
 let failNextSchedule = false;
 vi.mock("@capacitor/core", async (orig) => ({ ...(await orig<typeof import("@capacitor/core")>()), Capacitor: { isNativePlatform: () => true, getPlatform: () => "android" } }));
@@ -42,6 +42,12 @@ describe("applying the plan on the phone", () => {
     ]);
     expect(pending.size).toBeGreaterThan(0);
     for (const n of countPerDay().values()) expect(n).toBeLessThanOrEqual(MAX_PER_DAY);
+  });
+
+  it("every notification carries the Pawse logo: the paw in the status bar and the full-colour logo inside", async () => {
+    await updateNotifications({ enabled: true, reminder: "20:00", tone: "honest", name: "Biscuit", userName: "Jithu", lastCheckIn: null, riskHour: 22, careNotes: true, checkedToday: false });
+    expect(pending.size).toBeGreaterThan(0);
+    for (const n of pending.values()) expect(n).toMatchObject({ smallIcon: "ic_stat_pawse", largeIcon: "ic_notification_logo", iconColor: "#FC7837" });
   });
 
   it("turning reminders off clears everything", async () => {

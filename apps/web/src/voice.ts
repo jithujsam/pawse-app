@@ -103,9 +103,18 @@ export function recoveryLine(tone: Tone, name: string, undo: number, stage: { da
   return `${d(undo)} with your goal met ${undoes(undo)} today.${back}`;
 }
 
-/** Notifications in the companion's voice. Title is the pet's name; body speaks in first person. */
-export function careNote(kind: "thanks" | "morning" | "risk", personality: Personality | undefined, tone: Tone, name: string): { title: string; body: string } {
-  if (kind === "thanks") return { title: name, body: say("cleanThanks", personality, tone) };
+const CARE_EMOJI = { thanks: "💛", morning: "☀️", risk: "🌙" } as const;
+/** Adds the person's name before the last full stop, "!" or "?": "Thank you for yesterday!" becomes "Thank you for yesterday, Jithu!". */
+const toYou = (line: string, userName?: string): string => {
+  const who = userName?.trim();
+  if (!who) return line;
+  return /[.!?]$/.test(line) ? line.replace(/([.!?])$/, `, ${who}$1`) : `${line}, ${who}`;
+};
+/** Notifications in the companion's voice. Title is the pet's name with an emoji; body speaks in first person, ends with an emoji and calls the person by name when it has one. */
+export function careNote(kind: "thanks" | "morning" | "risk", personality: Personality | undefined, tone: Tone, name: string, userName?: string): { title: string; body: string } {
+  const e = CARE_EMOJI[kind];
+  const out = (body: string) => ({ title: `${e} ${name}`, body: `${toYou(body, userName)} ${e}` });
+  if (kind === "thanks") return out(say("cleanThanks", personality, tone));
   const p = personality ?? "playful";
   if (kind === "risk") {
     const risk: Record<Personality, Record<Tone, string>> = {
@@ -114,7 +123,7 @@ export function careNote(kind: "thanks" | "morning" | "risk", personality: Perso
       sassy: { gentle: "It's that hour again. Let's be boring together.", honest: "Your usual slip o'clock. Let's not.", brutal: "Usual slip o'clock. Let's make tonight different." },
       wise: { gentle: "This hour has been hard before. It doesn't have to be tonight.", honest: "Patterns repeat until we change them. This is the hour.", brutal: "You know this hour. Decide now, not later." },
     };
-    return { title: name, body: (risk[p] ?? risk.playful)[tone] ?? risk.playful.honest };
+    return out((risk[p] ?? risk.playful)[tone] ?? risk.playful.honest);
   }
   const morning: Record<Personality, Record<Tone, string>> = {
     playful: { gentle: "Slept so well! Thank you for yesterday!", honest: "Woke up feeling great. Yesterday went well!", brutal: "Good sleep. Yesterday went well. Repeat it." },
@@ -122,5 +131,5 @@ export function careNote(kind: "thanks" | "morning" | "risk", personality: Perso
     sassy: { gentle: "Slept like royalty. You may continue.", honest: "Best sleep in ages. Coincidence? No.", brutal: "Slept well. Let's keep today just as good." },
     wise: { gentle: "Rest comes easy after a kept promise.", honest: "A good day makes for a good sleep.", brutal: "Yesterday was kept. Today is new. Keep it." },
   };
-  return { title: name, body: (morning[p] ?? morning.playful)[tone] ?? morning.playful.honest };
+  return out((morning[p] ?? morning.playful)[tone] ?? morning.playful.honest);
 }

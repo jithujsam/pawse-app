@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Pawse paw as the status-bar icon: Android only draws a single colour here, so this is the logo's shape in white. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="850"
+    android:viewportHeight="850">
+    <group android:translateX="-200" android:translateY="-195">
+        <group android:pivotX="314" android:pivotY="586" android:rotation="-22">
+            <path android:fillColor="#FFFFFF" android:pathData="M207,586 a107,118 0 1,0 214,0 a107,118 0 1,0 -214,0 z" />
+        </group>
+        <group android:pivotX="493" android:pivotY="407" android:rotation="-8">
+            <path android:fillColor="#FFFFFF" android:pathData="M385,407 a108,135 0 1,0 216,0 a108,135 0 1,0 -216,0 z" />
+        </group>
+        <group android:pivotX="754" android:pivotY="407" android:rotation="8">
+            <path android:fillColor="#FFFFFF" android:pathData="M645,407 a109,135 0 1,0 218,0 a109,135 0 1,0 -218,0 z" />
+        </group>
+        <group android:pivotX="933" android:pivotY="586" android:rotation="22">
+            <path android:fillColor="#FFFFFF" android:pathData="M825,586 a108,120 0 1,0 216,0 a108,120 0 1,0 -216,0 z" />
+        </group>
+        <path android:fillColor="#FFFFFF" android:pathData="M625,552 C700,552 760,620 790,670 C830,730 880,745 905,800 C930,860 915,960 820,966 C740,970 690,918 625,918 C560,918 510,970 430,966 C335,960 320,860 345,800 C370,745 420,730 460,670 C490,620 550,552 625,552 Z" />
+    </group>
+</vector>

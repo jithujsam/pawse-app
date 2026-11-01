@@ -207,15 +207,18 @@ export function cleanToast(tone: Tone, name: string): string {
   return byTone(tone, { gentle: `A good day. ${name} is resting.`, honest: `Goal met today. ${name} heals a little.`, brutal: `Goal met. That's real progress.` });
 }
 
-export function reminderLine(tone: Tone, name: string): { title: string; body: string } {
-  return { title: tt("notifications.daily.title", tone, { name }), body: tt("notifications.daily.body", tone) };
+/** ", Jithu" for the end of a notification title, or nothing when the person hasn't given a name. */
+export const whoSuffix = (userName?: string): string => (userName?.trim() ? `, ${userName.trim()}` : "");
+
+export function reminderLine(tone: Tone, name: string, userName?: string): { title: string; body: string } {
+  return { title: tt("notifications.daily.title", tone, { name, who: whoSuffix(userName) }), body: tt("notifications.daily.body", tone) };
 }
 
 /** The morning and bedtime note while days can still be filled in. Names read as a list; the day count is the most any one pet has open. */
-export function catchupLine(tone: Tone, names: string[], n: number): { title: string; body: string } {
+export function catchupLine(tone: Tone, names: string[], n: number, userName?: string): { title: string; body: string } {
   const list = names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
   const vars = { names: list, n, days: n === 1 ? "day" : "days" };
-  return { title: tt(names.length > 1 ? "notifications.catchup.title_many" : "notifications.catchup.title_one", tone, { names: list }), body: tt("notifications.catchup.body", tone, vars) };
+  return { title: tt(names.length > 1 ? "notifications.catchup.title_many" : "notifications.catchup.title_one", tone, { names: list, who: whoSuffix(userName) }), body: tt("notifications.catchup.body", tone, vars) };
 }
 
 /** Shown when someone tries to track eating less, calories or weight (CLAUDE.md: never add restriction tracking). */
