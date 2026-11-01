@@ -217,6 +217,7 @@ export const Icon = {
   phone: <svg viewBox="0 0 24 24" className="ico"><rect x="7" y="3" width="10" height="18" rx="2.5" /><path d="M11 18h2" /></svg>,
   flask: <svg viewBox="0 0 24 24" className="ico"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" /><path d="M7.5 15h9" /></svg>,
   heart: <svg viewBox="0 0 24 24" className="ico"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" /></svg>,
+  flame: <svg viewBox="0 0 24 24" className="ico"><path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-2.7 1.6-4.7 3.2-6.4.3 1.7 1.2 2.9 2.4 3.4C11 8.6 12.3 5.6 14.9 3.5c.2 2.8 1.3 4.6 2.5 6.2 1.1 1.4 2.1 3 2.1 5.1 0 3.6-2.6 6.2-6.5 6.2z" /></svg>,
   wave: <svg viewBox="0 0 24 24" className="ico"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0" /><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5" /></svg>,
   slip: <svg viewBox="0 0 24 24" className="ico"><path d="M12 4v10M7 9l5 5 5-5" /><path d="M5 20h14" /></svg>,
   flag: <svg viewBox="0 0 24 24" className="ico"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>,

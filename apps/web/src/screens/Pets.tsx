@@ -8,6 +8,7 @@ import { pauseHint, pauseRefused, pauseToast, resumeHint, resumeToast } from "..
 import { concernIn, concernInAny } from "../guard";
 import { t } from "../text";
 import { today } from "../dates";
+import { trackSummary } from "../progress";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { BREEDS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor, coatsFor } from "../pets";
@@ -42,7 +43,8 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
     const status = dayStatus(data, habit.id, t0, t0);
     const missions = companionMissions(data, habit.companionId, t0);
     // A rescue shows its conditions here too, the same as on the pet's own screen.
-    return { habit, view, status, paused: trackState(data, habit.id).status === "paused", wellness: missions?.healthCap ?? 100, condition: missions?.mode === "rescue" ? missions.traits : undefined };
+    const streak = trackSummary(data, habit.id, t0).current;
+    return { habit, view, status, streak, paused: trackState(data, habit.id).status === "paused", wellness: missions?.healthCap ?? 100, condition: missions?.mode === "rescue" ? missions.traits : undefined };
   }), [data, t0]);
   const open = (id: string) => { haptic.tap(); actions.selectTrack(id); onOpen(id); };
 
@@ -69,7 +71,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
         </section>
       ) : (
         <section className="pet-grid" data-layout={layout} aria-label={t("pets.grid.tracks")}>
-          {tracks.map(({ habit, view, status, paused, wellness, condition }, i) => {
+          {tracks.map(({ habit, view, status, streak, paused, wellness, condition }, i) => {
             const checked = status === "met" || status === "lapse" || status === "urge";
             const mood = moodFor(view.stage, { checkedToday: checked, slippedToday: status === "lapse", age: view.age, notTracking: paused || status === "rest" || status === "paused" });
             // A paused track says so first; today's state still shows when something was logged.
@@ -87,6 +89,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
                   <span className="pet-card-track small">{habit.name}</span>
                   <span className="pet-card-status small" data-s={paused ? "paused" : status}>{line}</span>
                 </motion.button>
+                {streak > 0 && !view.dead && <span className="pet-card-streak" data-lit={status === "met" || status === "urge"} aria-label={t("home.today.streak", { n: streak })}>{Icon.flame}<b aria-hidden>{streak}</b></span>}
                 <button className="icon-btn pet-card-more" aria-haspopup="dialog" aria-label={t("pets.grid.more", { track: habit.name })} onClick={() => { haptic.tap(); setMenu(habit.id); }}>{Icon.more}</button>
               </div>
             );

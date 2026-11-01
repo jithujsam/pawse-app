@@ -148,6 +148,9 @@ export const meAppearance = defineSection("me.appearance", { screen: "Me → App
   accent_plum: "Plum",
   accent_slate: "Slate",
   accent_hint: "\"Match my pet\" picks a colour that suits your pet.",
+  sky: "Sky",
+  ambient: "Time of day and seasons",
+  ambient_hint: "A sun or moon behind your pet, and a little snow, petals, leaves or wind with the seasons. Your pet's health always colours the room.",
 });
 // @copy-section-end me.appearance
 

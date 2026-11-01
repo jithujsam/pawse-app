@@ -394,6 +394,10 @@ function AppearancePage() {
       <Select label={t("me.appearance.accent")} value={settings.accent} onChange={(a) => actions.setSettings({ accent: a })} options={ACCENT_OPTS.map((a) => ({ value: a.id, label: a.label }))} />
       <p className="muted small">{t("me.appearance.accent_hint")}</p>
     </section>
+    <section className="card stack">
+      <h2>{t("me.appearance.sky")}</h2>
+      <Switch checked={settings.ambient !== false} onChange={(v) => actions.setSettings({ ambient: v })} label={t("me.appearance.ambient")} hint={t("me.appearance.ambient_hint")} />
+    </section>
   </>);
 }
 
