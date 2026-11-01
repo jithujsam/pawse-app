@@ -456,7 +456,7 @@ export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { s
     <div ref={ref} className="pet3d" style={{ width: size, height: size }} aria-label={describePet(props.species, props.stage, props.mood)} role="img">
       <Guard fallback={fallback} onFail={onFail}>
         <Suspense fallback={loading ?? fallback}>
-          <Canvas frameloop={(on || props.capture) && !props.reduced ? "always" : "demand"} dpr={props.capture ? 1 : [1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: !!props.capture }}
+          <Canvas resize={{ offsetSize: true }} frameloop={(on || props.capture) && !props.reduced ? "always" : "demand"} dpr={props.capture ? 1 : [1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: !!props.capture }}
             camera={{ fov: 26, position: [0, 0.66, 2.8], near: 0.1, far: 20 }} onCreated={({ camera }) => camera.lookAt(0, 0.5, 0)}>
             <hemisphereLight args={[props.light?.color ?? "#fff8ee", "#b8a48c", 1.6 * lightK]} />
             <directionalLight position={[2, 3, 2.5]} intensity={1.6 * lightK} color={props.light?.color ?? "#ffffff"} />
