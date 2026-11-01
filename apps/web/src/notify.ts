@@ -1,12 +1,14 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { catchupLine, reminderLine } from "./copy";
+import { catchupLine, reminderLine, whoSuffix } from "./copy";
 import { actions } from "./store";
 import { careNote } from "./voice";
 import { t, tt } from "./text";
 import type { Personality, Tone } from "./types";
 
 const native = Capacitor.isNativePlatform();
+/** The Pawse paw: a white silhouette in the status bar (Android draws only one colour there) and the full-colour logo inside the notification. Both live in android/app/src/main/res/drawable*. */
+const ICONS = { smallIcon: "ic_stat_pawse", largeIcon: "ic_notification_logo", iconColor: "#FC7837" };
 /** Reminders are scheduled only by the phone app; the web build can't fire them on time. */
 export const remindersSupported = native;
 
@@ -36,7 +38,10 @@ export interface PlanInput {
   /** Daily check-in time, HH:MM. */
   reminder: string;
   tone: Tone;
+  /** The pet's name. */
   name: string;
+  /** The person's own name, when they gave one: notifications use it where it reads naturally. */
+  userName?: string;
   personality?: Personality;
   /** Today already has a slip or a clean mark: no reminder today. */
   checkedToday: boolean;
@@ -57,10 +62,11 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 const atTime = (base: Date, dayOffset: number, hour: number, minute: number) => { const d = new Date(base); d.setDate(d.getDate() + dayOffset); d.setHours(hour, minute, 0, 0); return d; };
 
 /** If check-ins stop: two neutral notes, never implying the pet suffers from silence. A quiet day is missing data. */
-function lapseNotes(tone: Tone, n: string): [number, string, string][] {
+function lapseNotes(tone: Tone, n: string, user?: string): [number, string, string][] {
+  const who = whoSuffix(user);
   return [
-    [2, t("notifications.quiet.two_title"), tt("notifications.quiet.two_body", tone)],
-    [7, t("notifications.quiet.week_title", { name: n }), tt("notifications.quiet.week_body", tone)],
+    [2, t("notifications.quiet.two_title", { who }), tt("notifications.quiet.two_body", tone)],
+    [7, t("notifications.quiet.week_title", { name: n, who }), tt("notifications.quiet.week_body", tone)],
   ];
 }
 
@@ -74,7 +80,7 @@ export function planNotifications(p: PlanInput): Planned[] {
   const lapseDays = new Set<string>();
   if (p.lastCheckIn) {
     const [y, m, d] = p.lastCheckIn.split("-").map(Number);
-    for (const [days, title, body] of lapseNotes(p.tone, p.name)) {
+    for (const [days, title, body] of lapseNotes(p.tone, p.name, p.userName)) {
       const at = new Date(y, m - 1, d + days, 19, 30);
       if (at.getTime() > now) { lapseDays.add(dayKey(at)); add("lapse", at, { title, body }); }
     }
@@ -85,7 +91,7 @@ export function planNotifications(p: PlanInput): Planned[] {
   for (let i = 0; i < EDIT_WINDOW; i++) {
     const open = (p.catchup ?? []).map((c) => ({ name: c.name, n: c.days.filter((x) => x >= dayKey(atTime(p.now, i - EDIT_WINDOW + 1, 0, 0))).length })).filter((c) => c.n > 0);
     if (!open.length) continue;
-    const line = catchupLine(p.tone, open.map((c) => c.name), Math.max(...open.map((c) => c.n)));
+    const line = catchupLine(p.tone, open.map((c) => c.name), Math.max(...open.map((c) => c.n)), p.userName);
     catchupDays.add(dayKey(atTime(p.now, i, 0, 0)));
     add("catchup", atTime(p.now, i, 9, 0), line, "checkin");
     add("catchup", atTime(p.now, i, Number.isFinite(rh) ? Math.max(rh, 20) : 21, Number.isFinite(rh) && rh >= 20 ? rm : 30), line, "checkin");
@@ -93,19 +99,19 @@ export function planNotifications(p: PlanInput): Planned[] {
   for (let i = 0; i < HORIZON_DAYS; i++) {
     if (Number.isFinite(rh) && Number.isFinite(rm) && !(i === 0 && p.checkedToday)) {
       const at = atTime(p.now, i, rh, rm);
-      if (!lapseDays.has(dayKey(at)) && !catchupDays.has(dayKey(at))) add("daily", at, reminderLine(p.tone, p.name), "checkin"); // the quiet-day and catch-up notes are that day's reminder
+      if (!lapseDays.has(dayKey(at)) && !catchupDays.has(dayKey(at))) add("daily", at, reminderLine(p.tone, p.name, p.userName), "checkin"); // the quiet-day and catch-up notes are that day's reminder
     }
     if (p.riskHour !== null) {
       const minutes = (p.riskHour * 60 + 24 * 60 - 30) % (24 * 60);
-      add("risk", atTime(p.now, i, Math.floor(minutes / 60), minutes % 60), careNote("risk", p.personality, p.tone, p.name));
+      add("risk", atTime(p.now, i, Math.floor(minutes / 60), minutes % 60), careNote("risk", p.personality, p.tone, p.name, p.userName));
     }
   }
   if (p.careNotes && p.care) {
     const ev = new Date(p.care.at);
     if (p.care.kind === "clean") {
       const tonight = atTime(ev, 0, 21, 15);
-      add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name));
-      add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name));
+      add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name, p.userName));
+      add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name, p.userName));
     }
     // After a slip nothing is scheduled: a note from the pet hours later would be a guilt nudge, not help.
     // Recording the slip still clears any thank-you planned for that day.
@@ -121,7 +127,7 @@ export function planNotifications(p: PlanInput): Planned[] {
 
 const CARE_KEY = "companion/notify-care";
 const readCare = (): PlanInput["care"] => { try { return JSON.parse(localStorage.getItem(CARE_KEY) ?? "null"); } catch { return null; } };
-let inputs: Omit<PlanInput, "now" | "care"> = { enabled: false, reminder: "20:00", tone: "honest", name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup: [] };
+let inputs: Omit<PlanInput, "now" | "care"> = { enabled: false, reminder: "20:00", tone: "honest", name: "", userName: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup: [] };
 let queue: Promise<void> = Promise.resolve();
 
 async function apply(): Promise<void> {
@@ -132,7 +138,7 @@ async function apply(): Promise<void> {
   const plan = planNotifications({ ...inputs, care: readCare(), now: new Date() });
   if (plan.length) {
     await LocalNotifications.schedule({
-      notifications: plan.map((n) => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, extra: n.extra })),
+      notifications: plan.map((n) => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, extra: n.extra, ...ICONS })),
     }).catch(() => undefined);
   }
 }
@@ -189,13 +195,13 @@ export async function allowRemindersOnTime(): Promise<boolean> {
 
 const TEST_ID = 2999;
 /** One reminder a few seconds from now, so the person can see notifications reach them. False if they can't be sent. */
-export async function sendTestReminder(tone: Tone, name: string): Promise<boolean> {
+export async function sendTestReminder(tone: Tone, name: string, userName?: string): Promise<boolean> {
   if (!native) return false;
   try {
     const perm = await LocalNotifications.checkPermissions();
     if (perm.display !== "granted" && (await LocalNotifications.requestPermissions()).display !== "granted") return false;
-    const line = reminderLine(tone, name);
-    await LocalNotifications.schedule({ notifications: [{ id: TEST_ID, title: line.title, body: line.body, schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, extra: { open: "checkin" } }] });
+    const line = reminderLine(tone, name, userName);
+    await LocalNotifications.schedule({ notifications: [{ id: TEST_ID, title: line.title, body: line.body, schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, extra: { open: "checkin" }, ...ICONS }] });
     return true;
   } catch { return false; }
 }
@@ -208,7 +214,7 @@ export function onReminderTap(fn: () => void): () => void {
 }
 
 /** Records a good day or a slip so the care notes can answer it, then re-plans. */
-export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; personality?: Personality; name: string; enabled: boolean }) {
+export async function scheduleCare(kind: "clean" | "slip", o: { tone: Tone; personality?: Personality; name: string; userName?: string; enabled: boolean }) {
   try { localStorage.setItem(CARE_KEY, JSON.stringify({ kind, at: Date.now() })); } catch { /* ignore */ }
-  await updateNotifications({ tone: o.tone, personality: o.personality, name: o.name, careNotes: o.enabled });
+  await updateNotifications({ tone: o.tone, personality: o.personality, name: o.name, userName: o.userName ?? inputs.userName, careNotes: o.enabled });
 }

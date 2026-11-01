@@ -232,7 +232,7 @@ export function riskyHour(d: AppData, habitId: string): number | null {
 
 /** What the notification plan needs (PlanInput without the clock and the last care event). */
 export interface ReminderInputs {
-  enabled: boolean; reminder: string; tone: Tone; name: string; personality?: Personality;
+  enabled: boolean; reminder: string; tone: Tone; name: string; userName?: string; personality?: Personality;
   checkedToday: boolean; lastCheckIn: string | null; riskHour: number | null; careNotes: boolean;
   /** Pets with days in the editable window that nothing is recorded for, in any active track. */
   catchup: { name: string; days: string[] }[];
@@ -256,17 +256,17 @@ function catchupDays(d: AppData, t0: string): { name: string; days: string[] }[]
  * what they had chosen. Any record today (a slip, goal met or an urge) or a day not tracked means no reminder today.
  */
 export function reminderInputs(d: AppData, t0 = today()): ReminderInputs {
-  const { remindersOn, reminder, tone, riskNudge, careNotes } = d.settings;
+  const { remindersOn, reminder, tone, riskNudge, careNotes, userName } = d.settings;
   const id = focusedTrackId(d);
   const habit = id ? d.habits.find((h) => h.id === id) : undefined;
   const companion = habit && d.companions.find((c) => c.id === habit.companionId);
   const catchup = remindersOn ? catchupDays(d, t0) : [];
-  if (!habit || !companion) return { enabled: false, reminder, tone, name: "", checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup };
+  if (!habit || !companion) return { enabled: false, reminder, tone, name: "", userName, checkedToday: false, lastCheckIn: null, riskHour: null, careNotes: false, catchup };
   const idx = trackIndex(d, habit.id, t0);
   const lastCheckIn = [...idx.checkedIn].filter((x) => x <= t0).sort().pop() ?? idx.start;
   const status = trackState(d, habit.id).status;
   return {
-    enabled: remindersOn && status === "active" && !companion.diedOn, reminder, tone, name: companion.name, personality: companion.personality,
+    enabled: remindersOn && status === "active" && !companion.diedOn, reminder, tone, name: companion.name, userName, personality: companion.personality,
     checkedToday: idx.checkedIn.has(t0) || idx.rest.has(t0), lastCheckIn, riskHour: riskNudge ? riskyHour(d, habit.id) : null, careNotes, catchup,
   };
 }

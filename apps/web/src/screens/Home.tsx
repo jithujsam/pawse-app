@@ -102,7 +102,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // A goal met gets a jolly hop while the cheer runs; nothing else plays a gesture.
   const gesture: Gesture = just === "clean" ? "hop" : "none";
 
-  const careOpts = () => ({ tone, personality, name: companion.name, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
+  const careOpts = () => ({ tone, personality, name: companion.name, userName: data.settings.userName, enabled: data.settings.careNotes && data.settings.remindersOn && track.status === "active" });
 
   function clean() {
     if (cleanToday) return;
