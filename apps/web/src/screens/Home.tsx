@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
@@ -50,6 +50,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const [updating, setUpdating] = useState<number | null>(null);
 
   // The centre button hands its choice to Home, which owns the sheet and the celebration.
+  const screenRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => foldRoom(screenRef.current), []);
   const quickRef = useRef<(a: ReturnType<typeof takeQuick>) => void>(() => undefined);
   quickRef.current = (a) => { if (a === "slip") setSheet(true); else if (a === "clean") clean(); else if (a === "urge") setUrge(true); };
   useEffect(() => { const run = () => quickRef.current(takeQuick()); run(); return onQuick(run); }, []);
@@ -162,15 +164,15 @@ export function Home({ onBack }: { onBack?: () => void }) {
   );
 
   return (
-    <main className="screen scene-screen">
+    <main className="screen scene-screen" ref={screenRef}>
       <PetScene scene={scene} ambient={ambient} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
         <div className="hs-bar">
           {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
         </div>
-        {/* Scrolling down folds away the greeting, streak line and speech bubble and shrinks the pet; the name, vitals and health bar stay (.hs-fold and .hs-pet, styles.css). */}
-        <div className="hs-fold"><div><p className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</p></div></div>
+        {/* Scrolling down tucks the room up: the greeting, streak line and health caption fade, the pet shrinks, the rest slides up (foldRoom below, styles.css). */}
+        <p className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</p>
         <h1 className="hs-name">{companion.name}</h1>
-        {meta && <div className="hs-fold"><div><p className="hs-meta">{meta}</p></div></div>}
+        {meta && <p className="hs-meta">{meta}</p>}
         <div className="hs-stage">
           <Burst burst={sparks} kind="spark" count={10} />
           <div className="hs-pet">
@@ -178,13 +180,13 @@ export function Home({ onBack }: { onBack?: () => void }) {
               stage={view.stage} mood={mood} age={age} size={262} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
           </div>
         </div>
-        <div className="hs-fold"><div>
+        <div className="hs-speech">
         <AnimatePresence mode="wait">
           <motion.p key={line} className="speech" aria-live="polite" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
             {line}
           </motion.p>
         </AnimatePresence>
-        </div></div>
+        </div>
         <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
@@ -207,7 +209,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
             aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
             {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
           </div>
-          {journeyLine && <div className="hs-fold"><div><p className="health-why">{journeyLine}</p></div></div>}
+          {journeyLine && <p className="health-why">{journeyLine}</p>}
         </div>
       </PetScene>
 
@@ -301,3 +303,47 @@ function Milestone({ days, name, onClose, view }: { days: number | null; name: s
   );
 }
 
+
+/**
+ * The room folds as the page scrolls, with transforms only so it stays smooth. The room keeps its full size and sticks to the top, offset
+ * upwards by `--room-d`, so the page itself slides it away natively. Each part then gets a small transform (see styles.css, "the room folds")
+ * that carries it to its place in the folded room. This measures where every part is now and where it should end up, and hands the
+ * numbers to the CSS. Does nothing where scroll-driven animation isn't supported; the room then just scrolls away.
+ */
+const FOLD = { nameScale: 0.68, petScale: 0.5, gap: 8, pad: 14 };
+function foldRoom(screen: HTMLElement | null): (() => void) | void {
+  const scene = screen?.querySelector<HTMLElement>(".pscene");
+  if (!screen || !scene || !CSS.supports("animation-timeline", "scroll()")) return;
+  const q = (sel: string) => scene.querySelector<HTMLElement>(sel);
+  // Position inside the room, ignoring transforms.
+  const top = (el: HTMLElement) => { let y = 0; let n: HTMLElement | null = el; while (n && n !== scene) { y += n.offsetTop; n = n.offsetParent as HTMLElement | null; } return y; };
+  const px = (name: string, v: number) => screen.style.setProperty(name, `${Math.round(v * 10) / 10}px`);
+  const measure = () => {
+    const bar = q(".hs-bar"), name = q(".hs-name"), stage = q(".hs-stage"), speech = q(".hs-speech"), vitals = q(".vitals"), health = q(".health-block"), meter = q(".healthbar");
+    if (!bar || !name || !stage || !speech || !vitals || !health || !meter) return;
+    const { nameScale, petScale, gap, pad } = FOLD;
+    // Where each part ends up (top edge), stacked in the folded room.
+    const dName = top(bar) + bar.offsetHeight;
+    const dStage = dName + name.offsetHeight * nameScale - 10;
+    const dSpeech = dStage + stage.offsetHeight * petScale - 12;
+    const dVitals = dSpeech + speech.offsetHeight + gap;
+    const dHealth = dVitals + vitals.offsetHeight + gap;
+    const folded = dHealth + (top(meter) + meter.offsetHeight - top(health)) + pad;
+    const full = scene.offsetHeight;
+    const d = Math.max(0, full - folded);
+    const k = (end: number, now: HTMLElement) => (d > 0 ? d + end - top(now) : 0);
+    px("--room-d", d);
+    screen.style.setProperty("--room-r", String(d > 0 ? folded / full : 1));
+    px("--k-bar", d);
+    px("--k-name", k(dName, name));
+    px("--k-stage", k(dStage, stage));
+    px("--k-speech", k(dSpeech, speech));
+    px("--k-vitals", k(dVitals, vitals));
+    px("--k-health", k(dHealth, health));
+  };
+  measure();
+  const ro = new ResizeObserver(measure);
+  ro.observe(scene);
+  void document.fonts?.ready.then(measure);
+  return () => ro.disconnect();
+}

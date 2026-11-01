@@ -1045,8 +1045,10 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .screen.scene-screen { padding: 0 0 48px; gap: 0; }
 .scene-body { display: flex; flex-direction: column; gap: var(--section); padding: 0 var(--pad); }
 .pscene { --top: color-mix(in srgb, var(--accent) 20%, var(--ground)); --glow: rgba(255,240,220,.5); --ink: var(--text); --ink-soft: var(--muted);
-  position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 32px; text-align: center;
+  position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 32px; text-align: center; }
+.pscene::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: radial-gradient(80% 50% at 50% 42%, var(--glow), transparent 72%), linear-gradient(180deg, var(--top) 0%, color-mix(in srgb, var(--top) 42%, var(--ground)) 42%, var(--ground) 74%); }
+
 /* The room follows the pet's health: grim and grey when unwell, warm and bright when thriving. */
 .pscene[data-mood="storm"] { --top: #151a21; --glow: rgba(110,128,152,.3); }
 .pscene[data-mood="overcast"] { --top: light-dark(#4a535d, #232a31); --glow: rgba(185,196,208,.26); }
@@ -1090,38 +1092,45 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .pscene[data-paused] .ps-fx i { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ps-fx i { animation: none; } .ps-rain, .ps-snow, .ps-wind, .ps-petal, .ps-leaf { display: none; } }
 /* ---------- the room folds as you scroll ----------
-   The room sticks to the top. Over the first stretch of scrolling, the greeting, streak line and speech bubble fold away and the pet
-   shrinks; the name, vitals and health bar stay. Scrolling back to the top opens it again.
-   Driven by the scroll position (no JS). Where scroll-driven animation isn't supported, the room just scrolls away as before. */
+   The room keeps its full size and sticks to the top, offset up by --room-d (how far it folds). The page slides it away natively, and each part
+   gets a transform that carries it to its place in the folded room: the greeting, streak line and health caption fade, the pet shrinks,
+   the name, speech bubble, vitals and health bar tuck up under the back button. Only transforms and opacity change while you scroll, so it
+   is smooth. Home.tsx (foldRoom) measures the numbers: --room-d, --room-r and the --k-* offsets. Scrolling back to the top opens it again.
+   Where scroll-driven animation isn't supported, the room just scrolls away as before. */
 .room-end { display: none; }
 @supports (animation-timeline: scroll()) {
-  .screen.scene-screen { scroll-timeline: --room block; overflow-anchor: none; }
-  /* The body slides down by exactly what you've scrolled while the room folds, so it stays right under the shrinking room and only scrolls on once the room is small.
-     The marker below keeps a short page exactly one screen plus the fold distance tall, so it ends the moment the room has folded, and still
-     lets the fold finish on the way there. A long page ends at its own end (the 48px bottom space sits inside the body). */
-  .screen.scene-screen { padding-bottom: 0; position: relative; }
-  .room-end { display: block; position: absolute; top: 0; left: 0; width: 1px; height: calc(100% + var(--fold-range)); visibility: hidden; pointer-events: none; }
-  .scene-body { padding-bottom: 48px; animation: room-follow 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .pscene { position: sticky; top: 0; z-index: 4; animation: room-tuck 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .hs-fold { display: grid; grid-template-rows: 1fr; width: 100%; animation: room-fold 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .hs-fold > div { min-height: 0; overflow: hidden; }
-  .hs-stage { align-items: start; height: 262px; animation: room-stage 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .hs-name { animation: room-name 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .vitals { animation: room-vitals 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .health-block { animation: room-health 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .vital-ico { animation: room-ico 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
-  .hs-pet { width: 262px; height: 262px; transform-origin: 50% 0; animation: room-pet 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+  .screen.scene-screen { scroll-timeline: --room block; overflow-anchor: none; padding-bottom: 0; position: relative; }
+  /* The marker keeps a short page exactly one screen plus the fold distance tall, so it ends the moment the room has folded. A long page
+     ends at its own end (the 48px bottom space sits inside the body). */
+  .room-end { display: block; position: absolute; top: 0; left: 0; width: 1px; height: calc(100% + var(--room-d, 0px)); visibility: hidden; pointer-events: none; }
+  .scene-body { padding-bottom: 48px; }
+  .pscene { position: sticky; top: calc(-1 * var(--room-d, 0px)); z-index: 4; }
+  .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .hs-greet, .hs-meta, .health-why,
+  .pscene::before, .pscene::after, .ps-sun, .ps-moon, .ps-fx {
+    animation-duration: 1s; animation-timing-function: linear; animation-fill-mode: both; animation-timeline: --room; animation-range: 0 var(--room-d, 1px); }
+  .hs-greet, .hs-meta, .health-why { animation-name: room-fade; animation-range: 0 calc(var(--room-d, 1px) * .4); }
+  .hs-bar { animation-name: room-bar; }
+  .hs-name { animation-name: room-name; transform-origin: 50% 0; }
+  .hs-stage { animation-name: room-stage; }
+  .hs-pet { width: 262px; height: 262px; transform-origin: 50% 0; animation-name: room-pet; }
+  .hs-speech { animation-name: room-speech; }
+  .vitals { animation-name: room-vitals; }
+  .health-block { animation-name: room-health; }
+  /* The sky and the weather stay pinned to the top of the screen while the room slides away behind them. */
+  .pscene::before, .pscene::after { transform-origin: 0 0; animation-name: room-sky; }
+  .ps-sun, .ps-moon, .ps-fx { animation-name: room-pin; }
 }
-.screen.scene-screen { --fold-range: 260px; }
-@keyframes room-fold { to { grid-template-rows: 0fr; opacity: 0; margin-top: -4px; } }
-@keyframes room-stage { to { height: 140px; } }
-@keyframes room-name { to { font-size: 30px; line-height: 34px; } }
-@keyframes room-vitals { to { margin-top: 8px; } }
-@keyframes room-health { to { margin-top: 10px; } }
-@keyframes room-ico { to { width: 44px; height: 44px; } }
-@keyframes room-follow { to { transform: translateY(var(--fold-range)); } }
-@keyframes room-pet { to { transform: scale(.55); } }
-@keyframes room-tuck { to { padding-bottom: 12px; box-shadow: 0 1px 0 var(--line), 0 6px 16px -10px rgba(0,0,0,.35); } }
+.screen.scene-screen { --room-d: 0px; }
+@keyframes room-fade { to { opacity: 0; } }
+@keyframes room-bar { to { transform: translateY(var(--k-bar, 0px)); } }
+@keyframes room-name { to { transform: translateY(var(--k-name, 0px)) scale(.68); } }
+@keyframes room-stage { to { transform: translateY(var(--k-stage, 0px)); } }
+@keyframes room-pet { to { transform: scale(.5); } }
+@keyframes room-speech { to { transform: translateY(var(--k-speech, 0px)); } }
+@keyframes room-vitals { to { transform: translateY(var(--k-vitals, 0px)); } }
+@keyframes room-health { to { transform: translateY(var(--k-health, 0px)); } }
+@keyframes room-sky { to { transform: translateY(var(--room-d, 0px)) scaleY(var(--room-r, 1)); } }
+@keyframes room-pin { to { transform: translateY(var(--room-d, 0px)); } }
 .hs-bar { width: 100%; display: flex; justify-content: flex-start; align-items: center; min-height: 40px; }
 .hs-bar .track-back { margin: -2px 0; }
 .hs-greet { margin: 2px auto 0; max-width: 320px; color: var(--muted); font: 400 21px/26px var(--serif); text-wrap: balance; }
