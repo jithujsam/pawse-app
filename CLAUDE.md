@@ -19,4 +19,5 @@ Docs are on demand: RELEASING.md only for releases, COPY_GLOSSARY.md only for co
 
 ## Commands
 - pnpm dev, pnpm test, pnpm typecheck, pnpm lint, pnpm simulate
+- UI polish: `/pawse-ui-polish [screen]` runs the `ui-polish` skill (`.claude/skills/ui-polish`); screenshots, measured fixes, before/after report
 - Android debug APK: pnpm --filter web build, then `npx cap sync android` and `./gradlew assembleDebug` in apps/web/android (needs ANDROID_HOME and Java 17+)
