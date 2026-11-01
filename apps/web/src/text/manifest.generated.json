@@ -4544,7 +4544,7 @@
       "source": "src/screens/UrgeSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 63,
-      "end": 107,
+      "end": 112,
       "entries": [
         {
           "id": "sheets.urge.label",
@@ -4577,6 +4577,31 @@
         {
           "id": "sheets.urge.s5",
           "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.feel_1",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.feel_2",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.feel_3",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.feel_4",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.feel_5",
+          "kind": "voice",
           "placeholders": []
         },
         {
@@ -4778,8 +4803,8 @@
       "title": "The + menu",
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 109,
-      "end": 125,
+      "start": 114,
+      "end": 130,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4858,8 +4883,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 127,
-      "end": 148,
+      "start": 132,
+      "end": 153,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4970,8 +4995,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 150,
-      "end": 192,
+      "start": 155,
+      "end": 197,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -5184,8 +5209,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 194,
-      "end": 216,
+      "start": 199,
+      "end": 221,
       "entries": [
         {
           "id": "sheets.memorial.life",

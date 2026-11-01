@@ -137,7 +137,7 @@ p { text-wrap: pretty; }
 .pet-card-track { max-width: 100%; overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
 .pet-card-status { color: var(--muted); align-self: end; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pet-card-status[data-s="met"], .pet-card-status[data-s="urge"] { color: var(--positive); }
-.pet-card-add { background: transparent; box-shadow: inset 0 0 0 2px var(--control); grid-template-rows: auto auto auto; align-content: center; }
+.pet-card-add { background: var(--surface); grid-template-rows: auto auto auto; align-content: center; }
 .pet-card-add .pet-card-name, .pet-card-add .pet-card-track { white-space: normal; }
 .pet-card-plus { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--accent); margin-bottom: 6px; }
 .pet-card-plus .ico { width: 32px; height: 32px; stroke-width: 2.2; }
@@ -1154,3 +1154,25 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .mark[data-s="unrecorded"], .mark[data-s="future"] { width: 6px; height: 6px; background: var(--line); margin: 3px; }
 /* Days before the track began: a fainter dot, so the trail keeps all 28 places from day one. */
 .mark[data-s="before"] { width: 6px; height: 6px; background: var(--line); margin: 0; }
+
+/* ---------- 1 to 5 slider (urge strength) ---------- */
+.slider { display: grid; gap: 8px; }
+.slider-head { display: flex; justify-content: flex-end; }
+.slider-value { font-weight: 700; font-size: 22px; color: var(--accent); min-width: 1.2em; text-align: right; }
+.slider-input { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; margin: 0; background: transparent; cursor: pointer; touch-action: pan-x; }
+.slider-input::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: linear-gradient(to right, var(--accent) var(--fill), var(--control) var(--fill)); }
+.slider-input::-moz-range-track { height: 8px; border-radius: 999px; background: var(--control); }
+.slider-input::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--accent); }
+.slider-input::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%; background: var(--accent); border: 4px solid var(--surface); box-shadow: 0 2px 8px -2px rgba(0,0,0,.3); }
+.slider-input::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 4px solid var(--surface); }
+.slider-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 999px; }
+.slider-ends { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.slider-feedback { margin: 2px 0 0; font-size: 15px; line-height: 1.45; color: var(--text); min-height: 2.9em; }
+
+/* ---------- list layout: every card the same size, the add card matches the track cards ---------- */
+.pet-grid[data-layout="list"] .pet-card, .pet-grid[data-layout="list"] .pet-card-add { min-height: 132px; }
+.pet-grid[data-layout="list"] .pet-card-add { display: grid; grid-template-columns: 84px 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1fr); justify-items: start; align-content: stretch; text-align: left; column-gap: 14px; row-gap: 2px; padding: 16px 52px 16px 18px; }
+.pet-grid[data-layout="list"] .pet-card-add .pet-card-plus { width: 84px; height: 84px; margin: 0; grid-row: 1 / span 5; align-self: center; }
+.pet-grid[data-layout="list"] .pet-card-add .pet-card-name { grid-row: 2; grid-column: 2; }
+.pet-grid[data-layout="list"] .pet-card-add .pet-card-track { grid-row: 3; grid-column: 2; }
+.pet-grid[data-layout="list"] .pet-card-art, .pet-grid[data-layout="list"] .pet-card-plus { flex: none; }
