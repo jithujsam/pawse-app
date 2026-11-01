@@ -8,8 +8,8 @@ pawse is a habit-change app with a pet at its heart. Pick something you want to 
 It's built to feel warm rather than preachy. It's honest about slips, generous about progress, and careful with your data.
 
 <p align="center">
-  <img src="docs/screenshots/light-00-pets.png" width="230" alt="Pets: a 3D dog, fox and voxel cat, one per habit">
-  <img src="docs/screenshots/light-04-home.png" width="230" alt="Home: the 3D pet, health buttons and today's check-in">
+  <img src="docs/screenshots/v5010-01-pets-list.png" width="230" alt="Pets in list view, cards the same size">
+  <img src="docs/screenshots/v5010-02-pet-home.png" width="230" alt="A pet's page with a back button to all pets">
   <img src="docs/screenshots/light-05-health.png" width="230" alt="Health: a heart that fills to the pet's health">
 </p>
 
@@ -50,7 +50,7 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 
 <p align="center">
   <img src="docs/screenshots/light-07-conditions.png" width="190" alt="Conditions with recovery days">
-  <img src="docs/screenshots/light-10-urge.png" width="190" alt="Urge SOS breathing">
+  <img src="docs/screenshots/v5010-04-urge-strength-slider.png" width="190" alt="Urge: how strong it is, on a slider with feedback">
   <img src="docs/screenshots/light-11-insights.png" width="190" alt="Insights">
   <img src="docs/screenshots/light-13-journey.png" width="190" alt="Journey">
 </p>
