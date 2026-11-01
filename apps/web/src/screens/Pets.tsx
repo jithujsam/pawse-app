@@ -54,12 +54,9 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
           <p className="muted small">{t("pets.grid.intro")}</p>
         </div>
         {tracks.length > 0 && (
-          <div className="pets-actions">
-            <div className="layout-toggle" role="radiogroup" aria-label={t("pets.grid.layout")}>
-              <button type="button" role="radio" aria-checked={layout === "grid"} aria-label={t("pets.grid.layout_grid")} onClick={() => pickLayout("grid")}>{Icon.grid}</button>
-              <button type="button" role="radio" aria-checked={layout === "list"} aria-label={t("pets.grid.layout_list")} onClick={() => pickLayout("list")}>{Icon.list}</button>
-            </div>
-            {data.habits.length < 50 && <button type="button" className="icon-btn pets-add" aria-label={t("pets.grid.add")} onClick={() => { haptic.tap(); setAdding(true); }}>{Icon.plus}</button>}
+          <div className="layout-toggle" role="radiogroup" aria-label={t("pets.grid.layout")}>
+            <button type="button" role="radio" aria-checked={layout === "grid"} aria-label={t("pets.grid.layout_grid")} onClick={() => pickLayout("grid")}>{Icon.grid}</button>
+            <button type="button" role="radio" aria-checked={layout === "list"} aria-label={t("pets.grid.layout_list")} onClick={() => pickLayout("list")}>{Icon.list}</button>
           </div>
         )}
       </header>
@@ -94,6 +91,11 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
               </div>
             );
           })}
+          {data.habits.length < 50 && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
+            <span className="pet-card-plus" aria-hidden>{Icon.plus}</span>
+            <b className="pet-card-name">{t("pets.grid.add")}</b>
+            <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
+          </motion.button>}
         </section>
       )}
 

@@ -6,7 +6,8 @@ export const petsGrid = defineSection("pets.grid", { screen: "Home", title: "Pet
   intro: "Each pet looks after one recovery track.",
   empty_title: "No recovery tracks yet",
   empty_body: "Pick one behaviour you'd like to understand or change, and a pet will keep you company while you work on it.",
-  add: "Add a pet",
+  add: "Add a recovery track",
+  add_hint: "A new pet for another habit",
   tracks: "Recovery tracks",
   not_checked_in: "Not recorded",
   paused: "Paused",
@@ -59,8 +60,8 @@ export const petsPicker = defineSection("pets.picker", { screen: "Home", title: 
 // @copy-section-end pets.picker
 
 // @copy-section pets.add
-export const petsAdd = defineSection("pets.add", { screen: "Home", title: "Add a pet", source: "src/screens/Pets.tsx" }, {
-  label: "Add a pet",
+export const petsAdd = defineSection("pets.add", { screen: "Home", title: "Add a recovery track", source: "src/screens/Pets.tsx" }, {
+  label: "Add a recovery track",
   step1: "Choose a pet",
   step2: "What is it for?",
   step_of: "Step {step} of 2",

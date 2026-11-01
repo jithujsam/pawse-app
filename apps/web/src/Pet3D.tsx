@@ -75,6 +75,24 @@ function tuxedoMap(src: THREE.Texture): THREE.Texture {
 
 /** Turned a little toward the viewer, so the face reads. */
 const ROTATION: Record<Species3D, number> = { dog: -0.38, fox: -0.38, cat: -0.38 };
+/**
+ * Where each species' drawn silhouette sits in the square frame when it is placed by its feet (dx right, dy down,
+ * as a fraction of the frame), measured from renders. Placing the pet by this centre, and scaling it about that
+ * centre, keeps every species, age and pose in the middle of the frame. `fit` is a size correction (the fox is
+ * long and low, so it needs to be larger to read at the same size as the others).
+ */
+const FRAME: Record<Species3D, { dx: number; dy: number; fit: number }> = {
+  dog: { dx: -0.04, dy: 0.0, fit: 1 },
+  cat: { dx: -0.07, dy: 0.03, fit: 1 },
+  fox: { dx: -0.105, dy: 0.083, fit: 1.12 },
+};
+/** The same, for the lying pose (a pet that is dying), which sits very differently in the frame. */
+const FRAME_LYING: Record<Species3D, { dx: number; dy: number }> = {
+  dog: { dx: 0.25, dy: 0.137 },
+  cat: { dx: -0.46, dy: 0.089 },
+  fox: { dx: 0.306, dy: 0.145 },
+};
+const FRAME_UNITS = 1.293; // world units across the frame at the camera's distance (fov 26 at 2.8)
 
 function restingClip(mood: Mood): Clip {
   if (mood === "dying") return "dying";
@@ -381,7 +399,20 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
   });
 
   const lying = mood === "dying";
-  return <group scale={scale * (lying ? 0.82 : 1)} position={[lying ? -0.12 : 0, 0, 0]} rotation={[0, ROTATION[species], 0]}><primitive object={scene} /></group>;
+  const f = lying ? FRAME_LYING[species] : FRAME[species];
+  const sx = f.dx * FRAME_UNITS, sy = -f.dy * FRAME_UNITS;
+  // Pivot on the camera's look-at point; the pet's visual centre sits on the pivot, so scaling it by age or pose never moves it off-centre.
+  return (
+    <group position={[0, 0.5, 0]} scale={scale * (lying ? 0.82 : FRAME[species].fit)}>
+      <group position={[-sx, -(0.5 + sy), 0]}>
+        <group rotation={[0, ROTATION[species], 0]}><primitive object={scene} /></group>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[sx, 0.001, 0]}>
+          <circleGeometry args={[0.42, 40]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.08} />
+        </mesh>
+      </group>
+    </group>
+  );
 }
 
 class Guard extends Component<{ fallback: ReactNode; onFail?: () => void; children: ReactNode }, { failed: boolean }> {
@@ -430,10 +461,6 @@ export function Pet3D({ size, fallback, loading, onFail, ...props }: Props & { s
             <hemisphereLight args={[props.light?.color ?? "#fff8ee", "#b8a48c", 1.6 * lightK]} />
             <directionalLight position={[2, 3, 2.5]} intensity={1.6 * lightK} color={props.light?.color ?? "#ffffff"} />
             <directionalLight position={[-2, 1.5, -1]} intensity={0.4} />
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
-              <circleGeometry args={[0.42, 40]} />
-              <meshBasicMaterial color="#000000" transparent opacity={0.08} />
-            </mesh>
             <Model {...props} />
           </Canvas>
           {fx && <span className={`pet3d-fx fx-${fx}`} aria-hidden><i /><i /><i /></span>}
