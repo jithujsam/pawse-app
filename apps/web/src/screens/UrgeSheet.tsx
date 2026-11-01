@@ -7,10 +7,12 @@ import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { frictionIdeas, REPLACEMENTS, SITUATIONS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
 import { trackSummary } from "../progress";
+import { whatHelps } from "../goal";
+import { shrink } from "./LogSheet";
 import { today } from "../dates";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { Burst, Button, plainOpts, Select, SelectOther, Slider } from "../ui/Controls";
+import { Burst, Button, Icon, plainOpts, Select, SelectOther, Slider } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 import type { StrategyId } from "../types";
@@ -50,6 +52,14 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [trigger, setTrigger] = useState("");
   const [win, setWin] = useState("");
   const [helped, setHelped] = useState<StrategyId | null>(null);
+  // After an urge eases: what the person did instead, and a photo of it. Both optional; both only help Insights show what works.
+  const [urgeId, setUrgeId] = useState<string | null>(null);
+  const [instead, setInstead] = useState("");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [savedInstead, setSavedInstead] = useState(false);
+  const insteadConcern = concernIn(instead) !== null;
+  // What has worked for this person comes first, then the common ideas.
+  const insteadOptions = [...new Set([...whatHelps(data, habit.id).helpers.map((h) => h.what), ...REPLACEMENTS])];
   const managed = trackSummary(data, habit.id, today()).managedUrges;
   const crisis = concernIn(trigger) !== null;
   const feelLine = (n: number) => tt(FEEL[n - 1], tone);
@@ -59,7 +69,8 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   function end(outcome: "rode_it_out" | "slipped") {
     if (crisis) return;
     const supported = phase === "support";
-    actions.recordUrge(habit.id, strength, outcome, urgeDetails({ supported, strategy: current, trigger, crisis }));
+    const urge = actions.recordUrge(habit.id, strength, outcome, urgeDetails({ supported, strategy: current, trigger, crisis }));
+    setUrgeId(urge?.id ?? null);
     // Acting on an urge is a check-in, never a slip: the slip sheet is only offered, on the next step.
     if (outcome === "slipped") { haptic.select(); setPhase("acted"); return; }
     haptic.success();
@@ -114,6 +125,24 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       <motion.div variants={rise}><LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={companion.personality} stage={view.stage} mood="happy" gesture="hop" age={view.age} size={150} interactive={false} /></motion.div>
       <motion.h2 variants={rise}>{win}</motion.h2>
       <motion.p className="muted" variants={rise}>{managed === 1 ? t("sheets.urge.managed_one") : t("sheets.urge.managed_other", { n: managed })}</motion.p>
+      {urgeId && (
+        <motion.section className="card stack tight instead" variants={rise} aria-label={tt("sheets.urge.instead_title", tone)}>
+          <h3>{tt("sheets.urge.instead_title", tone)}</h3>
+          <p className="muted small">{tt("sheets.urge.instead_hint", tone)}</p>
+          {savedInstead ? <p className="small" role="status">{t("sheets.urge.instead_saved")}</p> : (<>
+            <SelectOther label={t("sheets.urge.instead_aria")} options={plainOpts(insteadOptions)} value={instead} onChange={setInstead} maxLength={40} placeholder={t("sheets.urge.instead_placeholder")} otherPlaceholder={t("sheets.urge.instead_own")} />
+            <label className="photo-tile">
+              {photo
+                ? <motion.img src={photo} alt={t("sheets.urge.instead_photo_alt")} width={480} height={360} initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} />
+                : <span className="muted">{Icon.camera} {t("sheets.urge.instead_photo")}</span>}
+              <input type="file" accept="image/*" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setPhoto(await shrink(f, 480).catch(() => null)); }} />
+            </label>
+            {photo && <Button variant="text" onClick={() => setPhoto(null)}>{t("sheets.urge.instead_remove_photo")}</Button>}
+            <Button variant="secondary" disabled={insteadConcern || (!instead.trim() && !photo)}
+              onClick={() => { if (urgeId && actions.setUrgeInstead(urgeId, { instead, photo })) { haptic.success(); setSavedInstead(true); toast(t("sheets.urge.instead_saved"), { kind: "good" }); } }}>{t("sheets.urge.instead_save")}</Button>
+          </>)}
+        </motion.section>
+      )}
       {helped && (
         <motion.div variants={rise}>
           <Button variant="secondary" onClick={() => { actions.savePlan(withStrategyFirst(plan, helped), habit.id); haptic.success(); setHelped(null); toast(t("sheets.urge.added"), { kind: "good" }); }}>

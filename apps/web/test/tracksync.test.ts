@@ -10,7 +10,7 @@ const { blank } = await import("../src/persist");
 const { defaultTrackState, trackState } = await import("../src/tracks");
 
 const u = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const plan = { goal: "stop" as const, reasons: ["Health"], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] };
+const plan = { goal: "stop" as const, reasons: ["Health"], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [], limitPerWeek: null, identity: "" };
 
 function phone(ids: number) {
   const [CA, HA, CB, HB] = [1, 2, 3, 4].map((k) => u(ids + k));

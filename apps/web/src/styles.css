@@ -319,11 +319,11 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 /* ---------- toasts ---------- */
 .toasts { position: fixed; left: 0; right: 0; bottom: calc(92px + env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 8px; z-index: 40; pointer-events: none; padding: 0 var(--pad); }
-.toast { pointer-events: auto; max-width: 488px; width: 100%; background: var(--text); color: var(--ground); border-radius: 18px; padding: 12px 12px 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 550; box-shadow: 0 12px 30px -10px rgba(0,0,0,.35); touch-action: pan-y; }
+.toast { pointer-events: auto; max-width: 488px; width: 100%; background: light-dark(var(--text), var(--raised)); color: light-dark(var(--ground), var(--text)); border-radius: 18px; padding: 12px 12px 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 550; box-shadow: light-dark(0 12px 30px -10px rgba(0,0,0,.35), 0 0 0 1px var(--line)); touch-action: pan-y; }
 .toast.good::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--positive); flex: none; }
 .toast.bad::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--negative); flex: none; }
 .toast > span { flex: 1; }
-.toast-action { border: 0; background: color-mix(in srgb, var(--ground) 16%, transparent); color: inherit; font-weight: 700; border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; }
+.toast-action { border: 0; background: light-dark(color-mix(in srgb, var(--ground) 16%, transparent), var(--control)); color: inherit; font-weight: 700; border-radius: 999px; min-height: 36px; padding: 0 14px; cursor: pointer; }
 
 /* ---------- sheet ---------- */
 /* a plain dim, no blur: the page stays recognisable and nothing smears */
@@ -345,6 +345,30 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .photo-tile { display: grid; place-items: center; min-height: 96px; border: 2px dashed var(--control); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; }
 .photo-tile span { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; }
 .photo-tile img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+
+/* ---------- your goal ---------- */
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--raised); border-radius: 999px; padding: 6px; }
+.stepper output { flex: 1; text-align: center; font: 600 16px/24px var(--font); font-variant-numeric: tabular-nums; }
+.stepper .icon-btn { font: 500 24px/1 var(--font); color: var(--text); }
+.goal-pill { flex: none; background: var(--soft); color: var(--text); border-radius: 999px; padding: 4px 12px; font: 600 13px/20px var(--font); }
+.goal-identity { margin: 0; color: var(--muted); font: italic 400 18px/26px var(--serif); text-wrap: balance; }
+.goal-status { margin: 0; font: 600 17px/24px var(--font); text-wrap: balance; }
+.goal-card[data-status="on_target"] .goal-status { color: var(--positive); }
+.goal-card[data-status="away"] .goal-status { color: var(--negative-ink); }
+.goal-card .stats { grid-template-columns: repeat(3, 1fr); }
+.goal-weeks { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); align-items: end; gap: 6px; height: 72px; }
+.goal-bar { display: block; min-height: 4px; border-radius: 6px 6px 3px 3px; background: var(--control); }
+.goal-bar[data-now] { background: var(--accent); }
+.goal-bar[data-over] { background: color-mix(in srgb, var(--negative) 70%, var(--control)); }
+.goal-line { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed var(--positive); pointer-events: none; z-index: 1; }
+.helper-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+.helper-row > .muted { grid-column: 1; }
+.helper-meter { grid-column: 1 / -1; display: block; height: 6px; margin-top: 4px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+.helper-meter > i { display: block; height: 100%; border-radius: inherit; background: var(--positive); }
+.photo-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.photo-strip::-webkit-scrollbar { display: none; }
+.photo-strip img { flex: none; width: 72px; height: 72px; object-fit: cover; border-radius: 14px; background: var(--raised); }
+.instead h3 { margin: 0; }
 .shimmer-line { height: 14px; border-radius: 999px; background: var(--raised); }
 .shimmer-line.short { width: 60%; }
 
@@ -1050,11 +1074,11 @@ html[data-keyboard="open"] .tabbar { display: none; }
   background: radial-gradient(80% 50% at 50% 42%, var(--glow), transparent 72%), linear-gradient(180deg, var(--top) 0%, color-mix(in srgb, var(--top) 42%, var(--ground)) 42%, var(--ground) 74%); }
 
 /* The room follows the pet's health: grim and grey when unwell, warm and bright when thriving. */
-.pscene[data-mood="storm"] { --top: #151a21; --glow: rgba(110,128,152,.3); }
-.pscene[data-mood="overcast"] { --top: light-dark(#4a535d, #232a31); --glow: rgba(185,196,208,.26); }
-.pscene[data-mood="clearing"] { --top: color-mix(in srgb, var(--accent) 20%, var(--ground)); --glow: light-dark(rgba(255,244,225,.65), rgba(255,220,170,.18)); }
-.pscene[data-mood="clear"] { --top: light-dark(color-mix(in srgb, var(--accent) 34%, #ffeccc), color-mix(in srgb, var(--accent) 36%, #120d08)); --glow: light-dark(rgba(255,226,160,.9), rgba(255,196,110,.38)); }
-.pscene[data-mood="golden"] { --top: light-dark(#f3bd5e, color-mix(in srgb, var(--accent) 52%, #1a1006)); --glow: light-dark(rgba(255,215,120,1), rgba(255,184,80,.55)); }
+.pscene[data-mood="storm"] { --top: light-dark(#151a21, #0d1116); --glow: light-dark(rgba(110,128,152,.3), rgba(110,128,152,.18)); }
+.pscene[data-mood="overcast"] { --top: light-dark(#4a535d, #14181c); --glow: light-dark(rgba(185,196,208,.26), rgba(185,196,208,.13)); }
+.pscene[data-mood="clearing"] { --top: light-dark(color-mix(in srgb, var(--accent) 20%, var(--ground)), color-mix(in srgb, var(--accent) 11%, #050403)); --glow: light-dark(rgba(255,244,225,.65), rgba(255,220,170,.11)); }
+.pscene[data-mood="clear"] { --top: light-dark(color-mix(in srgb, var(--accent) 34%, #ffeccc), color-mix(in srgb, var(--accent) 21%, #090604)); --glow: light-dark(rgba(255,226,160,.9), rgba(255,196,110,.24)); }
+.pscene[data-mood="golden"] { --top: light-dark(#f3bd5e, color-mix(in srgb, var(--accent) 33%, #0e0903)); --glow: light-dark(rgba(255,215,120,1), rgba(255,184,80,.34)); }
 .pscene[data-ink="light"] { --ink: #f6f1ea; --ink-soft: rgba(246,241,234,.72); }
 .pscene[data-ink="light"] .track-back { color: var(--ink-soft); }
 .pscene .hs-name { color: var(--ink); }

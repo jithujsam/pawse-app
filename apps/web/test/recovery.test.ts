@@ -91,10 +91,10 @@ describe("continuity rules (default)", () => {
 describe("plan, lapse reflection and weekly focus", () => {
   it("saves a trimmed, capped plan and adds if-then plans without duplicates", () => {
     load();
-    actions.savePlan({ goal: "reduce", reasons: [" Money ", "", "Money", "Sleep"], situations: ["Late at night"], firstStep: "  Log out of the app  ", strategies: ["breathe", "breathe", "move"], supportName: " Asha ", ifThen: [] });
+    actions.savePlan({ goal: "reduce", reasons: [" Money ", "", "Money", "Sleep"], situations: ["Late at night"], firstStep: "  Log out of the app  ", strategies: ["breathe", "breathe", "move"], supportName: " Asha ", ifThen: [], limitPerWeek: 3.4, identity: "  Someone who reads  " });
     actions.addIfThen("If I'm home alone after 10, then I'll make tea");
     actions.addIfThen("if i'm home alone after 10, then i'll make tea");
-    expect(trackState(getData(), H).plan).toEqual({ goal: "reduce", reasons: ["Money", "Sleep"], situations: ["Late at night"], firstStep: "Log out of the app", strategies: ["breathe", "move"], supportName: "Asha", ifThen: ["If I'm home alone after 10, then I'll make tea"] });
+    expect(trackState(getData(), H).plan).toEqual({ goal: "reduce", reasons: ["Money", "Sleep"], situations: ["Late at night"], firstStep: "Log out of the app", strategies: ["breathe", "move"], supportName: "Asha", ifThen: ["If I'm home alone after 10, then I'll make tea"], limitPerWeek: 3, identity: "Someone who reads" });
   });
   it("a lapse reflection is stored on the slip and never changes the companion's age", () => {
     load({ entries: [entry("e1", t0)] });

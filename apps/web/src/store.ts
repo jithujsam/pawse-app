@@ -331,7 +331,7 @@ const withoutRest = (d: AppData, habitId: string, day: string): AppData =>
 /** The track an action without one applies to: the focused one. */
 const focused = (habitId?: string) => habitId ?? focusedTrackId(data) ?? "";
 
-export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] });
+export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [], limitPerWeek: null, identity: "" });
 
 // ---------- the last line of defence for typed text ----------
 // The screens check what is typed as it is typed. These checks run again where it is saved, so no screen, edit flow,
@@ -340,7 +340,7 @@ export const emptyPlan = (): RecoveryPlan => ({ goal: null, reasons: [], situati
 /** A pet's name when none was given, fitting its species. */
 export const defaultPetName = (species: Species): string => NAMES[species]?.[0] ?? "Biscuit";
 
-const planTexts = (p: RecoveryPlan | null | undefined): string[] => (p ? [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName] : []);
+const planTexts = (p: RecoveryPlan | null | undefined): string[] => (p ? [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName, p.identity ?? ""] : []);
 const fieldTexts = (fields: Habit["fields"]): string[] => fields.flatMap((f) => [f.label, ...(f.options ?? []).map((o) => o.label), ...(f.scaleLabels ?? [])]);
 
 /** What a slip's answers need: notes are checked for crisis language, typed answers to questions for food and weight too. Photos are skipped. */
@@ -407,11 +407,23 @@ export function scrubTracking(d: AppData): AppData {
   return changed ? { ...d, habits } : d;
 }
 
+/** What an urge keeps of "what I did instead": a short phrase that passes the safety check, and a photo only if it is a small image. */
+function insteadFields(v: { instead?: string | null; photo?: string | null }): { instead?: string | null; photo?: string | null } {
+  const text = v.instead?.trim().slice(0, 40);
+  const out: { instead?: string | null; photo?: string | null } = {};
+  if (text && !concernIn(text)) out.instead = text;
+  if (v.photo && /^data:image\/(jpeg|png|webp);base64,/.test(v.photo) && v.photo.length <= 400_000) out.photo = v.photo;
+  return out;
+}
+
 function cleanPlan(p: RecoveryPlan): RecoveryPlan {
   const list = (xs: string[], n: number, len: number) => [...new Set(xs.map((x) => x.trim().slice(0, len)).filter(Boolean))].slice(0, n);
   return {
     goal: p.goal, reasons: list(p.reasons, 8, 80), situations: list(p.situations, 8, 60), firstStep: p.firstStep.trim().slice(0, 140),
     strategies: [...new Set(p.strategies)].slice(0, 7), supportName: p.supportName.trim().slice(0, 40), ifThen: list(p.ifThen, 8, 160),
+    // A weekly limit only means something with the "cut down" goal.
+    limitPerWeek: p.goal === "reduce" && Number.isFinite(p.limitPerWeek) && (p.limitPerWeek ?? 0) >= 1 ? Math.min(500, Math.round(p.limitPerWeek as number)) : null,
+    identity: (p.identity ?? "").trim().slice(0, 80),
   };
 }
 
@@ -670,16 +682,26 @@ export const actions = {
   },
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
-  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null } = {}): Urge | null {
+  recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null; instead?: string | null; photo?: string | null } = {}): Urge | null {
     if (!canRecord(data, habitId)) return null;
     const now = new Date();
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       strength: Math.max(1, Math.min(5, Math.round(strength))), outcome, createdAt: Date.now(),
       strategy: extra.strategy ?? null, trigger: extra.trigger && !concernIn(extra.trigger) ? extra.trigger.trim().slice(0, 40) || null : null,
+      ...insteadFields(extra),
     };
     commit({ ...data, urges: [...data.urges, urge] });
     return urge;
+  },
+  /** Adds what the person did instead (and a photo of it) to an urge they just got through. Typed text goes through the same safety check. */
+  setUrgeInstead(id: string, v: { instead?: string | null; photo?: string | null }): boolean {
+    const u = data.urges.find((x) => x.id === id);
+    if (!u) return false;
+    const f = insteadFields(v);
+    if (f.instead === undefined && f.photo === undefined) return false;
+    commit({ ...data, urges: data.urges.map((x) => (x.id === id ? { ...x, ...f } : x)) });
+    return true;
   },
   /** Saves today's (or another day's) reflection; an empty one is removed. */
   setJournal(day: string, mood: number, body: string) {
