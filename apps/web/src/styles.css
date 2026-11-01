@@ -137,10 +137,6 @@ p { text-wrap: pretty; }
 .pet-card-track { max-width: 100%; overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
 .pet-card-status { color: var(--muted); align-self: end; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pet-card-status[data-s="met"], .pet-card-status[data-s="urge"] { color: var(--positive); }
-.pet-card-add { background: transparent; box-shadow: inset 0 0 0 2px var(--control); grid-template-rows: auto auto auto; align-content: center; }
-.pet-card-add .pet-card-name, .pet-card-add .pet-card-track { white-space: normal; }
-.pet-card-plus { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--accent); margin-bottom: 6px; }
-.pet-card-plus .ico { width: 32px; height: 32px; stroke-width: 2.2; }
 .track-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--muted); font: 600 14px var(--font); padding: 6px 8px 6px 0; margin: -10px 0 -8px; cursor: pointer; }
 .fab:disabled { opacity: .45; cursor: default; }
 
@@ -929,7 +925,13 @@ html[data-keyboard="open"] .sheet { max-height: calc(92vh - var(--kb, 0px)); }
 html[data-keyboard="open"] .tabbar { display: none; }
 
 /* ---------- Pets: grid or list ---------- */
-.pets-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pets-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 4px; }
+.pets-head > .stack { display: contents; }
+.pets-head > .stack > p { grid-column: 1 / -1; grid-row: 2; }
+.pets-head > .pets-actions, .pets-head > .layout-toggle { grid-column: 2; grid-row: 1; }
+.pets-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.pets-add { background: var(--soft); color: var(--accent); }
+.pets-add .ico { width: 22px; height: 22px; stroke-width: 2.2; }
 .layout-toggle { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--raised); flex: none; }
 .layout-toggle button { border: 0; background: none; color: var(--muted); width: 40px; height: 36px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; }
 .layout-toggle button[aria-checked="true"] { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px -2px rgba(0,0,0,.15); }
@@ -979,15 +981,10 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .pet-grid[data-layout="list"] .pet-card { background: var(--hero-a); display: grid; grid-template-columns: 84px 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto minmax(0, 1fr); justify-items: start; align-content: stretch; text-align: left; column-gap: 14px; row-gap: 2px; padding: 16px 52px 16px 18px; }
 .pet-grid[data-layout="list"] .pet-card-art { width: 84px; height: 84px; margin: 0; grid-row: 1 / span 5; align-self: center; background: none; border-radius: 0; overflow: visible; }
 .pet-grid[data-layout="list"] .pet-card-status { align-self: start; font-size: 13px; white-space: normal; }
-.pet-grid[data-layout="list"] .pet-card:not(.pet-card-add) .pet-card-name { grid-row: 2; grid-column: 2; }
-.pet-grid[data-layout="list"] .pet-card:not(.pet-card-add) .pet-card-track { grid-row: 3; grid-column: 2; }
-.pet-grid[data-layout="list"] .pet-card:not(.pet-card-add) .pet-card-status { grid-row: 4; grid-column: 2; }
+.pet-grid[data-layout="list"] .pet-card .pet-card-name { grid-row: 2; grid-column: 2; }
+.pet-grid[data-layout="list"] .pet-card .pet-card-track { grid-row: 3; grid-column: 2; }
+.pet-grid[data-layout="list"] .pet-card .pet-card-status { grid-row: 4; grid-column: 2; }
 .pet-grid[data-layout="list"] .pet-card-more { top: 50%; transform: translateY(-50%); }
-.pet-grid[data-layout="list"] .pet-card-add { background: transparent; grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr); align-content: stretch; padding: 16px 18px; }
-.pet-grid[data-layout="list"] .pet-card-plus { grid-row: 1 / span 4; align-self: center; justify-self: center; width: 56px; height: 56px; margin: 0; }
-.pet-grid[data-layout="list"] .pet-card-plus .ico { width: 24px; height: 24px; }
-.pet-grid[data-layout="list"] .pet-card-add .pet-card-name { grid-row: 2; grid-column: 2; }
-.pet-grid[data-layout="list"] .pet-card-add .pet-card-track { grid-row: 3; grid-column: 2; }
 .stats.runs3 { grid-template-columns: repeat(3, 1fr); }
 /* Day marks in the weekly summary: shape as well as colour */
 .wday .mark { width: 22px; height: 22px; border-radius: 50%; display: block; background: var(--raised); box-sizing: border-box; }
@@ -1008,6 +1005,8 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .screen > .home-day h2 { font-size: 20px; }
 .screen > .home-day .actions .btn { min-height: 52px; }
 .card .stats { grid-auto-rows: auto; gap: 20px 16px; align-items: start; }
+/* Tiles with their own background keep their padding and a shared height inside a card (Your pet, health sheet). */
+.card .stats .stat.item { padding: 16px 18px; align-self: stretch; }
 
 /* ---------- the room: where the pet lives ---------- */
 .screen.scene-screen { padding: 0 0 48px; gap: 0; }

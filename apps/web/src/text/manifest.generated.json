@@ -762,7 +762,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 3,
-      "end": 22,
+      "end": 21,
       "entries": [
         {
           "id": "pets.grid.title",
@@ -786,11 +786,6 @@
         },
         {
           "id": "pets.grid.add",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "pets.grid.add_hint",
           "kind": "text",
           "placeholders": []
         },
@@ -863,8 +858,8 @@
       "title": "Pet menu",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 24,
-      "end": 41,
+      "start": 23,
+      "end": 40,
       "entries": [
         {
           "id": "pets.menu.label",
@@ -961,8 +956,8 @@
       "title": "Pet picker",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 43,
-      "end": 60,
+      "start": 42,
+      "end": 59,
       "entries": [
         {
           "id": "pets.picker.group",
@@ -1041,11 +1036,11 @@
     {
       "id": "pets.add",
       "screen": "Home",
-      "title": "Add a recovery track",
+      "title": "Add a pet",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
-      "start": 62,
-      "end": 72,
+      "start": 61,
+      "end": 71,
       "entries": [
         {
           "id": "pets.add.label",
