@@ -6035,10 +6035,15 @@
       "source": "src/copy.ts, src/screens/Me.tsx",
       "file": "src/text/sections/safety.ts",
       "start": 25,
-      "end": 29,
+      "end": 30,
       "entries": [
         {
           "id": "safety.professional.note",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "safety.professional.alcohol",
           "kind": "text",
           "placeholders": []
         }
@@ -6050,8 +6055,8 @@
       "title": "Disclaimers",
       "source": "src/copy.ts, src/screens/Onboarding.tsx, src/screens/Me.tsx, src/screens/HealthSheet.tsx",
       "file": "src/text/sections/safety.ts",
-      "start": 31,
-      "end": 38,
+      "start": 32,
+      "end": 39,
       "entries": [
         {
           "id": "safety.disclaimer.body",
@@ -6081,8 +6086,8 @@
       "title": "More support",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/safety.ts",
-      "start": 40,
-      "end": 46,
+      "start": 41,
+      "end": 47,
       "entries": [
         {
           "id": "safety.support.title",

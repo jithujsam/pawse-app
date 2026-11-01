@@ -4,10 +4,10 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { LiveCompanion, PetImage, PetPortrait } from "../Companion";
-import { BREEDS, PERSONALITIES, SPECIES, breedFor, coatsFor } from "../pets";
+import { BREEDS, PERSONALITIES, PICKABLE, SPECIES, breedFor, coatsFor } from "../pets";
 import { has3D, pet3dStatus, STYLE_3D } from "../pet3d-support";
 import { say } from "../voice";
-import { DISCLAIMER, PROFESSIONAL_NOTE, TONES, tonePreview } from "../copy";
+import { DISCLAIMER, PROFESSIONAL_NOTE, PROFESSIONAL_NOTE_ALCOHOL, TONES, tonePreview } from "../copy";
 import { concernIn } from "../guard";
 import { money } from "../format";
 import { t } from "../text";
@@ -72,7 +72,7 @@ export function Me() {
         </span>
         <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
       </motion.button>
-      {showProf && <motion.div className="banner" role="note" variants={rise}>{PROFESSIONAL_NOTE}</motion.div>}
+      {showProf && <motion.div className="banner" role="note" variants={rise}>{habit.cls === "alcohol" ? PROFESSIONAL_NOTE_ALCOHOL : PROFESSIONAL_NOTE}</motion.div>}
 
       <motion.div variants={rise}>
         <Group title={t("me.profile.g_pet")}>
@@ -245,8 +245,13 @@ function RemindersPage() {
         </motion.div>
       )}</AnimatePresence>
       <p className="muted small">{t("me.reminders.note", { name: companion.name })}</p>
-      <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label={t("me.reminders.risk")} hint={t("me.reminders.risk_hint")} />
-      <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={t("me.reminders.care", { name: companion.name })} hint={t("me.reminders.care_hint")} />
+      {/* Both ride on the daily reminder: with it off neither is sent, so they only show while it is on. */}
+      <AnimatePresence initial={false}>{settings.remindersOn && (
+        <motion.div className="stack" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+          <Switch checked={settings.riskNudge} onChange={(v) => actions.setSettings({ riskNudge: v })} label={t("me.reminders.risk")} hint={t("me.reminders.risk_hint")} />
+          <Switch checked={settings.careNotes} onChange={(v) => actions.setSettings({ careNotes: v })} label={t("me.reminders.care", { name: companion.name })} hint={t("me.reminders.care_hint")} />
+        </motion.div>
+      )}</AnimatePresence>
     </section>
   );
 }
@@ -444,7 +449,7 @@ function AboutPage() {
       <h2>{t("me.about.what_title")}</h2>
       <p>{t("me.about.what_body")}</p>
       <div className="about-pets" aria-hidden>
-        {(["dog", "cat", "fox"] as const).map((sp) => <PetPortrait key={sp} species={sp} stage="adult" mood="happy" age={4} size={96} />)}
+        {PICKABLE.map(({ id: sp }) => <PetPortrait key={sp} species={sp} stage="adult" mood="happy" age={4} size={96} />)}
       </div>
       <p className="muted small">{t("me.about.pets_caption")}</p>
     </section>

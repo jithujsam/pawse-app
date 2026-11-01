@@ -473,6 +473,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .wday[data-today="true"] .small { color: var(--text); font-weight: 800; }
 .wday[data-today="true"] i { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 14px; }
+.stats > .stat:only-child { grid-column: 1 / -1; }
 .stat { display: flex; flex-direction: column; justify-content: space-between; gap: 4px; min-height: 96px; }
 .card .stats .stat { padding: 0; min-height: 0; gap: 4px; }
 .card.stack, .card .stack { gap: 16px; }
@@ -668,7 +669,7 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .day[data-s="urge"] { background: var(--surface); box-shadow: inset 0 0 0 3px var(--positive); }
 .day[data-s="rest"], .day[data-s="paused"] { background: var(--raised); color: var(--muted); }
 .day[data-s="future"] { background: transparent; color: var(--muted); cursor: default; }
-.day[data-today="true"] { font-weight: 900; }
+.day[data-today="true"] { font-weight: 700; }
 .day-ring { position: absolute; inset: -3px; border-radius: 16px; border: 2.5px solid var(--text); }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
@@ -1035,8 +1036,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .hs-greet { margin: 2px 0 0; max-width: 320px; color: var(--muted); font: 400 21px/26px var(--serif); text-wrap: balance; }
 .hs-name { margin: 2px 0 0; font: 400 44px/48px var(--serif); letter-spacing: -0.015em; }
 .hs-meta { margin: 0; color: var(--muted); font: 500 12px/16px var(--font); letter-spacing: .04em; text-transform: uppercase; }
-.hs-stage { position: relative; display: grid; place-items: center; width: 100%; margin: -44px 0 -6px; }
-.hs-stage::before { content: ""; position: absolute; left: 50%; bottom: 14px; width: 62%; height: 26px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, light-dark(rgba(60,40,20,.22), rgba(0,0,0,.6)), transparent); }
+.hs-stage { position: relative; display: grid; place-items: center; width: 100%; margin: -22px 0 -6px; }
 .hs-stage > * { position: relative; }
 .speech { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px 18px; max-width: 94%; text-align: center; font: 500 16px/22px var(--font); margin-top: 14px; }
 .speech::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0; }
@@ -1085,5 +1085,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .strip28 > span[data-today="true"] { outline: 1.5px solid var(--text); outline-offset: 1px; }
 .strip28 .mark { width: 12px; height: 12px; }
 .strip28 .mark[data-s="unrecorded"], .strip28 .mark[data-s="future"] { width: 6px; height: 6px; background: var(--control); margin: 0; }
+/* Days before the track began: a fainter dot, so the trail keeps all 28 places from day one. */
+.mark[data-s="before"], .strip28 .mark[data-s="before"] { width: 6px; height: 6px; background: var(--line); margin: 0; }
 .strip-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 500 13px/18px var(--font); }
 .strip-meta b { color: var(--text); font-weight: 600; }

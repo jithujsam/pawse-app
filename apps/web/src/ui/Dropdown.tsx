@@ -12,8 +12,8 @@ const MENU_MAX = 280, MENU_MIN = 140, GAP = 6, EDGE = 12;
 /**
  * The app's own dropdown: the same field as the rest of the forms, and a menu on the same surface that opens under it
  * (or over it, where there is more room). The menu is drawn on <body>, placed from the field's position and sized to the
- * room on screen, so a sheet's edges never clip it. Nothing leaves the app, so it keeps the theme and the flow. Arrow keys
- * move through the menu, Enter picks, Escape or a tap outside closes it.
+ * room on screen, so a sheet's edges never clip it, and it follows the field when the page scrolls. Nothing leaves the app,
+ * so it keeps the theme and the flow. Arrow keys move through the menu, Enter picks, Escape or a tap outside closes it.
  */
 export function Dropdown({ items, selected, onPick, label, placeholder = "", className = "" }:
   { items: DropItem[]; selected: string | null; onPick: (key: string) => void; label: string; placeholder?: string; className?: string }) {
@@ -24,12 +24,15 @@ export function Dropdown({ items, selected, onPick, label, placeholder = "", cla
   const trigger = useRef<HTMLButtonElement>(null);
   const shown = items.find((i) => i.key === selected);
 
-  function show() {
+  function measure() {
     const r = wrap.current!.getBoundingClientRect();
     const below = window.innerHeight - r.bottom - EDGE - GAP, above = r.top - EDGE - GAP;
     const up = below < Math.min(MENU_MAX, MENU_MIN) && above > below;
     const room = Math.max(MENU_MIN, Math.min(MENU_MAX, up ? above : below));
-    setPlace({ up, style: { left: r.left, width: r.width, maxHeight: room, ...(up ? { bottom: window.innerHeight - r.top + GAP } : { top: r.bottom + GAP }) } });
+    return { up, style: { left: r.left, width: r.width, maxHeight: room, ...(up ? { bottom: window.innerHeight - r.top + GAP } : { top: r.bottom + GAP }) } };
+  }
+  function show() {
+    setPlace(measure());
     setOpen(true);
   }
   function close() {
@@ -48,8 +51,14 @@ export function Dropdown({ items, selected, onPick, label, placeholder = "", cla
     if (!open) return;
     const inside = (n: Node | null) => !!n && (!!wrap.current?.contains(n) || !!menu.current?.contains(n));
     const outside = (e: PointerEvent) => { if (!inside(e.target as Node)) setOpen(false); };
-    // The menu is placed from where the field was, so anything that moves the field (a scroll, a resize) closes it.
-    const moved = (e: Event) => { if (!inside(e.target as Node)) setOpen(false); };
+    // A scroll or resize moves the field: the menu follows it, and closes only once the field has left the screen.
+    // (Closing on any scroll shut the menu as it opened when a tap landed while the page was still settling.)
+    const moved = (e: Event) => {
+      if (inside(e.target as Node) || !wrap.current) return;
+      const r = wrap.current.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) setOpen(false);
+      else setPlace(measure());
+    };
     document.addEventListener("pointerdown", outside);
     window.addEventListener("scroll", moved, true);
     window.addEventListener("resize", moved);
