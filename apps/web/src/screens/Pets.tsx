@@ -6,7 +6,7 @@ import { moodFor, PetPortrait } from "../Companion";
 import { has3D, STYLE_3D } from "../pet3d-support";
 import { pauseHint, pauseRefused, pauseToast, resumeHint, resumeToast } from "../copy";
 import { concernIn, concernInAny } from "../guard";
-import { t } from "../text";
+import { t, tt } from "../text";
 import { today } from "../dates";
 import { trackSummary } from "../progress";
 import { haptic } from "../haptics";
@@ -14,11 +14,12 @@ import { spring } from "../motion";
 import { BREEDS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor, coatsFor } from "../pets";
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
-import { actions, useData, viewCompanion } from "../store";
+import { actions, emptyPlan, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
-import type { Personality, Species } from "../types";
+import type { Baseline, Personality, RecoveryPlan, Species } from "../types";
 import { Button, Icon, plainOpts, Select, SelectOther } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
+import { GoalSetup, planConcern } from "./Plan";
 import { toast } from "../ui/Toast";
 
 /** Every 3D pet is its own graphics context, which phones cap, so only the first few cards are 3D. */
@@ -226,20 +227,24 @@ export function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partia
   );
 }
 
-/** Adds a recovery track in two steps: its pet, then what it is for. */
+/** Adds a recovery track in three steps: its pet, what it is for, and the goal (which can be skipped). */
 function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (habitId: string) => void }) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const { settings } = useData();
+  const [plan, setPlan] = useState<RecoveryPlan>(() => emptyPlan());
+  const [baseline, setBaseline] = useState<Baseline | null>(null);
+  const planBlocked = planConcern(plan) !== null;
   const [pet, setPet] = useState<PetPick>(() => firstPet());
   const [what, setWhat] = useState("");
   const [amountLabel, setAmountLabel] = useState("");
   const nameConcern = concernIn(pet.name);
   const whatConcern = concernInAny([what, amountLabel]);
   const [formKey, setFormKey] = useState(0);
-  const reset = () => { setStep(1); setPet(firstPet()); setWhat(""); setAmountLabel(""); setFormKey((k) => k + 1); };
+  const reset = () => { setStep(1); setPet(firstPet()); setWhat(""); setAmountLabel(""); setPlan(emptyPlan()); setBaseline(null); setFormKey((k) => k + 1); };
   const close = () => { reset(); onClose(); };
-  const save = () => {
+  const save = (withGoal: boolean) => {
     const petName = pet.name.trim() || NAMES[pet.species][0];
-    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality, adoption: pet.adoption });
+    const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality, adoption: pet.adoption, ...(withGoal ? { plan: plan.goal ? plan : null, baseline } : {}) });
     if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
     haptic.success();
     toast(t("pets.add.added", { name: petName, what: what.trim() }), { kind: "good" });
@@ -250,7 +255,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   return (
     <Sheet open={open} onClose={close} label={t("pets.add.label")}>
       <div className="stack">
-        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : t("pets.add.step2")}</h2><span className="muted small">{t("pets.add.step_of", { step })}</span></div>
+        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : step === 2 ? t("pets.add.step2") : t("pets.add.step3")}</h2><span className="muted small">{t("pets.add.step_of", { step })}</span></div>
         {step === 1 && <>
           <PetStep pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
           <Button disabled={nameConcern !== null} onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.continue")}</Button>
@@ -268,9 +273,18 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
           </div>
           <div className="actions">
             <Button variant="secondary" onClick={() => { haptic.select(); setStep(1); }}>{t("ui.common.back")}</Button>
-            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={() => { haptic.select(); setStep(3); }}>{t("ui.common.continue")}</Button>
           </div>
           <p className="muted small">{t("pets.add.note")}</p>
+        </>}
+        {step === 3 && <>
+          <p className="muted">{tt("goal.setup.intro", settings.tone)}</p>
+          <GoalSetup plan={plan} set={(p) => setPlan((x) => ({ ...x, ...p }))} baseline={baseline} onBaseline={setBaseline} />
+          <div className="stack tight">
+            <Button disabled={!plan.goal || planBlocked || nameConcern !== null} onClick={() => save(true)}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+            <Button variant="text" disabled={nameConcern !== null} onClick={() => save(false)}>{t("pets.add.skip_goal")}</Button>
+            <Button variant="text" onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.back")}</Button>
+          </div>
         </>}
       </div>
     </Sheet>

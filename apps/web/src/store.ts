@@ -737,8 +737,8 @@ export const actions = {
    * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
    * phone. Returns its habit id, or null at the 50-track limit.
    */
-  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality; adoption?: AdoptionMode }): string | null {
-    return actions.createTrack({ adoption: o.adoption, name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, focus: true });
+  addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality; adoption?: AdoptionMode; baseline?: Baseline | null; plan?: RecoveryPlan | null }): string | null {
+    return actions.createTrack({ adoption: o.adoption, name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, baseline: o.baseline, plan: o.plan, focus: true });
   },
 
   adopt(habitId: string, name: string, species: Species, personality?: Personality, adoption?: AdoptionMode) {
