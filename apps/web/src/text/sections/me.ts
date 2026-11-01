@@ -20,7 +20,7 @@ export const meProfile = defineSection("me.profile", { screen: "Me", title: "Pro
   row_lock: "App lock",
   row_data: "Your data",
   row_appearance: "Appearance",
-  row_feel: "Sound and haptics",
+  row_feel: "Haptics and region",
   row_about: "About",
   row_updates: "Updates",
   update_badge: "Update available",
