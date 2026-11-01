@@ -167,7 +167,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <div className="hs-bar">
           {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
         </div>
-        {/* Scrolling down folds the room to just the back button, name and a small pet (.hs-fold and .hs-pet, styles.css). */}
+        {/* Scrolling down folds away the greeting, streak line and speech bubble and shrinks the pet; the name, vitals and health bar stay (.hs-fold and .hs-pet, styles.css). */}
         <div className="hs-fold"><div><p className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</p></div></div>
         <h1 className="hs-name">{companion.name}</h1>
         {meta && <div className="hs-fold"><div><p className="hs-meta">{meta}</p></div></div>}
@@ -184,6 +184,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
             {line}
           </motion.p>
         </AnimatePresence>
+        </div></div>
         <div className="vitals" role="group" aria-label={t("home.hero.vitals_aria", { name: companion.name })}>
           {VITALS.map((v) => (
             <motion.button key={v.id} className="vital" onClick={() => { haptic.tap(); setHealth(v.id); }} whileTap={{ scale: 0.92 }} transition={spring.snappy}
@@ -206,9 +207,8 @@ export function Home({ onBack }: { onBack?: () => void }) {
             aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
             {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
           </div>
-          {journeyLine && <p className="health-why">{journeyLine}</p>}
+          {journeyLine && <div className="hs-fold"><div><p className="health-why">{journeyLine}</p></div></div>}
         </div>
-        </div></div>
       </PetScene>
 
       <div className="scene-body">

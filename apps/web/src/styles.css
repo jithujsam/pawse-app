@@ -1090,8 +1090,8 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .pscene[data-paused] .ps-fx i { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ps-fx i { animation: none; } .ps-rain, .ps-snow, .ps-wind, .ps-petal, .ps-leaf { display: none; } }
 /* ---------- the room folds as you scroll ----------
-   The room sticks to the top. Over the first stretch of scrolling, the greeting, streak line, speech bubble, vitals and health bar fold
-   away and the pet shrinks, leaving the back button, name and a small pet. Scrolling back to the top opens it again.
+   The room sticks to the top. Over the first stretch of scrolling, the greeting, streak line and speech bubble fold away and the pet
+   shrinks; the name, vitals and health bar stay. Scrolling back to the top opens it again.
    Driven by the scroll position (no JS). Where scroll-driven animation isn't supported, the room just scrolls away as before. */
 @supports (animation-timeline: scroll()) {
   .screen.scene-screen { scroll-timeline: --room block; overflow-anchor: none; }
@@ -1102,11 +1102,19 @@ html[data-keyboard="open"] .tabbar { display: none; }
   .hs-fold { display: grid; grid-template-rows: 1fr; width: 100%; animation: room-fold 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
   .hs-fold > div { min-height: 0; overflow: hidden; }
   .hs-stage { align-items: start; height: 262px; animation: room-stage 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+  .hs-name { animation: room-name 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+  .vitals { animation: room-vitals 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+  .health-block { animation: room-health 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+  .vital-ico { animation: room-ico 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
   .hs-pet { width: 262px; height: 262px; transform-origin: 50% 0; animation: room-pet 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
 }
-.screen.scene-screen { --fold-range: 400px; }
+.screen.scene-screen { --fold-range: 260px; }
 @keyframes room-fold { to { grid-template-rows: 0fr; opacity: 0; margin-top: -4px; } }
-@keyframes room-stage { to { height: 144px; } }
+@keyframes room-stage { to { height: 140px; } }
+@keyframes room-name { to { font-size: 30px; line-height: 34px; } }
+@keyframes room-vitals { to { margin-top: 8px; } }
+@keyframes room-health { to { margin-top: 10px; } }
+@keyframes room-ico { to { width: 44px; height: 44px; } }
 @keyframes room-follow { to { transform: translateY(var(--fold-range)); } }
 @keyframes room-pet { to { transform: scale(.55); } }
 @keyframes room-tuck { to { padding-bottom: 12px; box-shadow: 0 1px 0 var(--line), 0 6px 16px -10px rgba(0,0,0,.35); } }
