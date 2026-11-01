@@ -52,7 +52,7 @@ const isPhoto = (v: unknown) => typeof v === "string" && v.startsWith("data:");
 export const stripPhotos = (values: Entry["values"]) => Object.fromEntries(Object.entries(values).filter(([, v]) => !isPhoto(v)));
 
 /** Settings that belong to this phone rather than the person. */
-const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "remindersOn", "autoLock", "coachSeen", "theme", "activeHabit"];
+const DEVICE_ONLY: (keyof Settings)[] = ["haptics", "ambient", "remindersOn", "autoLock", "coachSeen", "theme", "activeHabit"];
 export const portableSettings = (s: Settings) => Object.fromEntries(Object.entries(s).filter(([k]) => !DEVICE_ONLY.includes(k as keyof Settings)));
 
 /**

@@ -16,7 +16,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const defaultSettings = (): Settings => ({
   tone: "honest", userName: "", reminder: "20:00", currency: "Rs", deathScene: true, onboarded: false,
-  haptics: true, remindersOn: false, coachSeen: false, autoLock: "1m",
+  haptics: true, ambient: true, remindersOn: false, coachSeen: false, autoLock: "1m",
   careNotes: true, riskNudge: true, neglectFrom: null, theme: "system", accent: "pet",
   petLife: "continuity", activeHabit: null,
 });

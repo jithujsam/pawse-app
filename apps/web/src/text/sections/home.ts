@@ -40,10 +40,11 @@ export const homePaused = defineSection("home.paused", { screen: "Pet screen", t
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {
   today: "Today",
   how: "How did today go?",
-  met_count: "{n} goal-met",
   run: "Day {n} run",
   next: "Next: day {n}",
-  strip_aria: "Last 28 days",
+  streak: "{n}-day streak",
+  streak_hint_on: "Today counts. Keep it going tomorrow.",
+  streak_hint_wait: "Log today to keep it going.",
   goal_met: "Goal met",
   slipped: "I slipped",
   urge: "Had an urge",

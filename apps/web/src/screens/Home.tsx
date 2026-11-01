@@ -3,14 +3,14 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
 import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, greeting, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
-import { addDays, fmtDay, today } from "../dates";
+import { fmtDay, today } from "../dates";
 import { HEALTH_SEGMENTS } from "@detox/engine";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { scheduleCare } from "../notify";
 import { actions, getData, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
 import { celebratedFor, daysTogether, milestoneProgress, milestoneToCelebrate, trackSummary } from "../progress";
-import { sceneFor } from "../scene";
+import { ambientFor, sceneFor } from "../scene";
 import { PetScene } from "../ui/PetScene";
 import { trackState } from "../tracks";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -27,7 +27,7 @@ import { missionText, packLine } from "../mission-text";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
-import { afterSlipLine, dayStatus, restLine, STATUS_LABEL } from "../recovery";
+import { afterSlipLine, restLine, STATUS_LABEL } from "../recovery";
 import { t, tt } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
@@ -128,8 +128,10 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // A stroke tells the pet's story (its talking-pet pack); other taps keep their playful answers.
   const react = (r: Reaction) => setNote(rescue && r === "stroke" ? packLine(habit.cls, "story", tone) : say(r, personality, tone));
 
-  const days28 = Array.from({ length: 28 }, (_, i) => { const d = addDays(t0, i - 27); return { d, s: dayStatus(data, habit.id, d, t0) }; });
-  const scene = sceneFor({ wellness: healthPct, rescue, slipToday: slippedToday, milestoneToday: milestone !== null, hour: new Date().getHours() });
+  const now = new Date();
+  const ambient = ambientFor(now, data.settings.ambient !== false);
+  // With time of day off, the room keeps daylight; health still sets its weather.
+  const scene = sceneFor({ wellness: healthPct, rescue, slipToday: slippedToday, milestoneToday: milestone !== null, hour: ambient ? now.getHours() : 12 });
   const nextMilestone = milestoneProgress(progress.care, MILESTONES).next;
   const [editing, setEditing] = useState(false);
   const hasRequired = habit.fields.some((f) => f.required);
@@ -150,10 +152,18 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const meta = [streak > 0 ? t("home.today.run", { n: streak }) : null, nextMilestone ? t("home.today.next", { n: nextMilestone }) : null].filter((x): x is string => !!x).join(" · ");
   const bar = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
   const nothing = !checkedIn && !resting;
+  // The streak (docs/RECOVERY_RULES.md): goal-met and urge days add one, a slip ends it, quiet days don't break it.
+  // Lit once today counts; until then it waits, like a streak you still have time to keep.
+  const streakLit = progress.today === "met" || progress.today === "urge";
+  const streakBadge = (
+    <span className="streak" data-lit={streakLit} title={streakLit ? t("home.today.streak_hint_on") : t("home.today.streak_hint_wait")}>
+      {Icon.flame}<span>{t("home.today.streak", { n: streak })}</span>
+    </span>
+  );
 
   return (
     <main className="screen scene-screen">
-      <PetScene scene={scene} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
+      <PetScene scene={scene} ambient={ambient} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
         <div className="hs-bar">
           {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
         </div>
@@ -213,7 +223,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <section className="card today" aria-label={t("home.today.today")}>
           {nothing ? (
             <>
-              <div className="today-head"><h2>{t("home.today.how")}</h2><p>{fmtDay(t0)}</p></div>
+              <div className="today-head"><h2>{t("home.today.how")}</h2><div className="today-sub"><p>{fmtDay(t0)}</p>{streakBadge}</div></div>
               <div className="today-actions">
                 <Button onClick={clean}>{t("home.today.goal_met")}</Button>
                 <Button variant="secondary" onClick={slip}>{t("home.today.slipped")}</Button>
@@ -226,19 +236,13 @@ export function Home({ onBack }: { onBack?: () => void }) {
             </>
           ) : (
             <>
-              <div className="today-head"><h2>{fmtDay(t0)}</h2></div>
+              <div className="today-head"><div className="today-sub"><h2>{fmtDay(t0)}</h2>{streakBadge}</div></div>
               <div className="today-done"><span>{loggedLine}</span><Button variant="text" onClick={() => setEditing((e) => !e)}>{t("home.today.edit")}</Button></div>
               {editing && <DayDetail day={t0} standalone onMarkMet={clean} onSlipSaved={saved} />}
             </>
           )}
         </section>
 
-        <section className="trail" aria-label={t("home.today.strip_aria")}>
-          <div className="strip-meta"><b>{t("home.today.strip_aria")}</b><span>{t("home.today.met_count", { n: days28.filter((x) => x.s === "met").length })}</span></div>
-          <div className="strip28" role="img" aria-label={t("home.today.strip_aria")}>
-            {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
-          </div>
-        </section>
       </div>
 
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />

@@ -196,6 +196,8 @@ export interface Settings {
   /** Legacy colour choice, no longer used. */
   tint?: Tint;
   haptics: boolean;
+  /** Time of day and seasons in the pet's room (Me, Appearance). Kept on this phone. */
+  ambient: boolean;
   /** The person agreed to a daily check-in reminder. */
   remindersOn: boolean;
   /** First-run tips on Home have been shown. */

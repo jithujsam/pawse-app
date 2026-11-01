@@ -34,3 +34,14 @@ export function sceneFor({ wellness, rescue, slipToday, milestoneToday, hour }: 
     skyTop, skyBottom, ground, light: { color: row.light, intensity },
   };
 }
+
+export type Period = "morning" | "afternoon" | "evening" | "night" | "midnight";
+export type Season = "winter" | "spring" | "summer" | "autumn";
+export interface Ambient { period: Period; season: Season }
+
+export const periodOf = (hour: number): Period =>
+  hour >= 5 && hour < 12 ? "morning" : hour >= 12 && hour < 17 ? "afternoon" : hour >= 17 && hour < 20 ? "evening" : hour >= 20 ? "night" : "midnight";
+/** Northern-hemisphere months: Dec-Feb winter, Mar-May spring, Jun-Aug summer, Sep-Nov autumn. */
+export const seasonOf = (month: number): Season => (month === 11 || month <= 1 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn");
+/** The sun or moon and the season's touch behind the pet, or null when the person has turned it off (Me, Appearance). */
+export const ambientFor = (now: Date, on: boolean): Ambient | null => (on ? { period: periodOf(now.getHours()), season: seasonOf(now.getMonth()) } : null);

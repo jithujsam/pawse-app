@@ -64,3 +64,13 @@ describe("scene rain", () => {
     expect(at(10, { slipToday: true }).rain).toBe(24);
   });
 });
+
+describe("time of day and seasons (Me, Appearance)", () => {
+  it("names the part of the day and the season, and is off when the person turned it off", async () => {
+    const { ambientFor, periodOf, seasonOf } = await import("../src/scene");
+    expect([4, 5, 12, 17, 20].map(periodOf)).toEqual(["midnight", "morning", "afternoon", "evening", "night"]);
+    expect([0, 3, 6, 9, 11].map(seasonOf)).toEqual(["winter", "spring", "summer", "autumn", "winter"]);
+    expect(ambientFor(new Date(2026, 10, 1, 13), true)).toEqual({ period: "afternoon", season: "autumn" });
+    expect(ambientFor(new Date(2026, 10, 1, 13), false)).toBeNull();
+  });
+});
