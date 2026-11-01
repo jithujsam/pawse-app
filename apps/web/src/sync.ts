@@ -149,33 +149,34 @@ async function pullTable(table: Table, uid: string): Promise<Record<string, unkn
   return out;
 }
 
-/** Upserts one batch. Older servers without a newer column get the batch without it, as they always have. */
+/**
+ * Columns a server may not have yet, by the migration that added them. When the server names one as missing, the
+ * batch is sent again without it (and the rest of its migration), so an older server keeps every row backed up.
+ * Before this covered every optional column, a server without 0007 (breed) refused every companion, and nothing a
+ * person logged reached their account.
+ */
+const OPTIONAL: Partial<Record<Table, string[][]>> = {
+  companions: [["coat", "personality"], ["breed"], [...MISSION_COLUMNS], [...TRACK_COLUMNS.companions]],
+  habits: [[...TRACK_COLUMNS.habits]],
+  urges: [["strategy", "trigger"]],
+};
+
+/** The optional column group a "missing column" error names, if any. */
+export function missingGroup(t: Table, message: string): string[] | null {
+  if (!/column|schema cache/i.test(message)) return null;
+  for (const group of OPTIONAL[t] ?? []) if (group.some((c) => new RegExp(`\\b${c}\\b`).test(message))) return group;
+  return null;
+}
+
+/** Upserts one batch, leaving out optional columns the server turns out not to have (at most one try per group). */
 async function sendRows(t: Table, rows: Record<string, unknown>[]): Promise<{ code?: string; message: string } | null> {
   let batch = rows;
   let { error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] });
-  // A server that hasn't had the v2 migration yet doesn't know coat and personality: keep syncing without them.
-  if (error && t === "companions" && /coat|personality/i.test(error.message)) {
-    batch = batch.map(({ coat: _c, personality: _p, ...rest }) => rest);
-    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-  }
-  // Before migration 0008 the server has no adoption mode or missions: keep syncing companions without them.
-  // A server without 0006 has no 0008 either, so its missing habit_id drops these too; the 0006 step below then drops habit_id.
-  // Mission memory then stays on this phone; progress itself is always recomputed from goal-met days.
-  if (error && t === "companions" && [...MISSION_COLUMNS, ...TRACK_COLUMNS.companions].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
-    const drop = new Set<string>(MISSION_COLUMNS);
+  for (let tries = 0; error && tries < (OPTIONAL[t]?.length ?? 0); tries++) {
+    const group = missingGroup(t, error.message);
+    if (!group) break;
+    const drop = new Set(group);
     batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
-    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-  }
-  // Before migration 0006 the server has no track columns: keep syncing habits and companions without them.
-  // Track state then stays on this phone until the migration runs (docs/MULTI_TRACK_ARCHITECTURE.md, R1).
-  if (error && (t === "habits" || t === "companions") && /column/i.test(error.message) && TRACK_COLUMNS[t].some((c) => new RegExp(`\\b${c}\\b`).test(error!.message))) {
-    const drop = new Set<string>(TRACK_COLUMNS[t]);
-    batch = batch.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !drop.has(k))));
-    ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
-  }
-  // Before migration 0005 the server has no urge strategy or trigger columns: keep syncing urges without them.
-  if (error && t === "urges" && /(strategy|trigger)['"]? column|column ['"]?(urges\.)?(strategy|trigger)/i.test(error.message)) {
-    batch = batch.map(({ strategy: _s, trigger: _t, ...rest }) => rest);
     ({ error } = await supabase!.from(t).upsert(batch, { onConflict: CONFLICT[t] }));
   }
   return error ? { code: error.code, message: error.message } : null;

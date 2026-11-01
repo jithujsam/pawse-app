@@ -227,6 +227,18 @@ describe("sync", () => {
     expect(getData().companions.find((c) => c.id === CB)).toMatchObject({ adoption: "rescue", missions: { v: 3 } });
     stopSync();
   });
+  it("a server without 0007 or 0008 (no breed, adoption or missions) still backs up every pet and track", async () => {
+    // Production ran only up to 0006: every companion was refused over 'breed', so nothing a person logged was backed up.
+    lacksColumns("companions", ["breed", "adoption_mode", "missions"]);
+    const { CA, CB } = phone(6400);
+    await startSync("user-m5");
+    expect(getSyncStatus().state).toBe("idle");
+    expect(table("companions").get(CA)).toMatchObject({ name: "Biscuit" });
+    expect(table("companions").has(CB)).toBe(true);
+    expect(table("companions").get(CB)!.breed).toBeUndefined();
+    expect(table("habits").size).toBeGreaterThanOrEqual(2);
+    stopSync();
+  });
   it("a server without 0006 or 0008 still takes companions", async () => {
     lacksColumns("companions", ["habit_id", "adoption_mode", "missions"]);
     const { CA } = phone(6300);
