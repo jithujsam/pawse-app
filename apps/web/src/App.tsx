@@ -257,7 +257,7 @@ function Shell() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab === "pets" && track && view ? "track" : tab} className="stage-page" variants={fade} initial="enter" animate="center" exit="exit">
             <Suspense fallback={<GhostPage />}>
-              {tab === "pets" && (track && view ? <WithTrack><Home onBack={activeTracks > 1 ? () => { dir.current = -1; setTrack(false); } : undefined} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
+              {tab === "pets" && (track && view ? <WithTrack><Home onBack={() => { dir.current = -1; setTrack(false); }} /></WithTrack> : <Pets onOpen={() => { dir.current = 1; setTrack(true); }} />)}
               {tab === "calendar" && <WithTrack><Journey /></WithTrack>}
               {tab === "insights" && <WithTrack><Report /></WithTrack>}
               {tab === "you" && <WithTrack><Me /></WithTrack>}
