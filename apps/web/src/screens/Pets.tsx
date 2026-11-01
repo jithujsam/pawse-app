@@ -17,7 +17,7 @@ import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Personality, Species } from "../types";
-import { Button, Icon, plainOpts, Select, SelectOther } from "../ui/Controls";
+import { Button, Icon, plainOpts, Select, SelectOther, SwipePicker } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 
@@ -175,27 +175,32 @@ export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat:
  */
 export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void; compact?: boolean }) {
   const coat = pet.coat || coatsFor(pet.species, pet.breed)[0].id;
+  const breeds = BREEDS[pet.species];
   return (
     <div className="stack">
       <div className="species-grid" role="radiogroup" aria-label={t("pets.picker.group")}>
-        {PICKABLE.map((s) => (
-          <motion.button key={s.id} type="button" role="radio" aria-checked={pet.species === s.id} className="species-card" data-on={pet.species === s.id}
-            whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", breed: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
-            <motion.div animate={pet.species === s.id ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
-              <PetPortrait species={s.id} stage="baby" mood={pet.species === s.id ? "happy" : "idle"} age={2} size={68} />
-            </motion.div>
-            <b>{has3D(s.id) ? STYLE_3D[s.id].label : s.label}</b>
-          </motion.button>
-        ))}
+        {PICKABLE.map((s) => {
+          const on = pet.species === s.id;
+          return (
+            <motion.button key={s.id} type="button" role="radio" aria-checked={on} className="species-card" data-on={on}
+              whileTap={{ scale: 0.95 }} transition={spring.snappy} onClick={() => { haptic.select(); onChange({ species: s.id, coat: "", breed: "", name: pet.name && NAMES[pet.species].includes(pet.name) ? "" : pet.name }); }}>
+              <motion.div animate={on ? { y: [0, -8, 0] } : { y: 0 }} transition={{ duration: 0.5 }}>
+                {/* The chosen card shows the chosen breed and colour, so switching them is seen straight away. */}
+                <PetPortrait species={s.id} coat={on ? pet.coat || undefined : undefined} breed={on ? pet.breed || undefined : undefined} stage="baby" mood={on ? "happy" : "idle"} age={2} size={68} />
+              </motion.div>
+              <b>{has3D(s.id) ? STYLE_3D[s.id].label : s.label}</b>
+            </motion.button>
+          );
+        })}
       </div>
       <p className="muted small center-text">{SPECIES.find((s) => s.id === pet.species)!.blurb}</p>
+      {breeds && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
+        <SwipePicker label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={breeds.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id, coat: "" })} /></div>}
+      {!compact && <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
+        <SwipePicker label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label, swatch: [c.fur, c.belly] as [string, string] }))} onChange={(id) => onChange({ coat: id })} /></div>}
       <div className="field"><span className="field-label">{t("pets.picker.name")}</span>
         <SelectOther key={pet.species} label={t("pets.picker.name_aria")} value={pet.name} onChange={(name) => onChange({ name })} options={plainOpts(NAMES[pet.species])} maxLength={20}
           placeholder={t("pets.picker.name_placeholder", { name: NAMES[pet.species][0] })} otherLabel={t("pets.picker.name_other")} otherPlaceholder={t("pets.picker.name_own")} /></div>
-      {!compact && <div className="field"><span className="field-label">{t("pets.picker.coat")}</span>
-        <Select label={t("pets.picker.coat")} value={coat} options={coatsFor(pet.species, pet.breed).map((c) => ({ value: c.id, label: c.label }))} onChange={(id) => onChange({ coat: id })} /></div>}
-      {BREEDS[pet.species] && <div className="field"><span className="field-label">{t("pets.picker.breed")}</span>
-        <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
       {!compact && <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
         <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>}
     </div>

@@ -8,12 +8,12 @@ export const modelFor = (species: Species3D, breed?: string): string => (species
 
 /**
  * Every pet is 3D, each model named for what it is. Only the dog has the face rig (eyelids, brows, tongue);
- * the voxel cat and the fox show their mood in how they move. The drawing is shown only where 3D can't run.
+ * the cat and the fox show their mood in how they move. The drawing is shown only where the 3D models can't run.
  */
 export const STYLE_3D: Record<Species3D, { label: string; note: string }> = {
-  dog: { label: "3D dog", note: "A 3D dog with a face that shows how they feel." },
-  cat: { label: "Blocky voxel cat", note: "A 3D cat built from little cubes. Its mood shows in how it moves." },
-  fox: { label: "3D fox", note: "A 3D fox. Its mood shows in how it moves." },
+  dog: { label: "Dog", note: "A dog with a face that shows how they feel." },
+  cat: { label: "Cat", note: "A cat built from little cubes. Its mood shows in how it moves." },
+  fox: { label: "Fox", note: "A fox. Its mood shows in how it moves." },
 };
 export const has3D = (s: Species): s is Species3D => s in STYLE_3D;
 

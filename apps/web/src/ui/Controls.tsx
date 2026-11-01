@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
@@ -249,4 +249,34 @@ export const Icon = {
 /** Which track a screen is showing, where more than one could be meant. "Paused" is the approved track label. */
 export function TrackContext({ name, pet, paused }: { name: string; pet: string; paused?: boolean }) {
   return <p className="track-context small"><span className="muted">{t("ui.select.showing")}</span> <b>{name}</b> <span className="muted">· {pet}</span>{paused && <span className="tag">{t("ui.select.paused_tag")}</span>}</p>;
+}
+
+/**
+ * A row you swipe sideways to pick one option, for choices people should see side by side (breeds, colours). Options can carry a colour
+ * swatch. The chosen one scrolls to the middle; Left and Right move the choice.
+ */
+export function SwipePicker<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string; swatch?: [string, string] }[]; onChange: (v: T) => void; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = ref.current, on = row?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!row || !on) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    row.scrollTo({ left: on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2, behavior: reduce ? "auto" : "smooth" });
+  }, [value]);
+  const move = (by: number) => {
+    const i = options.findIndex((o) => o.value === value), next = options[Math.max(0, Math.min(options.length - 1, i + by))];
+    if (next && next.value !== value) { haptic.select(); onChange(next.value); }
+  };
+  return (
+    <div ref={ref} className="slider-pick" role="radiogroup" aria-label={label}
+      onKeyDown={(e) => { if (e.key === "ArrowRight") { e.preventDefault(); move(1); } else if (e.key === "ArrowLeft") { e.preventDefault(); move(-1); } }}>
+      {options.map((o) => (
+        <button key={o.value} type="button" role="radio" aria-checked={o.value === value} tabIndex={o.value === value ? 0 : -1} className="slider-opt" data-on={o.value === value}
+          onClick={() => { if (o.value !== value) { haptic.select(); onChange(o.value); } }}>
+          {o.swatch && <i className="slider-swatch" style={{ background: `linear-gradient(135deg, ${o.swatch[0]} 55%, ${o.swatch[1]} 55%)` }} aria-hidden />}
+          <span>{o.label}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
