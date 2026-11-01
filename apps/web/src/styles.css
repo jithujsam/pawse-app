@@ -1105,13 +1105,14 @@ html[data-keyboard="open"] .tabbar { display: none; }
   .room-end { display: block; position: absolute; top: 0; left: 0; width: 1px; height: calc(100% + var(--room-d, 0px)); visibility: hidden; pointer-events: none; }
   .scene-body { padding-bottom: 48px; }
   .pscene { position: sticky; top: calc(-1 * var(--room-d, 0px)); z-index: 4; }
-  .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .hs-greet, .hs-meta, .health-why,
+  .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .hs-greet, .hs-meta, .health-why, .vital > span:not(.vital-ico), .agetext,
   .pscene::before, .pscene::after, .ps-sun, .ps-moon, .ps-fx {
     animation-duration: 1s; animation-timing-function: linear; animation-fill-mode: both; animation-timeline: --room; animation-range: 0 var(--room-d, 1px); }
   /* Own layers, so nothing is re-drawn while it slides, shrinks or fades (the 3D pet is just scaled). */
   .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .pscene::before, .pscene::after, .ps-sun, .ps-moon, .ps-fx { will-change: transform; }
   .hs-greet, .hs-meta, .health-why { will-change: opacity; }
-  .hs-greet, .hs-meta, .health-why { animation-name: room-fade; animation-range: 0 calc(var(--room-d, 1px) * .4); }
+  .vital > span:not(.vital-ico), .agetext { will-change: opacity; }
+  .hs-greet, .hs-meta, .health-why, .vital > span:not(.vital-ico), .agetext { animation-name: room-fade; animation-range: 0 calc(var(--room-d, 1px) * .4); }
   .hs-bar { animation-name: room-bar; }
   .hs-name { animation-name: room-name; transform-origin: 50% 0; }
   .hs-stage { animation-name: room-stage; }
