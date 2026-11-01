@@ -31,6 +31,17 @@ function SyncLine() {
   );
 }
 
+/**
+ * Ends this phone's session and wipes this phone's copy. The network sign-out can hang or fail, so it is bounded:
+ * the phone is wiped either way, and the account itself is untouched.
+ */
+async function endSession(uid: string) {
+  stopSync();
+  await forgetSync(uid);
+  await withTimeout(supabase!.auth.signOut(), NET_MS).catch(() => undefined);
+  await actions.resetAll();
+}
+
 export function Account({ compact = false }: { compact?: boolean }) {
   const { session } = useSession();
   const [mode, setMode] = useState<"up" | "in">("up");
@@ -41,25 +52,12 @@ export function Account({ compact = false }: { compact?: boolean }) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
-  // Changes that hadn't backed up when the person tapped Sign out: the same block asks once more, in the app, not in a browser dialog.
-  const [unsynced, setUnsynced] = useState<number | null>(null);
+  const [confirm, setConfirm] = useState<null | "delete">(null);
   const [sent, setSent] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
 
   if (!configured || !supabase) {
     return <p className="muted small">{t("account.form.unavailable")}</p>;
-  }
-
-  /**
-   * Ends this phone's session and wipes this phone's copy. The network sign-out can hang or fail, so it is bounded:
-   * the phone is wiped either way, and the account itself is untouched.
-   */
-  async function endSession(uid: string) {
-    stopSync();
-    await forgetSync(uid);
-    await withTimeout(supabase!.auth.signOut(), NET_MS).catch(() => undefined);
-    await actions.resetAll();
   }
 
   async function deleteAccount(uid: string, email: string) {
@@ -91,23 +89,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
           <AnimatePresence mode="wait" initial={false}>
             {confirm === null && (
               <motion.div key="btns" className="actions" exit={{ opacity: 0 }}>
-                <Button variant="secondary" onClick={() => { setUnsynced(null); setConfirm("signout"); }}>{t("account.signed_in.sign_out")}</Button>
                 <Button variant="danger" onClick={() => setConfirm("delete")}>{t("account.signed_in.delete")}</Button>
-              </motion.div>
-            )}
-            {confirm === "signout" && (
-              <motion.div key="so" className="stack tight" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="small" role={unsynced ? "alert" : undefined}>{unsynced ? (unsynced === 1 ? t("account.signed_in.pending_one") : t("account.signed_in.pending_other", { n: unsynced })) : t("account.signed_in.sign_out_body")}</p>
-                <Button variant="secondary" onClick={async () => {
-                  if (unsynced === null) {
-                    // A sync that hangs must not keep the person from signing out: give it a bounded time.
-                    await withTimeout(syncNow(), NET_MS).catch(() => undefined);
-                    const pending = getSyncStatus().pending;
-                    if (pending > 0) { haptic.warn(); setUnsynced(pending); return; }
-                  }
-                  await endSession(session.user.id);
-                }}>{t("account.signed_in.sign_out")}</Button>
-                <Button variant="text" onClick={() => { setUnsynced(null); setConfirm(null); }}>{t("ui.common.cancel")}</Button>
               </motion.div>
             )}
             {confirm === "delete" && (
@@ -219,5 +201,34 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
         </div>
       </div>
     </main>
+  );
+}
+
+/** Sign out, shown at the end of Me. Changes that haven't backed up yet get one more confirm, in the app. */
+export function SignOut() {
+  const { session } = useSession();
+  const [open, setOpen] = useState(false);
+  const [unsynced, setUnsynced] = useState<number | null>(null);
+  if (!configured || !supabase || !session) return null;
+  return (
+    <div className="stack tight signout-end">
+      {!open ? (
+        <Button variant="secondary" onClick={() => { setUnsynced(null); setOpen(true); }}>{t("account.signed_in.sign_out")}</Button>
+      ) : (
+        <div className="stack tight">
+          <p className="small" role={unsynced ? "alert" : undefined}>{unsynced ? (unsynced === 1 ? t("account.signed_in.pending_one") : t("account.signed_in.pending_other", { n: unsynced })) : t("account.signed_in.sign_out_body")}</p>
+          <Button variant="secondary" onClick={async () => {
+            if (unsynced === null) {
+              // A sync that hangs must not keep the person from signing out: give it a bounded time.
+              await withTimeout(syncNow(), NET_MS).catch(() => undefined);
+              const pending = getSyncStatus().pending;
+              if (pending > 0) { haptic.warn(); setUnsynced(pending); return; }
+            }
+            await endSession(session.user.id);
+          }}>{t("account.signed_in.sign_out")}</Button>
+          <Button variant="text" onClick={() => { setUnsynced(null); setOpen(false); }}>{t("ui.common.cancel")}</Button>
+        </div>
+      )}
+    </div>
   );
 }

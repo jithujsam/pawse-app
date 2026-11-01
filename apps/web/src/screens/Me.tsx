@@ -30,7 +30,7 @@ import { useSyncStatus } from "../sync";
 import { Button, ConcernNote, GuardedInput, Icon, PawLogo, Select, SelectOther, Switch } from "../ui/Controls";
 import { Group, Row, SubPage } from "../ui/Settings";
 import { toast } from "../ui/Toast";
-import { Account } from "./Account";
+import { Account, SignOut } from "./Account";
 import { SecurityCard } from "./Security";
 import { Simulator } from "./Simulator";
 import { APP_VERSION, checkNow, openDownload, RELEASES_PAGE, showUpdate, useUpdate, useUpdatePending } from "../update";
@@ -138,6 +138,7 @@ export function Me() {
       <SubPage open={page === "about"} title={t("me.profile.row_about")} onClose={close}><AboutPage /></SubPage>
       <SubPage open={page === "updates"} title={t("me.profile.row_updates")} onClose={close}><UpdatesPage /></SubPage>
       {import.meta.env.DEV && <Simulator open={sim} onClose={() => setSim(false)} species={companion.species} coat={companion.coat} breed={companion.breed} name={companion.name} habit={habit} />}
+      <SignOut />
     </motion.main>
   );
 }
