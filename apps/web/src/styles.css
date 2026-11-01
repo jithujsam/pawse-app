@@ -81,7 +81,9 @@ select { background-color: var(--raised); color: var(--text); }
 }
 h1, h2, h3, p { margin: 0; }
 h1 { font: 500 35px/1.12 var(--serif); letter-spacing: -0.018em; font-optical-sizing: auto; text-wrap: balance; }
-h2 { font: 600 22px/1.22 var(--serif); letter-spacing: -0.008em; font-optical-sizing: auto; text-wrap: balance; }
+h2 { font: 600 20px/1.25 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+/* Type rule: the serif is for screen titles and big numbers only (24px and up, in these places). Everything smaller uses Geist. */
+.subpage-top h2, .update-head h2, .health-hero h2, .tutorial-page h2 { font-family: var(--serif); font-optical-sizing: auto; letter-spacing: -0.008em; }
 p { text-wrap: pretty; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
@@ -131,7 +133,7 @@ p { text-wrap: pretty; }
 .pet-card[data-active="true"] { box-shadow: var(--shadow), inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
 .pet-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pet-card-art { width: 112px; height: 112px; display: grid; place-items: center; border-radius: 50%; background: var(--raised); overflow: hidden; margin-bottom: 6px; }
-.pet-card-name { font: 600 20px/1.2 var(--serif); max-width: 100%; overflow-wrap: anywhere; }
+.pet-card-name { font: 600 18px/1.25 var(--display); letter-spacing: -0.01em; max-width: 100%; overflow-wrap: anywhere; }
 .pet-card-track { max-width: 100%; overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
 .pet-card-status { color: var(--muted); align-self: end; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pet-card-status[data-s="met"], .pet-card-status[data-s="urge"] { color: var(--positive); }
@@ -200,7 +202,7 @@ p { text-wrap: pretty; }
 .profile-card { border: 0; width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; color: var(--text); background: var(--hero-a); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); cursor: pointer; }
 .profile-art { width: 84px; display: grid; place-items: center; flex: none; }
 .profile-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
-.profile-name { font: 600 24px/1.15 var(--serif); }
+.profile-name { font: 600 22px/1.2 var(--display); letter-spacing: -0.01em; }
 .profile-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- journey ---------- */
@@ -961,7 +963,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .journey-rule { margin: 14px 0 0; font-size: 14px; color: var(--muted); max-width: 32ch; line-height: 1.5; }
 .eyebrow { font: 650 12px var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .now-healing { display: grid; gap: 6px; padding: 22px 20px; border-radius: var(--radius); background: var(--soft); }
-.now-healing h3 { margin: 2px 0 0; font: 600 22px/1.2 var(--serif); }
+.now-healing h3 { margin: 2px 0 0; font: 600 18px/1.25 var(--display); }
 .now-healing p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
 .now-when { margin-top: 6px; font: 600 14px var(--font); color: var(--accent); }
 .healed-chips { display: flex; flex-wrap: wrap; gap: 8px; }
