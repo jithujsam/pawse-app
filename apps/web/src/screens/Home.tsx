@@ -211,26 +211,32 @@ export function Home({ onBack }: { onBack?: () => void }) {
         )}
 
         <section className="card today" aria-label={t("home.today.today")}>
-          <div className="today-head"><h2>{fmtDay(t0)}</h2>{nothing && <p>{tt("calendar.note.nothing", tone)}</p>}</div>
           {nothing ? (
             <>
+              <div className="today-head"><h2>{t("home.today.how")}</h2><p>{fmtDay(t0)}</p></div>
               <div className="today-actions">
                 <Button onClick={clean}>{t("home.today.goal_met")}</Button>
                 <Button variant="secondary" onClick={slip}>{t("home.today.slipped")}</Button>
               </div>
-              <Button variant="text" className="today-urge" onClick={() => { haptic.tap(); setUrge(true); }}>{t("home.today.urge")}</Button>
+              <button type="button" className="urge-btn" onClick={() => { haptic.tap(); setUrge(true); }}>
+                <span className="urge-ico" aria-hidden>{Icon.wave}</span>
+                <span className="urge-text"><b>{t("home.today.urge")}</b><small>{t("sheets.quick.urge_hint")}</small></span>
+                <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
+              </button>
             </>
           ) : (
             <>
+              <div className="today-head"><h2>{fmtDay(t0)}</h2></div>
               <div className="today-done"><span>{loggedLine}</span><Button variant="text" onClick={() => setEditing((e) => !e)}>{t("home.today.edit")}</Button></div>
               {editing && <DayDetail day={t0} standalone onMarkMet={clean} onSlipSaved={saved} />}
             </>
           )}
-          <div className="today-trail">
-            <div className="strip28" role="img" aria-label={t("home.today.strip_aria")}>
-              {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
-            </div>
-            <div className="strip-meta"><span>{t("home.today.strip_aria")}</span><span>{t("home.today.well", { n: healthPct })}</span></div>
+        </section>
+
+        <section className="trail" aria-label={t("home.today.strip_aria")}>
+          <div className="strip-meta"><b>{t("home.today.strip_aria")}</b><span>{t("home.today.met_count", { n: days28.filter((x) => x.s === "met").length })}</span></div>
+          <div className="strip28" role="img" aria-label={t("home.today.strip_aria")}>
+            {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
           </div>
         </section>
       </div>
