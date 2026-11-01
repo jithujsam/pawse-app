@@ -238,7 +238,7 @@ export interface ReminderInputs {
   catchup: { name: string; days: string[] }[];
 }
 
-/** Per living pet on an active track: the days of the last four that are still empty, so they can be filled in before they lock. */
+/** Per living pet on an active track: the days of the last three that are still empty, so they can be filled in before they lock. */
 function catchupDays(d: AppData, t0: string): { name: string; days: string[] }[] {
   const out: { name: string; days: string[] }[] = [];
   for (const h of d.habits) {

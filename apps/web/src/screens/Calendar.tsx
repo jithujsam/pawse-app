@@ -31,7 +31,7 @@ export function CalendarSections() {
   const thisMonth = monthOf(t0);
 
   const status = (d: string) => dayStatus(data, habit.id, d, t0);
-  // The last four days (today and the three before it) can be filled in or corrected from the calendar, in a sheet.
+  // The last three days (today and the two before it) can be filled in or corrected from the calendar, in a sheet.
   const editable = (d: string) => editableInCalendar(data, habit.id, d, t0);
   const [sel, setSel] = useState(t0);
   const [sheet, setSheet] = useState(false);
@@ -115,7 +115,7 @@ export function DayDetail({ day: sel, standalone, onMarkMet, onSlipSaved }: { da
   const tone = data.settings.tone;
   const t0 = today();
   const ctl = dayControls(data, habit.id, sel, t0);
-  // In the calendar sheet, a day outside the last four can be read but not changed.
+  // In the calendar sheet, a day outside the last three can be read but not changed.
   const locked = !!standalone && !editableInCalendar(data, habit.id, sel, t0);
   const [logging, setLogging] = useState(false);
   const dayEntries = data.entries.filter((e) => e.habitId === habit.id && e.day === sel);

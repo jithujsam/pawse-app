@@ -38,6 +38,7 @@ export const homePaused = defineSection("home.paused", { screen: "Pet screen", t
 
 // @copy-section home.today
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {
+  today: "Today",
   well: "{n}% well",
   run: "Day {n} run",
   next: "Next: day {n}",
@@ -45,6 +46,7 @@ export const homeToday = defineSection("home.today", { screen: "Pet screen", tit
   goal_met: "Goal met",
   slipped: "I slipped",
   urge: "Had an urge",
+  edit: "Edit",
   slip_logged: "Slip logged",
   add_details: "Add details",
   slip_blocks_goal: "You already logged a slip today, so today can't be marked as goal met.",
@@ -89,7 +91,7 @@ export const calendarMonth = defineSection("calendar.month", { screen: "Journey"
   weekdays: "M T W T F S S",
   day_aria: "{date}: {status}",
   day_edit_aria: "{date}: {status}. Tap to edit",
-  note: "Tap a highlighted date to add or change a day.",
+  note: "Tap one of the last 3 days to add or change it.",
 });
 // @copy-section-end calendar.month
 
@@ -111,7 +113,7 @@ export const calendarDay = defineSection("calendar.day", { screen: "Journey", ti
   removed_met: "Goal met removed",
   log_slip: "Log slip",
   log_another: "Log another",
-  locked: "Locked. Only the last 4 days can be changed.",
+  locked: "Locked. Only the last 3 days can be changed.",
   future: "This day hasn't happened yet.",
   minutes: "{n} min",
 });

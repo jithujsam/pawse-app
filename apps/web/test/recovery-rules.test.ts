@@ -422,12 +422,12 @@ describe("10. edge cases", () => {
 
 // ---------- calendar editing window ----------
 
-describe("the calendar edits the last four days", () => {
+describe("the calendar edits the last three days", () => {
   it("opens exactly today and the EDIT_DAYS before it, never the future", () => {
     const d = data();
     const open = days(shiftDays(T0, -6), 8).filter((x) => editableInCalendar(d, A, x, T0));
-    expect(EDIT_DAYS).toBe(3);
-    expect(open).toEqual(["2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20"]);
+    expect(EDIT_DAYS).toBe(2);
+    expect(open).toEqual(["2026-03-18", "2026-03-19", "2026-03-20"]);
     // A pet born today can still have the days before it filled in, inside the window.
     const fresh = data({ bornOn: T0 });
     expect(editableInCalendar(fresh, A, "2026-03-18", T0)).toBe(true);

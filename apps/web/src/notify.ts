@@ -48,7 +48,7 @@ export interface PlanInput {
   careNotes: boolean;
   /** The last good-day or slip event, which care notes respond to. */
   care: { kind: "clean" | "slip"; at: number } | null;
-  /** Pets with empty days that can still be filled in (the last four), as YYYY-MM-DD. */
+  /** Pets with empty days that can still be filled in (the last three), as YYYY-MM-DD. */
   catchup?: { name: string; days: string[] }[];
 }
 export interface Planned { id: number; kind: NoteKind; at: Date; title: string; body: string; extra: { open: string } }
@@ -80,7 +80,7 @@ export function planNotifications(p: PlanInput): Planned[] {
     }
   }
   const [rh, rm] = p.reminder.split(":").map(Number);
-  // Empty days still open to edit (the last four): a morning and a bedtime note, until each has locked. The bedtime note is that day's reminder.
+  // Empty days still open to edit (the last three): a morning and a bedtime note, until each has locked. The bedtime note is that day's reminder.
   const catchupDays = new Set<string>();
   for (let i = 0; i < EDIT_WINDOW; i++) {
     const open = (p.catchup ?? []).map((c) => ({ name: c.name, n: c.days.filter((x) => x >= dayKey(atTime(p.now, i - EDIT_WINDOW + 1, 0, 0))).length })).filter((c) => c.n > 0);

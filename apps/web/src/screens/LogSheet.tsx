@@ -51,7 +51,7 @@ function answersConcern(habit: Habit, values: Entry["values"]): Concern | null {
   return found.includes("crisis") ? "crisis" : found.includes("restriction") ? "restriction" : null;
 }
 
-/** `day` presets the slip's date, e.g. from the calendar: one of the last four days. */
+/** `day` presets the slip's date, e.g. from the calendar: one of the last three days. */
 interface Props { open: boolean; habit: Habit; name: string; age: number; onClose: () => void; onSaved: (d: Deduction) => void; day?: string }
 
 export function LogSheet(props: Props) {

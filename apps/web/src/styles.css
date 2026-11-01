@@ -658,8 +658,9 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .day { aspect-ratio: 1; border: 0; border-radius: 14px; background: var(--raised); font-size: 14px; font-weight: 600; display: grid; place-items: center; position: relative; }
 .day > span:not(.day-ring) { position: relative; z-index: 1; }
 /* the last four days open their day in a sheet; an accent ring and a dot mark them */
-.day[data-edit] { color: var(--text); font-family: inherit; cursor: pointer; padding: 0; outline: 2px solid var(--accent); outline-offset: -2px; }
-.day[data-edit]::after { content: ""; position: absolute; bottom: 5px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: currentColor; opacity: .55; }
+.day[data-edit] { cursor: pointer; padding: 0; }
+/* Only the last three days can be changed: they keep full strength, every older day is quieter. */
+.day:not([data-edit]):not([data-s="future"]) { opacity: .5; }
 .day[data-s="lapse"] { background: var(--negative); color: var(--on-status); }
 .day[data-s="met"] { background: var(--positive); color: var(--on-status); }
 .day[data-s="urge"] { background: var(--surface); box-shadow: inset 0 0 0 3px var(--positive); }
@@ -989,36 +990,8 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .wday .mark[data-s="future"] { background: transparent; border: 2px dashed var(--control); }
 .wday[data-today="true"] .mark { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
 
-/* ---------- weather in the pet's card ---------- */
-.hero[data-mood="storm"] { background: color-mix(in srgb, var(--hero-a) 70%, #6b7683); }
-.hero[data-mood="overcast"] { background: color-mix(in srgb, var(--hero-a) 78%, #98a2ab); }
-.hero[data-mood="golden"] { background: color-mix(in srgb, var(--hero-a) 80%, #f0c27a); }
-.hero[data-time="night"] { background: color-mix(in srgb, var(--hero-a) 92%, #3a4560); }
-.hero-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0 !important; }
-.hero-fx i { position: absolute; display: block; }
-.wx-rain { top: -16px; width: 1px; height: 16px; background: rgba(255,255,255,.4); animation: wx-fall 1.4s linear infinite; }
-.wx-mote { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,236,190,.9); animation: wx-rise 9s ease-in-out infinite; }
-.wx-firefly { width: 5px; height: 5px; border-radius: 50%; background: #f4f0a0; animation: wx-blink 5s ease-in-out infinite; }
-@keyframes wx-fall { from { transform: translateY(0); } to { transform: translateY(520px); } }
-@keyframes wx-rise { 0%, 100% { transform: translateY(0); opacity: 0; } 50% { transform: translateY(-28px); opacity: 1; } }
-@keyframes wx-blink { 0%, 100% { transform: translate(0, 0); opacity: 0; } 50% { transform: translate(10px, -12px); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .hero-fx i { animation: none; } .wx-rain { display: none; } }
-.hero-meta { margin: -6px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; }
 
-/* ---------- 28-day trail ---------- */
-.trail { display: grid; gap: 8px; }
-.strip28 { display: grid; grid-template-columns: repeat(28, 1fr); align-items: center; justify-items: center; }
-.strip28 > span { display: grid; place-items: center; width: 100%; height: 20px; }
-.strip28 > span[data-today="true"] { outline: 1.5px solid var(--text); outline-offset: -1px; border-radius: 999px; }
-.strip28 .mark { width: 8px; height: 8px; border-radius: 50%; display: block; box-sizing: border-box; background: var(--raised); }
-.strip28 .mark[data-s="met"] { background: var(--positive); }
-.strip28 .mark[data-s="urge"] { background: transparent; border: 2px solid var(--positive); }
-.strip28 .mark[data-s="lapse"] { background: var(--slip); }
-.strip28 .mark[data-s="rest"], .strip28 .mark[data-s="paused"] { background: transparent; border: 1.5px dashed var(--muted); }
-.strip28 .mark[data-s="unrecorded"], .strip28 .mark[data-s="future"] { width: 4px; height: 4px; background: var(--control); }
-.trail-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 600; }
-
-/* ---------- Home: the pet and today's choice fit one screen ---------- */
+/* ---------- Home hero (kept for the sheets that reuse it) ---------- */
 .greet h1 { font-size: 28px; line-height: 1.15; }
 .hero { padding: 18px 20px 20px; gap: 8px; border-radius: 28px; }
 .speech-slot { height: 72px; }
@@ -1027,3 +1000,73 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .screen > .home-day h2 { font-size: 20px; }
 .screen > .home-day .actions .btn { min-height: 52px; }
 .card .stats { grid-auto-rows: auto; gap: 20px 16px; align-items: start; }
+
+/* ---------- the room: where the pet lives ---------- */
+.screen.scene-screen { padding: 0 0 48px; gap: 0; }
+.scene-body { display: flex; flex-direction: column; gap: var(--section); padding: 8px var(--pad) 0; }
+.pscene { position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 28px; text-align: center;
+  background:
+    linear-gradient(light-dark(transparent, rgba(0,0,0,.5)), light-dark(transparent, rgba(0,0,0,.5))),
+    radial-gradient(85% 52% at 50% 44%, color-mix(in srgb, var(--glow) 70%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--wash) 22%, var(--ground)) 0%, color-mix(in srgb, var(--wash) 9%, var(--ground)) 62%, var(--ground) 100%); }
+.ps-content { position: relative; z-index: 2; display: grid; justify-items: center; gap: 4px; }
+.ps-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.ps-fx i { position: absolute; display: block; }
+.ps-rain { top: -16px; width: 1px; height: 16px; background: light-dark(rgba(60,70,85,.28), rgba(220,230,245,.3)); animation: ps-fall 1.4s linear infinite; }
+.ps-mote { width: 5px; height: 5px; border-radius: 50%; background: light-dark(rgba(214,160,70,.75), rgba(255,226,170,.8)); animation: ps-rise 9s ease-in-out infinite; }
+.ps-firefly { width: 5px; height: 5px; border-radius: 50%; background: #F4F0A0; animation: ps-blink 5s ease-in-out infinite; }
+@keyframes ps-fall { from { transform: translateY(0); } to { transform: translateY(620px); } }
+@keyframes ps-rise { 0%, 100% { transform: translateY(0); opacity: 0; } 50% { transform: translateY(-28px); opacity: 1; } }
+@keyframes ps-blink { 0%, 100% { transform: translate(0, 0); opacity: 0; } 50% { transform: translate(10px, -12px); opacity: 1; } }
+.pscene[data-paused] .ps-fx i { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ps-fx i { animation: none; } .ps-rain { display: none; } }
+.hs-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; min-height: 40px; }
+.hs-bar .track-back { margin: 0; }
+.hs-greet { margin: 0; color: var(--muted); font: 500 14px/20px var(--font); letter-spacing: .02em; }
+.hs-name { margin: 0; font: 400 46px/50px var(--serif); letter-spacing: -0.015em; }
+.hs-meta { margin: 0; color: var(--muted); font: 500 12px/16px var(--font); letter-spacing: .04em; text-transform: uppercase; }
+.hs-stage { position: relative; display: grid; place-items: center; width: 100%; margin: -44px 0 -6px; }
+.hs-stage::before { content: ""; position: absolute; left: 50%; bottom: 14px; width: 62%; height: 26px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, light-dark(rgba(60,40,20,.22), rgba(0,0,0,.6)), transparent); }
+.hs-stage > * { position: relative; }
+.speech { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px 18px; max-width: 94%; text-align: center; font: 500 16px/22px var(--font); margin-top: 14px; }
+.speech::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0; }
+.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
+.vital { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 6px; cursor: pointer; padding: 0; font: 600 12px/16px var(--font); }
+.vital-ico { position: relative; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--accent); }
+.vital-ico .ico { width: 22px; height: 22px; }
+.vital:focus-visible .vital-ico { outline: 2px solid var(--accent); outline-offset: 2px; }
+.care-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 700 11px/18px var(--font); font-style: normal; text-align: center; }
+.care-badge[data-tone="warn"] { background: var(--warning); color: var(--on-warning); }
+.care-badge[data-tone="bad"] { background: var(--negative); color: var(--on-status); }
+.agetext { width: 100%; display: flex; justify-content: space-between; font: 500 14px/20px var(--font); margin-top: 16px; }
+.healthbar { width: 100%; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; height: 12px; margin-top: 8px; }
+.healthbar > i { display: block; border-radius: 4px; }
+.healthbar > i[data-s="ok"] { background: var(--positive); }
+.healthbar > i[data-s="hurt"] { background: color-mix(in srgb, var(--negative) 55%, var(--raised)); }
+.update-banner { border: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; background: var(--accent); color: var(--on-accent); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; }
+.update-banner > span:first-child { display: grid; gap: 2px; }
+.update-cta { background: color-mix(in srgb, var(--on-accent) 18%, transparent); border-radius: 999px; padding: 8px 14px; font: 600 14px/20px var(--font); white-space: nowrap; }
+
+/* ---------- Today ---------- */
+.today { display: grid; gap: 14px; }
+.today-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.today-head p { margin: 0; color: var(--muted); font: 500 14px/20px var(--font); }
+.today-actions { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; }
+.today-urge { justify-self: center; margin-top: -4px; }
+.today-done { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.today-trail { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+
+/* ---------- day marks (the 28-day trail) ---------- */
+.mark { width: 12px; height: 12px; border-radius: 50%; display: block; flex: none; box-sizing: border-box; }
+.mark[data-s="met"] { background: var(--positive); }
+.mark[data-s="urge"] { border: 2px solid var(--positive); }
+.mark[data-s="lapse"] { background: var(--slip); }
+.mark[data-s="rest"], .mark[data-s="paused"] { border: 1.5px dashed var(--muted); }
+.mark[data-s="unrecorded"], .mark[data-s="future"] { width: 6px; height: 6px; background: var(--line); margin: 3px; }
+.strip28 { display: grid; grid-template-columns: repeat(28, 1fr); gap: 0; align-items: center; justify-items: center; }
+.strip28 > span { display: grid; place-items: center; width: 100%; height: 20px; border-radius: 6px; }
+.strip28 > span[data-today="true"] { outline: 1.5px solid var(--text); outline-offset: -1px; border-radius: 999px; }
+.strip28 .mark { width: 8px; height: 8px; }
+.strip28 .mark[data-s="unrecorded"], .strip28 .mark[data-s="future"] { width: 4px; height: 4px; margin: 0; }
+.strip-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 500 12px/16px var(--font); }

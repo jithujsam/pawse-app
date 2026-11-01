@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { projectDaysToAge } from "@detox/engine";
 import { verdict } from "../copy";
-import { checkIns, countDays, trackIndex, trackSummary, weekdayOf } from "../progress";
+import { countDays, trackIndex, trackSummary, weekdayOf } from "../progress";
 import { addDays, fmtDay, fmtHour, parse, today, weekStart } from "../dates";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { rise, spring, stagger } from "../motion";
@@ -67,9 +67,6 @@ export function Report() {
   const progress = trackSummary(data, habit.id, today());
   const cleanIn = (from: string) => countDays(track, from, addDays(from, 6)).met;
   const cleanThis = cleanIn(ws), cleanPrev = cleanIn(addDays(ws, -7));
-  // Days with anything recorded (a slip, goal met or an urge), so a quiet week shows up as one.
-  const checkedIn = (from: string) => checkIns(track, from, addDays(from, 6)).checkedIn;
-  const inThis = checkedIn(ws), inPrev = checkedIn(addDays(ws, -7));
   const prev = weekStats(data, habit.id, addDays(ws, -7));
   const weeks = Array.from({ length: 8 }, (_, i) => weekStats(data, habit.id, addDays(ws, -7 * (7 - i))).slips);
   const maxW = Math.max(1, ...weeks);
@@ -119,12 +116,9 @@ export function Report() {
         <p>{verdict(tone, cur.slips, prev.slips)}</p>
         <div className="stats">
           <div className="stat"><div className="muted small">{t("insights.week.slips")}</div><div className="v"><AnimatedNumber value={cur.slips} from={0} /></div><Delta cur={cur.slips} prev={prev.slips} /></div>
-          <div className="stat"><div className="muted small">{t("insights.week.life_lost")}</div><div className="v"><AnimatedNumber value={fmt(cur.months)} from={0} decimals={1} /> <small>{t("insights.week.months_short")}</small></div><Delta cur={fmt(cur.months)} prev={fmt(prev.months)} unit={` ${t("insights.week.months_short")}`} /></div>
           <div className="stat"><div className="muted small">{t("insights.week.goal_met_days")}</div><div className="v"><AnimatedNumber value={cleanThis} from={0} /></div><Delta cur={cleanThis} prev={cleanPrev} good="up" /></div>
           <div className="stat"><div className="muted small">{t("insights.urges.managed")}</div><div className="v"><AnimatedNumber value={rode} from={0} /> <small>{t("insights.urges.of", { n: urgeLog.length })}</small></div></div>
-          {money
-            ? <div className="stat"><div className="muted small">{t("insights.week.spent")}</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>
-            : <div className="stat"><div className="muted small">{t("insights.week.days_checked_in")}</div><div className="v"><AnimatedNumber value={inThis} from={0} /></div><Delta cur={inThis} prev={inPrev} good="up" /></div>}
+          {money && <div className="stat"><div className="muted small">{t("insights.week.spent")}</div><div className="v"><small>{currency}</small> <AnimatedNumber value={Math.round(cur.spend)} from={0} /></div><Delta cur={Math.round(cur.spend)} prev={Math.round(prev.spend)} /></div>}
         </div>
         {urgeLog.length > 0 && <p className="small">{rode === urgeLog.length ? t("insights.urges.all") : t("insights.urges.some", { managed: rode, total: urgeLog.length })}</p>}
         <p className="muted small">{t("insights.week.arrows")}</p>

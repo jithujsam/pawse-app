@@ -380,9 +380,9 @@ export interface DayControls {
 }
 
 /** How many days before today the calendar lets a day be filled in or corrected. */
-export const EDIT_DAYS = 3;
+export const EDIT_DAYS = 2;
 
-/** Whether the calendar opens this day for editing: the last four days, today and the EDIT_DAYS before it, on a track that isn't archived. A day before the pet was born is allowed: recording one moves the birth back to it. */
+/** Whether the calendar opens this day for editing: the last three days, today and the EDIT_DAYS before it, on a track that isn't archived. A day before the pet was born is allowed: recording one moves the birth back to it. */
 export function editableInCalendar(d: AppData, habitId: string, day: string, today: string): boolean {
   const habit = d.habits.find((h) => h.id === habitId);
   const companion = d.companions.find((c) => c.id === habit?.companionId);

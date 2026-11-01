@@ -1262,8 +1262,13 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 39,
-      "end": 52,
+      "end": 54,
       "entries": [
+        {
+          "id": "home.today.today",
+          "kind": "text",
+          "placeholders": []
+        },
         {
           "id": "home.today.well",
           "kind": "text",
@@ -1306,6 +1311,11 @@
           "placeholders": []
         },
         {
+          "id": "home.today.edit",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "home.today.slip_logged",
           "kind": "text",
           "placeholders": []
@@ -1328,8 +1338,8 @@
       "title": "Milestone dialog",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 54,
-      "end": 59,
+      "start": 56,
+      "end": 61,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -2012,8 +2022,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 61,
-      "end": 73,
+      "start": 63,
+      "end": 75,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2075,8 +2085,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 75,
-      "end": 83,
+      "start": 77,
+      "end": 85,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2115,8 +2125,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 85,
-      "end": 94,
+      "start": 87,
+      "end": 96,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2162,8 +2172,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 96,
-      "end": 118,
+      "start": 98,
+      "end": 120,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2282,8 +2292,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 120,
-      "end": 133,
+      "start": 122,
+      "end": 135,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2346,8 +2356,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 135,
-      "end": 145,
+      "start": 137,
+      "end": 147,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -2422,7 +2432,7 @@
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
       "start": 9,
-      "end": 26,
+      "end": 23,
       "entries": [
         {
           "id": "insights.week.title",
@@ -2467,27 +2477,12 @@
           "placeholders": []
         },
         {
-          "id": "insights.week.life_lost",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.week.months_short",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "insights.week.goal_met_days",
           "kind": "text",
           "placeholders": []
         },
         {
           "id": "insights.week.spent",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "insights.week.days_checked_in",
           "kind": "text",
           "placeholders": []
         },
@@ -2509,8 +2504,8 @@
       "title": "Urges managed",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 28,
-      "end": 35,
+      "start": 25,
+      "end": 32,
       "entries": [
         {
           "id": "insights.urges.managed",
@@ -2545,8 +2540,8 @@
       "title": "Money kept",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 37,
-      "end": 56,
+      "start": 34,
+      "end": 53,
       "entries": [
         {
           "id": "insights.money.aria",
@@ -2645,8 +2640,8 @@
       "title": "When it happens",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 58,
-      "end": 68,
+      "start": 55,
+      "end": 65,
       "entries": [
         {
           "id": "insights.when.title",
@@ -2698,8 +2693,8 @@
       "title": "Since you started",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 70,
-      "end": 81,
+      "start": 67,
+      "end": 78,
       "entries": [
         {
           "id": "insights.since.title",
@@ -2752,8 +2747,8 @@
       "title": "Written summary",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 83,
-      "end": 89,
+      "start": 80,
+      "end": 86,
       "entries": [
         {
           "id": "insights.summary.aria",
@@ -2778,8 +2773,8 @@
       "title": "Slips per week",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 91,
-      "end": 97,
+      "start": 88,
+      "end": 94,
       "entries": [
         {
           "id": "insights.chart.title",
@@ -2806,8 +2801,8 @@
       "title": "If nothing changes",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 99,
-      "end": 107,
+      "start": 96,
+      "end": 104,
       "entries": [
         {
           "id": "insights.forecast.title",
@@ -2851,8 +2846,8 @@
       "title": "How was today?",
       "source": "src/screens/Reflect.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 109,
-      "end": 129,
+      "start": 106,
+      "end": 126,
       "entries": [
         {
           "id": "insights.reflect.title",
@@ -2947,8 +2942,8 @@
       "title": "Weekly review",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 131,
-      "end": 157,
+      "start": 128,
+      "end": 154,
       "entries": [
         {
           "id": "insights.review.check_in",
@@ -3087,8 +3082,8 @@
       "title": "Weekly review headline",
       "source": "src/recovery.ts",
       "file": "src/text/sections/insights.ts",
-      "start": 159,
-      "end": 169,
+      "start": 156,
+      "end": 166,
       "entries": [
         {
           "id": "insights.goal_line.nothing_open",
@@ -3147,8 +3142,8 @@
       "title": "What your records show",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 171,
-      "end": 184,
+      "start": 168,
+      "end": 181,
       "entries": [
         {
           "id": "insights.patterns.aria",
