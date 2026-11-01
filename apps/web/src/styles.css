@@ -386,11 +386,11 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 
 /* The update pop-up: the headline and versions, then what's new in its own card, then one clear action with the quieter ones below it. */
 /* A fixed, device-sized card: header, versions and buttons stay put; only "What's new" scrolls. */
-.update-dialog { max-width: 400px; display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 18px; padding: 26px 20px 18px; height: min(620px, 86dvh); max-height: 86dvh; overflow: hidden; }
+.update-dialog { box-sizing: border-box; width: min(100%, 340px); max-width: 340px; height: 600px; max-height: calc(100dvh - 2 * var(--pad)); display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 18px; padding: 26px 20px 20px; overflow: hidden; }
 .update-dialog:focus { outline: none; }
-.update-head { display: grid; gap: 2px; justify-items: center; text-align: center; }
+.update-head { display: grid; gap: 2px; justify-items: center; align-content: start; text-align: center; height: 76px; }
 .update-head h2 { font-size: 25.74px; line-height: 1.2; margin: 0; }
-.update-head p { margin: 0; font-size: .99em; }
+.update-head p { margin: 0; font-size: 15px; line-height: 21px; }
 .update-versions { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .update-versions > span:not(.update-arrow) { display: grid; justify-items: center; gap: 8px; }
 .update-versions small { color: var(--muted); font-size: 13px; }
@@ -404,11 +404,12 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 .update-note { display: grid; gap: 4px; }
 .update-note h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--accent); }
 .update-head, .update-versions, .update-actions { flex: none; }
+.update-notes { flex: 1 1 0; }
 .update-notes p { margin: 0; }
 .update-actions { display: grid; gap: 10px; width: 100%; }
-.update-actions .btn { width: 100%; min-height: 54px; }
+.update-actions .btn { width: 100%; height: 54px; min-height: 54px; }
 .update-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.update-pair .btn { padding-inline: 6px; white-space: nowrap; font-size: clamp(13px, 3.7vw, 16px); font-weight: 500; }
+.update-pair .btn { padding-inline: 6px; white-space: nowrap; font-size: 15px; font-weight: 500; }
 .update-actions > .btn { font-weight: 600; }
 
 /* ---------- home ---------- */
@@ -1135,8 +1136,11 @@ html[data-keyboard="open"] .tabbar { display: none; }
   /* Own layers, so nothing is re-drawn while it slides, shrinks or fades (the 3D pet is just scaled). */
   .hs-bar, .hs-name, .hs-stage, .hs-pet, .hs-speech, .vitals, .health-block, .pscene::before, .pscene::after, .ps-sun, .ps-moon, .ps-fx { will-change: transform; }
   .hs-greet, .hs-meta, .health-why { will-change: opacity; }
+  .hs-greet, .hs-meta { will-change: opacity, transform; }
   .vital > span:not(.vital-ico), .agetext { will-change: opacity; }
-  .hs-greet, .hs-meta, .health-why, .vital > span:not(.vital-ico), .agetext { animation-name: room-fade; animation-range: 0 calc(var(--room-d, 1px) * .4); }
+  .health-why, .vital > span:not(.vital-ico), .agetext { animation-name: room-fade; animation-range: 0 calc(var(--room-d, 1px) * .4); }
+  /* The greeting and the day line only fade, in place: the fade carries a matching downward shift, so the page scroll doesn't lift them away. */
+  .hs-greet, .hs-meta { animation-name: room-fade-still; animation-range: 0 calc(var(--room-d, 1px) * .3); }
   .hs-bar { animation-name: room-bar; }
   .hs-name { animation-name: room-name; transform-origin: 50% 0; }
   .hs-stage { animation-name: room-stage; }
@@ -1150,6 +1154,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 }
 .screen.scene-screen { --room-d: 0px; }
 @keyframes room-fade { to { opacity: 0; } }
+@keyframes room-fade-still { to { opacity: 0; transform: translateY(calc(var(--room-d, 1px) * .3)); } } /* shift = scroll covered by the animation range (.3 in both places) */
 @keyframes room-bar { to { transform: translateY(var(--k-bar, 0px)); } }
 @keyframes room-name { to { transform: translateY(var(--k-name, 0px)) scale(.68); } }
 @keyframes room-stage { to { transform: translateY(var(--k-stage, 0px)); } }
