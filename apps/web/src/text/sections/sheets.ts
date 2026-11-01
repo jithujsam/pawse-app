@@ -1,4 +1,4 @@
-import { defineSection } from "../core";
+import { defineSection, tones } from "../core";
 
 // @copy-section sheets.log
 export const sheetsLog = defineSection("sheets.log", { screen: "Log a slip", title: "Log a slip form", source: "src/screens/LogSheet.tsx" }, {
@@ -90,6 +90,20 @@ export const sheetsUrge = defineSection("sheets.urge", { screen: "Urge support",
   offer_first: "Offer \"{title}\" first next time",
   added: "Added to your plan",
   back_to: "Back to {name}",
+  instead_title: tones("What did you do instead?", "What did you do instead?", "What replaced it?"),
+  instead_hint: tones(
+    "Optional. It helps you see what works for you.",
+    "Optional. It shows what works for you over time.",
+    "Optional. It tracks what works.",
+  ),
+  instead_aria: "What you did instead",
+  instead_placeholder: "Pick one, or write your own",
+  instead_own: "Write your own",
+  instead_photo: "Add a photo",
+  instead_photo_alt: "What you did instead",
+  instead_remove_photo: "Remove photo",
+  instead_save: "Save",
+  instead_saved: "Saved. This helps show what works for you.",
   way: "Way through",
   way_aria: "Ways to get through it",
   set_off: "What set it off?",
@@ -125,7 +139,7 @@ export const sheetsQuick = defineSection("sheets.quick", { screen: "Quick check-
   met_hint: "Helps your pet heal",
   slip: "I slipped",
   slip_hint: "Log it in seconds",
-  plan: "Open plan",
+  plan: "Your goal and plan",
 });
 // @copy-section-end sheets.quick
 
@@ -154,12 +168,6 @@ export const sheetsHealth = defineSection("sheets.health", { screen: "Health", t
 
 // @copy-section sheets.plan
 export const sheetsPlan = defineSection("sheets.plan", { screen: "Your plan", title: "Plan page", source: "src/screens/Plan.tsx" }, {
-  goal: "Your goal",
-  goal_none: "Not sure yet",
-  finish: "Finish your plan",
-  sec_why: "Why it matters",
-  sec_first: "First step",
-  aiming: "What are you aiming for?",
   why: "Why does this matter to you?",
   reasons_aria: "Reasons",
   pick_fit: "Pick the ones that fit",

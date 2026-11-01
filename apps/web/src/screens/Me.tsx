@@ -24,7 +24,7 @@ import { daysTogether, trackSummary } from "../progress";
 import { companionsOf, listTracks, trackState } from "../tracks";
 import { kv } from "../db";
 import { shrink } from "./LogSheet";
-import { PlanPage } from "./Plan";
+import { goalSummary, PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
 import { Button, ConcernNote, GuardedInput, Icon, PawLogo, Select, SelectOther, Switch } from "../ui/Controls";
@@ -91,7 +91,7 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title={t("me.profile.g_recovery")}>
-          <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={track.plan?.goal ? { stop: t("me.profile.goal_stop"), reduce: t("me.profile.goal_reduce"), understand: t("me.profile.goal_understand") }[track.plan.goal] : t("me.profile.goal_none")} onClick={() => setPage("plan")} />
+          <Row icon={Icon.flag} label={t("me.profile.row_plan")} value={goalSummary(track.plan)} onClick={() => setPage("plan")} />
           <Row icon={Icon.bell} label={t("me.profile.row_reminders")} value={settings.remindersOn ? fmtTime(settings.reminder) : t("me.profile.off")} onClick={() => setPage("reminders")} />
           <Row icon={Icon.list} label={t("me.profile.row_questions")} value={`${habit.fields.length}`} onClick={() => setPage("questions")} />
         </Group>

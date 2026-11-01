@@ -4,7 +4,7 @@ import type { AdoptionMode, HabitClass } from "@detox/engine";
 import { LiveCompanion } from "../Companion";
 import { DISCLAIMER, hatchLine } from "../copy";
 import { concernIn } from "../guard";
-import { t } from "../text";
+import { t, tt } from "../text";
 import { haptic } from "../haptics";
 import { remindersSupported, requestReminders } from "../notify";
 import { toast } from "../ui/Toast";
@@ -12,7 +12,7 @@ import { rise, spring } from "../motion";
 import { HABIT_CHOICES, inferClass, measureForLabel } from "../questions";
 import { actions, emptyPlan } from "../store";
 import { Adoption, PetStep } from "./Pets";
-import { planConcern } from "./Plan";
+import { GoalSetup, planConcern } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
 import { NAMES, coatsFor } from "../pets";
@@ -45,7 +45,7 @@ const initial: Draft = {
   plan: emptyPlan(),
 };
 const loadDraft = (): Draft => { try { const d = { ...initial, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; return { ...d, plan: { ...emptyPlan(), ...(d.plan ?? {}) }, step: Math.min(STEPS, Math.max(1, d.step)) }; } catch { return initial; } };
-const STEPS = 3; // the hatch is step 4
+const STEPS = 4; // the hatch is step 5
 const HATCH = STEPS + 1;
 
 export function Onboarding() {
@@ -105,6 +105,16 @@ export function Onboarding() {
           </>)}
 
           {d.step === 3 && (<>
+            <h1>{tt("goal.onboarding.title", d.tone)}</h1>
+            <p className="muted">{tt("goal.onboarding.intro", d.tone)}</p>
+            <GoalSetup plan={d.plan} set={(p) => up({ plan: { ...d.plan, ...p } })} baseline={d.baseline} onBaseline={(baseline) => up({ baseline })} />
+            <div className="stack tight">
+              <Button disabled={!d.plan.goal || planBlocked} onClick={() => go(4)}>{t("ui.common.continue")}</Button>
+              <Button variant="text" disabled={planBlocked} onClick={() => go(4)}>{t("ui.common.not_now")}</Button>
+            </div>
+          </>)}
+
+          {d.step === 4 && (<>
             <h1>{t("onboarding.reminders.title")}</h1>
             <p className="muted">{t("onboarding.reminders.intro", { name })}</p>
             <div className="field"><span className="field-label">{t("onboarding.reminders.field")}</span>

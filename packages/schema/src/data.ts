@@ -83,6 +83,10 @@ export const PlanSchema = z.object({
   strategies: z.array(strategy).max(7),
   supportName: short(40),
   ifThen: z.array(short(160)).max(8),
+  /** With goal "reduce": the most times a week the person is aiming for. Plans saved before goals had targets read as none. */
+  limitPerWeek: z.number().int().min(1).max(500).nullable().default(null),
+  /** Who the person wants to be, in their words ("someone who reads every night"). */
+  identity: short(80).default(""),
 });
 
 export const CleanDaySchema = z.object({ habitId: id, day });
@@ -95,6 +99,10 @@ export const UrgeSchema = z.object({
   createdAt: z.number(),
   strategy: strategy.nullable().optional(),
   trigger: z.string().max(40).nullable().optional(),
+  /** What the person did instead of acting on it, in their words. */
+  instead: z.string().max(40).nullable().optional(),
+  /** A small photo of it. Kept on the phone only: it is never synced. */
+  photo: z.string().max(400_000).nullable().optional(),
 });
 
 export const JournalSchema = z.object({ day, mood: z.number().int().min(1).max(5), body: z.string().max(600) });

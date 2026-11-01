@@ -11,7 +11,10 @@ import { needsTrackContext, trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Button, Icon, plainOpts, SelectOther, TrackContext } from "../ui/Controls";
 import { CheckIn, Observations, WeeklyReview } from "./WeeklyReview";
-import { t } from "../text";
+import { t, tt } from "../text";
+import { goalProgress, urgePhotos, whatHelps, type GoalProgress } from "../goal";
+import { goalSummary, PlanPage } from "./Plan";
+import { Sheet } from "../ui/Sheet";
 import { money } from "../format";
 import type { Baseline } from "../types";
 
@@ -43,6 +46,92 @@ function SavingsGoal({ habitId, saved, goal, currency }: { habitId: string; save
       <div className="progress goal" aria-hidden><motion.i initial={{ width: 0 }} animate={{ width: `${Math.max(2, pct)}%` }} transition={spring.calm} /></div>
       <div className="row"><span className="small">{pct >= 100 ? t("insights.money.enough") : t("insights.money.percent", { pct: Math.round(pct) })}</span><Button variant="text" onClick={() => setEditing(true)}>{t("ui.common.edit")}</Button></div>
     </div>
+  );
+}
+
+const STATUS_LINE = {
+  building: "goal.card.status_building", on_quit: "goal.card.status_on_quit", on_limit: "goal.card.status_on_limit",
+  closing: "goal.card.status_closing", away: "goal.card.status_away", learn: "goal.card.status_learn",
+} as const;
+const times = (n: number) => (n === 1 ? t("goal.card.times_one", { n }) : t("goal.card.times_other", { n }));
+
+/** Your goal, held against your days: where you are this week, how it compares with last week and with where you started. */
+function GoalCard({ habitId }: { habitId: string }) {
+  const data = useData();
+  const { tone } = data.settings;
+  const [editing, setEditing] = useState(false);
+  const plan = trackState(data, habitId).plan;
+  const g: GoalProgress | null = goalProgress(data, habitId, today());
+  const sheet = (
+    <Sheet open={editing} onClose={() => setEditing(false)} label={t("goal.setup.title")}>
+      {editing && <PlanPage key={habitId} habitId={habitId} onSaved={() => setEditing(false)} />}
+    </Sheet>
+  );
+  if (!g) return (
+    <section className="card stack" aria-label={t("goal.card.title")}>
+      <h2>{t("goal.card.title")}</h2>
+      <p className="muted">{tt("goal.setup.intro", tone)}</p>
+      <Button variant="secondary" onClick={() => setEditing(true)}>{t("goal.card.set_goal")}</Button>
+      {sheet}
+    </section>
+  );
+  const key = g.status === "on_target" ? (g.target.kind === "quit" ? "on_quit" : "on_limit") : g.status;
+  const limit = g.target.kind === "limit" ? g.target.perWeek : g.target.kind === "quit" ? 0 : null;
+  const peak = Math.max(1, limit ?? 0, ...g.weeks);
+  return (
+    <section className="card stack goal-card" aria-label={t("goal.card.title")} data-status={g.status}>
+      <div className="row"><h2>{t("goal.card.title")}</h2><span className="goal-pill">{goalSummary(plan)}</span></div>
+      {g.identity && <p className="goal-identity">{t("goal.card.becoming", { text: g.identity })}</p>}
+      <p className="goal-status" role="status">{tt(STATUS_LINE[key], tone)}</p>
+      {g.target.kind !== "learn" && (<>
+        <div className="stats">
+          <div className="stat"><div className="muted small">{t("goal.card.this_week")}</div><div className="v"><AnimatedNumber value={g.thisWeek} from={0} /></div></div>
+          <div className="stat"><div className="muted small">{t("goal.card.last_week")}</div><div className="v"><AnimatedNumber value={g.lastWeek} from={0} /></div></div>
+          <div className="stat"><div className="muted small">{t("goal.card.target")}</div><div className="v">{limit === 0 ? "0" : limit}</div></div>
+        </div>
+        <div className="goal-weeks" role="img" aria-label={t("goal.card.weeks_aria")}>
+          {limit !== null && <i className="goal-line" style={{ bottom: `${(limit / peak) * 100}%` }} />}
+          {g.weeks.map((n, i) => <span key={i} className="goal-bar" data-now={i === 7 || undefined} data-over={limit !== null && n > limit || undefined} style={{ height: `${Math.max(4, (n / peak) * 100)}%` }} />)}
+        </div>
+      </>)}
+      {g.changePct !== null && (
+        <p className="small"><span className="muted">{t("goal.card.since_label")}: </span>
+          {g.changePct > 0 ? t("goal.card.since_down", { pct: g.changePct }) : g.changePct < 0 ? t("goal.card.since_up", { pct: Math.abs(g.changePct) }) : t("goal.card.since_same")}</p>
+      )}
+      <Button variant="text" onClick={() => setEditing(true)}>{t("goal.card.edit_goal")}</Button>
+      {sheet}
+    </section>
+  );
+}
+
+/** What the person did instead of acting on an urge, and how often it worked, with the photos they kept. */
+function HelpsCard({ habitId }: { habitId: string }) {
+  const data = useData();
+  const { tone } = data.settings;
+  const { helpers } = whatHelps(data, habitId);
+  const photos = urgePhotos(data, habitId);
+  return (
+    <section className="card stack" aria-label={t("goal.helps.title")}>
+      <h2>{t("goal.helps.title")}</h2>
+      {helpers.length === 0 ? <p className="muted">{tt("goal.helps.empty", tone)}</p> : (<>
+        <p className="muted small">{tt("goal.helps.intro", tone)}</p>
+        <div className="list">
+          {helpers.map((h) => (
+            <div key={h.what} className="item helper-row">
+              <b>{t("goal.helps.row", { what: h.what })}</b>
+              <span className="small">{t("goal.helps.eased", { managed: h.managed, total: h.total })}</span>
+              <span className="muted small">{t("goal.helps.strong", { n: h.avgStrength })}</span>
+              <i className="helper-meter" aria-hidden><i style={{ width: `${(h.managed / h.total) * 100}%` }} /></i>
+            </div>
+          ))}
+        </div>
+        {photos.length > 0 && (
+          <div className="photo-strip" aria-label={t("goal.helps.photos_aria")}>
+            {photos.map((p, i) => <img key={i} src={p.src} alt={p.what || t("goal.helps.photo_alt")} width={96} height={96} />)}
+          </div>
+        )}
+      </>)}
+    </section>
   );
 }
 
@@ -109,6 +198,7 @@ export function Report() {
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>{t("insights.header.title")}</motion.h1>
       {needsTrackContext(data, habit.id) && <TrackContext name={habit.name} pet={companion.name} paused={trackState(data, habit.id).status === "paused"} />}
+      <motion.div className="stack" variants={rise}><GoalCard key={`g-${habit.id}`} habitId={habit.id} /><HelpsCard key={`h-${habit.id}`} habitId={habit.id} /></motion.div>
 
       <section className="stack" aria-label={t("insights.week.title")}>
         <h2>{t("insights.week.title")}</h2>

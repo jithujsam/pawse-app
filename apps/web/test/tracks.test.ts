@@ -12,7 +12,7 @@ const born = addDays(t0, -40);
 const entry = (id: string, habitId: string, companionId: string, day: string, months = 4): Entry => ({
   id, habitId, companionId, day, time: null, values: {}, amount: null, months, severity: 1, effects: [], explanation: "", source: "baseline", aiAdjustPct: null, createdAt: 0,
 });
-const plan = { goal: "reduce" as const, reasons: ["Money"], situations: [], firstStep: "Delete the app", strategies: [], supportName: "", ifThen: [] };
+const plan = { goal: "reduce" as const, reasons: ["Money"], situations: [], firstStep: "Delete the app", strategies: [], supportName: "", ifThen: [], limitPerWeek: null, identity: "" };
 
 /** What a phone saved before tracks: one habit, its settings on the person's settings, summaries by week. */
 function v1(): unknown {

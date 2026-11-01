@@ -72,7 +72,7 @@ export function frictionIdeas(cls: HabitClass, what = ""): string[] {
   } as Record<HabitClass, string[]>)[cls];
 }
 
-export const REPLACEMENTS = ["Drink a glass of water", "Walk for five minutes", "Have a shower", "Make tea", "Text a friend", "Tidy one small thing", "Stretch", "Put on a song"];
+export const REPLACEMENTS = ["Drink a glass of water", "Walk for five minutes", "Have a shower", "Make tea", "Text a friend", "Tidy one small thing", "Stretch", "Put on a song", "Read a few pages", "Draw or write something"];
 
 // ---------- plan choices ----------
 
@@ -308,7 +308,7 @@ export function urgeDetails(o: { supported: boolean; strategy: StrategyId; trigg
 
 /** The plan with one strategy moved to the front of its preferred list (after it helped with an urge). */
 export function withStrategyFirst(plan: RecoveryPlan | null, id: StrategyId): RecoveryPlan {
-  const p = plan ?? { goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [] };
+  const p = plan ?? { goal: null, reasons: [], situations: [], firstStep: "", strategies: [], supportName: "", ifThen: [], limitPerWeek: null, identity: "" };
   return { ...p, strategies: [id, ...p.strategies.filter((x) => x !== id)] };
 }
 

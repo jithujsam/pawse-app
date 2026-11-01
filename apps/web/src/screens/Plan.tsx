@@ -2,18 +2,19 @@ import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { HabitClass } from "@detox/engine";
 import { concernInAny, hasCrisis } from "../guard";
-import { t } from "../text";
+import { t, tt } from "../text";
 import { haptic } from "../haptics";
 import { rise } from "../motion";
-import { FIRST_STEPS, GOALS, REASONS, SITUATIONS, STRATEGIES, strategy, trackLessons } from "../recovery";
+import { FIRST_STEPS, REASONS, SITUATIONS, STRATEGIES, strategy, trackLessons } from "../recovery";
 import { fmtDay } from "../dates";
 import { actions, emptyPlan, useData } from "../store";
 import { trackState } from "../tracks";
 import { Button, GuardedInput, Icon, MultiSelect, plainOpts, Select, SelectOther, type Opt } from "../ui/Controls";
 import { toast } from "../ui/Toast";
-import type { RecoveryPlan } from "../types";
+import { goalTarget } from "../goal";
+import type { Baseline, GoalKind, RecoveryPlan } from "../types";
 
-const planTexts = (p: RecoveryPlan) => [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName];
+const planTexts = (p: RecoveryPlan) => [...p.reasons, ...p.situations, ...p.ifThen, p.firstStep, p.supportName, p.identity ?? ""];
 
 /** True when any free text in the plan needs the crisis message instead of being saved. */
 export const planHasCrisis = (p: RecoveryPlan) => planTexts(p).some(hasCrisis);
@@ -21,11 +22,68 @@ export const planHasCrisis = (p: RecoveryPlan) => planTexts(p).some(hasCrisis);
 /** What the plan's typed text needs before it can be saved: the crisis message, the food and weight note, or nothing. */
 export const planConcern = (p: RecoveryPlan) => concernInAny(planTexts(p));
 
-type GoalChoice = NonNullable<RecoveryPlan["goal"]> | "none";
-const GOAL_OPTIONS: Opt<GoalChoice>[] = [...GOALS.map((g) => ({ value: g.id, label: `${g.label}: ${g.hint}` })), { value: "none", label: t("sheets.plan.goal_none") }];
+/** The goal in a few words, for Me and the Insights card: "Quit completely", "At most 3 a week", "Understanding it first", or "Not set". */
+export function goalSummary(plan: RecoveryPlan | null | undefined): string {
+  const g = goalTarget(plan);
+  if (!g) return t("goal.setup.summary_none");
+  return g.kind === "quit" ? t("goal.setup.summary_quit") : g.kind === "limit" ? t("goal.setup.summary_limit", { n: g.perWeek }) : t("goal.setup.summary_learn");
+}
 
-export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; onChange: (g: RecoveryPlan["goal"]) => void }) {
-  return <Select label={t("sheets.plan.goal")} value={value ?? "none"} options={GOAL_OPTIONS} onChange={(g) => onChange(g === "none" ? null : g)} />;
+const START_OPTS: Opt<Baseline>[] = [
+  { value: "many_daily", label: t("goal.setup.start_many_daily") }, { value: "daily", label: t("goal.setup.start_daily") },
+  { value: "few_weekly", label: t("goal.setup.start_few_weekly") }, { value: "weekly", label: t("goal.setup.start_weekly") },
+];
+
+/**
+ * What the person is aiming for, in a form the app can measure: quit completely, cut down to a number a week, or just understand it
+ * first. Plus where they're starting from and who they want to be. Insights holds their days against this (src/goal.ts).
+ * Used in onboarding and at the top of the plan page; it edits the plan it is given and saves nothing itself.
+ */
+export function GoalSetup({ plan, set, baseline, onBaseline }: {
+  plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; baseline?: Baseline | null; onBaseline?: (b: Baseline | null) => void;
+}) {
+  const kinds: { id: GoalKind; label: string; hint: string }[] = [
+    { id: "stop", label: t("goal.setup.quit"), hint: t("goal.setup.quit_hint") },
+    { id: "reduce", label: t("goal.setup.cut"), hint: t("goal.setup.cut_hint") },
+    { id: "understand", label: t("goal.setup.learn"), hint: t("goal.setup.learn_hint") },
+  ];
+  const limit = plan.limitPerWeek ?? 3;
+  const pick = (g: GoalKind) => { haptic.select(); set({ goal: g, limitPerWeek: g === "reduce" ? plan.limitPerWeek ?? 3 : null }); };
+  const nudge = (by: number) => { haptic.select(); set({ limitPerWeek: Math.max(1, Math.min(99, limit + by)) }); };
+  return (
+    <div className="stack goal-setup">
+      <div className="adopt-cards" role="radiogroup" aria-label={t("goal.setup.kind_aria")}>
+        {kinds.map((k) => (
+          <button key={k.id} type="button" role="radio" aria-checked={plan.goal === k.id} className="adopt-card" onClick={() => pick(k.id)}>
+            <span className="adopt-top"><b>{k.label}</b></span>
+            <span className="small muted">{k.hint}</span>
+          </button>
+        ))}
+      </div>
+      {plan.goal === "reduce" && (
+        <div className="field">
+          <span className="field-label" id="goal-limit">{t("goal.setup.limit_label")}</span>
+          <div className="stepper" role="group" aria-labelledby="goal-limit">
+            <button type="button" className="icon-btn" aria-label={t("goal.setup.less")} disabled={limit <= 1} onClick={() => nudge(-1)}>−</button>
+            <output aria-live="polite" aria-label={t("goal.setup.limit_aria")}>{limit === 1 ? t("goal.setup.times_one", { n: limit }) : t("goal.setup.times_other", { n: limit })}</output>
+            <button type="button" className="icon-btn" aria-label={t("goal.setup.more")} disabled={limit >= 99} onClick={() => nudge(1)}>+</button>
+          </div>
+        </div>
+      )}
+      {onBaseline && (
+        <div className="field">
+          <span className="field-label">{t("goal.setup.start_label")}</span>
+          <Select label={t("goal.setup.start_aria")} value={baseline ?? ("" as Baseline)} options={START_OPTS} placeholder={t("goal.setup.start_choose")} onChange={(b) => onBaseline(b)} />
+          <span className="muted small">{t("goal.setup.start_hint")}</span>
+        </div>
+      )}
+      <label className="field"><span className="field-label">{t("goal.setup.identity_label")}</span>
+        <GuardedInput className="input" autoComplete="off" maxLength={80} value={plan.identity ?? ""} placeholder={t("goal.setup.identity_placeholder")} aria-label={t("goal.setup.identity_aria")}
+          onChange={(e) => set({ identity: e.target.value })} />
+        <span className="muted small">{t("goal.setup.identity_hint")}</span>
+      </label>
+    </div>
+  );
 }
 
 /**
@@ -34,7 +92,6 @@ export function GoalPicker({ value, onChange }: { value: RecoveryPlan["goal"]; o
  */
 export function WhySection({ plan, set, situations = true }: { plan: RecoveryPlan; set: (p: Partial<RecoveryPlan>) => void; situations?: boolean }) {
   return (<>
-    <div className="field"><span className="field-label">{t("sheets.plan.aiming")}</span><GoalPicker value={plan.goal} onChange={(goal) => set({ goal })} /></div>
     <div className="field"><span className="field-label">{t("sheets.plan.why")}</span>
       <MultiSelect label={t("sheets.plan.reasons_aria")} options={plainOpts(REASONS)} value={plan.reasons} onChange={(reasons) => set({ reasons })} max={8} placeholder={t("sheets.plan.pick_fit")} /></div>
     {situations && <div className="field"><span className="field-label">{t("sheets.plan.hardest")}</span>
@@ -71,32 +128,23 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
   const data = useData();
   const habit = data.habits.find((h) => h.id === habitId);
   const companion = habit && data.companions.find((c) => c.id === habit.companionId);
-  const [plan, setPlan] = useState<RecoveryPlan>(() => trackState(data, habitId).plan ?? emptyPlan());
+  const [plan, setPlan] = useState<RecoveryPlan>(() => ({ ...emptyPlan(), ...(trackState(data, habitId).plan ?? {}) }));
+  const [baseline, setBaseline] = useState<Baseline | null>(() => trackState(data, habitId).baseline);
   if (!habit) return null;
   const set = (p: Partial<RecoveryPlan>) => setPlan((x) => ({ ...x, ...p }));
   const blocked = planConcern(plan) !== null;
-  const refs = { why: useRef<HTMLElement>(null), first: useRef<HTMLElement>(null), ifThen: useRef<HTMLElement>(null) };
-  const missing = [
-    plan.reasons.length === 0 && { k: "why" as const, label: t("sheets.plan.sec_why") },
-    !plan.firstStep && { k: "first" as const, label: t("sheets.plan.sec_first") },
-    plan.ifThen.length === 0 && { k: "ifThen" as const, label: t("sheets.plan.if_then") },
-  ].filter((x): x is { k: "why" | "first" | "ifThen"; label: string } => !!x);
   return (
     <div className="stack">
       <p className="track-context small"><span className="muted">{t("sheets.plan.for")}</span> <b>{habit.name}</b>{companion ? <span className="muted"> · {companion.name}</span> : null}</p>
       <p className="muted">{t("sheets.plan.intro")}</p>
-      {missing.length > 0 && (
-        <section className="card stack" aria-label={t("sheets.plan.finish")}>
-          <h2>{t("sheets.plan.finish")}</h2>
-          <div className="group-body">{missing.map((m) => (
-            <button key={m.k} type="button" className="srow" onClick={() => { haptic.select(); refs[m.k].current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
-              <span className="srow-label">{m.label}</span><span className="srow-chev" aria-hidden>{Icon.chevR}</span>
-            </button>))}</div>
-        </section>
-      )}
-      <section ref={refs.why} className="card stack"><WhySection plan={plan} set={set} /></section>
-      <section ref={refs.first} className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
-      <section ref={refs.ifThen} className="card stack" aria-label={t("sheets.plan.if_then_aria")}>
+      <section className="card stack" aria-label={t("goal.setup.title")}>
+        <h2>{t("goal.setup.title")}</h2>
+        <p className="muted small">{tt("goal.setup.intro", data.settings.tone)}</p>
+        <GoalSetup plan={plan} set={set} baseline={baseline} onBaseline={setBaseline} />
+      </section>
+      <section className="card stack"><WhySection plan={plan} set={set} /></section>
+      <section className="card stack"><HelpSection plan={plan} set={set} cls={habit.cls} /></section>
+      <section className="card stack" aria-label={t("sheets.plan.if_then_aria")}>
         <h2>{t("sheets.plan.if_then")}</h2>
         {plan.ifThen.length === 0
           ? <p className="muted small">{t("sheets.plan.if_then_empty")}</p>
@@ -112,7 +160,7 @@ export function PlanPage({ habitId, onSaved }: { habitId: string; onSaved?: () =
         <p className="small">{t("safety.support.alcohol")}</p>
         <p className="small muted">{t("safety.helplines.full")}</p>
       </section>
-      <motion.div variants={rise}><Button disabled={blocked} onClick={() => { actions.savePlan(plan, habit.id); haptic.success(); toast(t("sheets.plan.saved"), { kind: "good" }); onSaved?.(); }}>{t("sheets.plan.save")}</Button></motion.div>
+      <motion.div variants={rise}><Button disabled={blocked} onClick={() => { actions.updateTrack(habit.id, { plan, baseline }); haptic.success(); toast(t("sheets.plan.saved"), { kind: "good" }); onSaved?.(); }}>{t("sheets.plan.save")}</Button></motion.div>
     </div>
   );
 }

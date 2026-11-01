@@ -2,6 +2,7 @@ import { interpolate, isToneText, pickTone, type Section, type ToneText, type Va
 import { APP_NAME } from "../brand";
 import type { Tone } from "../types";
 import { accountBlockers, accountCheckEmail, accountErrors, accountForm, accountNewPassword, accountSignedIn, accountSync } from "./sections/account";
+import { goalCard, goalHelps, goalOnboarding, goalSetup } from "./sections/goal";
 import { homeHeader, homeHero, homeMilestone, homePaused, homeToday, calendarAge, calendarDay, calendarMilestones, calendarMonth, calendarNote, calendarStats } from "./sections/home";
 import { insightsChart, insightsForecast, insightsGoalLine, insightsHeader, insightsMoney, insightsPatterns, insightsReflect, insightsReview, insightsSince, insightsSummary, insightsUrges, insightsWeek, insightsWhen } from "./sections/insights";
 import { meAbout, meAppearance, meData, meFeel, mePet, meProfile, meQuestions, meReminders, meVoice, meYou } from "./sections/me";
@@ -25,7 +26,8 @@ import { welcomeAccount, welcomeRestoring, welcomeStory } from "./sections/welco
 export const SECTIONS = [
   navTabs, navLoading, petLook, uiCommon, uiSelect, uiSettings, helpTutorial,
   welcomeStory, welcomeAccount, welcomeRestoring,
-  onboardingChrome, onboardingPet, onboardingChange, onboardingCount, onboardingReminders, onboardingFinal, onboardingHatch,
+  onboardingChrome, onboardingPet, onboardingChange, goalOnboarding, onboardingCount, onboardingReminders, onboardingFinal, onboardingHatch,
+  goalSetup, goalCard, goalHelps,
   petsGrid, petsMenu, petsPicker, petsAdd,
   homeHeader, homeHero, homePaused, homeToday, homeMilestone,
   missionsSheet, missionsMoment, missionsContent, packsLines,
