@@ -170,7 +170,7 @@ export interface PetPick { species: Species; coat: string; breed: string; person
 export const firstPet = (species: Species = "dog"): PetPick => ({ species, coat: "", breed: "", personality: "playful", name: "", adoption: "raise" });
 
 /**
- * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Used when setting
+ * Step one of making a pet: every pet on show to pick from, then its name, coat and personality. Adoption is its own step (`Adoption`). Used when setting
  * up the app and when adding a recovery track, so a pet is made the same way both times.
  */
 export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p: Partial<PetPick>) => void; compact?: boolean }) {
@@ -198,7 +198,6 @@ export function PetStep({ pet, onChange, compact }: { pet: PetPick; onChange: (p
         <Select label={t("pets.picker.breed")} value={breedFor(pet.species, pet.breed)?.id ?? ""} options={BREEDS[pet.species]!.map((b) => ({ value: b.id, label: b.label }))} onChange={(id) => onChange({ breed: id })} /></div>}
       {!compact && <div className="field"><span className="field-label">{t("pets.picker.personality")}</span>
         <Select label={t("pets.picker.personality")} value={pet.personality} options={PERSONALITIES.map((p) => ({ value: p.id, label: `${p.label}: ${p.blurb}` }))} onChange={(personality) => onChange({ personality })} /></div>}
-      {!compact && <Adoption pet={pet} onChange={onChange} />}
     </div>
   );
 }
@@ -226,10 +225,11 @@ export function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partia
   );
 }
 
-/** Adds a recovery track in two steps: its pet, then what it is for. */
+/** Adds a recovery track in up to three steps: its pet, what it is for, then how to adopt it (only for pets that can be rescued). */
 function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (habitId: string) => void }) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [pet, setPet] = useState<PetPick>(() => firstPet());
+  const total = RESCUE_SPECIES.includes(pet.species) ? 3 : 2;
   const [what, setWhat] = useState("");
   const [amountLabel, setAmountLabel] = useState("");
   const nameConcern = concernIn(pet.name);
@@ -250,7 +250,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   return (
     <Sheet open={open} onClose={close} label={t("pets.add.label")}>
       <div className="stack">
-        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : t("pets.add.step2")}</h2><span className="muted small">{t("pets.add.step_of", { step })}</span></div>
+        <div className="row"><h2>{step === 1 ? t("pets.add.step1") : step === 2 ? t("pets.add.step2") : t("pets.add.step3")}</h2><span className="muted small">{t("pets.add.step_of", { step, total })}</span></div>
         {step === 1 && <>
           <PetStep pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
           <Button disabled={nameConcern !== null} onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.continue")}</Button>
@@ -268,9 +268,17 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
           </div>
           <div className="actions">
             <Button variant="secondary" onClick={() => { haptic.select(); setStep(1); }}>{t("ui.common.back")}</Button>
-            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+            <Button disabled={!what.trim() || whatConcern !== null || nameConcern !== null} onClick={total === 3 ? () => { haptic.select(); setStep(3); } : save}>
+              {total === 3 ? t("ui.common.continue") : t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
           </div>
           <p className="muted small">{t("pets.add.note")}</p>
+        </>}
+        {step === 3 && <>
+          <Adoption pet={pet} onChange={(p) => setPet((x) => ({ ...x, ...p }))} />
+          <div className="actions">
+            <Button variant="secondary" onClick={() => { haptic.select(); setStep(2); }}>{t("ui.common.back")}</Button>
+            <Button onClick={save}>{t("pets.add.add", { name: pet.name.trim() || NAMES[pet.species][0] })}</Button>
+          </div>
         </>}
       </div>
     </Sheet>
