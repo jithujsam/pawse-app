@@ -156,14 +156,14 @@ export function Home({ onBack }: { onBack?: () => void }) {
       <PetScene scene={scene} label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })}>
         <div className="hs-bar">
           {onBack ? <button className="track-back" onClick={() => { haptic.select(); onBack(); }}>{Icon.chevL}<span>{t("home.header.all_pets")}</span></button> : <span />}
-          <span className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</span>
         </div>
+        <p className="hs-greet">{greeting(tone, new Date().getHours(), data.settings.userName)}</p>
         <h1 className="hs-name">{companion.name}</h1>
         {meta && <p className="hs-meta">{meta}</p>}
         <div className="hs-stage">
           <Burst burst={sparks} kind="spark" count={10} />
           <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
-            stage={view.stage} mood={mood} age={age} size={290} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
+            stage={view.stage} mood={mood} age={age} size={262} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
         <AnimatePresence mode="wait">
           <motion.p key={line} className="speech" aria-live="polite" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }} transition={spring.soft}>
