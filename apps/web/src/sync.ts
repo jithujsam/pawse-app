@@ -158,7 +158,7 @@ async function pullTable(table: Table, uid: string): Promise<Record<string, unkn
 const OPTIONAL: Partial<Record<Table, string[][]>> = {
   companions: [["coat", "personality"], ["breed"], [...MISSION_COLUMNS], [...TRACK_COLUMNS.companions]],
   habits: [[...TRACK_COLUMNS.habits]],
-  urges: [["strategy", "trigger"]],
+  urges: [["strategy", "trigger"], ["instead"]],
 };
 
 /** The optional column group a "missing column" error names, if any. */

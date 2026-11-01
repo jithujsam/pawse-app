@@ -620,6 +620,27 @@
       ]
     },
     {
+      "id": "goal.onboarding",
+      "screen": "Welcome",
+      "title": "Goal step",
+      "source": "src/screens/Onboarding.tsx",
+      "file": "src/text/sections/goal.ts",
+      "start": 43,
+      "end": 52,
+      "entries": [
+        {
+          "id": "goal.onboarding.title",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.onboarding.intro",
+          "kind": "voice",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "onboarding.count",
       "screen": "Onboarding",
       "title": "Step 3: what to count",
@@ -770,6 +791,357 @@
         },
         {
           "id": "onboarding.hatch.go",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "goal.setup",
+      "screen": "Your goal",
+      "title": "Setting a goal",
+      "source": "src/screens/Plan.tsx (GoalSetup), src/screens/Onboarding.tsx",
+      "file": "src/text/sections/goal.ts",
+      "start": 3,
+      "end": 41,
+      "entries": [
+        {
+          "id": "goal.setup.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.intro",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.kind_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.quit",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.quit_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.cut",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.cut_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.learn",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.learn_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.limit_label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.limit_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.times_one",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.setup.times_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.setup.less",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.more",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.identity_label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.identity_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.identity_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.identity_placeholder",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_hint",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_choose",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_many_daily",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_daily",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_few_weekly",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.start_weekly",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.summary_quit",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.summary_limit",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.setup.summary_learn",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.setup.summary_none",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "goal.card",
+      "screen": "Insights",
+      "title": "Goal progress",
+      "source": "src/screens/Report.tsx, src/goal.ts",
+      "file": "src/text/sections/goal.ts",
+      "start": 54,
+      "end": 101,
+      "entries": [
+        {
+          "id": "goal.card.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.becoming",
+          "kind": "text",
+          "placeholders": [
+            "text"
+          ]
+        },
+        {
+          "id": "goal.card.this_week",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.last_week",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.target",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.times_one",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.card.times_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.card.status_building",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.status_on_quit",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.status_on_limit",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.status_closing",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.status_away",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.status_learn",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.since_down",
+          "kind": "text",
+          "placeholders": [
+            "pct"
+          ]
+        },
+        {
+          "id": "goal.card.since_up",
+          "kind": "text",
+          "placeholders": [
+            "pct"
+          ]
+        },
+        {
+          "id": "goal.card.since_same",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.since_label",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.weeks_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.set_goal",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.card.edit_goal",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "goal.helps",
+      "screen": "Insights",
+      "title": "What helps you",
+      "source": "src/screens/Report.tsx, src/goal.ts",
+      "file": "src/text/sections/goal.ts",
+      "start": 103,
+      "end": 122,
+      "entries": [
+        {
+          "id": "goal.helps.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.helps.intro",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.helps.row",
+          "kind": "text",
+          "placeholders": [
+            "what"
+          ]
+        },
+        {
+          "id": "goal.helps.eased",
+          "kind": "text",
+          "placeholders": [
+            "managed",
+            "total"
+          ]
+        },
+        {
+          "id": "goal.helps.strong",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "goal.helps.empty",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "goal.helps.photos_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "goal.helps.photo_alt",
           "kind": "text",
           "placeholders": []
         }
@@ -3282,7 +3654,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
       "start": 3,
-      "end": 39,
+      "end": 35,
       "entries": [
         {
           "id": "me.profile.title",
@@ -3421,26 +3793,6 @@
           "placeholders": []
         },
         {
-          "id": "me.profile.goal_stop",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.profile.goal_reduce",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.profile.goal_understand",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "me.profile.goal_none",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
           "id": "me.profile.on",
           "kind": "text",
           "placeholders": []
@@ -3463,8 +3815,8 @@
       "title": "Your pet",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 41,
-      "end": 68,
+      "start": 37,
+      "end": 64,
       "entries": [
         {
           "id": "me.pet.days",
@@ -3613,8 +3965,8 @@
       "title": "Voice",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 70,
-      "end": 78,
+      "start": 66,
+      "end": 74,
       "entries": [
         {
           "id": "me.voice.intro",
@@ -3653,8 +4005,8 @@
       "title": "Reminders",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 80,
-      "end": 99,
+      "start": 76,
+      "end": 95,
       "entries": [
         {
           "id": "me.reminders.daily",
@@ -3750,8 +4102,8 @@
       "title": "Check-in questions",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 101,
-      "end": 122,
+      "start": 97,
+      "end": 118,
       "entries": [
         {
           "id": "me.questions.intro",
@@ -3851,8 +4203,8 @@
       "title": "Your data",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 124,
-      "end": 140,
+      "start": 120,
+      "end": 136,
       "entries": [
         {
           "id": "me.data.backup",
@@ -3927,8 +4279,8 @@
       "title": "Appearance",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 160,
-      "end": 181,
+      "start": 156,
+      "end": 177,
       "entries": [
         {
           "id": "me.appearance.theme",
@@ -4028,8 +4380,8 @@
       "title": "Feel and region",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 183,
-      "end": 196,
+      "start": 179,
+      "end": 192,
       "entries": [
         {
           "id": "me.feel.haptics",
@@ -4095,8 +4447,8 @@
       "title": "About and help",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 198,
-      "end": 216,
+      "start": 194,
+      "end": 212,
       "entries": [
         {
           "id": "me.about.version",
@@ -4185,8 +4537,8 @@
       "title": "Your profile",
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/me.ts",
-      "start": 142,
-      "end": 158,
+      "start": 138,
+      "end": 154,
       "entries": [
         {
           "id": "me.you.title",
@@ -4550,7 +4902,7 @@
       "source": "src/screens/UrgeSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 63,
-      "end": 112,
+      "end": 126,
       "entries": [
         {
           "id": "sheets.urge.label",
@@ -4706,6 +5058,56 @@
           ]
         },
         {
+          "id": "sheets.urge.instead_title",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_hint",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_placeholder",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_own",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_photo",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_photo_alt",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_remove_photo",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_save",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.urge.instead_saved",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "sheets.urge.way",
           "kind": "text",
           "placeholders": []
@@ -4809,8 +5211,8 @@
       "title": "The + menu",
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 114,
-      "end": 130,
+      "start": 128,
+      "end": 144,
       "entries": [
         {
           "id": "sheets.quick.title",
@@ -4889,8 +5291,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 132,
-      "end": 153,
+      "start": 146,
+      "end": 167,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -5001,39 +5403,9 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 155,
-      "end": 197,
+      "start": 169,
+      "end": 205,
       "entries": [
-        {
-          "id": "sheets.plan.goal",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.plan.goal_none",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.plan.finish",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.plan.sec_why",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.plan.sec_first",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.plan.aiming",
-          "kind": "text",
-          "placeholders": []
-        },
         {
           "id": "sheets.plan.why",
           "kind": "text",
@@ -5215,8 +5587,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 199,
-      "end": 221,
+      "start": 207,
+      "end": 229,
       "entries": [
         {
           "id": "sheets.memorial.life",

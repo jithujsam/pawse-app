@@ -144,6 +144,10 @@ export interface Urge {
   strategy?: StrategyId | null;
   /** What they said set it off, if anything (a mood or situation label, in their words). */
   trigger?: string | null;
+  /** What they did instead of acting on it, in their words. Synced. */
+  instead?: string | null;
+  /** A small photo of what they did instead. Stays on the phone: never synced. */
+  photo?: string | null;
 }
 
 /** Ways to get through an urge. The person can switch between them at any point. */
@@ -167,6 +171,10 @@ export interface RecoveryPlan {
   supportName: string;
   /** If-then plans, mostly added after a lapse ("If I'm home alone after 10, then I'll ..."). */
   ifThen: string[];
+  /** With goal "reduce": the most times a week the person is aiming for. Null for the other goals. */
+  limitPerWeek: number | null;
+  /** Who the person wants to be, in their words. */
+  identity: string;
 }
 
 /** A stretch when a track was paused: from `from` up to, not including, `to` (still paused while to is null). */
