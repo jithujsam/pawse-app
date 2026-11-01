@@ -377,8 +377,8 @@ function Model({ species, coat, breed, stage, mood, gesture = "none", look = { x
     tail.forEach((b, i) => pose(b, (bb) => { bb.rotateY(live ? Math.sin(t * 9 - i) * 0.5 * wag * (1 - i * 0.3) : 0); bb.rotateX(wag > 0.3 ? 0 : 0.35 * (1 - wag)); }));
     if (mood !== "dying") pose(head, (b) => {
       b.rotateX(STAGE_DROOP[stage] + (1 - well(condition, "posture")) * 0.24 + (mood === "sick" || mood === "sad" ? 0.08 : 0) - (live ? Math.sin(t * 6) * 0.05 * e.bob : 0));
-      // Low trust: it looks away rather than at you.
-      b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35 * well(condition, "trust") + (1 - well(condition, "trust")) * 0.45);
+      // The head follows the pointer, less so with low trust; at rest it faces the front (no constant sideways turn).
+      b.rotateY(Math.max(-1, Math.min(1, look.x)) * 0.35 * well(condition, "trust"));
       b.rotateZ(live ? Math.sin(t * 1.1) * 0.14 * e.tilt + 0.1 * e.tilt : 0.1 * e.tilt);
       if (stage === "baby") b.scale.multiplyScalar(1.22);
     });
