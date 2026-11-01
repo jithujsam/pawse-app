@@ -24,7 +24,8 @@ export const safetyRestriction = defineSection("safety.restriction", { screen: "
 
 // @copy-section safety.professional
 export const safetyProfessional = defineSection("safety.professional", { screen: "Safety", title: "Talk to a professional", source: "src/copy.ts, src/screens/Me.tsx" }, {
-  note: "If this habit is affecting your health, talk to a doctor or counsellor before changing it suddenly. Stopping alcohol abruptly can be dangerous.",
+  note: "If this habit is affecting your health, talk to a doctor or counsellor before changing it suddenly.",
+  alcohol: "If this habit is affecting your health, talk to a doctor or counsellor before changing it suddenly. Stopping alcohol abruptly can be dangerous.",
 });
 // @copy-section-end safety.professional
 

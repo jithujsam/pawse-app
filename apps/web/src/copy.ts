@@ -142,6 +142,8 @@ export const DISCLAIMER = t("safety.disclaimer.body");
 export const CRISIS_MESSAGE = t("safety.crisis.message", { helplines: t("safety.helplines.short") });
 
 export const PROFESSIONAL_NOTE = t("safety.professional.note");
+/** The same note for an alcohol track, which also warns that stopping suddenly can be dangerous. */
+export const PROFESSIONAL_NOTE_ALCOHOL = t("safety.professional.alcohol");
 
 export const EFFECT_LABEL: Record<string, string> = {
   dull_coat: "The coat looks a little duller.", heavier: "Moving a bit slower.", labored_breathing: "Breathing a bit harder.",

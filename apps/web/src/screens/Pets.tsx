@@ -226,13 +226,13 @@ function Adoption({ pet, onChange }: { pet: PetPick; onChange: (p: Partial<PetPi
 /** Adds a recovery track in two steps: its pet, then what it is for. */
 function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (habitId: string) => void }) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [pet, setPet] = useState<PetPick>(() => firstPet("cat"));
+  const [pet, setPet] = useState<PetPick>(() => firstPet());
   const [what, setWhat] = useState("");
   const [amountLabel, setAmountLabel] = useState("");
   const nameConcern = concernIn(pet.name);
   const whatConcern = concernInAny([what, amountLabel]);
   const [formKey, setFormKey] = useState(0);
-  const reset = () => { setStep(1); setPet(firstPet("cat")); setWhat(""); setAmountLabel(""); setFormKey((k) => k + 1); };
+  const reset = () => { setStep(1); setPet(firstPet()); setWhat(""); setAmountLabel(""); setFormKey((k) => k + 1); };
   const close = () => { reset(); onClose(); };
   const save = () => {
     const petName = pet.name.trim() || NAMES[pet.species][0];
