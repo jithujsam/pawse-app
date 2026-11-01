@@ -4,12 +4,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { HEALTH_SEGMENTS } from "@detox/engine";
 import { ACCENT, LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
 import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, greeting, MILESTONES, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
-import { fmtDay, today } from "../dates";
+import { addDays, fmtDay, today } from "../dates";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { scheduleCare } from "../notify";
 import { actions, getData, recoveryPlan, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
-import { celebratedFor, daysTogether, milestoneToCelebrate, trackSummary } from "../progress";
+import { celebratedFor, daysTogether, milestoneProgress, milestoneToCelebrate, trackSummary } from "../progress";
 import { trackState } from "../tracks";
 import { AnimatedNumber } from "../ui/AnimatedNumber";
 import { Burst, Button, Icon } from "../ui/Controls";
@@ -26,7 +26,9 @@ import { missionText, packLine } from "../mission-text";
 import { conditions, healthReport } from "../health";
 import { runUpdate, useUpdate } from "../update";
 import { onQuick, takeQuick } from "../quick";
-import { afterSlipLine, restLine } from "../recovery";
+import { afterSlipLine, dayStatus, restLine } from "../recovery";
+import { sceneFor } from "../scene";
+import { heroWeather } from "../ui/weather";
 import { t, tt } from "../text";
 
 /** One recovery track: its companion, today's check-in and the way back. Opened from the Pets grid. */
@@ -128,6 +130,12 @@ export function Home({ onBack }: { onBack?: () => void }) {
     if (m) { setTimeout(() => setMilestone(m.hit), 900); actions.setCelebrated(habit.id, m.seen); }
     else if (!ev) toast(cleanToast(tone, companion.name), { kind: "good", ms: 1000, action: { label: t("ui.common.undo"), run: () => actions.unmarkClean(habit.id, t0) } });
   }
+  // The weather follows how well the pet is; the readouts say where the run stands.
+  const scene = sceneFor({ wellness: healthPct, rescue, slipToday: slippedToday, milestoneToday: milestone !== null, hour: new Date().getHours() });
+  const nextMilestone = milestoneProgress(progress.care, MILESTONES).next;
+  const meta = [t("home.today.well", { n: healthPct }), streak > 0 ? t("home.today.run", { n: streak }) : null, nextMilestone ? t("home.today.next", { n: nextMilestone }) : null].filter(Boolean).join(" · ");
+  const weather = heroWeather(scene);
+  const days28 = Array.from({ length: 28 }, (_, i) => { const d = addDays(t0, i - 27); return { d, s: dayStatus(data, habit.id, d, t0) }; });
   // I slipped: with no required question the slip is logged at once, and the toast can undo it or open the form for details.
   function slip() {
     if (habit.fields.some((f) => f.required)) { setSheet(true); return; }
@@ -169,12 +177,14 @@ export function Home({ onBack }: { onBack?: () => void }) {
         </div>
       </motion.header>
 
-      <motion.section className={`hero${danger ? " hero-danger" : ""}`} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>
+      <motion.section className={`hero${danger ? " hero-danger" : ""}`} data-mood={scene.mood} data-time={scene.time} aria-label={t("home.hero.hero_aria", { name: companion.name, day: days, health: healthPct })} variants={rise}>
         <Burst burst={sparks} kind="spark" count={10} />
         <AnimatePresence>{just === "slip" && <motion.div className="ripple" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: [0, 0.14, 0] }} exit={{ opacity: 0 }} transition={{ duration: 1.4 }} />}</AnimatePresence>
+        <div className="hero-fx" aria-hidden>{weather.map((w, i) => <i key={i} className={w.cls} style={w.style} />)}</div>
         <div className="hero-name"><h2>{companion.name}</h2></div>
+        <p className="hero-meta">{meta}</p>
         <div className="pet-stage-live">
-          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality}
+          <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
             stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
         {/* A fixed slot: the bubble can change its text without moving anything below it. */}
@@ -228,6 +238,13 @@ export function Home({ onBack }: { onBack?: () => void }) {
           <Button variant="text" onClick={() => { haptic.tap(); setUrge(true); }}>{t("home.today.urge")}</Button>
         </motion.section>
       ) : <DayDetail day={t0} onMarkMet={clean} onSlipSaved={saved} />}
+
+      <motion.section className="trail" aria-label={t("home.today.strip_aria")} variants={rise}>
+        <div className="strip28" role="img" aria-label={t("home.today.strip_aria")}>
+          {days28.map((x) => <span key={x.d} data-today={x.d === t0 || undefined}><i className="mark" data-s={x.s} /></span>)}
+        </div>
+        <div className="trail-meta"><span>{t("home.today.strip_aria")}</span><span>{t("home.today.well", { n: healthPct })}</span></div>
+      </motion.section>
 
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />

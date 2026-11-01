@@ -38,6 +38,10 @@ export const homePaused = defineSection("home.paused", { screen: "Pet screen", t
 
 // @copy-section home.today
 export const homeToday = defineSection("home.today", { screen: "Pet screen", title: "Today's check-in messages", source: "src/screens/Home.tsx" }, {
+  well: "{n}% well",
+  run: "Day {n} run",
+  next: "Next: day {n}",
+  strip_aria: "Last 28 days",
   goal_met: "Goal met",
   slipped: "I slipped",
   urge: "Had an urge",

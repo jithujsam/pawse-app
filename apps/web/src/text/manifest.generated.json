@@ -1262,8 +1262,34 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 39,
-      "end": 48,
+      "end": 52,
       "entries": [
+        {
+          "id": "home.today.well",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "home.today.run",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "home.today.next",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "home.today.strip_aria",
+          "kind": "text",
+          "placeholders": []
+        },
         {
           "id": "home.today.goal_met",
           "kind": "text",
@@ -1302,8 +1328,8 @@
       "title": "Milestone dialog",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 50,
-      "end": 55,
+      "start": 54,
+      "end": 59,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -1986,8 +2012,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 57,
-      "end": 69,
+      "start": 61,
+      "end": 73,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2049,8 +2075,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 71,
-      "end": 79,
+      "start": 75,
+      "end": 83,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2089,8 +2115,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 81,
-      "end": 90,
+      "start": 85,
+      "end": 94,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2136,8 +2162,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 92,
-      "end": 114,
+      "start": 96,
+      "end": 118,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2256,8 +2282,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 116,
-      "end": 129,
+      "start": 120,
+      "end": 133,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2320,8 +2346,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 131,
-      "end": 141,
+      "start": 135,
+      "end": 145,
       "entries": [
         {
           "id": "calendar.milestones.title",
@@ -4560,10 +4586,15 @@
       "source": "src/screens/QuickSheet.tsx",
       "file": "src/text/sections/sheets.ts",
       "start": 109,
-      "end": 131,
+      "end": 125,
       "entries": [
         {
           "id": "sheets.quick.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "sheets.quick.pets_aria",
           "kind": "text",
           "placeholders": []
         },
@@ -4625,41 +4656,6 @@
           "id": "sheets.quick.plan",
           "kind": "text",
           "placeholders": []
-        },
-        {
-          "id": "sheets.quick.plan_hint",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.choose_label",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.whose",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.each",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.choose_pet",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.pet_aria",
-          "kind": "text",
-          "placeholders": []
-        },
-        {
-          "id": "sheets.quick.open_plan",
-          "kind": "text",
-          "placeholders": []
         }
       ]
     },
@@ -4669,8 +4665,8 @@
       "title": "Health sheet",
       "source": "src/screens/HealthSheet.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 133,
-      "end": 154,
+      "start": 127,
+      "end": 148,
       "entries": [
         {
           "id": "sheets.health.label",
@@ -4781,8 +4777,8 @@
       "title": "Plan page",
       "source": "src/screens/Plan.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 156,
-      "end": 198,
+      "start": 150,
+      "end": 192,
       "entries": [
         {
           "id": "sheets.plan.goal",
@@ -4995,8 +4991,8 @@
       "title": "Memorial",
       "source": "src/screens/Memorial.tsx",
       "file": "src/text/sections/sheets.ts",
-      "start": 200,
-      "end": 222,
+      "start": 194,
+      "end": 216,
       "entries": [
         {
           "id": "sheets.memorial.life",
