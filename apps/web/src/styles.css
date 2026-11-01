@@ -364,9 +364,9 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 /* A fixed, device-sized card: header, versions and buttons stay put; only "What's new" scrolls. */
 .update-dialog { max-width: 400px; display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 18px; padding: 26px 20px 18px; height: min(620px, 86dvh); max-height: 86dvh; overflow: hidden; }
 .update-dialog:focus { outline: none; }
-.update-head { display: grid; gap: 8px; justify-items: center; text-align: center; }
-.update-head h2 { font-size: 26px; margin: 0; }
-.update-head p { margin: 0; }
+.update-head { display: grid; gap: 2px; justify-items: center; text-align: center; }
+.update-head h2 { font-size: 25.74px; line-height: 1.2; margin: 0; }
+.update-head p { margin: 0; font-size: .99em; }
 .update-versions { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .update-versions > span:not(.update-arrow) { display: grid; justify-items: center; gap: 8px; }
 .update-versions small { color: var(--muted); font-size: 13px; }
@@ -1093,11 +1093,15 @@ html[data-keyboard="open"] .tabbar { display: none; }
    The room sticks to the top. Over the first stretch of scrolling, the greeting, streak line and speech bubble fold away and the pet
    shrinks; the name, vitals and health bar stay. Scrolling back to the top opens it again.
    Driven by the scroll position (no JS). Where scroll-driven animation isn't supported, the room just scrolls away as before. */
+.room-end { display: none; }
 @supports (animation-timeline: scroll()) {
   .screen.scene-screen { scroll-timeline: --room block; overflow-anchor: none; }
   /* The body slides down by exactly what you've scrolled while the room folds, so it stays right under the shrinking room and only scrolls on once the room is small.
-     Its minimum height keeps the end of the page reachable. */
-  .scene-body { min-height: calc(100dvh - 200px); animation: room-follow 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
+     The marker below keeps a short page exactly one screen plus the fold distance tall, so it ends the moment the room has folded, and still
+     lets the fold finish on the way there. A long page ends at its own end (the 48px bottom space sits inside the body). */
+  .screen.scene-screen { padding-bottom: 0; position: relative; }
+  .room-end { display: block; position: absolute; top: 0; left: 0; width: 1px; height: calc(100% + var(--fold-range)); visibility: hidden; pointer-events: none; }
+  .scene-body { padding-bottom: 48px; animation: room-follow 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
   .pscene { position: sticky; top: 0; z-index: 4; animation: room-tuck 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
   .hs-fold { display: grid; grid-template-rows: 1fr; width: 100%; animation: room-fold 1s linear both; animation-timeline: --room; animation-range: 0 var(--fold-range); }
   .hs-fold > div { min-height: 0; overflow: hidden; }

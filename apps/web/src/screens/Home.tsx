@@ -260,6 +260,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
       </div>
 
+      <i className="room-end" aria-hidden />
       <MissionsSheet open={missionsOpen} onClose={() => setMissionsOpen(false)} companionId={companion.id} />
       <HealthSheet open={health !== null} tab={health ?? "health"} onClose={() => setHealth(null)} />
       <UrgeSheet open={urge} onClose={() => setUrge(false)} onSlipped={() => { setUrge(false); setTimeout(() => setSheet(true), 350); }} />
