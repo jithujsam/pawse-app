@@ -1,6 +1,6 @@
 import { openTutorial } from "../ui/Tutorial";
 import { companionMissions } from "../missions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { STAGE_LABEL } from "@detox/engine";
 import { LiveCompanion, PetImage, PetPortrait } from "../Companion";
@@ -17,11 +17,13 @@ import { fmtDay, fmtTime, today, uses12h } from "../dates";
 import { TimePicker } from "../ui/TimePicker";
 import { localCurrency, placeName, timeZone } from "../region";
 import { haptic } from "../haptics";
-import { cancelDaily, remindersSupported, requestReminders, scheduleDaily } from "../notify";
+import { allowRemindersOnTime, cancelDaily, remindersOnTime, remindersSupported, requestReminders, scheduleDaily, sendTestReminder } from "../notify";
 import { rise, spring, stagger } from "../motion";
 import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../store";
 import { daysTogether, trackSummary } from "../progress";
-import { companionsOf, trackState } from "../tracks";
+import { companionsOf, listTracks, trackState } from "../tracks";
+import { kv } from "../db";
+import { shrink } from "./LogSheet";
 import { PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
 import { useSyncStatus } from "../sync";
@@ -40,7 +42,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", fox: "Fox" };
 
-type Page = "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
+type Page = "you" | "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
 
 export function Me() {
   const data = useData();
@@ -63,6 +65,14 @@ export function Me() {
   return (
     <motion.main className="screen" variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={rise}>{t("me.profile.title")}</motion.h1>
+      <motion.button className="you-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("you"); }}>
+        <Avatar size={56} />
+        <span className="profile-text">
+          <b className="you-name">{settings.userName?.trim() || t("me.profile.you_fallback")}</b>
+          <span className="muted small">{session?.user.email ?? t("me.profile.you_hint")}</span>
+        </span>
+        <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
+      </motion.button>
       <motion.button className="profile-card" variants={rise} whileTap={{ scale: 0.985 }} onClick={() => { haptic.tap(); setPage("pet"); }}>
         <span className="profile-art"><PetPortrait species={companion.species} coat={companion.coat} breed={companion.breed} stage={view.stage} mood="idle" age={view.age} size={84} /></span>
         <span className="profile-text">
@@ -114,6 +124,7 @@ export function Me() {
         </Group>
       </motion.div>}
 
+      <SubPage open={page === "you"} title={t("me.you.title")} onClose={close}><YouPage email={session?.user.email} /></SubPage>
       <SubPage open={page === "plan"} title={t("me.profile.row_plan")} onClose={close}><PlanPage key={habit.id} habitId={habit.id} /></SubPage>
       <SubPage open={page === "pet"} title={t("me.profile.page_pet")} onClose={close}><PetPage /></SubPage>
       <SubPage open={page === "voice"} title={t("me.profile.row_voice")} onClose={close}><VoicePage /></SubPage>
@@ -205,6 +216,72 @@ function PetPage() {
   </>);
 }
 
+// ---------- you: the person, next to the pet ----------
+
+const PHOTO_KEY = "profile.photo";
+const PHOTO_EVENT = "pawse-profile-photo";
+/** The profile photo, read from this phone's storage. Never synced: photos don't leave the phone. */
+function usePhoto(): [string | null, (v: string | null) => Promise<void>] {
+  const [photo, setPhoto] = useState<string | null>(null);
+  useEffect(() => {
+    const load = () => { void kv.get<string>(PHOTO_KEY).then((v) => setPhoto(v ?? null)).catch(() => setPhoto(null)); };
+    load(); window.addEventListener(PHOTO_EVENT, load); return () => window.removeEventListener(PHOTO_EVENT, load);
+  }, []);
+  const save = async (v: string | null) => {
+    try { if (v) await kv.set(PHOTO_KEY, v); else await kv.del(PHOTO_KEY); } catch { /* storage unavailable */ }
+    window.dispatchEvent(new Event(PHOTO_EVENT));
+  };
+  return [photo, save];
+}
+
+function Avatar({ size }: { size: number }) {
+  const [photo] = usePhoto();
+  const name = useData().settings.userName?.trim();
+  return (
+    <span className="avatar" style={{ width: size, height: size }} aria-hidden>
+      {photo ? <img src={photo} alt="" width={size} height={size} /> : name ? <b style={{ fontSize: size * 0.42 }}>{name[0].toUpperCase()}</b> : Icon.user}
+    </span>
+  );
+}
+
+function YouPage({ email }: { email?: string }) {
+  const data = useData();
+  const { settings } = data;
+  const [photo, setPhoto] = usePhoto();
+  const [name, setName] = useState(settings.userName ?? "");
+  const saveName = () => { const n = name.trim().slice(0, 30); if (concernIn(n)) return; setName(n); if (n !== (settings.userName ?? "")) actions.setSettings({ userName: n }); };
+  const t0 = today();
+  const tracks = listTracks(data, ["active", "paused"]).filter((x) => x.companion);
+  const sums = tracks.map((x) => trackSummary(data, x.habit.id, t0));
+  const since = data.habits.map((h) => trackState(data, h.id).startedOn).filter(Boolean).sort()[0];
+  return (<>
+    <section className="card stack you-head">
+      <label className="you-photo">
+        <Avatar size={96} />
+        <input type="file" accept="image/*" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; if (f) await setPhoto(await shrink(f, 320)); e.target.value = ""; }} />
+        <span className="btn secondary">{photo ? t("me.you.photo_change") : t("me.you.photo_add")}</span>
+      </label>
+      {photo && <Button variant="text" onClick={() => void setPhoto(null)}>{t("me.you.photo_remove")}</Button>}
+      <p className="muted small">{t("me.you.photo_note")}</p>
+    </section>
+    <section className="card stack">
+      <label className="field"><span className="field-label">{t("me.you.name")}</span>
+        <GuardedInput className="input" autoComplete="given-name" value={name} placeholder={t("me.you.name_placeholder")} maxLength={30} onChange={(e) => setName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
+      </label>
+      {email && <div className="field"><span className="field-label">{t("me.you.email")}</span><span className="muted">{email}</span></div>}
+    </section>
+    <section className="card stack">
+      <h2>{t("me.you.stats")}</h2>
+      <div className="stats">
+        <div className="stat item"><span className="muted small">{t("me.you.pets")}</span><b className="v">{tracks.length}</b></div>
+        <div className="stat item"><span className="muted small">{t("me.you.best")}</span><b className="v">{Math.max(0, ...sums.map((x) => x.best))}</b></div>
+        <div className="stat item"><span className="muted small">{t("me.you.care")}</span><b className="v">{sums.reduce((n, x) => n + x.care, 0)}</b></div>
+        {since && <div className="stat item"><span className="muted small">{t("me.you.since")}</span><b>{fmtDay(since)}</b></div>}
+      </div>
+    </section>
+  </>);
+}
+
 function VoicePage() {
   const { settings } = useData();
   const { companion } = useActiveView()!;
@@ -226,6 +303,8 @@ function VoicePage() {
 function RemindersPage() {
   const { settings } = useData();
   const { companion } = useActiveView()!;
+  const [onTime, setOnTime] = useState<boolean | null>(null);
+  useEffect(() => { if (settings.remindersOn) void remindersOnTime().then(setOnTime); }, [settings.remindersOn]);
   async function toggle(on: boolean) {
     if (!on) { await cancelDaily(); actions.setSettings({ remindersOn: false }); return; }
     const ok = await requestReminders(settings.reminder, settings.tone, companion.name);
@@ -245,6 +324,19 @@ function RemindersPage() {
         </motion.div>
       )}</AnimatePresence>
       <p className="muted small">{t("me.reminders.note", { name: companion.name })}</p>
+      {settings.remindersOn && remindersSupported && <>
+        {onTime === false && (
+          <div className="banner stack tight" role="note">
+            <b>{t("me.reminders.late_title")}</b>
+            <span className="small">{t("me.reminders.late_body")}</span>
+            <Button variant="secondary" onClick={async () => setOnTime(await allowRemindersOnTime())}>{t("me.reminders.late_allow")}</Button>
+          </div>
+        )}
+        <Button variant="secondary" onClick={async () => {
+          const ok = await sendTestReminder(settings.tone, companion.name);
+          toast(ok ? t("me.reminders.test_sent") : t("me.reminders.test_failed"), { kind: ok ? "good" : "bad" });
+        }}>{t("me.reminders.test")}</Button>
+      </>}
       {/* Both ride on the daily reminder: with it off neither is sent, so they only show while it is on. */}
       <AnimatePresence initial={false}>{settings.remindersOn && (
         <motion.div className="stack" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>

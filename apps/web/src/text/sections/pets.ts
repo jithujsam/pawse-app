@@ -56,6 +56,10 @@ export const petsPicker = defineSection("pets.picker", { screen: "Home", title: 
   rescue: "Rescue a pet",
   raise_hint: "A healthy young pet. 21 goal-met days in a row teach it six skills.",
   rescue_hint: "A neglected pet with six conditions. 21 goal-met days in a row heal it; a slip starts it over.",
+  raise_tag: "Easier",
+  rescue_tag: "Harder",
+  raise_why: "Pick this to build the habit with a happy pet beside you. It starts healthy, and a slip only slows it down.",
+  rescue_why: "Pick this if you want higher stakes. Your pet starts sick and only gets better when you show up, so every slip shows.",
 });
 // @copy-section-end pets.picker
 

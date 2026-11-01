@@ -204,6 +204,16 @@ p { text-wrap: pretty; }
 .profile-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
 .profile-name { font: 600 22px/1.2 var(--display); letter-spacing: -0.01em; }
 .profile-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* You: the person, above the pet. */
+.you-card { border: 1px solid var(--line); width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; color: var(--text); background: var(--surface); border-radius: var(--radius); padding: 16px 18px; cursor: pointer; font: inherit; }
+.you-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.you-name { font: 600 18px/24px var(--font); }
+.avatar { flex: none; display: grid; place-items: center; border-radius: 50%; overflow: hidden; background: var(--soft); color: var(--accent); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar b { font-weight: 700; line-height: 1; }
+.avatar .ico { width: 55%; height: 55%; }
+.you-head { justify-items: center; text-align: center; }
+.you-photo { display: grid; justify-items: center; gap: 12px; cursor: pointer; }
 
 /* ---------- journey ---------- */
 .moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
@@ -632,6 +642,15 @@ textarea.input { padding: 12px 16px; min-height: 84px; }
 @keyframes ring { 0%, 100% { transform: scale(.88); opacity: .9; } 50% { transform: scale(1.12); opacity: .4; } }
 .species-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 12px; }
 .species-card { border: 2px solid transparent; background: var(--surface); border-radius: var(--radius-sm); padding: 12px 6px; display: grid; justify-items: center; gap: 4px; cursor: pointer; box-shadow: var(--shadow); transition: border-color .25s, background .25s; text-align: center; }
+/* Raise or rescue: two cards, each with what it's like and why to pick it; the tag says easier or harder. */
+.adopt-cards { display: grid; gap: 12px; }
+.adopt-card { display: grid; gap: 4px; text-align: left; padding: 16px; border-radius: var(--radius-sm); border: 2px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
+.adopt-card[aria-checked="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.adopt-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.adopt-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.adopt-top b { font: 600 16px/22px var(--font); }
+.adopt-tag { flex: none; padding: 2px 10px; border-radius: 999px; font: 600 12px/18px var(--font); background: var(--positive-soft); color: var(--positive); }
+.adopt-card[data-mode="rescue"] .adopt-tag { background: var(--negative-soft); color: var(--negative-ink); }
 .species-card[data-on="true"] { border-color: var(--accent); background: var(--soft); }
 .species-card .small { font-size: 11px; line-height: 1.3; }
 .name-hero { position: relative; display: grid; place-items: center; min-height: 200px; }

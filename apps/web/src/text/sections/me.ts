@@ -3,6 +3,8 @@ import { defineSection } from "../core";
 // @copy-section me.profile
 export const meProfile = defineSection("me.profile", { screen: "Me", title: "Profile and settings list", source: "src/screens/Me.tsx" }, {
   title: "Me",
+  you_fallback: "Your profile",
+  you_hint: "Name, photo and your progress",
   tracking: "Tracking: {track}",
   summary: "{species} · {personality} · {wellness}% well",
   g_help: "Help",
@@ -87,6 +89,12 @@ export const meReminders = defineSection("me.reminders", { screen: "Me → Remin
   risk_hint: "Once your pattern is clear, a note half an hour before your usual slip time",
   care: "Notes from {name}",
   care_hint: "A thank-you on the evening of a good day, and a morning note after it",
+  test: "Send a test reminder",
+  test_sent: "Sent. It should arrive in about five seconds.",
+  test_failed: "Notifications are off for {app}. Turn them on in your phone's settings, then try again.",
+  late_title: "Reminders may arrive late",
+  late_body: "Your phone holds reminders back to save battery. Allow alarms and reminders so the nudge comes on time.",
+  late_allow: "Allow on-time reminders",
 });
 // @copy-section-end me.reminders
 
@@ -130,6 +138,24 @@ export const meData = defineSection("me.data", { screen: "Me → Your data", tit
   yes_delete: "Yes, delete",
 });
 // @copy-section-end me.data
+
+// @copy-section me.you
+export const meYou = defineSection("me.you", { screen: "Me → Your profile", title: "Your profile", source: "src/screens/Me.tsx" }, {
+  title: "Your profile",
+  photo_add: "Add a photo",
+  photo_change: "Change photo",
+  photo_remove: "Remove photo",
+  photo_note: "Your photo stays on this phone. It is never uploaded.",
+  name: "Your name",
+  name_placeholder: "What should we call you?",
+  email: "Signed in as",
+  stats: "Your progress",
+  pets: "Pets",
+  best: "Best streak",
+  care: "Days of care",
+  since: "With {app} since",
+});
+// @copy-section-end me.you
 
 // @copy-section me.appearance
 export const meAppearance = defineSection("me.appearance", { screen: "Me → Appearance", title: "Appearance", source: "src/screens/Me.tsx" }, {

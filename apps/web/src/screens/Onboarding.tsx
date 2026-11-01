@@ -11,7 +11,7 @@ import { toast } from "../ui/Toast";
 import { rise, spring } from "../motion";
 import { HABIT_CHOICES, inferClass, measureForLabel } from "../questions";
 import { actions, emptyPlan } from "../store";
-import { PetStep } from "./Pets";
+import { Adoption, PetStep } from "./Pets";
 import { planConcern } from "./Plan";
 import { TimePicker } from "../ui/TimePicker";
 import { fmtTime } from "../dates";
@@ -91,6 +91,7 @@ export function Onboarding() {
                 up({ ...(p.species ? { species: p.species } : {}), ...(p.coat !== undefined ? { coat: p.coat } : {}), ...(p.breed !== undefined ? { breed: p.breed } : {}),
                   ...(p.name !== undefined && !swapped ? { companionName: p.name } : {}), ...(swapped ? { companionName: NAMES[p.species!][0] } : {}) });
               }} />
+            <Adoption pet={{ species: d.species, coat: d.coat, breed: d.breed, personality: d.personality, name: d.companionName, adoption: d.adoption }} onChange={(p) => { if (p.adoption) up({ adoption: p.adoption }); }} />
             <Button disabled={nameConcern !== null || !d.companionName.trim()} onClick={() => go(2)}>{t("ui.common.continue")}</Button>
           </>)}
 

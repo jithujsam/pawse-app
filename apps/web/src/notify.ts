@@ -175,6 +175,31 @@ export async function requestReminders(time: string, tone: Tone, name: string): 
   }
 }
 
+/** True when Android lets reminders fire on the minute. Off by default on Android 14+, where they may arrive late. */
+export async function remindersOnTime(): Promise<boolean> {
+  if (!native) return true;
+  try { return (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === "granted"; } catch { return true; }
+}
+
+/** Opens Android's "Alarms and reminders" setting for Pawse, then re-plans so the change applies at once. */
+export async function allowRemindersOnTime(): Promise<boolean> {
+  if (!native) return true;
+  try { const r = await LocalNotifications.changeExactNotificationSetting(); await updateNotifications({}); return r.exact_alarm === "granted"; } catch { return false; }
+}
+
+const TEST_ID = 2999;
+/** One reminder a few seconds from now, so the person can see notifications reach them. False if they can't be sent. */
+export async function sendTestReminder(tone: Tone, name: string): Promise<boolean> {
+  if (!native) return false;
+  try {
+    const perm = await LocalNotifications.checkPermissions();
+    if (perm.display !== "granted" && (await LocalNotifications.requestPermissions()).display !== "granted") return false;
+    const line = reminderLine(tone, name);
+    await LocalNotifications.schedule({ notifications: [{ id: TEST_ID, title: line.title, body: line.body, schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, extra: { open: "checkin" } }] });
+    return true;
+  } catch { return false; }
+}
+
 /** Tapping the reminder brings the person straight to today's check-in. */
 export function onReminderTap(fn: () => void): () => void {
   if (!native) return () => undefined;
