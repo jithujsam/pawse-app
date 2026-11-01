@@ -1,4 +1,4 @@
-import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
@@ -50,6 +50,25 @@ export function Select<T extends string | number | boolean>({ value, options, on
         const o = options[Number(k)];
         if (o) onChange(o.value);
       }} />
+  );
+}
+
+/**
+ * A 1 to 5 slider with the current number and a line of feedback under it. The thumb is always on a value, so there is
+ * no empty state; the two ends are labelled, and the feedback line is whatever the caller says about the chosen step.
+ */
+export function Slider({ value, onChange, label, min = 1, max = 5, ends, feedback }:
+  { value: number; onChange: (v: number) => void; label: string; min?: number; max?: number; ends: [string, string]; feedback: string }) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div className="slider">
+      <div className="slider-head"><output className="slider-value" aria-hidden="true">{value}</output></div>
+      <input type="range" className="slider-input" min={min} max={max} step={1} value={value} aria-label={label}
+        aria-valuetext={`${value} · ${feedback}`} style={{ "--fill": `${pct}%` } as CSSProperties}
+        onChange={(e) => { const v = Number(e.target.value); if (v !== value) { haptic.select(); onChange(v); } }} />
+      <div className="slider-ends" aria-hidden="true"><span>{ends[0]}</span><span>{ends[1]}</span></div>
+      <p className="slider-feedback" aria-live="polite">{feedback}</p>
+    </div>
   );
 }
 

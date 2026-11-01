@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { LiveCompanion } from "../Companion";
 import { concernIn } from "../guard";
-import { t } from "../text";
+import { t, tt } from "../text";
 import { haptic } from "../haptics";
 import { rise, spring, stagger } from "../motion";
 import { frictionIdeas, REPLACEMENTS, SITUATIONS, strategy, strategyOrder, urgeActedLine, urgeActedNote, urgeDetails, urgeManagedLine, urgePauseLine, withStrategyFirst } from "../recovery";
@@ -10,7 +10,7 @@ import { trackSummary } from "../progress";
 import { today } from "../dates";
 import { actions, useActiveView, useData } from "../store";
 import { trackState } from "../tracks";
-import { Burst, Button, plainOpts, Select, SelectOther } from "../ui/Controls";
+import { Burst, Button, plainOpts, Select, SelectOther, Slider } from "../ui/Controls";
 import { Sheet } from "../ui/Sheet";
 import { toast } from "../ui/Toast";
 import type { StrategyId } from "../types";
@@ -27,6 +27,8 @@ const BREATH: { label: string; secs: number; scale: number }[] = [
   { label: t("sheets.urge.breathe_out"), secs: 6, scale: 0.9 },
 ];
 const CYCLE = BREATH.reduce((a, b) => a + b.secs, 0);
+/** The feedback line for each strength step, one per tone. Full ids so the copy catalogue can see every one. */
+const FEEL = ["sheets.urge.feel_1", "sheets.urge.feel_2", "sheets.urge.feel_3", "sheets.urge.feel_4", "sheets.urge.feel_5"] as const;
 
 export function UrgeSheet({ open, onClose, onSlipped }: { open: boolean; onClose: () => void; onSlipped: () => void }) {
   return <Sheet open={open} onClose={onClose} label={t("sheets.urge.label")}>{open && <UrgeBody onClose={onClose} onSlipped={onSlipped} />}</Sheet>;
@@ -50,6 +52,7 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
   const [helped, setHelped] = useState<StrategyId | null>(null);
   const managed = trackSummary(data, habit.id, today()).managedUrges;
   const crisis = concernIn(trigger) !== null;
+  const feelLine = (n: number) => tt(FEEL[n - 1], tone);
   // The plan's own situations first, then common ones, so the list is never empty. Anything else can be typed.
   const situations = [...new Set([...(plan?.situations ?? []), ...SITUATIONS])];
 
@@ -77,8 +80,8 @@ function UrgeBody({ onClose, onSlipped }: { onClose: () => void; onSlipped: () =
       <motion.p className="muted" variants={rise}>{urgePauseLine(tone)}</motion.p>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-strength">{t("sheets.urge.strength")}</span>
-        <Select label={t("sheets.urge.strength")} value={String(strength)} onChange={(v) => setStrength(Number(v))}
-          options={[{ value: "1", label: t("sheets.urge.s1") }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: t("sheets.urge.s5") }]} />
+        <Slider label={t("sheets.urge.strength")} value={strength} onChange={setStrength}
+          ends={[t("sheets.urge.s1"), t("sheets.urge.s5")]} feedback={feelLine(strength)} />
       </motion.div>
       <motion.div className="field" variants={rise}>
         <span className="field-label" id="urge-what">{t("sheets.urge.going_on")}</span>
