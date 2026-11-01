@@ -82,7 +82,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // Only a rescue has a past home to talk about (talking-pet packs, src/text/sections/packs.ts).
   const rescue = missions?.mode === "rescue";
   const journeyLine = !j ? "" : j.issue ? t("home.hero.issue_line", { issue: missionText(j.issue.id).title, n: j.issue.need - j.issue.have })
-    : j.phase === "recovery" ? (21 - j.run === 1 ? t("home.hero.recover_one") : t("home.hero.recover_other", { n: 21 - j.run }))
+    : j.phase === "recovery" ? (21 - j.run === 1 ? t("home.hero.recover_one", { day: j.run }) : t("home.hero.recover_other", { day: j.run, n: 21 - j.run }))
       : j.phase === "consistency" ? t("home.hero.consistency_line", { n: 21 - j.consistency }) : t("home.hero.thriving_line");
   const report = healthReport(data, view, tone);
   const conds = conditions(data, view);
@@ -151,7 +151,6 @@ export function Home({ onBack }: { onBack?: () => void }) {
 
   const meta = [streak > 0 ? t("home.today.run", { n: streak }) : null, nextMilestone ? t("home.today.next", { n: nextMilestone }) : null].filter((x): x is string => !!x).join(" · ");
   const bar = { green: Math.round(healthPct / (100 / HEALTH_SEGMENTS)) };
-  const nothing = !checkedIn && !resting;
   // The streak (docs/RECOVERY_RULES.md): goal-met and urge days add one, a slip ends it, quiet days don't break it.
   // Lit once today counts; until then it waits, like a streak you still have time to keep.
   const streakLit = progress.today === "met" || progress.today === "urge";
@@ -195,10 +194,14 @@ export function Home({ onBack }: { onBack?: () => void }) {
             <span>{t("missions.sheet.button")}</span>
           </motion.button>
         </div>
-        <div className="agetext"><b>{journeyLine}</b><span className="muted">{healthPct}%</span></div>
-        <div className="healthbar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
-          aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
-          {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
+        {/* The bar is the pet's health; the line under it says what moves it. */}
+        <div className="health-block">
+          <div className="agetext"><b>{t("home.hero.vital_health")}</b><span>{t("home.hero.health_score", { n: healthPct })}</span></div>
+          <div className="healthbar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={healthPct}
+            aria-valuetext={t("home.hero.bar_text", { green: bar.green, total: HEALTH_SEGMENTS })} aria-label={t("home.hero.bar_aria", { name: companion.name })}>
+            {Array.from({ length: HEALTH_SEGMENTS }, (_, i) => <i key={i} data-s={i < bar.green ? "ok" : "hurt"} />)}
+          </div>
+          {journeyLine && <p className="health-why">{journeyLine}</p>}
         </div>
       </PetScene>
 
@@ -221,18 +224,24 @@ export function Home({ onBack }: { onBack?: () => void }) {
         )}
 
         <section className="card today" aria-label={t("home.today.today")}>
-          {nothing ? (
+          {!resting ? (
             <>
               <div className="today-head"><h2>{t("home.today.how")}</h2><div className="today-sub"><p>{fmtDay(t0)}</p>{streakBadge}</div></div>
-              <div className="today-actions">
-                <Button onClick={clean}>{t("home.today.goal_met")}</Button>
-                <Button variant="secondary" onClick={slip}>{t("home.today.slipped")}</Button>
+              {/* Once today is logged the card keeps its shape: the choice is marked, the other dims, and the marked one opens the edit panel. */}
+              <div className="today-actions" data-logged={checked || undefined}>
+                {cleanToday
+                  ? <Button className="picked" aria-label={t("home.today.picked_aria", { choice: t("home.today.goal_met") })} onClick={() => setEditing((e) => !e)}>{Icon.check}{t("home.today.goal_met")}</Button>
+                  : <Button onClick={clean} disabled={slippedToday}>{t("home.today.goal_met")}</Button>}
+                {slippedToday
+                  ? <Button variant="secondary" className="picked" aria-label={t("home.today.picked_aria", { choice: t("home.today.slipped") })} onClick={() => setEditing((e) => !e)}>{Icon.check}{t("home.today.slipped")}</Button>
+                  : <Button variant="secondary" onClick={slip} disabled={cleanToday}>{t("home.today.slipped")}</Button>}
               </div>
               <button type="button" className="urge-btn" onClick={() => { haptic.tap(); setUrge(true); }}>
                 <span className="urge-ico" aria-hidden>{Icon.wave}</span>
                 <span className="urge-text"><b>{t("home.today.urge")}</b><small>{t("sheets.quick.urge_hint")}</small></span>
                 <span className="srow-chev" aria-hidden>{Icon.chevR}</span>
               </button>
+              {editing && checked && <DayDetail day={t0} standalone onMarkMet={clean} onSlipSaved={saved} />}
             </>
           ) : (
             <>

@@ -9,7 +9,7 @@
   --line: rgba(36,33,30,.09);
   --shadow: 0 0 transparent; /* nothing at rest casts a shadow: a 1px line or a tone step separates it */
   --shadow-sheet: 0 -16px 36px -6px rgba(60,48,38,.14);
-  --radius: 24px; --radius-sm: 16px; --gap: 20px; --pad: 22px;
+  --radius: 24px; --radius-sm: 16px; --gap: 20px; --pad: 22px; --section: 24px;
   --ease: cubic-bezier(.22,.8,.3,1);
   --font: "Geist Variable", Geist, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --display: "Geist Variable", Geist, system-ui, sans-serif;
@@ -1024,9 +1024,9 @@ html[data-keyboard="open"] .tabbar { display: none; }
 
 /* ---------- the room: where the pet lives ---------- */
 .screen.scene-screen { padding: 0 0 48px; gap: 0; }
-.scene-body { display: flex; flex-direction: column; gap: var(--section); padding: 8px var(--pad) 0; }
+.scene-body { display: flex; flex-direction: column; gap: var(--section); padding: 0 var(--pad); }
 .pscene { --top: color-mix(in srgb, var(--accent) 20%, var(--ground)); --glow: rgba(255,240,220,.5); --ink: var(--text); --ink-soft: var(--muted);
-  position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 28px; text-align: center;
+  position: relative; flex: none; overflow: hidden; isolation: isolate; padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 32px; text-align: center;
   background: radial-gradient(80% 50% at 50% 42%, var(--glow), transparent 72%), linear-gradient(180deg, var(--top) 0%, color-mix(in srgb, var(--top) 42%, var(--ground)) 42%, var(--ground) 74%); }
 /* The room follows the pet's health: grim and grey when unwell, warm and bright when thriving. */
 .pscene[data-mood="storm"] { --top: #151a21; --glow: rgba(110,128,152,.3); }
@@ -1077,9 +1077,9 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .hs-meta { margin: 0; color: var(--muted); font: 500 12px/16px var(--font); letter-spacing: .04em; text-transform: uppercase; }
 .hs-stage { position: relative; display: grid; place-items: center; width: 100%; margin: -22px 0 -6px; }
 .hs-stage > * { position: relative; }
-.speech { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px 18px; max-width: 94%; text-align: center; font: 500 16px/22px var(--font); margin-top: 14px; }
+.speech { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 12px 18px; max-width: 94%; text-align: center; font: 500 16px/22px var(--font); margin-top: 16px; }
 .speech::before { content: ""; position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); border-radius: 3px 0 0 0; }
-.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
+.vitals { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; }
 .vital { border: 0; background: none; color: var(--text); display: grid; justify-items: center; gap: 6px; cursor: pointer; padding: 0; font: 600 12px/16px var(--font); }
 .vital-ico { position: relative; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--accent); }
 .vital-ico .ico { width: 22px; height: 22px; }
@@ -1087,8 +1087,12 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .care-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 700 12px/18px var(--font); font-style: normal; text-align: center; }
 .care-badge[data-tone="warn"] { background: var(--warning); color: var(--on-warning); }
 .care-badge[data-tone="bad"] { background: var(--negative); color: var(--on-status); }
-.agetext { width: 100%; display: flex; justify-content: space-between; font: 500 14px/20px var(--font); margin-top: 16px; }
-.healthbar { width: 100%; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; height: 12px; margin-top: 8px; }
+/* Health: label and score, the bar, then what moves it. Set apart from the vitals above and the card below. */
+.health-block { width: 100%; display: grid; gap: 8px; margin-top: 32px; text-align: left; }
+.agetext { width: 100%; display: flex; justify-content: space-between; align-items: baseline; font: 500 14px/20px var(--font); font-variant-numeric: tabular-nums; }
+.agetext b { font-weight: 600; }
+.health-why { margin: 0; color: var(--ink-soft, var(--muted)); font: 500 13px/18px var(--font); }
+.healthbar { width: 100%; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; height: 12px; }
 .healthbar > i { display: block; border-radius: 4px; }
 .healthbar > i[data-s="ok"] { background: var(--positive); }
 .healthbar > i[data-s="hurt"] { background: color-mix(in srgb, var(--negative) 55%, var(--raised)); }
@@ -1097,7 +1101,7 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .update-cta { background: color-mix(in srgb, var(--on-accent) 18%, transparent); border-radius: 999px; padding: 8px 14px; font: 600 14px/20px var(--font); white-space: nowrap; }
 
 /* ---------- Today ---------- */
-.today { display: grid; gap: 14px; }
+.today { display: grid; gap: 16px; }
 .today-head { display: grid; gap: 4px; }
 .today-sub { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
 /* The streak: a flame and a count. Grey while today is still open, lit once today counts. */
@@ -1113,7 +1117,12 @@ html[data-keyboard="open"] .tabbar { display: none; }
 .urge-text { display: grid; flex: 1; min-width: 0; }
 .urge-text b { font-weight: 600; font-size: 16px; }
 .urge-text small { color: var(--muted); font-size: 13px; }
-.today-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.today-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* Logged today: the chosen button keeps its place with a check; the other steps back. */
+.today-actions .btn.picked { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; padding-inline: 12px; }
+.today-actions .btn.picked .ico { width: 18px; height: 18px; stroke-width: 2.6; }
+.today-actions .btn.secondary.picked { background: color-mix(in srgb, var(--slip) 18%, var(--surface)); border-color: color-mix(in srgb, var(--slip) 45%, transparent); color: var(--text); }
+.today-actions[data-logged] .btn:disabled { opacity: .4; }
 .today-done { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 

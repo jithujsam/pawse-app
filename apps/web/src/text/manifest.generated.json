@@ -1144,7 +1144,7 @@
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
       "start": 14,
-      "end": 30,
+      "end": 31,
       "entries": [
         {
           "id": "home.hero.hero_aria",
@@ -1201,14 +1201,24 @@
           ]
         },
         {
+          "id": "home.hero.health_score",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
           "id": "home.hero.recover_one",
           "kind": "text",
-          "placeholders": []
+          "placeholders": [
+            "day"
+          ]
         },
         {
           "id": "home.hero.recover_other",
           "kind": "text",
           "placeholders": [
+            "day",
             "n"
           ]
         },
@@ -1240,8 +1250,8 @@
       "title": "Paused card",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 32,
-      "end": 37,
+      "start": 33,
+      "end": 38,
       "entries": [
         {
           "id": "home.paused.aria",
@@ -1261,8 +1271,8 @@
       "title": "Today's check-in messages",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 39,
-      "end": 56,
+      "start": 40,
+      "end": 58,
       "entries": [
         {
           "id": "home.today.today",
@@ -1293,6 +1303,13 @@
           "kind": "text",
           "placeholders": [
             "n"
+          ]
+        },
+        {
+          "id": "home.today.picked_aria",
+          "kind": "text",
+          "placeholders": [
+            "choice"
           ]
         },
         {
@@ -1348,8 +1365,8 @@
       "title": "Milestone dialog",
       "source": "src/screens/Home.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 58,
-      "end": 63,
+      "start": 60,
+      "end": 65,
       "entries": [
         {
           "id": "home.milestone.aria",
@@ -2032,8 +2049,8 @@
       "title": "What a day says about itself",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 65,
-      "end": 77,
+      "start": 67,
+      "end": 79,
       "entries": [
         {
           "id": "calendar.note.met",
@@ -2095,8 +2112,8 @@
       "title": "Age this month",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 79,
-      "end": 87,
+      "start": 81,
+      "end": 89,
       "entries": [
         {
           "id": "calendar.age.aria",
@@ -2135,8 +2152,8 @@
       "title": "Month grid",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 89,
-      "end": 98,
+      "start": 91,
+      "end": 100,
       "entries": [
         {
           "id": "calendar.month.previous",
@@ -2182,8 +2199,8 @@
       "title": "Day detail",
       "source": "src/screens/Calendar.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 100,
-      "end": 122,
+      "start": 102,
+      "end": 124,
       "entries": [
         {
           "id": "calendar.day.aria",
@@ -2302,8 +2319,8 @@
       "title": "Calendar totals",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 124,
-      "end": 137,
+      "start": 126,
+      "end": 139,
       "entries": [
         {
           "id": "calendar.stats.title",
@@ -2366,8 +2383,8 @@
       "title": "Milestones",
       "source": "src/screens/Journey.tsx",
       "file": "src/text/sections/home.ts",
-      "start": 139,
-      "end": 149,
+      "start": 141,
+      "end": 151,
       "entries": [
         {
           "id": "calendar.milestones.title",
