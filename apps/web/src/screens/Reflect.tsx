@@ -14,7 +14,7 @@ import { toast } from "../ui/Toast";
  * and an if-then plan ("if I'm bored at 10pm, then I'll…") roughly doubles follow-through in studies
  * of implementation intentions. One entry per day; mood is required, words are optional.
  */
-export const MOODS = [{ n: 1, e: "😞", l: t("insights.reflect.mood_1") }, { n: 2, e: "😕", l: t("insights.reflect.mood_2") }, { n: 3, e: "😐", l: t("insights.reflect.mood_3") }, { n: 4, e: "🙂", l: t("insights.reflect.mood_4") }, { n: 5, e: "😄", l: t("insights.reflect.mood_5") }];
+export const MOODS = [{ n: 1, l: t("insights.reflect.mood_1") }, { n: 2, l: t("insights.reflect.mood_2") }, { n: 3, l: t("insights.reflect.mood_3") }, { n: 4, l: t("insights.reflect.mood_4") }, { n: 5, l: t("insights.reflect.mood_5") }];
 const PROMPTS = [
   t("insights.reflect.prompt_1"), t("insights.reflect.prompt_2"), t("insights.reflect.prompt_3"),
   t("insights.reflect.prompt_4"), t("insights.reflect.prompt_5"), t("insights.reflect.prompt_6"),
@@ -44,7 +44,7 @@ export function Reflect() {
     <div className="stack tight reflect">
       <div className="row"><b>{t("insights.reflect.title")}</b>{existing && !open && <span className="muted small">{t("insights.reflect.done")}</span>}</div>
       <Select label={t("insights.reflect.mood_aria")} value={mood || undefined} placeholder={t("insights.reflect.mood_placeholder")}
-        options={MOODS.map((m) => ({ value: m.n, label: `${m.e}  ${m.l}` }))}
+        options={MOODS.map((m) => ({ value: m.n, label: m.l }))}
         onChange={(n) => { setMood(n); setOpen(true); }} />
       <AnimatePresence initial={false}>
         {open && (
@@ -59,7 +59,7 @@ export function Reflect() {
         <div className="list">
           {recent.map((j) => (
             <div className="item" key={j.day}>
-              <div className="row"><b>{fmtDay(j.day)}</b><span aria-label={MOODS[j.mood - 1]?.l}>{MOODS[j.mood - 1]?.e}</span></div>
+              <div className="row"><b>{fmtDay(j.day)}</b><span className="muted small">{MOODS[j.mood - 1]?.l}</span></div>
               {j.body && <span className="small">{j.body}</span>}
             </div>
           ))}

@@ -185,7 +185,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
         <p className="hero-meta">{meta}</p>
         <div className="pet-stage-live">
           <LiveCompanion species={companion.species} coat={companion.coat} breed={companion.breed} personality={personality} light={scene.light}
-            stage={view.stage} mood={mood} age={age} size={196} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
+            stage={view.stage} mood={mood} age={age} size={164} gesture={gesture} onReact={react} condition={missions?.mode === "rescue" ? missions.traits : undefined} />
         </div>
         {/* A fixed slot: the bubble can change its text without moving anything below it. */}
         <div className="speech-slot">

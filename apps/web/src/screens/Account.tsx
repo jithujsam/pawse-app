@@ -128,7 +128,7 @@ export function Account({ compact = false }: { compact?: boolean }) {
   if (sent) {
     return (
       <motion.div className="stack center-text" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <motion.div className="lock-ico" initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={spring.bouncy}>✉</motion.div>
+        <motion.div className="lock-ico" initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={spring.bouncy}><svg viewBox="0 0 24 24" className="ico" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M4 7l8 6 8-6" /></svg></motion.div>
         <h2>{t("account.check_email.title")}</h2>
         <p className="muted small">{t("account.check_email.body", { email: sent })}</p>
         <Button variant="secondary" disabled={resent} onClick={async () => {
