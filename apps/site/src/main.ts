@@ -1,4 +1,6 @@
 import { wire } from "./interactions";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/newsreader/opsz.css";
 import "./styles.css";
 
 /**

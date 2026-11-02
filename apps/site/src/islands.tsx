@@ -8,6 +8,7 @@ import { Demo } from "./Demo";
 const RESCUE_START = petTraits({ mode: "rescue", phase: "recovery", run: 0, issue: null });
 const PRESETS: Record<string, Omit<DogProps, "poster" | "posterAlt">> = {
   hero: { mood: "happy", pettable: true },
+  mascot: { mood: "happy", pettable: true },
   rescue: { mood: "idle", condition: RESCUE_START },
   raise: { mood: "waiting" },
   cta: { mood: "happy", pettable: true },
