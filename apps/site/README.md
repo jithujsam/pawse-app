@@ -4,16 +4,16 @@ The public marketing page. It is a separate workspace package from the Android a
 touches its build, its Capacitor config or the release pipeline.
 
 - **Content** is static HTML in `index.html`, so the page is readable and indexable without JavaScript.
-- **`src/main.ts`** (about 5 KB) wires the small behaviours in `src/interactions.ts`: the phone menu, the tool
-  list, the questions, the pinned Missions screen and the entrances.
+- **`src/main.ts`** (a few KB) wires the small behaviours in `src/interactions.ts`: the phone menu and the
+  entrances. The questions are native `<details>`.
 - **`src/islands.tsx`** loads after first paint and mounts the live pieces: the app's own 3D dog
   (`apps/web/src/Pet3D.tsx`, imported directly) and the "Try the 21 days" panel (`src/Demo.tsx`), which runs the
   real mission engine from `@detox/engine` (`journey()`, `wellness()`, `petTraits()`). `src/demo.ts` only turns
   taps into day records; `test/demo.test.ts` pins it to `docs/MISSION_FORMULA.md`.
 - **Dog model:** `apps/web/public/models/dog.glb` is served in dev and copied into the build by
   `vite.config.ts`, so there is one copy in git. Credit: Quaternius, CC0 (`apps/web/public/models/LICENSE.md`).
-- **Font:** Schibsted Grotesk, self-hosted (`public/fonts`, SIL OFL). The page makes no third-party requests.
-- **Design notes:** `DESIGN.md` (inventory, argument, chosen Taste Skill direction, copy deck);
+- **Look:** the app's own tokens, cards, pills, room scene and fonts (Geist and Newsreader via `@fontsource-variable`, as in `apps/web`). The page makes no third-party requests.
+- **Design notes:** `DESIGN.md` (inventory, argument, the v2 direction, the brand rules allowed and why);
   `design/direction.json` (the dealt sheet); `design/inspect/` (the last Taste Skill inspection, 1440/768/390).
 
 ## Commands
@@ -26,7 +26,8 @@ touches its build, its Capacitor config or the release pipeline.
 Taste Skill gate (from the repo root, against the production preview):
 
     node .claude/skills/design-taste-frontend/scripts/lint.mjs apps/site/index.html apps/site/src
-    node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:4180/ --out apps/site/design/inspect
+    node .claude/skills/design-taste-frontend/scripts/inspect.mjs http://localhost:4180/ --out apps/site/design/inspect \
+      --allow gradient,palette-claude,palette-terracotta,palette-cream,all-centred,micro-label,shadow,hairline,outlined-box,icon-cards
 
 ## Deploy on Vercel
 

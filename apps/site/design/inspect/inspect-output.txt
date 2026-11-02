@@ -1,16 +1,22 @@
 TASTESKILL · INSPECT   http://localhost:4180/
 
 MEASURED (first viewport listed)
-  hero headline   "Every good day helps it heal."  6 words · 1 line(s) · 61.1px (4.2vw) · Schibsted Grotesk 800 · tracking -0.05em · leading 0.92
-  @768px          2 line(s) · 56px
-  @390px          2 line(s) · 37.1px
-  typefaces       Schibsted Grotesk 100%
-  sizes in use    14 / 19 / 26 / 61 / 62 px   body 19px / 1.45
-  colour          page #ffffff · sections #e6e6e4 #eef1f8 #f3f3f2 · button #1a4be0
-  page            12.5 screens · 1165 words · 20 images · hero media 27% img
-  headings        22 · longest 2 line(s) · median 2 words
+  hero headline   "A pet that heals when you do"  7 words · 1 line(s) · 84px (5.8vw) · Newsreader Variable 400 · tracking -0.02em · leading 1.02
+  @768px          1 line(s) · 57.7px
+  @390px          2 line(s) · 44px
+  typefaces       Geist Variable 95%, Newsreader Variable 5%
+  sizes in use    13 / 14 / 15 / 17 / 18 / 20 / 22 / 24 / 26 / 28 / 32 / 48 / 56 / 84 px   body 18px / 1.5
+  colour          page #faf7f2 · sections #ffffff · button #a8632a
+  page            9.8 screens · 911 words · 13 images · hero media 20% img
+  headings        21 · longest 2 line(s) · median 2 words
 
 WARN — fix, or be able to defend
+  [mixed-font-headline] @1440px (+768, 390)  4 headline(s) switch typeface or to italic mid-line (the "one italic serif word" move).
+      → Set the whole headline in one face. Emphasis comes from the words.
+  [size-count] @1440px (+768, 390)  14 different font sizes (13, 14, 15, 17, 18, 20, 22, 24, 26, 28, 32, 48, 56, 84).
+      → A page needs about five: display, heading, lead, body, small.
+  [grey-body] @1440px (+768, 390)  The running text is a soft grey on its ground (6.3:1).
+      → Set body copy in the full ink (7:1 or more). Keep the muted ink for secondary notes; pages read thin and unfinished when everything is grey.
   [no-footage] @1440px  No video anywhere on the page.
       → Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject.
 
@@ -27,4 +33,4 @@ LOOK AT THE RENDER — open these with your image viewer / Read tool before sayi
                   apps/site/design/inspect/mobile-page-02.jpg
 
 report: apps/site/design/inspect/report.json
-RESULT: 0 FAIL, 1 WARN — measurements pass. Passing the meter is the floor, not the grade: score the screenshots with references/critique.md.
+RESULT: 0 FAIL, 4 WARN — measurements pass. Passing the meter is the floor, not the grade: score the screenshots with references/critique.md.

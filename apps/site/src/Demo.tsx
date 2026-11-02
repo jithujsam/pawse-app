@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import { CONSISTENCY_DAYS, RECOVERY_DAYS, THRIVING_REWARD_EVERY, type AdoptionMode } from "@detox/engine";
 import { missionText, rewardName, tierWord } from "../../web/src/mission-text";
+import { sceneFor } from "../../web/src/scene";
 import { Dog } from "./Dog";
 import { dogState, jumpTo, toRecords, view, type Mark } from "./demo";
 
@@ -40,11 +41,14 @@ export function Demo() {
     : latest.kind === "cleared" ? `${missionText(latest.id!).title}: cleared.`
     : `Reward: ${rewardName(latest.n!)}.`;
 
+  // The room's weather, from the app's own rule (scene.ts): stormy when Miso is unwell, golden when it thrives.
+  const scene = sceneFor({ wellness: v.wellness, rescue: mode === "rescue", slipToday: marks.at(-1) === "slip", milestoneToday: latest?.kind === "recovered" || latest?.kind === "reward", hour: 11 });
+
   return (
     <div className="demo" data-ui>
-      <div className="demo-stage">
+      <div className="demo-stage pscene" data-mood={scene.mood} data-ink={scene.ink}>
         <div className="demo-dog dog-box">
-          <Dog mood={dog.mood} gesture={dog.gesture} condition={mode === "rescue" ? v.traits : undefined}
+          <Dog mood={dog.mood} gesture={dog.gesture} condition={mode === "rescue" ? v.traits : undefined} light={scene.light}
             poster={mode === "rescue" ? "/renders/rescue.webp" : "/renders/raise.webp"} posterAlt="Miso, the demo dog" />
         </div>
         <div className="demo-read">

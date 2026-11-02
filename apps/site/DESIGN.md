@@ -49,171 +49,61 @@ Facts checked against the code on 2026-11-02 (app 5.0.19, code 79).
 10. Answers to the real questions. → FAQ.
 11. Close on the dog again. → the dog returns with the one action.
 
-## 3. Direction
+## 3. Direction (v2, 2026-11-02)
 
-Dealt three (`draw.mjs --options 3`, sector consumer-app, seed 1830912445):
-`quiet-instrument`, `product-performs`, `name-as-monument`.
+The first version ("The product performs": white, black, one blue, Schibsted Grotesk) was rejected by the owner:
+it didn't feel like PAWSE. The brief is now **a website that matches the vibe of the app**.
 
-**Chosen: `product-performs` ("The product performs").** PAWSE's product *is* the companion responding to your
-days, and that response is already software we own: the same model, the same `petTraits()` and the same
-`journey()`. A page whose idea is "put the working product in front of the visitor" lets the dog itself make
-the argument. `quiet-instrument` would have whispered a product whose point is emotional presence;
-`name-as-monument` would have made the wordmark the hero when the hero must be the dog.
+Re-dealt with the Taste Skill, keeping the app's palette and type
+(`draw.mjs --keep palette,type --tone playful --have product-ui,illustration --options 3`):
+`loud-flat-poster`, `borrowed-category`, `page-is-the-object`.
 
-Redraws, with reasons:
-- **Hero** redrawn once: the dealt "Column on one line" leaves the right half blank and shows only 90px of the
-  demo; the brief requires the actual companion to dominate the first screen. New hero: "Sentence split by a
-  frame". Kept.
-- **about** → `about-side-facts-wide-paragraph`: the dealt founder's letter would have to be invented.
-- **cta** → `cta-object-returns`: the dealt "sentence with a blank" is an email form, and there is no form
-  backend. The dog returning is the honest close.
-- Palette kept ("Sheet and biro": white, near-black, one blue). The dog is golden; the blue action is its
-  complement, and it keeps the page clear of the app's cream-and-terracotta (a house-rule tell).
-- Type kept (Schibsted Grotesk 400/600/800, self-hosted). The app keeps Geist/Newsreader; the page is its own
-  art direction and the product stays recognisable through its screens and its dog.
-
-Added outside the dealt list, built in this direction's manner: **Rescue or raise** (two dogs, one shared
-column of heal days) and **Stages** (a pinned Missions screen that changes under three statements, which the
-direction's composition asks for: "One section pins a fragment while three short statements change it").
+**Chosen: `page-is-the-object`.** Its idea is to build the page as the artefact that already exists in the
+subject's world. For PAWSE that artefact is the app itself, so the page is built from the app's own parts. The
+dealt stationery blueprints (menus, receipts, index cards) were not used: the app's components replace them.
 
 ## 4. The idea
 
-> On this page, **the 21-day mission and the dog's own conditions** become **a working fragment of the product:
-> the real dog, driven by the real engine, that you look after yourself.**
+> On this page, **Miso's room (the pet page, whose sky follows the pet's wellness)** becomes **the page itself**.
 
-Competitor test: another habit tracker has a streak, not a rescued dog whose coat dulls and whose trust is the
-last thing to heal on day 21. The sentence fails for them.
+- **Hero:** the app's pet page at web scale, copied from `apps/web/src/styles.css`: the golden sky of a thriving
+  pet, the sun and motes, the serif greeting and name, the small caps line, the live 3D dog (tap to pet), a
+  speech bubble, four round vitals (here they link to sections), the 20-segment health bar and two pill actions.
+- **Below:** the app's cream ground and white 24px cards with a soft line, pill buttons, chips, the Missions
+  sheet with its handle, the app's list rows for the FAQ, and its toast for the checkout notice.
+- **The live thing:** "Try the 21 days" is a Missions sheet over a room. Its weather comes from the app's
+  `sceneFor()` (`apps/web/src/scene.ts`), driven by the real mission engine: a storm on day 0 of a rescue,
+  overcast as it heals, the storm back after a slip (with tears), golden when it thrives. The dog takes the
+  room's light.
+- **Close:** the same room at night, with the moon and stars: "Someone to come back to".
+- **Fonts:** Geist and Newsreader, the app's own (`@fontsource-variable/*`, already in the lockfile).
 
-**The live thing:** the "Try the 21 days" panel. Choose Rescue or Raise, press *Goal met* or *Slip*, or drag to
-any day. The dog, its wellness, its six conditions or skills, the stage and any post-recovery issue all come
-from `journey()`, `wellness()` and `petTraits()` in `@detox/engine`, the same functions the app runs. Works by
-thumb; without script or WebGL the panel shows the still render and the rules as text.
+## 5. Taste Skill rules turned off, and why
 
-## 5. Copy deck
+The app's brand uses things the skill's house style bans. The owner asked for the app's vibe, so these are
+allowed for this page only, and every source line carries a `taste-skill-ignore` note:
 
-Headlines ≤ 2 lines at every width. No eyebrows, no numbering. Sentence case.
+| Rule | Why |
+| --- | --- |
+| gradient | The room's sky, sun and night are the app's signature. |
+| palette-cream, palette-terracotta, palette-claude | The app's cream ground and the dog's amber accent. |
+| all-centred | The app's screens are centred. |
+| micro-label | The small caps line under the pet's name, as in the app. |
+| outlined-box, hairline | The app's cards have a 1px soft line; its list rows are divided by one. |
+| shadow | Only the moon's glow, as in the app. |
+| icon-cards | The three stage cards use the app's round icon style. |
 
-**Nav:** PAWSE · How it works · Rescue or raise · Founding passes · FAQ · [Become a founding user]
+## 6. Gate results (final)
 
-**Hero (h1, split around the dog):** "Every good day" / "helps it heal."
-Supporting: "PAWSE is a habit-change app for Android. Pick a habit you want to change, adopt a dog, and check in
-each day. How you're doing shows in how it's doing."
-Action: **Become a founding user** → #founding. Text link: Try the 21 days →  #try
+- `lint.mjs`: 0 FAIL, 5 WARN (outlined boxes: the app's cards).
+- `inspect.mjs` with the allowances above: **0 FAIL, 4 WARN** at 1440, 768 and 390. Output and screenshots are
+  in `design/inspect/`.
 
-**Intro (no heading in the blueprint; house rules add one):** heading "Numbers are easy to ignore".
-Lead: "A streak counter tells you a number. It doesn't look up when you come home. PAWSE puts a companion where
-the number was, so the habit you're changing has a face, and a slip has a cost you can see but never a verdict."
-Four columns:
-- **Who it's for.** Anyone who wants to change something they keep doing: late-night food orders, impulse buys,
-  doomscrolling, smoking or vaping, drinking, or a habit you name yourself. You set the goal: stop, cut down, or
-  understand it first.
-- **What it is.** An Android app with a 3D companion at its centre. Each day you record a goal-met day, a slip,
-  or an urge you got through. Your companion's wellness, mood and missions follow those records and nothing else.
-- **How it treats slips.** A slip is information, not a verdict. Your companion feels it, your record keeps every
-  good day, and the app shows exactly what puts it right. You pick how it talks to you: Gentle, Honest or Direct.
-- **What it isn't.** Not therapy, not medical treatment and not a promise. It's a self-awareness tool that makes
-  your days visible. It never tracks calories, weight or food restriction.
+WARNs, defended: *mixed-font-headline* (a serif pet name beside a sans chip, as in the app); *size-count* (the
+app's own scale); *grey-body* (the app's muted secondary text, 6.3:1); *no-footage* (the moving picture is the
+live 3D dog).
 
-**Rescue or raise:** heading "Rescue it or raise it".
-Sentence: "When you adopt, you choose where your dog starts. Both take 21 goal-met days in a row; the difference
-is what those days do."
-- Rescue (harder): "A neglected dog with six conditions. Each goal-met day in a row brings it closer to well;
-  a slip starts the 21 days over." Wellness starts at 10.
-- Raise (easier): "A healthy young dog with six things to learn. The same 21 days teach it, and it starts at 70
-  wellness, so a slip slows it rather than hurting it."
-- The shared column: Day 1 · 3 · 6 · 10 · 15 · 21, conditions on the left, skills on the right.
-- Note: "These describe your dog, not you."
-
-**Live demo:** heading "Try the 21 days".
-Sentence: "This is the app's own mission engine. Look after a dog for a few weeks and watch what each day does."
-Controls: Journey [Rescue | Raise] · Goal met · Slip · Day (slider 0–42) · Start over.
-Readouts: "Day 8 of 21 · best run 8", "13 goal-met days to go", stage name, wellness %, now healing / healed.
-Under the panel: "Nothing here is saved. It runs on this page only."
-No-JS / no-WebGL fallback: still render + "Rescue: wellness starts at 10 and reaches 100 on day 21…".
-
-**Stages:** heading "21 days, then 21 more".
-- Recovery. "Goal-met days in a row. Six conditions heal on days 1, 3, 6, 10, 15 and 21. A slip starts the
-  count over, but your best run is kept."
-- Consistency. "Once recovered, 21 more goal-met days make it last, with rewards at one week, two weeks and
-  three. A slip now gives your dog an issue to clear, never a restart."
-- Thriving. "After that, a reward every 30 well days. An issue from a slip clears with 3, 7 or 14 goal-met days
-  in a row, depending on how often slips came."
-Footnote: "21 days is PAWSE's mission length, not a medical recovery time."
-
-**Daily loop:** heading "A day with PAWSE".
-- "First, you check in." (the check-in menu)
-- "Then say how it went." (goal met, slip, or an urge you managed)
-- "Your dog responds." (the pet page)
-- "And the days add up." (Journey calendar)
-Closing line: "Tomorrow, the same. Most check-ins take a few seconds."
-
-**Tools (command list):** search placeholder "Find a tool".
-- Urge support — "Pause, name what's going on, and pick a way through: breathe, change where you are, add
-  friction, reach out. Switch whenever one isn't helping."
-- Journey — "A calendar of your days, your milestones, and the last four days to fill in or correct."
-- Insights — "This week against last, urges you got through, your riskier hours and the money you kept."
-- Several habits — "Each habit gets its own companion, records and progress. Nothing on one changes another."
-- Your plan — "Your reasons, hard moments and first step, shown back to you when an urge comes."
-- Weekly review — "What helped, what was hard, and one change for the week ahead."
-- Home-screen widgets — "Your pets on the Android home screen, each in today's mood. Tap to check in."
-
-**About (honest expectations):** heading "What PAWSE is, and isn't".
-Facts: Platform — Android beta (5.0.19) · Price today — Founding passes, $1 or $3 once · Data — Private to your account.
-Paragraph: "PAWSE is a self-awareness and habit-change tool. It is not medical treatment, therapy or a cure, and
-the dog's conditions are illustrative. If a habit is hurting you, talk to a doctor or someone you trust; the app
-shows a crisis line when it hears words that need one. Stopping alcohol suddenly can be dangerous for some
-people."
-Lists: **Private by default** — Account data protected by row-level security · Photos never leave your phone ·
-No ads, no trackers, no analytics · Optional PIN encrypts what's stored on the phone · Export or delete
-everything, any time. **Never** — Calorie, weight or restriction tracking · Public profiles · An AI key inside the
-app · Shame as a feature.
-
-**Pricing:** heading "Founding passes".
-Supporter Pass — $1 one-time: Android beta now · Founding supporter recognition · Free account tier at public
-launch · Future premium features: Not included.
-Beta Pass — $3 one-time: Android beta now · Founding supporter recognition: (not stated in brief → "Not stated")
-→ decision: rows only list what each pass states. Rows: "Current Android beta" · "Founding supporter
-recognition" · "Free account at public launch" · "Premium beta" · "Future premium beta features".
-Note: "Premium beta features are planned, not available yet. Your 90 days start when they arrive, not when you
-pay." Checkout status: "Checkout isn't open yet. Passes go on sale when payments are connected."
-
-**FAQ:** heading "Questions".
-(Answers in the page source; each limited to what the code supports.)
-
-**CTA (dog returns):** heading "Someone to come back to". Sentence: "Pick a habit, adopt a dog, and start day one."
-Fact: "Founding passes from $1, once." Button: Become a founding user.
-
-**Footer:** "PAWSE, a habit-change app with a dog in it" · Rescue or raise · Founding passes · FAQ · Releases ·
-"© 2026 · Privacy" (privacy anchors to the about section) · model credit "3D dog by Quaternius (CC0)".
-
-## 6. Sample or unconfirmed content (for the owner)
-
-See the final report; repeated in `apps/site/README.md`.
-
-## 7. Look rounds (Taste Skill step 8)
-
-Inspector: `design/inspect/inspect-output.txt` (final: **0 FAIL, 1 WARN**), screenshots at 1440, 768 and 390 in
-`design/inspect/`. Lint: 0 FAIL, 0 WARN.
-
-Round 1 (0 FAIL, 4 WARN), fixed:
-1. Hero: the top screenshot peek ran under the nav, and "Every good day" orphaned "day" → reel starts below the
-   nav, frame narrowed to 30vw, headline kept on one line per half and sized from the side column.
-2. Ten type sizes → five tokens (small, body, lead, head; the hero takes the head step capped by width).
-3. The intro statement ran to four lines → cut to 27 words, three lines.
-4. Margins measured 32/48 → table and paragraph blocks run to the right margin.
-
-Round 2 (1 FAIL), fixed: the enlarged dogs overlapped the Rescue/Raise titles and the closing heading → each
-dog is clipped to its own box. Phone: halves now flush to their own edges, intro is one column, the screenshot
-slivers are hidden (they read as stray bars), the demo dog sits in the same box as the others.
-
-Round 3, fixed: at 1200px the headline touched the frame (found in the OG render) → `min(head, 4.8vw - 8px)`;
-clearance measured ≥ 26px from 900 to 1920px.
-
-Remaining WARN, defended: *no video*. The page's moving picture is the app's own animated 3D dog (four live
-instances). A stock clip of a dog would show something PAWSE isn't.
-
-Critique (references/critique.md, honest): the first screen reads in five seconds (what it is, what to do, the
-dog); the live demo is the strongest moment and uses real rules. Weakest: the Rescue/Raise dogs differ subtly
-at page size (coat, head turned away), so the mirrored day table carries most of that comparison; the stages
-section leaves white space beside the pinned screen between statements on short desktop windows; the about row
-is quieter than its neighbours.
+Fixed in the look rounds: the hero dog rendered at full width (CSS order), gaps in the cards grid, 20px of
+phone overflow from the rotated phones, the moon over the closing heading on phones, light text on the cream
+end of the stormy demo sky (1.1:1, now the whole stage takes the weather colour), the inactive "Raise" segment
+at 4.2:1, and no action on the first phone screen.

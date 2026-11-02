@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>PAWSE: change a habit with a dog that heals as you do</title>
+  <title>PAWSE: a pet that heals when you do</title>
   <meta name="description" content="PAWSE is a habit-change app for Android. Pick a habit you want to change, rescue or raise a 3D dog, and check in each day. 21 goal-met days in a row heal it.">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0e0e0f" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#a8632a">
   <meta name="color-scheme" content="light dark">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="PAWSE: change a habit with a dog that heals as you do">
+  <meta property="og:title" content="PAWSE: a pet that heals when you do">
   <meta property="og:description" content="Rescue or raise a 3D dog. Every goal-met day helps it heal. A slip is information, not a verdict.">
   <meta property="og:image" content="/og.png">
   <meta property="og:image:width" content="1200">
@@ -17,8 +16,6 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/logo-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <link rel="preload" href="/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/renders/hero.webp" as="image" fetchpriority="high">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -38,286 +35,275 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
-  <header class="nav">
-    <a class="wordmark" href="#top" aria-label="PAWSE, back to top">
-      <svg viewBox="200 265 850 710" aria-hidden="true" width="26" height="22"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/> <ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/> <ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/> <ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/> <path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg>
-      <span>PAWSE</span>
+  <!-- The app's own top bar: the paw, the name, one pill action. -->
+  <header class="appbar">
+    <a class="brand" href="#top" aria-label="pawse, back to top">
+      <svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="30" height="25"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg>
+      <span>pawse</span>
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Menu</button>
     <nav id="nav-links" aria-label="Sections">
-      <a href="#rescue-or-raise">Rescue or raise</a>
+      <a href="#features">Features</a>
       <a href="#try">Try it</a>
       <a href="#founding">Founding passes</a>
       <a href="#questions">FAQ</a>
     </nav>
-    <a class="btn btn-small nav-action" href="#founding">Become a founding user</a>
+    <a class="pill pill-small nav-action" href="#founding">Get early access</a>
   </header>
 
   <main id="main">
-    <!-- The first screen: one sentence split around the dog itself. -->
-    <section class="hero" id="top" aria-labelledby="hero-title">
-      <h1 id="hero-title" class="hero-title"><span class="hero-a">Every good day</span> <span class="hero-b">helps it heal.</span></h1>
-      <div class="hero-reel">
-        <img class="reel-peek reel-prev" src="/screens/dark-missions-rescue.webp" alt="" width="780" height="1688" decoding="async">
-        <figure class="hero-frame">
-          <div class="dog-box" data-dog="hero"><img src="/renders/hero.webp" alt="Miso, a 3D Shiba Inu, happy and looking at you" width="640" height="640" fetchpriority="high"></div>
-          <figcaption>Miso, the app's own 3D dog. Tap to pet.</figcaption>
-        </figure>
-        <img class="reel-peek reel-next" src="/screens/light-home-raise.webp" alt="" width="780" height="1688" decoding="async">
-      </div>
-      <div class="hero-foot">
-        <p class="hero-lead">PAWSE is a habit-change app for Android. Pick a habit you want to change, adopt a dog, and check in each day. How you're doing shows in how it's doing.</p>
-        <p class="hero-actions"><a class="btn" href="#founding">Become a founding user</a> <a class="link" href="#try">Try the 21 days</a></p>
+    <!-- Hero: Miso's room, as on the app's pet page. The sky is the app's "golden" weather: a pet that is thriving. -->
+    <section class="pscene hero" id="top" data-mood="golden" data-ink="dark" aria-labelledby="hero-title">
+      <i class="ps-sun" aria-hidden="true"></i>
+      <div class="ps-fx" aria-hidden="true"><i class="ps-mote" style="left:12%;top:58%;animation-delay:0s"></i><i class="ps-mote" style="left:22%;top:30%;animation-delay:2.1s"></i><i class="ps-mote" style="left:31%;top:70%;animation-delay:4.4s"></i><i class="ps-mote" style="left:68%;top:36%;animation-delay:1.2s"></i><i class="ps-mote" style="left:78%;top:62%;animation-delay:3.3s"></i><i class="ps-mote" style="left:86%;top:28%;animation-delay:5.6s"></i><i class="ps-mote" style="left:45%;top:22%;animation-delay:6.8s"></i><i class="ps-mote" style="left:58%;top:74%;animation-delay:2.8s"></i></div>
+      <div class="ps-content">
+        <p class="hs-greet">Good morning. Meet Miso.</p>
+        <h1 id="hero-title" class="hs-name">A pet that heals <span class="nowrap">when you do</span></h1>
+        <p class="hs-meta">A habit-change app for Android · In beta</p>
+        <div class="hs-pet dog-box" data-dog="hero"><img src="/renders/hero.webp" alt="Miso, a 3D Shiba Inu, happy and looking at you" width="640" height="640" fetchpriority="high"></div>
+        <p class="speech">Every good day helps me heal. Tap me!</p>
+        <nav class="vitals" aria-label="Explore">
+          <a class="vital" href="#rescue-or-raise"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span>Adopt</span></a>
+          <a class="vital" href="#try"><span class="vital-ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="10" r="1.8"/><circle cx="11" cy="6.5" r="1.8"/><circle cx="15.5" cy="7" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8.5 17.5c0-2.5 1.8-4.5 3.8-4.5s3.7 2 3.7 4.5c0 1.6-1.4 2-3.7 2s-3.8-.4-3.8-2z"/></svg></span><span>Missions</span></a>
+          <a class="vital" href="#features"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5"/></svg></span><span>Tools</span></a>
+          <a class="vital" href="#founding"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span>Passes</span></a>
+        </nav>
+        <div class="health" role="img" aria-label="Health 100 of 100">
+          <p class="row"><span>Health</span><span>100/100</span></p>
+          <span class="hbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <p class="hero-actions"><a class="pill" href="#founding">Become a founding user</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
       </div>
     </section>
 
-    <!-- The problem with numbers, and four plain answers. -->
     <section class="intro" aria-labelledby="intro-title">
-      <div data-rise>
-        <h2 id="intro-title">Numbers are easy to ignore</h2>
-        <p class="lead">A streak counter gives you a number. It doesn't look up when you come home. PAWSE puts a companion where the number was, so your habit has a face.</p>
+      <div class="card intro-card" data-rise>
+        <h2 id="intro-title">Your habit, with a face</h2>
+        <p class="lead">PAWSE is a habit-change app for Android. Pick something you want to do less, adopt a 3D dog, and check in each day. Good days help it heal. A slip is information, not a verdict.</p>
+        <p class="muted">Late-night food orders, impulse buys, doomscrolling, smoking or vaping, drinking, or a habit you name yourself. You set the goal: stop, cut down, or understand it first.</p>
+        <p class="intro-actions"><a class="pill" href="#founding">Become a founding user</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
       </div>
-      <div class="intro-cols" data-rise>
-        <p><b>Who it's for.</b> Anyone who wants to change something they keep doing: late-night food orders, impulse buys, doomscrolling, smoking or vaping, drinking, or a habit you name yourself. You set the goal: stop, cut down, or understand it first.</p>
-        <p><b>What it is.</b> An Android app with a 3D companion at its centre. Each day you record a goal-met day, a slip, or an urge you got through. Your companion's wellness, mood and missions follow those records and nothing else.</p>
-        <p><b>How it treats slips.</b> A slip is information, not a verdict. Your companion feels it, your record keeps every good day, and the app shows exactly what puts it right. You pick how it talks to you: Gentle, Honest or Direct.</p>
-        <p><b>What it isn't.</b> Not therapy, not medical treatment and not a promise. It's a self-awareness tool that makes your days visible. It never tracks calories, weight or food restriction.</p>
+      <div class="intro-phones" aria-label="Three screens from the app">
+        <figure class="phone phone-back phone-left"><img src="/screens/light-pets.webp" alt="Home: three pets, one for each habit" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        <figure class="phone phone-front"><img src="/screens/light-home-rescue.webp" alt="Miso the Shiba's page: waiting for today's check-in, health 60 of 100" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        <figure class="phone phone-back phone-right"><img src="/screens/light-missions-rescue.webp" alt="Missions: 9 goal-met days to go to recover Miso" width="780" height="1688" loading="lazy" decoding="async"></figure>
       </div>
+      <ul class="facts" aria-label="At a glance">
+        <li class="card"><b>21</b><span>goal-met days in a row to heal your dog</span></li>
+        <li class="card"><b>3</b><span>voices to choose: Gentle, Honest or Direct</span></li>
+        <li class="card"><b>0</b><span>ads, trackers or analytics</span></li>
+      </ul>
     </section>
 
-    <!-- Rescue and Raise, side by side, on the same six days. -->
-    <section class="choose" id="rescue-or-raise" aria-labelledby="choose-title">
-      <div class="choose-head" data-rise>
-        <h2 id="choose-title">Rescue it or raise it</h2>
-        <p>When you adopt, you choose where your dog starts. Both take 21 goal-met days in a row; the difference is what those days do.</p>
+    <!-- Features as the app's cards. -->
+    <section class="features" id="features" aria-labelledby="features-title">
+      <div class="section-head" data-rise>
+        <h2 id="features-title">Everything around your pet</h2>
+        <p>Small daily actions, a companion that responds, and the tools to understand why.</p>
       </div>
-      <div class="choose-dogs">
-        <figure class="choose-dog choose-rescue">
-          <div class="dog-box" data-dog="rescue"><img src="/renders/rescue.webp" alt="A rescued dog on day 0: dull coat, head low, ears flat, looking away" width="640" height="640" loading="lazy" decoding="async"></div>
-          <figcaption>
-            <h3>Rescue <span class="tag">Harder</span></h3>
-            <p>A neglected dog with six conditions. Wellness starts at 10. Each goal-met day in a row brings it closer to well; a slip starts the 21 days over.</p>
-          </figcaption>
-        </figure>
-        <figure class="choose-dog choose-raise">
-          <div class="dog-box" data-dog="raise"><img src="/renders/raise.webp" alt="A healthy young dog, bright and happy" width="640" height="640" loading="lazy" decoding="async"></div>
-          <figcaption>
-            <h3>Raise <span class="tag">Easier</span></h3>
-            <p>A healthy young dog with six things to learn. Wellness starts at 70, so a slip slows it rather than hurting it. The same 21 days teach it.</p>
-          </figcaption>
-        </figure>
-      </div>
-      <table class="days">
-        <caption class="sr-only">What heals in Rescue and what is learned in Raise, on the same goal-met days in a row</caption>
-        <thead><tr><th scope="col">Rescue heals</th><th scope="col">Goal-met day</th><th scope="col">Raise learns</th></tr></thead>
-        <tbody>
-          <tr><td>Itchy, patchy coat</td><th scope="row">1</th><td>Learns its name</td></tr>
-          <tr><td>Low energy</td><th scope="row">3</th><td>Settles into a routine</td></tr>
-          <tr><td>Startles at noises</td><th scope="row">6</th><td>Plays fetch</td></tr>
-          <tr><td>Doesn't know how to play</td><th scope="row">10</th><td>Explores with confidence</td></tr>
-          <tr><td>Afraid of being left alone</td><th scope="row">15</th><td>Stays calm alone</td></tr>
-          <tr><td>Afraid of people</td><th scope="row">21</th><td>Grows strong</td></tr>
-        </tbody>
-      </table>
-      <p class="note">These describe your dog, not you. Each condition shows on its own part of the dog: the coat, the energy, the ears, the tail, whether it meets your eyes.</p>
-    </section>
 
-    <!-- The live thing: the app's mission engine and its dog. -->
-    <section class="try" id="try" aria-labelledby="try-title">
-      <div class="try-head" data-rise>
-        <h2 id="try-title">Try the 21 days</h2>
-        <p>This runs the app's own mission rules. Look after Miso for a few weeks and watch what each day does.</p>
-      </div>
-      <div class="demo-mount" data-demo>
-        <div class="demo-fallback">
-          <img src="/renders/rescue.webp" alt="Miso on day 0 of a rescue" width="640" height="640" loading="lazy" decoding="async">
-          <div>
-            <p><b>Rescue:</b> wellness starts at 10 and reaches 100 on the 21st goal-met day in a row. On day 8 it is at 45, with the coat, the energy and the noise fear healed.</p>
-            <p><b>Raise:</b> wellness starts at 70 and reaches 100 on day 21, learning a skill on days 1, 3, 6, 10, 15 and 21.</p>
-            <p>A slip before day 21 starts the count at 0 again; the best run is kept. Turn on JavaScript to try it.</p>
+      <div class="bento">
+        <article class="card card-wide card-adopt" id="rescue-or-raise">
+          <div class="card-text">
+            <h3>Rescue it or raise it</h3>
+            <p>When you adopt, you choose where your dog starts. Both take 21 goal-met days in a row; the difference is what those days do.</p>
           </div>
-        </div>
-      </div>
-      <p class="try-foot">Nothing here is saved. It runs on this page only.</p>
-    </section>
+          <div class="adopt">
+            <div class="adopt-col">
+              <img src="/renders/rescue.webp" alt="A rescued dog on day 0: dull coat, head turned away" width="640" height="640" loading="lazy" decoding="async">
+              <p class="adopt-name">Rescue <span class="tag">Harder</span></p>
+              <p class="small">Starts neglected, at 10 wellness. Heals six conditions.</p>
+              <ul class="chips" aria-label="Rescue conditions, in healing order">
+                <li><b>1</b> Itchy, patchy coat</li><li><b>3</b> Low energy</li><li><b>6</b> Startles at noises</li><li><b>10</b> Doesn't know how to play</li><li><b>15</b> Afraid of being left alone</li><li><b>21</b> Afraid of people</li>
+              </ul>
+            </div>
+            <div class="adopt-col">
+              <img src="/renders/raise.webp" alt="A healthy young dog, ears up and curious" width="640" height="640" loading="lazy" decoding="async">
+              <p class="adopt-name">Raise <span class="tag">Easier</span></p>
+              <p class="small">Starts healthy, at 70 wellness. Learns six skills.</p>
+              <ul class="chips" aria-label="Raise skills, in learning order">
+                <li><b>1</b> Learns its name</li><li><b>3</b> Settles into a routine</li><li><b>6</b> Plays fetch</li><li><b>10</b> Explores with confidence</li><li><b>15</b> Stays calm alone</li><li><b>21</b> Grows strong</li>
+              </ul>
+            </div>
+          </div>
+          <p class="small muted">The numbers are goal-met days in a row. These describe your dog, not you.</p>
+        </article>
 
-    <!-- The stages after day 21, with the real Missions screen pinned. -->
-    <section class="stages" aria-labelledby="stages-title">
-      <h2 id="stages-title" class="stages-title">21 days, then 21 more</h2>
-      <div class="stages-grid">
-        <div class="stages-shot" data-ui>
-          <img data-stage="recovery" data-on src="/screens/light-missions-rescue.webp" alt="The Missions sheet: 9 goal-met days to go to recover Miso, day 12 of 21, now healing: afraid of being left alone" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-stage="restart" src="/screens/light-slip.webp" alt="A pop-up after a slip in recovery: Recovery starts over. Day 0 of 21. Your record keeps every day you logged." width="780" height="1688" loading="lazy" decoding="async">
-          <img data-stage="after" src="/screens/light-missions-consistency.webp" alt="The Missions sheet for a recovered dog: Thriving, 7 well days, rewards earned and the slip rules" width="780" height="1688" loading="lazy" decoding="async">
-        </div>
-        <ol class="stages-steps">
-          <li data-stage="recovery" data-on><h3>Recovery</h3><p>Goal-met days in a row. Six conditions heal, or six skills are learned, on days 1, 3, 6, 10, 15 and 21. Days with nothing recorded, rest days and paused days count neither way.</p></li>
-          <li data-stage="restart"><h3>A slip starts it over</h3><p>Before day 21, a slip sets the count back to 0. It's said plainly, with what it takes to put right. Your best run is kept, and every day you logged stays in your record.</p></li>
-          <li data-stage="after"><h3>Then it lasts</h3><p>Once recovered, 21 more goal-met days build consistency, with rewards at one, two and three weeks. Then your dog is thriving, with a reward every 30 well days. From here a slip gives it an issue to clear in 3, 7 or 14 days in a row, never a restart.</p></li>
-        </ol>
-      </div>
-      <p class="note stages-note">21 days is PAWSE's mission length, not a medical recovery time.</p>
-    </section>
+        <article class="card card-shot">
+          <div class="card-text">
+            <h3>Check in in seconds</h3>
+            <p>Goal met, a slip, or an urge you got through. One tap, and your pet responds.</p>
+          </div>
+          <figure class="phone phone-peek"><img src="/screens/light-checkin.webp" alt="The check-in menu: Goal met, I slipped, Had an urge, Your goal and plan" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        </article>
 
-    <!-- A day: the same phone in four fields. -->
-    <section class="loop" aria-labelledby="loop-title">
-      <div class="loop-field">
-        <h2 id="loop-title">A day with PAWSE</h2>
-        <img data-ui src="/screens/light-checkin.webp" alt="The check-in menu: Goal met, I slipped, Had an urge, and Your goal and plan" width="780" height="1688" loading="lazy" decoding="async" style="--crop: 100%">
-        <p>First, you check in.</p>
-      </div>
-      <div class="loop-field">
-        <img data-ui src="/screens/light-urge.webp" alt="Having an urge: one slow breath, how strong it is on a slider, and Help me through it" width="780" height="1688" loading="lazy" decoding="async" style="--crop: 85%">
-        <p>Then say how it went, or get through an urge.</p>
-      </div>
-      <div class="loop-field">
-        <img data-ui src="/screens/light-goal-met.webp" alt="After a goal-met day: 14 days of care, they add up and never reset. Miso is healing." width="780" height="1688" loading="lazy" decoding="async" style="--crop: 30%">
-        <p>Your dog responds.</p>
-      </div>
-      <div class="loop-field">
-        <img data-ui src="/screens/light-journey-month.webp" alt="The Journey calendar for October: 18 of 31 days met, two slips and one urge managed" width="780" height="1688" loading="lazy" decoding="async" style="--crop: 40%">
-        <p>And the days add up.</p>
-      </div>
-    </section>
+        <article class="card card-shot">
+          <div class="card-text">
+            <h3>Get through an urge</h3>
+            <p>Pause, name it, and pick a way through: breathe, move, add friction, reach out.</p>
+          </div>
+          <figure class="phone phone-peek"><img src="/screens/light-urge.webp" alt="Having an urge: one slow breath, how strong it is, and Help me through it" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        </article>
 
-    <!-- The tools around the dog, set as the app's own list. -->
-    <section class="tools" aria-labelledby="tools-title">
-      <h2 id="tools-title" class="sr-only">The tools around your dog</h2>
-      <div class="tools-grid" data-ui>
-        <div class="tools-list">
-          <label class="sr-only" for="tools-search">Find a tool</label>
-          <input id="tools-search" class="tools-search" type="search" placeholder="Find a tool" autocomplete="off" aria-controls="tools-rows">
-          <ul id="tools-rows" role="list">
-            <li><button type="button" class="tool" data-tool="urge" aria-selected="true"><span class="tool-name">Urge support</span><span class="tool-where">On every pet page</span><span class="tool-say">Pause, name what's going on, and pick a way through: breathe, change where you are, add friction, reach out. Switch whenever one isn't helping.</span></button></li>
-            <li><button type="button" class="tool" data-tool="journey"><span class="tool-name">Journey</span><span class="tool-where">Journey tab</span><span class="tool-say">A calendar of your days and your runs, and the last few days to fill in or correct if you forgot.</span></button></li>
-            <li><button type="button" class="tool" data-tool="insights"><span class="tool-name">Insights</span><span class="tool-where">Insights tab</span><span class="tool-say">This week against last, slips per week, urges you got through, your riskier hours and money kept, counted and never guessed at.</span></button></li>
-            <li><button type="button" class="tool" data-tool="tracks"><span class="tool-name">Several habits</span><span class="tool-where">Home</span><span class="tool-say">Each habit gets its own companion, records and progress. Nothing on one changes another.</span></button></li>
-            <li><button type="button" class="tool" data-tool="review"><span class="tool-name">Weekly review</span><span class="tool-where">Insights tab</span><span class="tool-say">What helped, what came up most, and one thing to focus on for the week ahead.</span></button></li>
-            <li><button type="button" class="tool" data-tool="plan"><span class="tool-name">Your plan</span><span class="tool-where">The + button</span><span class="tool-say">Your goal, your reasons, your hard moments and a first step, in your own words. They come back to you when an urge does.</span></button></li>
+        <article class="card card-shot card-tint">
+          <div class="card-text">
+            <h3>Watch the days add up</h3>
+            <p>A calendar of your days, your runs and milestones. Forgot yesterday? Fill it in.</p>
+          </div>
+          <figure class="phone phone-peek"><img src="/screens/light-journey-month.webp" alt="Journey: October calendar with 18 of 31 days met" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        </article>
+
+        <article class="card card-shot">
+          <div class="card-text">
+            <h3>See your patterns</h3>
+            <p>This week against last, slips per week, urges managed, riskier hours, money kept.</p>
+          </div>
+          <figure class="phone phone-peek"><img src="/screens/light-insights-1400.webp" alt="Insights: slips per week over the last 8 weeks" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        </article>
+
+        <article class="card card-shot">
+          <div class="card-text">
+            <h3>One pet per habit</h3>
+            <p>Each habit gets its own companion and records. Nothing on one changes another.</p>
+          </div>
+          <figure class="phone phone-peek"><img src="/screens/light-pets.webp" alt="Home with three pets: food orders, doomscrolling and vaping" width="780" height="1688" loading="lazy" decoding="async"></figure>
+        </article>
+
+        <article class="card card-dark" id="privacy">
+          <svg class="card-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <h3>Private by default</h3>
+          <ul class="ticks">
+            <li>Your records are private to your account</li>
+            <li>Photos never leave your phone</li>
+            <li>No ads, no trackers, no analytics</li>
+            <li>An optional PIN encrypts what's on the phone</li>
+            <li>Export or delete everything, any time</li>
           </ul>
-          <p class="tools-empty" hidden>Nothing by that name. Try "urge" or "calendar".</p>
-        </div>
-        <div class="tools-shot">
-          <img data-tool="urge" data-on src="/screens/light-urge.webp" alt="Urge support: how strong it is, what's going on, and Help me through it" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-tool="journey" src="/screens/light-journey-runs.webp" alt="Journey: current run 13, best run 13, 20 goal-met days, and milestones" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-tool="insights" src="/screens/light-insights-1400.webp" alt="Insights: slips per week over the last 8 weeks" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-tool="tracks" src="/screens/light-pets.webp" alt="Home with three pets, one per habit: late-night food orders, doomscrolling and vaping" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-tool="review" src="/screens/light-insights-2100.webp" alt="Weekly review: last week's goal-met days, what you used, what came up most and a focus for this week" width="780" height="1688" loading="lazy" decoding="async">
-          <img data-tool="plan" src="/screens/light-checkin.webp" alt="The check-in menu with Your goal and plan" width="780" height="1688" loading="lazy" decoding="async">
-        </div>
+        </article>
       </div>
     </section>
 
-    <!-- Honest expectations and privacy. -->
-    <section class="about" id="privacy" aria-labelledby="about-title">
-      <div class="about-row">
-        <dl class="facts">
-          <div><dt>Platform</dt><dd>Android, in beta (5.0.19)</dd></div>
-          <div><dt>Price today</dt><dd>Founding passes, $1 or $3 once</dd></div>
-          <div><dt>Your data</dt><dd>Private to your account</dd></div>
-        </dl>
-        <div class="about-text" data-rise>
-          <h2 id="about-title">What PAWSE is, and isn't</h2>
-          <p>PAWSE is a self-awareness and habit-change tool. It is not medical treatment, therapy or a cure, and your dog's conditions are illustrative. If a habit is hurting you, talk to a doctor or someone you trust; the app shows crisis support when what you type needs it. Stopping alcohol suddenly can be dangerous for some people, so talk to a doctor first.</p>
-        </div>
+    <!-- The live thing: the app's mission rules, as the Missions sheet. -->
+    <section class="try" id="try" aria-labelledby="try-title">
+      <div class="section-head" data-rise>
+        <h2 id="try-title">Try the 21 days</h2>
+        <p>This runs the app's own mission rules. Look after Miso for a few weeks and watch what each day does. Nothing is saved.</p>
       </div>
-      <div class="about-row about-lists">
-        <p class="about-word">Privacy</p>
-        <div class="lists">
-          <div>
-            <h3>Private by default</h3>
-            <ul>
-              <li>Your records are protected by row-level security</li>
-              <li>Photos never leave your phone</li>
-              <li>No ads, no trackers, no analytics</li>
-              <li>An optional PIN encrypts what's stored on the phone</li>
-              <li>Export or delete everything, any time</li>
-            </ul>
-          </div>
-          <div>
-            <h3>Never</h3>
-            <ul>
-              <li>Calorie, weight or restriction tracking</li>
-              <li>Public profiles</li>
-              <li>An AI key inside the app</li>
-              <li>Guilt notifications after a slip</li>
-            </ul>
+      <div class="sheet" data-ui>
+        <span class="sheet-handle" aria-hidden="true"><i></i></span>
+        <div class="demo-mount" data-demo>
+          <div class="demo-fallback">
+            <img src="/renders/rescue.webp" alt="Miso on day 0 of a rescue" width="640" height="640" loading="lazy" decoding="async">
+            <div>
+              <p><b>Rescue:</b> wellness starts at 10 and reaches 100 on the 21st goal-met day in a row. On day 8 it is at 45, with the coat, the energy and the noise fear healed.</p>
+              <p><b>Raise:</b> wellness starts at 70 and reaches 100 on day 21.</p>
+              <p>A slip before day 21 starts the count at 0 again; the best run is kept. Turn on JavaScript to try it.</p>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Founding access. -->
+    <!-- The journey after day 21, as three app cards. -->
+    <section class="stages" aria-labelledby="stages-title">
+      <div class="section-head" data-rise>
+        <h2 id="stages-title">21 days, then 21 more</h2>
+        <p>The journey doesn't end at recovery, and one bad day never wipes it out.</p>
+      </div>
+      <ol class="steps">
+        <li class="card step">
+          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>
+          <h3>Recovery</h3>
+          <p class="step-days">Days 1 to 21</p>
+          <p>Goal-met days in a row. A slip before day 21 starts the count over, but your best run is kept and every day stays in your record.</p>
+        </li>
+        <li class="card step">
+          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-2.7 1.6-4.7 3.2-6.4.3 1.7 1.2 2.9 2.4 3.4C11 8.6 12.3 5.6 14.9 3.5c.2 2.8 1.3 4.6 2.5 6.2 1.1 1.4 2.1 3 2.1 5.1 0 3.6-2.6 6.2-6.5 6.2z"/></svg></span>
+          <h3>Consistency</h3>
+          <p class="step-days">Days 22 to 42</p>
+          <p>21 more goal-met days make it last, with rewards at one, two and three weeks. From here a slip gives your dog an issue to clear, never a restart.</p>
+        </li>
+        <li class="card step">
+          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+          <h3>Thriving</h3>
+          <p class="step-days">After day 42</p>
+          <p>A reward every 30 well days. An issue from a slip clears with 3, 7 or 14 goal-met days in a row, depending on how often slips came.</p>
+        </li>
+      </ol>
+      <div class="honest card">
+        <h3>What PAWSE is, and isn't</h3>
+        <p>A self-awareness and habit-change tool. Not medical treatment, therapy or a cure, and your dog's conditions are illustrative. 21 days is PAWSE's mission length, not a medical recovery time. If a habit is hurting you, talk to a doctor or someone you trust. It never tracks calories, weight or food restriction.</p>
+      </div>
+    </section>
+
+    <!-- Founding passes as two app cards. -->
     <section class="founding" id="founding" aria-labelledby="founding-title">
-      <table class="plans">
-        <caption class="sr-only">The two founding passes compared</caption>
-        <thead>
-          <tr>
-            <th scope="col" class="plans-corner"><h2 id="founding-title">Founding passes</h2><p>Paid once. No subscription.</p></th>
-            <th scope="col"><span class="plan-name">Supporter Pass</span><span class="plan-price">$1 <small>one-time</small></span></th>
-            <th scope="col"><span class="plan-name">Beta Pass</span><span class="plan-price">$3 <small>one-time</small></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><th scope="row">The current Android beta</th><td>Included</td><td>Included</td></tr>
-          <tr><th scope="row">Founding supporter recognition</th><td>Included</td><td>To be confirmed</td></tr>
-          <tr><th scope="row">The free account tier at public launch</th><td>Included</td><td>To be confirmed</td></tr>
-          <tr><th scope="row">Premium beta</th><td>Not included</td><td>90 days, starting when premium beta features arrive (planned)</td></tr>
-          <tr><th scope="row">Future premium beta features</th><td>Not promised</td><td>As they become available (planned)</td></tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td></td>
-            <td><a class="btn" href="#checkout-status" data-checkout="supporter" aria-describedby="checkout-status">Choose Supporter</a></td>
-            <td><a class="btn" href="#checkout-status" data-checkout="beta" aria-describedby="checkout-status">Choose Beta</a></td>
-          </tr>
-        </tfoot>
-      </table>
-      <p class="note" id="checkout-status">Checkout isn't open yet: the passes go on sale once payments are connected. Premium beta features are planned, not available today, and your 90 days start when they arrive, not when you pay.</p>
-    </section>
-
-    <!-- Questions. -->
-    <section class="faq-section" id="questions" aria-labelledby="faq-title">
-      <div class="faq">
-        <h2 id="faq-title" class="faq-title">Questions</h2>
-        <ul role="list">
-          <li><button type="button" class="faq-q" id="q1" aria-controls="a1" aria-expanded="true">What is PAWSE?</button>
-            <div class="faq-a" id="a1"><p>An Android app for changing a habit you choose, with a 3D companion at its centre. You check in each day; goal-met days help your companion heal or learn, and slips have a cost it shows. It also has urge support, a calendar, insights and a weekly review.</p></div></li>
-          <li><button type="button" class="faq-q" id="q2" aria-controls="a2" aria-expanded="false">How does Rescue differ from Raise?</button>
-            <div class="faq-a" id="a2"><p>Both are the same 21-day mission. A rescued dog starts neglected, at 10 wellness, and heals six conditions. A raised dog starts healthy, at 70, and learns six skills. You choose once, when you adopt.</p></div></li>
-          <li><button type="button" class="faq-q" id="q3" aria-controls="a3" aria-expanded="false">What happens if I slip?</button>
-            <div class="faq-a" id="a3"><p>You log it in a tap, and the app tells you what still stands and what puts it right. In the first 21 days a slip starts the count over, keeping your best run. After that it gives your dog an issue that clears with 3, 7 or 14 goal-met days in a row.</p></div></li>
-          <li><button type="button" class="faq-q" id="q4" aria-controls="a4" aria-expanded="false">Does it work for different habits?</button>
-            <div class="faq-a" id="a4"><p>Yes: food orders, shopping, scrolling, smoking, vaping, drinking, or anything you name. Each habit gets its own companion and its own records, so you can work on more than one without them mixing.</p></div></li>
-          <li><button type="button" class="faq-q" id="q5" aria-controls="a5" aria-expanded="false">Is PAWSE medical treatment?</button>
-            <div class="faq-a" id="a5"><p>No. It's a self-awareness tool, not treatment, therapy or medical advice. If a habit is harming you, please talk to a doctor or a professional.</p></div></li>
-          <li><button type="button" class="faq-q" id="q6" aria-controls="a6" aria-expanded="false">Is my data public?</button>
-            <div class="faq-a" id="a6"><p>No. Your records are saved privately to your account and protected so only you can read them. There are no public profiles, ads or analytics, and photos never leave your phone.</p></div></li>
-          <li><button type="button" class="faq-q" id="q7" aria-controls="a7" aria-expanded="false">What does a founding pass include?</button>
-            <div class="faq-a" id="a7"><p>The $1 Supporter Pass: the current Android beta, founding supporter recognition and the free account tier at public launch. The $3 Beta Pass: the beta plus 90 days of premium beta, counted from when those features arrive. Premium features are planned, not available yet.</p></div></li>
-          <li><button type="button" class="faq-q" id="q8" aria-controls="a8" aria-expanded="false">Is the web app available yet?</button>
-            <div class="faq-a" id="a8"><p>Not yet. PAWSE is an Android app in beta. This page is the only part of it on the web for now.</p></div></li>
-        </ul>
+      <div class="section-head" data-rise>
+        <h2 id="founding-title">Founding passes</h2>
+        <p>Paid once. No subscription. Help shape PAWSE while it's in beta.</p>
       </div>
-      <div class="faq-pane" aria-live="polite"></div>
+      <div class="plans">
+        <article class="card plan">
+          <h3>Supporter Pass</h3>
+          <p class="price">$1 <small>one-time</small></p>
+          <ul class="ticks">
+            <li>The current Android beta</li>
+            <li>Founding supporter recognition</li>
+            <li>The free account tier at public launch</li>
+          </ul>
+          <p class="small muted">No future premium features promised.</p>
+          <a class="pill" href="#checkout-status" aria-describedby="checkout-status" data-checkout="supporter">Choose Supporter</a>
+        </article>
+        <article class="card plan plan-main">
+          <h3>Beta Pass</h3>
+          <p class="price">$3 <small>one-time</small></p>
+          <ul class="ticks">
+            <li>The current Android beta</li>
+            <li>Premium beta for 90 days, starting when premium beta features arrive <em>(planned)</em></li>
+            <li>Future premium beta features as they become available <em>(planned)</em></li>
+          </ul>
+          <p class="small muted">Founding recognition and the free tier at launch: to be confirmed.</p>
+          <a class="pill" href="#checkout-status" aria-describedby="checkout-status" data-checkout="beta">Choose Beta</a>
+        </article>
+      </div>
+      <p class="toastline" id="checkout-status"><span class="dot" aria-hidden="true"></span>Checkout isn't open yet: the passes go on sale once payments are connected.</p>
     </section>
 
-    <!-- The dog returns. -->
-    <section class="close" aria-labelledby="close-title">
-      <div class="close-dog dog-box" data-dog="cta"><img src="/renders/hero.webp" alt="Miso again, waiting for you" width="640" height="640" loading="lazy" decoding="async"></div>
-      <div class="close-text" data-rise>
-        <h2 id="close-title">Someone to come back to</h2>
-        <p>Pick a habit, adopt a dog, and start day one.</p>
-        <p class="close-fact">Founding passes from $1, once.</p>
-        <a class="btn" href="#founding">Become a founding user</a>
+    <!-- Questions, as the app's list rows. -->
+    <section class="faq-section" id="questions" aria-labelledby="faq-title">
+      <div class="section-head" data-rise>
+        <h2 id="faq-title">Questions</h2>
+      </div>
+      <div class="card faq-list">
+        <details open><summary>What is PAWSE?</summary><p>An Android app for changing a habit you choose, with a 3D companion at its centre. You check in each day; goal-met days help your companion heal or learn, and slips have a cost it shows. It also has urge support, a calendar, insights and a weekly review.</p></details>
+        <details><summary>How does Rescue differ from Raise?</summary><p>Both are the same 21-day mission. A rescued dog starts neglected, at 10 wellness, and heals six conditions. A raised dog starts healthy, at 70, and learns six skills. You choose once, when you adopt.</p></details>
+        <details><summary>What happens if I slip?</summary><p>You log it in a tap, and the app tells you what still stands and what puts it right. In the first 21 days a slip starts the count over, keeping your best run. After that it gives your dog an issue that clears with 3, 7 or 14 goal-met days in a row.</p></details>
+        <details><summary>Does it work for different habits?</summary><p>Yes: food orders, shopping, scrolling, smoking, vaping, drinking, or anything you name. Each habit gets its own companion and its own records, so you can work on more than one without them mixing.</p></details>
+        <details><summary>Is PAWSE medical treatment?</summary><p>No. It's a self-awareness tool, not treatment, therapy or medical advice. If a habit is harming you, please talk to a doctor or a professional.</p></details>
+        <details><summary>Is my data public?</summary><p>No. Your records are saved privately to your account and protected so only you can read them. There are no public profiles, ads or analytics, and photos never leave your phone.</p></details>
+        <details><summary>What does a founding pass include?</summary><p>The $1 Supporter Pass: the current Android beta, founding supporter recognition and the free account tier at public launch. The $3 Beta Pass: the beta plus 90 days of premium beta, counted from when those features arrive. Premium features are planned, not available yet.</p></details>
+        <details><summary>Is the web app available yet?</summary><p>Not yet. PAWSE is an Android app in beta. This page is the only part of it on the web for now.</p></details>
+      </div>
+    </section>
+
+    <!-- Close: the same room at night, the way the app shows it after dark. -->
+    <section class="pscene close" data-mood="clear" data-period="night" data-ink="light" aria-labelledby="close-title">
+      <i class="ps-moon" aria-hidden="true"></i>
+      <div class="ps-fx" aria-hidden="true"><i class="ps-star" style="left:8%;top:18%;animation-delay:0s"></i><i class="ps-star" style="left:18%;top:40%;animation-delay:1s"></i><i class="ps-star" style="left:27%;top:12%;animation-delay:2s"></i><i class="ps-star" style="left:40%;top:30%;animation-delay:0.5s"></i><i class="ps-star" style="left:62%;top:16%;animation-delay:1.5s"></i><i class="ps-star" style="left:74%;top:38%;animation-delay:2.5s"></i><i class="ps-star" style="left:88%;top:22%;animation-delay:3s"></i><i class="ps-star" style="left:93%;top:48%;animation-delay:0.8s"></i><i class="ps-star" style="left:52%;top:8%;animation-delay:3.4s"></i></div>
+      <div class="ps-content">
+        <p class="hs-greet">It's late. Miso is still here.</p>
+        <h2 id="close-title" class="hs-name">Someone to come back to</h2>
+        <img class="close-dog" src="/renders/hero.webp" alt="Miso, waiting for you" width="640" height="640" loading="lazy" decoding="async">
+        <p class="close-line">Pick a habit, adopt a dog, and start day one. Founding passes from $1, once.</p>
+        <a class="pill" href="#founding">Become a founding user</a>
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>PAWSE, a habit-change app with a dog in it</p>
-    <p class="foot-links"><a href="#rescue-or-raise">Rescue or raise</a> <a href="#try">Try it</a> <a href="#founding">Passes</a> <a href="#questions">FAQ</a> <a href="https://github.com/jithujsam/pawse-releases">Releases</a></p>
-    <p>© 2026 · <a href="#privacy">Privacy</a> · 3D dog by <a href="https://quaternius.com/packs/ultimateanimatedanimals.html">Quaternius</a>, CC0</p>
+    <a class="brand" href="#top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="24" height="20"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
+    <p class="foot-links"><a href="#features">Features</a> <a href="#try">Try it</a> <a href="#founding">Passes</a> <a href="#questions">FAQ</a> <a href="#privacy">Privacy</a> <a href="https://github.com/jithujsam/pawse-releases">Releases</a></p>
+    <p class="small">© 2026 PAWSE · 3D dog by <a href="https://quaternius.com/packs/ultimateanimatedanimals.html">Quaternius</a>, CC0</p>
   </footer>
 
   <script type="module" src="/src/main.ts"></script>

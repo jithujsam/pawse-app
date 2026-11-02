@@ -41,6 +41,8 @@ export interface DogProps {
   stage?: Stage;
   condition?: PetCondition;
   coat?: string;
+  /** The room's light (scene.ts), as on the app's pet page. */
+  light?: { color: string; intensity: number };
   /** The still render already in the page, shown until the live model is ready (and kept if 3D can't run). */
   poster: string;
   posterAlt: string;
@@ -48,7 +50,7 @@ export interface DogProps {
   pettable?: boolean;
 }
 
-export function Dog({ mood, gesture = "none", stage = "baby", condition, coat = "golden", poster, posterAlt, pettable }: DogProps) {
+export function Dog({ mood, gesture = "none", stage = "baby", condition, coat = "golden", light, poster, posterAlt, pettable }: DogProps) {
   const box = useRef<HTMLDivElement>(null);
   const near = useNear(box);
   const size = useBoxSize(box);
@@ -66,7 +68,7 @@ export function Dog({ mood, gesture = "none", stage = "baby", condition, coat = 
       {live && (
         <div className="dog-live">
           <Pet3D species="dog" coat={coat} stage={stage} mood={mood} gesture={petted ? "petted" : gesture} age={0} size={size}
-            condition={condition} reduced={reduced} fallback={null} loading={null} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
+            condition={condition} light={light} reduced={reduced} fallback={null} loading={null} onReady={() => setReady(true)} onFail={() => setFailed(true)} />
         </div>
       )}
       {pettable && live && ready && (
