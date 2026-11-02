@@ -20,6 +20,10 @@ export const accountForm = defineSection("account.form", { screen: "Account", ti
   email_first: "Type your email above first.",
   reset_sent: "If there's an account for that email, a reset link is on its way.",
   exists: "There's already an account with this email. Sign in with its password, or tap Forgot password.",
+  link_confirmed: "Email confirmed. You're signed in.",
+  link_reset: "Link accepted. Choose a new password.",
+  link_failed: "Couldn't finish signing in from that link. Try signing in with your password.",
+  cancel_reset: "Not now, sign out",
   created: "Account created",
   signed_in_toast: "Signed in",
   strength_0: "Too easy to guess",
@@ -43,6 +47,7 @@ export const accountBlockers = defineSection("account.blockers", { screen: "Acco
 // @copy-section account.errors
 export const accountErrors = defineSection("account.errors", { screen: "Account", title: "Account error messages", source: "src/authErrors.ts" }, {
   invalid_login: "That email and password don't match. If you've forgotten it, tap Forgot password.",
+  reauth: "For your safety, sign in again, then delete the account right away.",
   already: "There's already an account with that email. Try signing in.",
   email_rate: "Too many emails have been sent in the last hour. Try again later, or sign in if you already have an account.",
   rate: "Too many tries. Wait a minute and try again.",

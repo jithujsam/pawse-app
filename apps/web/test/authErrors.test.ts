@@ -10,6 +10,12 @@ describe("account error messages", () => {
     expect(friendlyAuthError(new Error("TypeError: Failed to fetch"))).toMatch(/Couldn't reach/);
     expect(friendlyAuthError("Password is known to be weak and easy to guess (pwned)")).toMatch(/data leaks/);
   });
+  it("handles the delete-needs-a-recent-sign-in refusal and email-link errors", () => {
+    expect(friendlyAuthError("sign in again to delete your account")).toMatch(/sign in again/i);
+    expect(friendlyAuthError("Email link is invalid or has expired")).toMatch(/expired/);
+    expect(friendlyAuthError("access_denied")).toBe(AUTH_FALLBACK);
+    expect(friendlyAuthError("footprint")).toBe(AUTH_FALLBACK);
+  });
   it("never shows an unknown server message, token or stack", () => {
     for (const raw of ["duplicate key value violates unique constraint \"users_pkey\"", "JWT eyJhbGciOi.secret.token expired?", "at Object.<anonymous> (/srv/app.js:1:1)", undefined, null, 42, {}])
       expect(friendlyAuthError(raw)).not.toMatch(/duplicate key|eyJ|srv\/app|constraint/);
