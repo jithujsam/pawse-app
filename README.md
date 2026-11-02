@@ -8,9 +8,10 @@ pawse is a habit-change app with a pet at its heart. Pick something you want to 
 It's built to feel warm rather than preachy. It's honest about slips, generous about progress, and careful with your data.
 
 <p align="center">
-  <img src="docs/screenshots/v5010-01-pets-list.png" width="230" alt="Pets in list view, cards the same size">
-  <img src="docs/screenshots/v5010-02-pet-home.png" width="230" alt="A pet's page with a back button to all pets">
-  <img src="docs/screenshots/light-05-health.png" width="230" alt="Health: a heart that fills to the pet's health">
+  <img src="docs/screenshots/v5019-01-pets.png" width="200" alt="Home: three pets, one per habit">
+  <img src="docs/screenshots/v5019-02-rescue-home.png" width="200" alt="A rescued Shiba's page, waiting for today's check-in">
+  <img src="docs/screenshots/v5019-03-rescue-mission.png" width="200" alt="Missions: 9 goal-met days to go, now healing: afraid of being left alone">
+  <img src="docs/screenshots/v5019-04-raise-mission.png" width="200" alt="Missions for a raised pet: now learning, explores with confidence">
 </p>
 
 ## What it does
@@ -63,6 +64,14 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
   <img src="docs/screenshots/light-14-me.png" width="160" alt="Settings">
 </p>
 
+<p align="center"><b>Missions, check-ins and urges (5.0.19)</b><br>
+  <img src="docs/screenshots/v5019-05-thriving.png" width="160" alt="A recovered pet: thriving, with its rewards">
+  <img src="docs/screenshots/v5019-06-check-in.png" width="160" alt="The check-in menu">
+  <img src="docs/screenshots/v5019-07-slip-restart.png" width="160" alt="A slip in recovery: the 21 days start over, the best run is kept">
+  <img src="docs/screenshots/v5019-08-urge.png" width="160" alt="Urge support">
+  <img src="docs/screenshots/v5019-09-journey.png" width="160" alt="Journey calendar">
+</p>
+
 <p align="center"><b>Dark mode</b><br>
   <img src="docs/screenshots/dark-00-pets.png" width="190" alt="Pets in dark mode">
   <img src="docs/screenshots/dark-04-home.png" width="190" alt="Home in dark mode">
@@ -85,6 +94,7 @@ It's built to feel warm rather than preachy. It's honest about slips, generous a
 |---|---|
 | `apps/web` | React 19 + TypeScript on Vite, wrapped for Android with Capacitor 7 |
 | `packages/engine` | The pure ageing maths: deductions, healing, scars, reserve, quiet days |
+| `apps/site` | The public landing page (Vite, static HTML plus the app's 3D dog and mission engine); see `apps/site/README.md` |
 | `packages/schema` | Zod schemas for everything stored, synced or sent to the AI |
 | `supabase` | Postgres tables with row-level security, plus the `ai` edge function (OpenRouter) |
 | Animation | `motion` for UI; three.js + React Three Fiber for the 3D pets |

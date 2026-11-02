@@ -1,0 +1,31 @@
+{
+  "name": "site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The PAWSE public landing page. Separate from the Android app in apps/web; reuses its 3D dog and the mission engine.",
+  "scripts": {
+    "dev": "vite --port 5180",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4180",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@detox/engine": "workspace:*",
+    "@react-three/fiber": "9.8.0",
+    "react": "19.1.10",
+    "react-dom": "19.1.10",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "0.186.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  }
+}
