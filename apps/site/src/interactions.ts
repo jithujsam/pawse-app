@@ -215,7 +215,8 @@ function steps() {
 /** A thin progress bar across the top, and buttons that lean toward the pointer. */
 function chrome() {
   const bar = $(".progress");
-  if (bar && !reduced()) {
+  // Browsers with scroll-driven animations draw the bar in CSS; only older ones need the scroll listener.
+  if (bar && !reduced() && !CSS.supports("animation-timeline: scroll()")) {
     let ticking = false;
     const upd = () => { ticking = false; const max = document.documentElement.scrollHeight - innerHeight; bar.style.setProperty("--p", String(max > 0 ? Math.min(1, scrollY / max) : 0)); };
     addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
@@ -248,7 +249,15 @@ function counter() {
   io.observe(el);
 }
 
+/** The marquee only runs while it is on screen. */
+function marquee() {
+  const track = $(".marquee-track");
+  if (!track || !("IntersectionObserver" in window)) return;
+  new IntersectionObserver((es) => track.classList.toggle("paused", !es[0].isIntersecting)).observe(track);
+}
+
 export function wire() {
+  marquee();
   events();
   words();
   reveals();

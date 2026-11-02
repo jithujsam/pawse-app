@@ -110,7 +110,7 @@ main > section.hero { padding-top: clamp(24px, 4vw, 56px); }
 
 /* section headings: the words fade and focus in, one after another (no travel, so nothing ever overlaps the text below) */
 .js .h2 .wm { display: inline; overflow: visible; padding: 0; margin: 0; }
-.js .h2 .wm .w { display: inline-block; transform: none; opacity: 0; filter: blur(10px); }
+.js .h2 .wm .w { display: inline-block; transform: none; opacity: 0; filter: blur(6px); }
 .js .h2.words-in .wm .w { opacity: 1; filter: blur(0); transition: opacity .8s ease, filter .8s ease; transition-delay: calc(var(--i, 0) * 60ms); }
 
 /* ---------- marquee of the habits people choose ---------- */
@@ -124,15 +124,15 @@ main > section.marquee > .marquee-track { width: max-content; max-width: none; m
 
 /* ---------- how it works: the phone stays, the screen follows the step ---------- */
 .how-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); }
-.step { min-height: 84vh; display: flex; align-items: center; }
+.step { min-height: 84svh; display: flex; align-items: center; }
 .step-text { display: grid; gap: 20px; max-width: 30rem; }
 .step-text .h3 { font-size: clamp(2rem, 1.3rem + 2.8vw, 3.75rem); line-height: 1; }
 .step-text p { font-size: var(--s-lead); line-height: 1.4; }
 .step-device { display: none; width: min(100%, 380px); }
 .js .step { opacity: .3; transition: opacity .5s ease; }
 .js .step.on { opacity: 1; }
-.how-sticky { position: sticky; top: 9vh; height: 82vh; display: grid; place-items: center; align-self: start; }
-.how-device { position: relative; height: min(74vh, 760px); aspect-ratio: 796 / 1704; margin: 0; }
+.how-sticky { position: sticky; top: 9svh; height: 82svh; display: grid; place-items: center; align-self: start; }
+.how-device { position: relative; height: min(74svh, 760px); aspect-ratio: 796 / 1704; margin: 0; }
 .how-device img { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); object-fit: cover; border-radius: 27px; opacity: 0; transition: opacity .55s ease, transform .55s var(--ease); transform: scale(.985); }
 .how-device img.on { opacity: 1; transform: none; }
 html:not(.js) .how-device img:first-child { opacity: 1; }
@@ -143,16 +143,46 @@ html:not(.js) .how-device img:first-child { opacity: 1; }
 .col { transition: transform .35s var(--ease); }
 .col:hover { transform: translateY(-6px); }
 
+/* ---------- goal states, free-forever band, trust tiles (sections after the hero) ---------- */
+.states { display: grid; gap: 12px; }
+.states li { position: relative; padding-left: 28px; display: grid; gap: 2px; }
+.states li::before { content: ""; position: absolute; left: 0; top: .4em; width: 14px; height: 14px; border-radius: 50%; background: #4e8752; }
+.states li:nth-child(2)::before { background: var(--gold); outline: 2px solid var(--ink); outline-offset: -2px; }
+.states li:nth-child(3)::before { background: var(--accent); }
+.states li:nth-child(4)::before { background: #b9b0a5; }
+.states b { font-weight: 650; }
+.free-forever { background: var(--mist); padding: clamp(24px, 4vw, 48px); margin-bottom: 16px; font: 400 var(--s-h3)/1.1 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.col .list { gap: 14px; font-size: 1.125rem; }
+.statement { font: 400 clamp(2rem, 1.2rem + 3vw, 4rem)/1 var(--display); letter-spacing: -0.02em; text-wrap: balance; max-width: 22ch; }
+.tiles { display: grid; gap: 16px; }
+.tiles > div { background: var(--surface); padding: clamp(24px, 3vw, 40px); display: grid; gap: 14px; align-content: start; }
+:root { interpolate-size: allow-keywords; }
+.faq-list details::details-content { block-size: 0; overflow: clip; transition: block-size .35s var(--ease), content-visibility .35s allow-discrete; }
+.faq-list details[open]::details-content { block-size: auto; }
+.faq-list details { transition: background .2s; }
+.faq-list details:hover { background: var(--sand); }
+.marquee-track.paused { animation-play-state: paused; }
+@supports (animation-timeline: scroll()) {
+  .progress { transform: scaleX(0); animation: grow linear both; animation-timeline: scroll(root); }
+  @keyframes grow { to { transform: scaleX(1); } }
+}
+
 /* ---------- device frame: one large crisp phone, square-shouldered like a product shot ---------- */
 .device { background: var(--phone); border-radius: 34px; padding: 8px; }
 .device img { width: 100%; border-radius: 27px; }
 
 /* ---------- 2. problem ---------- */
-.problem { display: grid; gap: clamp(32px, 5vw, 72px); }
-.problem > * { width: min(100%, var(--max)); }
-.problem-lines { display: grid; gap: 28px; max-width: 46rem; margin-left: auto; margin-right: 0; font-size: var(--s-lead); line-height: 1.4; }
-.problem-lines p:nth-child(3) { font-family: var(--display); font-size: clamp(1.5rem, 1rem + 1.2vw, 2.25rem); line-height: 1.15; letter-spacing: -0.01em; }
+.problem { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
+.problem > * { width: 100%; margin: 0; }
+.problem-head { position: sticky; top: 96px; }
+.problem-lines { display: grid; gap: clamp(36px, 6vw, 88px); font: 400 clamp(1.5rem, 0.9rem + 1.6vw, 2.25rem)/1.15 var(--display); letter-spacing: -0.01em; max-width: 40rem; }
+.problem .h2 { font-size: clamp(2.25rem, 1rem + 4vw, 4.5rem); }
 .problem-lines p { text-wrap: pretty; }
+.problem-lines p:nth-child(3) { color: var(--accent-dark); }
+@supports (animation-timeline: view()) {
+  .problem-lines p { animation: lit linear both; animation-timeline: view(); animation-range: entry 8% cover 42%; }
+  @keyframes lit { from { opacity: .16; } to { opacity: 1; } }
+}
 
 /* ---------- 3. how ---------- */
 .how > .h2 { margin-bottom: clamp(40px, 7vw, 96px); }
@@ -250,7 +280,7 @@ main > section.offer { padding-top: clamp(64px, 9vw, 128px); }
 .notice { background: var(--surface); padding: 16px 18px; font-size: var(--s-small); }
 
 /* ---------- 8. trust ---------- */
-.trust-head { display: grid; gap: 16px; }
+.trust-head { display: grid; gap: 16px; align-self: start; position: sticky; top: 96px; align-content: start; }
 .trust { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); }
 .trust > * { width: 100%; margin: 0; }
 .trust-body { display: grid; gap: clamp(36px, 5vw, 64px); max-width: 44rem; }
@@ -296,6 +326,8 @@ main > section.join { padding-top: clamp(64px, 9vw, 128px); }
   .js .wm .w, .js .words-in .wm .w, .js .h2 .wm .w { transform: none; transition: none; opacity: 1; filter: none; }
   .js .display .ln:last-child .wm:last-of-type .w::before { transform: none; transition: none; }
   .stage-phone, .offer-dog, .join-dog, .bubble, .stage-dog.hop img, .marquee-track { animation: none; }
+  .problem-lines p, .progress { animation: none; }
+  .faq-list details::details-content { transition: none; }
   .stage-dog, .stage-phone, .stage-field { transform: none; }
   .js .step { opacity: 1; transition: none; }
   .progress { display: none; }
@@ -311,6 +343,9 @@ main > section.join { padding-top: clamp(64px, 9vw, 128px); }
   .step-device { display: block; }
   .js .step { opacity: 1; }
   .bubble { right: 3%; left: auto; top: 3%; max-width: 11.5rem; padding: 10px 14px; font-size: .9375rem; }
+  .compare { gap: 40px; }
+  .faq, .problem { grid-template-columns: minmax(0, 1fr); }
+  .problem-head, .trust-head { position: static; }
   .faq { grid-template-columns: minmax(0, 1fr); }
   .faq-head { position: static; }
   .hero-body, .goal-inner, .journey-stage, .compare, .offer-inner, .pay, .trust, .join-inner { grid-template-columns: minmax(0, 1fr); }

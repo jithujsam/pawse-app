@@ -24,12 +24,16 @@ function siteHtml(env: Record<string, string>): Plugin {
     refundWindow: site.refundWindow, upiId: site.upiId, qrImage: site.qrImage, upiLink, apkUrl: site.apkUrl,
     contactEmail: site.contactEmail, internationalPaymentLink: site.internationalPaymentLink, formEndpoint, waitlistEndpoint,
     analyticsHooks: site.analyticsHooks ? "on" : "off",
+    siteUrl: site.siteUrl.replace(/\/$/, ""),
+    faqJsonLd: "",
   };
   const flags: Record<string, boolean> = {
     qrImage: !!site.qrImage, intlLink: !!site.internationalPaymentLink, upiReady, spotsOpen: spotsLeft > 0,
-    formReady: !!formEndpoint, waitlistReady: !!waitlistEndpoint, contactReady, analytics: site.analyticsHooks,
+    formReady: !!formEndpoint, waitlistReady: !!waitlistEndpoint, contactReady, analytics: site.analyticsHooks, siteUrl: !!site.siteUrl,
   };
   const get = (path: string): unknown => path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], { c: copy });
+  const plain = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => String(values[k] ?? "")).replace(/<[^>]+>/g, "");
+  values.faqJsonLd = JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: copy.faq.items.map((i) => ({ "@type": "Question", name: plain(i.q), acceptedAnswer: { "@type": "Answer", text: plain(i.a) } })) }).replace(/</g, "\\u003c");
   const fill = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (_m, k: string) => String(values[k] ?? "")).replace(/\{planned\}/g, '<em class="tag">Planned</em>');
 
   return {

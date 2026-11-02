@@ -11,6 +11,10 @@ Android app in `apps/web`; it never touches that build or the release pipeline.
 - **Fonts:** Instrument Serif (`@fontsource/instrument-serif`) and Geist (`@fontsource-variable/geist`), self-hosted.
 - **Design notes:** `DESIGN.md`. **Review screenshots:** `design/screens/` (every section, desktop 1440 and mobile 375).
 
+## Skills used
+
+`.claude/skills/` holds the taste skill plus five UI skills installed from `npx ui-skills`: `landing-page`, `baseline-ui`, `fixing-motion-performance`, `fixing-accessibility`, `fixing-metadata`. Set `siteUrl` in `site.config.ts` before sharing the page, so the canonical, `og:url` and absolute share-image tags are emitted.
+
 ## Commands
 
     pnpm --filter site dev        # http://localhost:5180

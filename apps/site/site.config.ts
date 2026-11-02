@@ -28,6 +28,12 @@ export const config = {
   /** TODO: an external payment link (PayPal.me, Ko-fi, Stripe Payment Link, ...). Empty hides the button. */
   internationalPaymentLink: "",
 
+  /**
+   * TODO: the public address of the page, with no trailing slash, e.g. "https://pawse.app". While empty, the canonical and
+   * og:url tags are left out and the share image is a relative path (some apps will not show it; set this before sharing).
+   */
+  siteUrl: "",
+
   // ---- Links ---------------------------------------------------------------------------------------------------
   /** The beta APK (kept visible, lower priority than the offer and the waitlist). */
   apkUrl: "https://github.com/jithujsam/pawse-releases/releases/latest",

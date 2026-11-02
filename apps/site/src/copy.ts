@@ -47,9 +47,15 @@ export const copy = {
   goal: {
     title: "See how close you are to your goal.",
     lead: "Set a goal. Pawse holds it up against your daily check-ins, so you see where you stand, not only how many days you've counted.",
-    todayTitle: "In the app today",
+    statesTitle: "Where you are, this week",
+    states: [
+      { name: "On target", text: "At or under your goal." },
+      { name: "Closing in", text: "Over it, but closer than last week." },
+      { name: "Further away", text: "Over it, and not closer yet. That is information, not a verdict." },
+      { name: "Still building", text: "Not enough check-ins yet to say. Pawse won't guess." },
+    ],
+    todayTitle: "Also in the app today",
     today: [
-      "Where you are against your goal: on target, closing in, or still building",
       "This week against last week",
       "Your starting point against now, as a change in percent",
       "Slips per week for the last 8 weeks",
@@ -159,9 +165,9 @@ export const copy = {
   trust: {
     title: "What happens to your data.",
     lead: "Said plainly.",
+    statement: "No ads. We never sell your data.",
     recordsTitle: "Your records",
     records: [
-      "No ads, and we never sell your data",
       "When you're signed in, your pets, slips, goal-met days, urges and notes are saved to your own account and are private to it",
       "Photos never leave your phone",
       "An optional PIN encrypts what's stored on the phone",

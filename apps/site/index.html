@@ -8,17 +8,23 @@
   <meta name="theme-color" content="#f7f7f7">
   <meta name="color-scheme" content="light">
   <meta name="pawse-analytics" content="{{analyticsHooks}}">
+  <meta name="robots" content="index, follow">
+  <!--if:siteUrl--><link rel="canonical" href="{{siteUrl}}/">
+  <meta property="og:url" content="{{siteUrl}}/"><!--/if:siteUrl-->
+  <meta property="og:site_name" content="Pawse">
+  <meta property="og:locale" content="en_IN">
   <meta property="og:type" content="website">
   <meta property="og:title" content="{{c.meta.title}}">
   <meta property="og:description" content="{{c.meta.share}}">
-  <meta property="og:image" content="/og.png">
+  <meta property="og:image" content="{{siteUrl}}/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{c.meta.title}}">
   <meta name="twitter:description" content="{{c.meta.share}}">
-  <meta name="twitter:image" content="/og.png">
+  <meta name="twitter:image" content="{{siteUrl}}/og.png">
+  <meta name="twitter:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <link rel="icon" href="/logo-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="preload" as="image" href="/renders/hero-hd.webp" type="image/webp">
@@ -34,6 +40,7 @@
     "offers": { "@type": "Offer", "name": "Pawse Founding Member", "price": "{{priceInr}}", "priceCurrency": "INR" }
   }
   </script>
+  <script type="application/ld+json">{{faqJsonLd}}</script>
 </head>
 <body>
   <div class="progress" aria-hidden="true"></div>
@@ -82,9 +89,9 @@
 
     <!-- 2. Interest: the problem and the promise. -->
     <section class="problem" id="problem" aria-labelledby="problem-title">
-      <h2 id="problem-title" class="h2" data-reveal>{{c.problem.title}}</h2>
+      <div class="problem-head"><h2 id="problem-title" class="h2" data-reveal>{{c.problem.title}}</h2></div>
       <div class="problem-lines">
-        <!--each:c.problem.lines--><p data-reveal>{{.}}</p><!--/each:c.problem.lines-->
+        <!--each:c.problem.lines--><p>{{.}}</p><!--/each:c.problem.lines-->
       </div>
     </section>
 
@@ -114,6 +121,8 @@
         <div class="goal-text" data-reveal>
           <h2 id="goal-title" class="h2">{{c.goal.title}}</h2>
           <p class="lead">{{c.goal.lead}}</p>
+          <h3 class="h4">{{c.goal.statesTitle}}</h3>
+          <ul class="states"><!--each:c.goal.states--><li><b>{{.name}}</b><span>{{.text}}</span></li><!--/each:c.goal.states--></ul>
           <h3 class="h4">{{c.goal.todayTitle}}</h3>
           <ul class="list"><!--each:c.goal.today--><li>{{.}}</li><!--/each:c.goal.today--></ul>
           <p class="aside">{{c.goal.honest}}</p>
@@ -171,11 +180,11 @@
         <h2 id="plans-title" class="h2">{{c.plans.title}}</h2>
         <p class="lead">{{c.plans.lead}}</p>
       </div>
+      <p class="free-forever" data-reveal>{{c.plans.freeForever}}</p>
       <div class="compare">
         <article class="col col-free" data-reveal>
           <h3 class="h3">{{c.plans.freeTitle}}</h3>
           <ul class="list"><!--each:c.plans.free--><li>{{.}}</li><!--/each:c.plans.free--></ul>
-          <p class="forever">{{c.plans.freeForever}}</p>
         </article>
         <article class="col col-plus" data-reveal>
           <h3 class="h3">{{c.plans.plusTitle}}</h3>
@@ -213,7 +222,7 @@
             <div class="upi-info">
               <p class="small">{{c.offer.upiLabel}}</p>
               <p class="upi-id"><code id="upi-id">{{upiId}}</code></p>
-              <button class="btn btn-small btn-ghost" type="button" data-copy="#upi-id">{{c.offer.copy}}</button>
+              <button class="btn btn-small btn-ghost" type="button" data-copy="#upi-id" aria-live="polite">{{c.offer.copy}}</button>
               <!--if:upiReady--><a class="btn btn-small btn-ink" href="{{upiLink}}">{{c.offer.upiApp}}</a><!--/if:upiReady-->
             </div>
           </div>
@@ -222,7 +231,7 @@
         <div class="pay-panel">
           <p class="stepline">2. {{c.offer.step2}}</p>
           <!--if:formReady-->
-          <form class="form" data-form="payment" data-event-submit="payment_submit" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
+          <form class="form" aria-label="Payment confirmation" data-form="payment" data-event-submit="payment_submit" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
             <input type="hidden" name="form" value="founding-member">
             <input type="hidden" name="amount_inr" value="{{priceInr}}">
             <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
@@ -231,8 +240,8 @@
             <label class="field">{{c.offer.ref}} <small>({{c.offer.refHint}})</small> <input name="payment_reference" required autocomplete="off"></label>
             <label class="field">{{c.offer.shot}} <small>({{c.offer.optional}})</small> <input name="screenshot" type="file" accept="image/*"></label>
             <label class="check"><input type="checkbox" name="credits_ok" value="yes"> {{c.offer.credits}}</label>
-            <button class="btn btn-ink" type="submit">{{c.offer.submit}}</button>
-            <p class="form-error" role="alert" hidden>{{c.offer.error}}</p>
+            <button class="btn btn-ink" type="submit" aria-describedby="pay-err">{{c.offer.submit}}</button>
+            <p class="form-error" id="pay-err" role="alert" hidden>{{c.offer.error}}</p>
             <p class="small">{{c.offer.privacy}}</p>
           </form>
           <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.offer.done}}</p></div>
@@ -253,9 +262,12 @@
         <p class="lead">{{c.trust.lead}}</p>
       </div>
       <div class="trust-body">
-        <div data-reveal><h3 class="h3">{{c.trust.recordsTitle}}</h3><ul class="list"><!--each:c.trust.records--><li>{{.}}</li><!--/each:c.trust.records--></ul></div>
-        <div data-reveal><h3 class="h3">{{c.trust.aiTitle}}</h3><p>{{c.trust.ai1}}</p><p>{{c.trust.ai2}}</p><p>{{c.trust.ai3}}</p></div>
-        <div data-reveal><h3 class="h3">{{c.trust.notTitle}}</h3><p>{{c.trust.not1}}</p><p>{{c.trust.not2}}</p></div>
+        <h3 class="statement" data-reveal>{{c.trust.statement}}</h3>
+        <div class="tiles">
+          <div data-reveal><h3 class="h3">{{c.trust.recordsTitle}}</h3><ul class="list"><!--each:c.trust.records--><li>{{.}}</li><!--/each:c.trust.records--></ul></div>
+          <div data-reveal><h3 class="h3">{{c.trust.aiTitle}}</h3><p>{{c.trust.ai1}}</p><p>{{c.trust.ai2}}</p><p>{{c.trust.ai3}}</p></div>
+          <div data-reveal><h3 class="h3">{{c.trust.notTitle}}</h3><p>{{c.trust.not1}}</p><p>{{c.trust.not2}}</p></div>
+        </div>
       </div>
     </section>
 
@@ -277,13 +289,13 @@
           <div class="wait">
             <h3 class="h4">{{c.cta.waitTitle}}</h3>
             <!--if:waitlistReady-->
-            <form class="waitform" data-form="waitlist" data-event-submit="waitlist_submit" action="{{waitlistEndpoint}}" method="post">
+            <form class="waitform" aria-label="Google Play waitlist" data-form="waitlist" data-event-submit="waitlist_submit" action="{{waitlistEndpoint}}" method="post">
               <input type="hidden" name="form" value="play-waitlist">
               <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
               <label class="sr-only" for="wait-email">{{c.cta.waitEmail}}</label>
               <input id="wait-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
-              <button class="btn btn-ink" type="submit">{{c.cta.waitSubmit}}</button>
-              <p class="form-error" role="alert" hidden>{{c.cta.waitError}}</p>
+              <button class="btn btn-ink" type="submit" aria-describedby="wait-err">{{c.cta.waitSubmit}}</button>
+              <p class="form-error" id="wait-err" role="alert" hidden>{{c.cta.waitError}}</p>
             </form>
             <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.cta.waitDone}}</p></div>
             <p class="small">{{c.cta.waitConsent}}</p>
