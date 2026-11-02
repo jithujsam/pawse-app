@@ -1,0 +1,30 @@
+TASTESKILL · INSPECT   http://localhost:4180/
+
+MEASURED (first viewport listed)
+  hero headline   "Every good day helps it heal."  6 words · 1 line(s) · 61.1px (4.2vw) · Schibsted Grotesk 800 · tracking -0.05em · leading 0.92
+  @768px          2 line(s) · 56px
+  @390px          2 line(s) · 37.1px
+  typefaces       Schibsted Grotesk 100%
+  sizes in use    14 / 19 / 26 / 61 / 62 px   body 19px / 1.45
+  colour          page #ffffff · sections #e6e6e4 #eef1f8 #f3f3f2 · button #1a4be0
+  page            12.5 screens · 1165 words · 20 images · hero media 27% img
+  headings        22 · longest 2 line(s) · median 2 words
+
+WARN — fix, or be able to defend
+  [no-footage] @1440px  No video anywhere on the page.
+      → Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject.
+
+LOOK AT THE RENDER — open these with your image viewer / Read tool before saying anything about quality:
+  desktop 1440px  apps/site/design/inspect/desktop-fold.jpg
+                  apps/site/design/inspect/desktop-page-01.jpg
+                  apps/site/design/inspect/desktop-page-02.jpg
+                  apps/site/design/inspect/desktop-page-03.jpg
+  tablet 768px    apps/site/design/inspect/tablet-fold.jpg
+                  apps/site/design/inspect/tablet-page-01.jpg
+                  apps/site/design/inspect/tablet-page-02.jpg
+  mobile 390px    apps/site/design/inspect/mobile-fold.jpg
+                  apps/site/design/inspect/mobile-page-01.jpg
+                  apps/site/design/inspect/mobile-page-02.jpg
+
+report: apps/site/design/inspect/report.json
+RESULT: 0 FAIL, 1 WARN — measurements pass. Passing the meter is the floor, not the grade: score the screenshots with references/critique.md.
