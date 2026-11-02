@@ -4,11 +4,11 @@
    the 20-segment health bar, and the pet's room whose sky follows its wellness. Geist for text, Newsreader for names. */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --accent: #a8632a; --accent-ink: #8a4f1f; --on-accent: #ffffff;
   --ground: #faf7f2; --surface: #ffffff; --raised: #f5f0e8; --control: #ddd3c5;
   --soft: color-mix(in srgb, #a8632a 12%, #ffffff);
-  --text: #24211e; --muted: #675f57; --line: rgba(36, 33, 30, .09);
+  --text: #24211e; --muted: #574f48; --line: rgba(36, 33, 30, .09);
   --positive: #4e8752; --negative: #b85c47;
   --dark-card: #24211e; --dark-card-ink: #faf7f2;
   --phone: #1c1a18;
@@ -22,17 +22,6 @@
   --m: clamp(16px, 4vw, 48px);
   --max: 1120px;
   --ease: cubic-bezier(.22, .8, .3, 1);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --accent: #e8a86a; --accent-ink: #e8a86a; --on-accent: #101012;
-    --ground: #000000; --surface: #0e0d0c; --raised: #1a1714; --control: #34302b;
-    --soft: color-mix(in oklab, #e8a86a 14%, #110f0d);
-    --text: #f4f1ec; --muted: #b0a79c; --line: rgba(232, 168, 106, .14);
-    --positive: #68a76d; --negative: #e29580;
-    --dark-card: #1a1714; --dark-card-ink: #f4f1ec;
-    --phone: #2b2825;
-  }
 }
 
 /* ---------- base ---------- */
@@ -88,13 +77,6 @@ main > section:not(.pscene) { width: min(100% - 2 * var(--m), var(--max)); margi
 .pscene[data-mood="clearing"] { --top: color-mix(in srgb, var(--accent) 20%, var(--ground)); --glow: rgba(255,244,225,.65); }
 .pscene[data-mood="clear"] { --top: color-mix(in srgb, var(--accent) 34%, #ffeccc); --glow: rgba(255,226,160,.9); }
 .pscene[data-mood="golden"] { --top: #f3bd5e; --glow: rgba(255,215,120,1); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .pscene[data-mood="storm"] { --top: #0d1116; --glow: rgba(110,128,152,.18); }
-  :root:not([data-theme="light"]) .pscene[data-mood="overcast"] { --top: #14181c; --glow: rgba(185,196,208,.13); }
-  :root:not([data-theme="light"]) .pscene[data-mood="clearing"] { --top: color-mix(in srgb, var(--accent) 11%, #050403); --glow: rgba(255,220,170,.11); }
-  :root:not([data-theme="light"]) .pscene[data-mood="clear"] { --top: color-mix(in srgb, var(--accent) 21%, #090604); --glow: rgba(255,196,110,.24); }
-  :root:not([data-theme="light"]) .pscene[data-mood="golden"] { --top: color-mix(in srgb, var(--accent) 33%, #0e0903); --glow: rgba(255,184,80,.34); }
-}
 .pscene[data-ink="light"] { --ink: #f6f1ea; --ink-soft: rgba(246,241,234,.76); }
 .pscene::before { content: ""; position: absolute; inset: 0 0 38%; pointer-events: none; z-index: 0; background: linear-gradient(180deg, var(--tint, transparent), transparent); } /* taste-skill-ignore: the app's own room and list (apps/web/src/styles.css) */
 .pscene[data-period="night"] { --tint: rgba(12,20,52,.72); }
