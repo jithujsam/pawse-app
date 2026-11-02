@@ -95,7 +95,7 @@ main > section:not(.pscene) { width: min(100% - 2 * var(--m), var(--max)); margi
 /* The pet page's parts, at web scale. */
 .hs-greet { color: var(--ink-soft); font: 400 clamp(1.25rem, 1.1rem + .6vw, 1.625rem)/1.3 var(--serif); }
 .hs-name { color: var(--ink); font: 400 clamp(2.75rem, 1.4rem + 4.6vw, 5.25rem)/1.02 var(--serif); letter-spacing: -0.02em; margin-top: 6px; }
-.hs-meta { color: var(--ink-soft); font: 600 13px/1.4 var(--font); letter-spacing: .05em; text-transform: uppercase; margin-top: 14px; }
+.hs-sub { color: var(--ink); font: 400 var(--step-lead)/1.4 var(--font); max-width: 34rem; margin-top: 14px; text-wrap: balance; }
 .speech { position: relative; z-index: 3; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 20px; padding: 14px 22px; font-weight: 550; max-width: 24rem; margin-top: -8px; text-wrap: balance; }
 .speech::before { content: ""; position: absolute; left: 50%; top: -9px; width: 18px; height: 18px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); } /* taste-skill-ignore: the app's own room and list (apps/web/src/styles.css) */
 .vitals { display: grid; grid-template-columns: repeat(4, 76px); justify-content: center; gap: clamp(12px, 3vw, 36px); margin-top: 28px; }
@@ -148,8 +148,8 @@ main > section:not(.pscene) { width: min(100% - 2 * var(--m), var(--max)); margi
 .card-dark .ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 28px; }
 .card-ico { width: 46px; height: 46px; padding: 11px; border-radius: 16px; background: color-mix(in srgb, var(--dark-card-ink) 12%, transparent); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .ticks { display: grid; gap: 10px; }
-.ticks li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
-.ticks li::before { content: ""; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; background: rgba(78, 135, 82, .16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234e8752' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.ticks li { position: relative; padding-left: 30px; }
+.ticks li::before { content: ""; position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: rgba(78, 135, 82, .16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234e8752' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E") center / 14px no-repeat; }
 .card-dark .ticks li::before { background-color: rgba(104, 167, 109, .24); }
 
 .adopt { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -288,6 +288,20 @@ main > section:not(.pscene) { width: min(100% - 2 * var(--m), var(--max)); margi
 .rise-ready [data-rise].in > * { opacity: 1; transform: none; }
 
 /* ---------- tablet ---------- */
+/* Home screen, side by side on wide screens: words and actions left, Miso right. Phones keep the stacked room. */
+@media (min-width: 861px) {
+  .pscene.hero { display: grid; align-items: center; }
+  .pscene.hero .ps-content { width: min(100%, 1200px); margin-inline: auto; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); grid-template-areas: "greet dog" "name dog" "meta dog" "actions dog" "vitals dog" "health dog" "speech speech"; justify-items: start; text-align: left; column-gap: clamp(32px, 5vw, 72px); align-content: center; }
+  .pscene.hero .hs-greet { grid-area: greet; }
+  .pscene.hero .hs-name { grid-area: name; font-size: clamp(2.75rem, 1rem + 4.2vw, 4.75rem); }
+  .pscene.hero .hs-sub { grid-area: meta; }
+  .pscene.hero .hero-actions { grid-area: actions; justify-content: flex-start; margin-top: 24px; }
+  .pscene.hero .vitals { grid-area: vitals; justify-content: start; margin-top: 32px; }
+  .pscene.hero .health { grid-area: health; }
+  .pscene.hero .hs-pet.dog-box { grid-area: dog; justify-self: end; width: min(100%, 56svh, 560px); margin-top: 0; }
+  .pscene.hero .speech { grid-area: speech; justify-self: end; margin: -28px 0 0 0; z-index: 3; }
+  .pscene.hero .speech::before { left: auto; right: 56px; top: -9px; transform: rotate(45deg); }
+}
 @media (max-width: 1080px) {
   .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .card-wide { grid-row: auto; }
@@ -334,4 +348,61 @@ main > section:not(.pscene) { width: min(100% - 2 * var(--m), var(--max)); margi
   .phone, .card, .dog-poster, .dog-live, .pet3d-fx, .vital-ico { transition: none !important; animation: none !important; }
   .intro-phones:hover .phone-left { transform: rotate(-8deg); }
   .intro-phones:hover .phone-right { transform: rotate(8deg); }
+}
+
+/* ---------- goal, free vs Plus, the offer, privacy, waitlist (new) ---------- */
+main > section.goal, main > section.plans-section, main > section.founding, main > section.privacy { scroll-margin-top: 72px; }
+.goal { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: clamp(24px, 5vw, 64px); align-items: center; }
+.goal-text { display: grid; gap: 16px; }
+.goal-text h2 { font-size: var(--step-head); }
+.goal-text .lead { font-size: var(--step-lead); line-height: 1.4; }
+.goal-text h3 { margin-top: 8px; }
+.goal-phone { width: min(100%, 300px); justify-self: center; transform: rotate(3deg); }
+.ticks em, .tag { font-style: normal; font-size: 13px; font-weight: 650; color: var(--accent-ink); background: var(--soft); border-radius: 999px; padding: 2px 9px; margin-left: 6px; white-space: nowrap; vertical-align: 2px; }
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 880px; margin-inline: auto; }
+.compare-col { display: grid; gap: 16px; align-content: start; }
+.compare-col h3 { font-family: var(--serif); font-weight: 400; font-size: 2rem; }
+.compare-plus { border: 2px solid var(--accent); }
+.plans-note { max-width: 880px; margin: 16px auto 0; }
+.offer { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; align-items: start; max-width: 1000px; margin-inline: auto; }
+.offer-card { display: grid; gap: 14px; align-content: start; border: 2px solid var(--accent); }
+.offer-card h3, .pay-card h3 { font-family: var(--serif); font-weight: 400; font-size: 2rem; }
+.price { font: 400 3rem/1 var(--serif); }
+.price small { font: 500 15px/1.3 var(--font); color: var(--muted); }
+.spots { font-size: var(--step-lead); }
+.spots b { font: 400 2.25rem/1 var(--serif); color: var(--accent-ink); }
+.refund { font-weight: 600; font-size: 15px; }
+.pay-card { display: grid; gap: 14px; align-content: start; }
+.step-line { line-height: 1.4; }
+.upi { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; background: var(--raised); border-radius: 20px; padding: 16px; }
+.upi-qr { width: 144px; height: 144px; border-radius: 14px; background: #fff; object-fit: contain; }
+.upi-qr-todo { display: grid; place-items: center; text-align: center; padding: 10px; font-size: 14px; color: var(--muted); border: 2px dashed var(--control); }
+.upi-info { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.upi-id { overflow-wrap: anywhere; } .upi-id code { font: 600 16px/1.3 var(--font); }
+.payform, .waitform { display: grid; gap: 12px; }
+.field { display: grid; gap: 6px; font-weight: 600; font-size: 15px; }
+.field small { font-weight: 400; color: var(--muted); }
+.field input, .waitform input[type=email] { font: 400 16px/1.2 var(--font); min-height: 48px; padding: 0 16px; border: 1px solid var(--control); border-radius: 14px; background: var(--surface); color: var(--text); width: 100%; min-width: 0; }
+.field input[type=file] { padding: 10px 12px; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.hp { position: absolute; left: -9999px; }
+.form-error { color: var(--negative); font-weight: 600; }
+.form-done { background: var(--soft); border-radius: 18px; padding: 18px 20px; }
+.privacy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 1000px; margin-inline: auto; }
+.privacy-grid .card { display: grid; gap: 14px; align-content: start; }
+.privacy-grid .honest { grid-column: 1 / -1; margin-top: 0; }
+.privacy-grid .honest > div { display: grid; gap: 10px; }
+.waitlist { display: grid; gap: 10px; justify-items: center; margin-top: 36px; width: min(100%, 460px); }
+.waitform { grid-template-columns: minmax(0, 1fr) auto; width: 100%; align-items: center; }
+.waitform .form-error { grid-column: 1 / -1; }
+.waitlist .form-done { width: 100%; }
+@media (max-width: 860px) {
+  .goal, .offer, .compare, .privacy-grid { grid-template-columns: minmax(0, 1fr); }
+  .offer > *, .goal > * { min-width: 0; }
+  .goal-phone { order: -1; width: min(70%, 260px); transform: none; }
+  .upi { grid-template-columns: 1fr; justify-items: start; }
+  .price { font-size: 2.5rem; }
+  .waitform { grid-template-columns: 1fr; }
+  .waitform .pill { width: 100%; }
 }

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>PAWSE: a pet that heals when you do</title>
-  <meta name="description" content="PAWSE is a habit-change app for Android. Pick a habit you want to change, rescue or raise a 3D dog, and check in each day. 21 goal-met days in a row heal it.">
+  <title>Pawse: a pet that heals when you do</title>
+  <meta name="description" content="Pawse is a companion app for Android that shows you how close you are to your goal, one small daily check-in at a time. Rescue or raise a 3D dog; 21 goal-met days in a row heal it.">
   <meta name="theme-color" content="#a8632a">
   <meta name="color-scheme" content="light">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="PAWSE: a pet that heals when you do">
-  <meta property="og:description" content="Rescue or raise a 3D dog. Every goal-met day helps it heal. A slip is information, not a verdict.">
+  <meta property="og:title" content="Pawse: a pet that heals when you do">
+  <meta property="og:description" content="See how close you are to your goal, one small daily check-in at a time. A slip is information, not a verdict.">
   <meta property="og:image" content="/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -20,15 +20,12 @@
   {
     "@context": "https://schema.org",
     "@type": "MobileApplication",
-    "name": "PAWSE",
+    "name": "Pawse",
     "operatingSystem": "Android",
     "applicationCategory": "HealthApplication",
-    "description": "A habit-change app with a 3D companion dog that heals or learns as you meet your goal.",
+    "description": "A companion app that shows you how close you are to your goal, one small daily check-in at a time, with a 3D dog that heals as you meet it.",
     "softwareVersion": "5.0.19",
-    "offers": [
-      { "@type": "Offer", "name": "Supporter Pass", "price": "1.00", "priceCurrency": "USD" },
-      { "@type": "Offer", "name": "Beta Pass", "price": "3.00", "priceCurrency": "USD" }
-    ]
+    "offers": { "@type": "Offer", "name": "Pawse Founding Member", "price": "{{priceInr}}", "priceCurrency": "INR" }
   }
   </script>
 </head>
@@ -37,18 +34,19 @@
 
   <!-- The app's own top bar: the paw, the name, one pill action. -->
   <header class="appbar">
-    <a class="brand" href="#top" aria-label="pawse, back to top">
+    <a class="brand" href="#top" aria-label="Pawse, back to top">
       <svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="30" height="25"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg>
       <span>pawse</span>
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Menu</button>
     <nav id="nav-links" aria-label="Sections">
-      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#goal">Your goal</a>
       <a href="#try">Try it</a>
-      <a href="#founding">Founding passes</a>
+      <a href="#plans">Free vs Plus</a>
       <a href="#questions">FAQ</a>
     </nav>
-    <a class="pill pill-small nav-action" href="#founding">Get early access</a>
+    <a class="pill pill-small nav-action" href="#founding">Become a Founding Member</a>
   </header>
 
   <main id="main">
@@ -59,15 +57,15 @@
       <div class="ps-content">
         <p class="hs-greet">Good morning. Meet Miso.</p>
         <h1 id="hero-title" class="hs-name">A pet that heals <span class="nowrap">when you do</span></h1>
-        <p class="hs-meta">A habit-change app for Android · In beta</p>
-        <p class="hero-actions"><a class="pill" href="#founding">Become a founding user</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
+        <p class="hs-sub">A companion app that shows you how close you are to your goal, one small daily check-in at a time. For Android, in beta.</p>
+        <p class="hero-actions"><a class="pill" href="#founding">Become a Founding Member</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
         <div class="hs-pet dog-box" data-dog="hero"><img src="/renders/hero.webp" alt="Miso, a 3D Shiba Inu, happy and looking at you" width="640" height="640" fetchpriority="high"></div>
         <p class="speech">Every good day helps me heal. Tap me!</p>
         <nav class="vitals" aria-label="Explore">
           <a class="vital" href="#rescue-or-raise"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span>Adopt</span></a>
           <a class="vital" href="#try"><span class="vital-ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="10" r="1.8"/><circle cx="11" cy="6.5" r="1.8"/><circle cx="15.5" cy="7" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8.5 17.5c0-2.5 1.8-4.5 3.8-4.5s3.7 2 3.7 4.5c0 1.6-1.4 2-3.7 2s-3.8-.4-3.8-2z"/></svg></span><span>Missions</span></a>
-          <a class="vital" href="#features"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5"/></svg></span><span>Tools</span></a>
-          <a class="vital" href="#founding"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span>Passes</span></a>
+          <a class="vital" href="#how"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5"/></svg></span><span>How</span></a>
+          <a class="vital" href="#founding"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span>Founding</span></a>
         </nav>
         <div class="health" role="img" aria-label="Health 100 of 100">
           <p class="row"><span>Health</span><span>100/100</span></p>
@@ -76,10 +74,10 @@
       </div>
     </section>
 
-    <section class="intro" aria-labelledby="intro-title">
+    <section class="intro" id="how" aria-labelledby="intro-title">
       <div class="card intro-card" data-rise>
         <h2 id="intro-title">Your habit, with a face</h2>
-        <p class="lead">PAWSE is a habit-change app for Android. Pick something you want to do less, adopt a 3D dog, and check in each day. Good days help it heal. A slip is information, not a verdict.</p>
+        <p class="lead">Pawse is a companion app for Android that shows you how close you are to your goal, one small daily check-in at a time. Pick something you want to do less, adopt a 3D dog, and check in each day. Good days help it heal. A slip is information, not a verdict.</p>
         <p class="muted">Late-night food orders, impulse buys, doomscrolling, smoking or vaping, drinking, or a habit you name yourself. You set the goal: stop, cut down, or understand it first.</p>
       </div>
       <div class="intro-phones" aria-label="Three screens from the app">
@@ -90,15 +88,15 @@
       <ul class="facts" aria-label="At a glance">
         <li class="card"><b>21</b><span>goal-met days in a row to heal your dog</span></li>
         <li class="card"><b>3</b><span>voices to choose: Gentle, Honest or Direct</span></li>
-        <li class="card"><b>0</b><span>ads, trackers or analytics</span></li>
+        <li class="card"><b>0</b><span>ads, and your data is never sold</span></li>
       </ul>
     </section>
 
     <!-- Features as the app's cards. -->
     <section class="features" id="features" aria-labelledby="features-title">
       <div class="section-head" data-rise>
-        <h2 id="features-title">Everything around your pet</h2>
-        <p>Small daily actions, a companion that responds, and the tools to understand why.</p>
+        <h2 id="features-title">How Pawse works</h2>
+        <p>Choose a goal, check in once a day, and your companion responds. These are the parts.</p>
       </div>
 
       <div class="bento">
@@ -155,7 +153,7 @@
         <article class="card card-shot">
           <div class="card-text">
             <h3>See your patterns</h3>
-            <p>This week against last, slips per week, urges managed, riskier hours, money kept.</p>
+            <p>See how close you are to your goal: this week against last, and slips per week over two months.</p>
           </div>
           <figure class="phone phone-peek"><img src="/screens/light-insights-1400.webp" alt="Insights: slips per week over the last 8 weeks" width="780" height="1688" loading="lazy" decoding="async"></figure>
         </article>
@@ -168,18 +166,30 @@
           <figure class="phone phone-peek"><img src="/screens/light-pets.webp" alt="Home with three pets: food orders, doomscrolling and vaping" width="780" height="1688" loading="lazy" decoding="async"></figure>
         </article>
 
-        <article class="card card-dark" id="privacy">
-          <svg class="card-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          <h3>Private by default</h3>
-          <ul class="ticks">
-            <li>Your records are private to your account</li>
-            <li>Photos never leave your phone</li>
-            <li>No ads, no trackers, no analytics</li>
-            <li>An optional PIN encrypts what's on the phone</li>
-            <li>Export or delete everything, any time</li>
-          </ul>
-        </article>
       </div>
+    </section>
+
+    <!-- Goal and progress: the paid hook, with only what the app does today shown as available. -->
+    <section class="goal" id="goal" aria-labelledby="goal-title">
+      <div class="goal-text" data-rise>
+        <h2 id="goal-title">See how close you are to your goal</h2>
+        <p class="lead">Set a goal: stop, cut down to a number a week, or understand it first. Pawse holds it up against your daily check-ins, so you see where you stand, not only how many days you've counted.</p>
+        <h3>In the app today</h3>
+        <ul class="ticks">
+          <li>Where you are against your goal: on target, closing in, or still building</li>
+          <li>This week against last week</li>
+          <li>Your starting point against now, as a change in percent</li>
+          <li>Slips per week for the last 8 weeks</li>
+          <li>When there aren't enough check-ins yet, it says so. A day you didn't check in is unknown, never a failure.</li>
+        </ul>
+        <h3>Planned for Pawse Plus</h3>
+        <ul class="ticks">
+          <li>A projected finish date for your goal <em>Planned</em></li>
+          <li>Longer trends and a side-by-side weekly comparison <em>Planned</em></li>
+          <li>Deeper analysis of your riskier hours <em>Planned</em></li>
+        </ul>
+      </div>
+      <figure class="phone goal-phone" data-rise><img src="/screens/light-insights-1400.webp" alt="Insights in the app: a chart of slips per week over the last 8 weeks, and a note that says it won't guess until there is enough to see" width="780" height="1688" loading="lazy" decoding="async"></figure>
     </section>
 
     <!-- The live thing: the app's mission rules, as the Missions sheet. -->
@@ -229,43 +239,134 @@
           <p>A reward every 30 well days. An issue from a slip clears with 3, 7 or 14 goal-met days in a row, depending on how often slips came.</p>
         </li>
       </ol>
-      <div class="honest card">
-        <h3>What PAWSE is, and isn't</h3>
-        <p>A self-awareness and habit-change tool. Not medical treatment, therapy or a cure, and your dog's conditions are illustrative. 21 days is PAWSE's mission length, not a medical recovery time. If a habit is hurting you, talk to a doctor or someone you trust. It never tracks calories, weight or food restriction.</p>
+    </section>
+
+    <!-- Free versus Plus. Nothing in the Plus column is claimed as existing. -->
+    <section class="plans-section" id="plans" aria-labelledby="plans-title">
+      <div class="section-head" data-rise>
+        <h2 id="plans-title">Free and Pawse Plus</h2>
+        <p>Pawse starts free. Plus is planned for the Google Play launch, and nothing in the Plus column exists yet.</p>
+      </div>
+      <div class="compare">
+        <article class="card compare-col">
+          <h3>Free</h3>
+          <ul class="ticks">
+            <li>One habit and one pet</li>
+            <li>Daily check-ins and slip logging</li>
+            <li>The calendar</li>
+            <li>Urge support and the calm after-slip screen. These stay free, always.</li>
+            <li>A simple goal and streak</li>
+            <li>A limited number of AI-written notes</li>
+          </ul>
+        </article>
+        <article class="card compare-col compare-plus">
+          <h3>Pawse Plus <span class="tag">Planned</span></h3>
+          <ul class="ticks">
+            <li>Goal progress analytics: how close you are, projected finish date, trends, riskier hours and a weekly comparison <em>Planned</em></li>
+            <li>Several habits and pets <em>Planned</em></li>
+            <li>Extra breeds and coats <em>Planned</em></li>
+            <li>Unlimited AI-written notes <em>Planned</em></li>
+            <li>Deeper reports <em>Planned</em></li>
+          </ul>
+        </article>
+      </div>
+      <p class="small muted plans-note">Today's beta has no paywall, and you can already run several habits and pets. The Free limits and Plus start with the Google Play launch.</p>
+    </section>
+
+    <!-- The one offer. -->
+    <section class="founding" id="founding" aria-labelledby="founding-title">
+      <div class="section-head" data-rise>
+        <h2 id="founding-title">Become a Founding Member</h2>
+        <p>One offer, once, for the first {{spotsTotal}} people. It buys access to future Pawse Plus features, not features that exist today.</p>
+      </div>
+      <div class="offer">
+        <article class="card offer-card">
+          <h3>Pawse Founding Member</h3>
+          <p class="price">Rs {{priceInr}} <small>one time · about ${{priceUsd}}</small></p>
+          <p class="spots"><!--if:spotsOpen--><b>{{spotsLeft}}</b> of {{spotsTotal}} spots left<!--else-->All {{spotsTotal}} spots are taken<!--/if:spotsOpen--></p>
+          <p class="small muted">Counted by hand, and updated after each confirmed payment.</p>
+          <ul class="ticks">
+            <li>Lifetime access to every future Pawse Plus feature (see what's planned above)</li>
+            <li>The current Android beta</li>
+            <li>Your name in the app credits, if you want it</li>
+            <li>A say in what gets built next</li>
+          </ul>
+          <!--if:spotsOpen--><a class="pill" href="#pay">Pay Rs {{priceInr}} and join</a><!--/if:spotsOpen-->
+          <p class="refund">Full refund on request {{refundWindow}}.</p>
+        </article>
+
+        <!--if:spotsOpen-->
+        <article class="card pay-card" id="pay">
+          <h3>How to pay</h3>
+          <p class="step-line"><b>1.</b> In India, pay Rs {{priceInr}} by UPI.</p>
+          <div class="upi">
+            <!--if:qrImage--><img class="upi-qr" src="{{qrImage}}" alt="UPI QR code for Pawse" width="176" height="176" loading="lazy"><!--else--><div class="upi-qr upi-qr-todo" role="img" aria-label="The UPI QR code will appear here">QR code goes here<br><small>TODO: set qrImage in site.config.ts</small></div><!--/if:qrImage-->
+            <div class="upi-info">
+              <p class="small muted">UPI ID</p>
+              <p class="upi-id"><code id="upi-id">{{upiId}}</code></p>
+              <button class="pill pill-soft pill-small" type="button" data-copy="#upi-id">Copy UPI ID</button>
+              <!--if:upiReady--><a class="pill pill-small" href="{{upiLink}}">Pay in your UPI app</a><!--/if:upiReady-->
+            </div>
+          </div>
+          <!--if:intlLink--><p class="step-line"><b>Outside India?</b> About ${{priceUsd}}, through an external payment page.</p><a class="pill pill-soft" href="{{internationalPaymentLink}}" rel="noopener">Pay from outside India</a><!--/if:intlLink-->
+          <p class="step-line"><b>2.</b> Then tell me you've paid, so I can match it.</p>
+          <!--if:formReady-->
+          <form class="payform" data-form="payment" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="form" value="founding-member">
+            <input type="hidden" name="amount_inr" value="{{priceInr}}">
+            <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
+            <label class="field">Your name <input name="name" required autocomplete="name"></label>
+            <label class="field">The email you use in Pawse <input name="email" type="email" required autocomplete="email" inputmode="email"></label>
+            <label class="field">Payment reference <small>(the UPI transaction ID)</small> <input name="payment_reference" required autocomplete="off"></label>
+            <label class="field">Or a screenshot of the payment <small>(optional)</small> <input name="screenshot" type="file" accept="image/*"></label>
+            <label class="check"><input type="checkbox" name="credits_ok" value="yes"> Put my name in the app credits</label>
+            <button class="pill" type="submit">I've paid, confirm my membership</button>
+            <p class="form-error" role="alert" hidden>That didn't send. Please try again, or check your connection.</p>
+            <p class="small muted">I use your email only to confirm your payment, activate Plus on your account and write to you about your membership. It is never sold or shared, and I'll delete it on request.</p>
+          </form>
+          <div class="form-done" role="status" tabindex="-1" hidden><p><b>Thank you.</b> I will confirm your payment and activate Plus on your account within 24 hours.</p></div>
+          <!--else-->
+          <p class="toastline"><span class="dot" aria-hidden="true"></span>The payment form isn't connected yet. Set VITE_FORM_ENDPOINT (see apps/site/README.md).</p>
+          <!--/if:formReady-->
+        </article>
+        <!--else-->
+        <article class="card pay-card"><h3>All spots are taken</h3><p>Thank you. Leave your email below and I'll tell you when Pawse is on Google Play.</p></article>
+        <!--/if:spotsOpen-->
       </div>
     </section>
 
-    <!-- Founding passes as two app cards. -->
-    <section class="founding" id="founding" aria-labelledby="founding-title">
+    <!-- Privacy and honesty, written to match what the app and the server really do. -->
+    <section class="privacy" id="privacy" aria-labelledby="privacy-title">
       <div class="section-head" data-rise>
-        <h2 id="founding-title">Founding passes</h2>
-        <p>Paid once. No subscription. Help shape PAWSE while it's in beta.</p>
+        <h2 id="privacy-title">Privacy and honesty</h2>
+        <p>What happens to your records, said plainly.</p>
       </div>
-      <div class="plans">
-        <article class="card plan">
-          <h3>Supporter Pass</h3>
-          <p class="price">$1 <small>one-time</small></p>
+      <div class="privacy-grid">
+        <article class="card">
+          <h3>Your records</h3>
           <ul class="ticks">
-            <li>The current Android beta</li>
-            <li>Founding supporter recognition</li>
-            <li>The free account tier at public launch</li>
+            <li>No ads, and we never sell your data</li>
+            <li>When you're signed in, your pets, slips, goal-met days, urges and notes are saved to your own account and are private to it</li>
+            <li>Photos never leave your phone</li>
+            <li>An optional PIN encrypts what's stored on the phone</li>
+            <li>Export or delete everything, any time</li>
+            <li>No calorie, weight or food-restriction tracking</li>
           </ul>
-          <p class="small muted">No future premium features promised.</p>
-          <a class="pill" href="#checkout-status" aria-describedby="checkout-status" data-checkout="supporter">Choose Supporter</a>
         </article>
-        <article class="card plan plan-main">
-          <h3>Beta Pass</h3>
-          <p class="price">$3 <small>one-time</small></p>
-          <ul class="ticks">
-            <li>The current Android beta</li>
-            <li>Premium beta for 90 days, starting when premium beta features arrive <em>(planned)</em></li>
-            <li>Future premium beta features as they become available <em>(planned)</em></li>
-          </ul>
-          <p class="small muted">Founding recognition and the free tier at launch: to be confirmed.</p>
-          <a class="pill" href="#checkout-status" aria-describedby="checkout-status" data-checkout="beta">Choose Beta</a>
+        <article class="card">
+          <h3>Where AI comes in</h3>
+          <p>When you log a slip while signed in, Pawse sends the pet's name, the kind of habit, the amount, the answers you picked and any short note you typed to an AI model, through our server, so it can write a short note back. For the weekly summary it sends last week's totals.</p>
+          <p>The AI service is asked not to keep that text, but we can't check what it does on its side. We save only the reply, so the same slip isn't sent twice. We do not sell data.</p>
+          <p>To learn whether Pawse helps people keep going, I may look at simple counts from the records, such as how many days people check in. No advertising or analytics trackers run in the app or on this page.</p>
+        </article>
+        <article class="card honest">
+          <h3>What Pawse is, and isn't</h3>
+          <div>
+            <p>A self-awareness and habit tool. Not medical treatment, therapy or a cure, and your dog's conditions are illustrative. 21 days is Pawse's mission length, not a medical recovery time.</p>
+            <p>If a habit is harming you, please talk to a doctor or someone you trust. If you are in danger or in crisis, contact your local emergency number or a crisis line in your country.</p>
+          </div>
         </article>
       </div>
-      <p class="toastline" id="checkout-status"><span class="dot" aria-hidden="true"></span>Checkout isn't open yet: the passes go on sale once payments are connected.</p>
     </section>
 
     <!-- Questions, as the app's list rows. -->
@@ -274,34 +375,53 @@
         <h2 id="faq-title">Questions</h2>
       </div>
       <div class="card faq-list">
-        <details open><summary>What is PAWSE?</summary><p>An Android app for changing a habit you choose, with a 3D companion at its centre. You check in each day; goal-met days help your companion heal or learn, and slips have a cost it shows. It also has urge support, a calendar, insights and a weekly review.</p></details>
+        <details open><summary>What is Pawse?</summary><p>An Android app for changing a habit you choose, with a 3D companion at its centre. You check in each day and Pawse shows how close you are to your goal. Goal-met days help your companion heal or learn, and slips have a cost it shows. It also has urge support, a calendar, insights and a weekly review.</p></details>
         <details><summary>How does Rescue differ from Raise?</summary><p>Both are the same 21-day mission. A rescued dog starts neglected, at 10 wellness, and heals six conditions. A raised dog starts healthy, at 70, and learns six skills. You choose once, when you adopt.</p></details>
-        <details><summary>What happens if I slip?</summary><p>You log it in a tap, and the app tells you what still stands and what puts it right. In the first 21 days a slip starts the count over, keeping your best run. After that it gives your dog an issue that clears with 3, 7 or 14 goal-met days in a row.</p></details>
-        <details><summary>Does it work for different habits?</summary><p>Yes: food orders, shopping, scrolling, smoking, vaping, drinking, or anything you name. Each habit gets its own companion and its own records, so you can work on more than one without them mixing.</p></details>
-        <details><summary>Is PAWSE medical treatment?</summary><p>No. It's a self-awareness tool, not treatment, therapy or medical advice. If a habit is harming you, please talk to a doctor or a professional.</p></details>
-        <details><summary>Is my data public?</summary><p>No. Your records are saved privately to your account and protected so only you can read them. There are no public profiles, ads or analytics, and photos never leave your phone.</p></details>
-        <details><summary>What does a founding pass include?</summary><p>The $1 Supporter Pass: the current Android beta, founding supporter recognition and the free account tier at public launch. The $3 Beta Pass: the beta plus 90 days of premium beta, counted from when those features arrive. Premium features are planned, not available yet.</p></details>
-        <details><summary>Is the web app available yet?</summary><p>Not yet. PAWSE is an Android app in beta. This page is the only part of it on the web for now.</p></details>
+        <details><summary>What happens if I slip?</summary><p>You log it in a tap, and the app tells you what still stands and what puts it right. A slip is information, not a verdict. In the first 21 days it starts the count over, keeping your best run. After that it gives your dog an issue that clears with 3, 7 or 14 goal-met days in a row.</p></details>
+        <details><summary>Does it work for different habits?</summary><p>Yes: food orders, shopping, scrolling, smoking, vaping, drinking, or anything you name. Each habit gets its own companion and its own records.</p></details>
+        <details><summary>Is Pawse medical treatment?</summary><p>No. It's a self-awareness and habit tool, not treatment, therapy or medical advice. If a habit is harming you, please talk to a doctor or a professional.</p></details>
+        <details><summary>Is my data public?</summary><p>No. Your records are saved privately to your account, and there are no public profiles or ads. We never sell your data. Slip details are sent to an AI model to write a short note; see "Privacy and honesty" above for exactly what.</p></details>
+        <details><summary>What does a Founding Member get?</summary><p>Lifetime access to every future Pawse Plus feature, the current Android beta, your name in the app credits if you want it, and a say in what gets built next. It costs Rs {{priceInr}} once, and it's limited to the first {{spotsTotal}} people. It buys future Plus access, not features that exist today.</p></details>
+        <details><summary>Can I get a refund?</summary><p>Yes. Ask for a full refund {{refundWindow}} and you'll get one.</p></details>
+        <details><summary>Will urge support stay free?</summary><p>Yes. Urge support and the calm after-slip screen stay free, always.</p></details>
+        <details><summary>When is Pawse on Google Play?</summary><p>A Play Store listing is planned, with no date yet. For now Pawse is an Android APK, listed on the <a href="https://github.com/jithujsam/pawse-releases">releases page</a>. You can leave your email below to hear when it's live.</p></details>
+        <details><summary>Is there a web app?</summary><p>No. Pawse is Android only for now.</p></details>
       </div>
     </section>
 
-    <!-- Close: the same room at golden hour (light only, no night scene). -->
+    <!-- Close: the same room at golden hour (light only). -->
     <section class="pscene close" data-mood="clear" data-ink="dark" aria-labelledby="close-title">
-      <div class="ps-fx" aria-hidden="true" hidden><i class="ps-star" style="left:8%;top:18%;animation-delay:0s"></i><i class="ps-star" style="left:18%;top:40%;animation-delay:1s"></i><i class="ps-star" style="left:27%;top:12%;animation-delay:2s"></i><i class="ps-star" style="left:40%;top:30%;animation-delay:0.5s"></i><i class="ps-star" style="left:62%;top:16%;animation-delay:1.5s"></i><i class="ps-star" style="left:74%;top:38%;animation-delay:2.5s"></i><i class="ps-star" style="left:88%;top:22%;animation-delay:3s"></i><i class="ps-star" style="left:93%;top:48%;animation-delay:0.8s"></i><i class="ps-star" style="left:52%;top:8%;animation-delay:3.4s"></i></div>
       <div class="ps-content">
         <p class="hs-greet">Miso is still here.</p>
         <h2 id="close-title" class="hs-name">Someone to come back to</h2>
         <img class="close-dog" src="/renders/hero.webp" alt="Miso, waiting for you" width="640" height="640" loading="lazy" decoding="async">
-        <p class="close-line">Pick a habit, adopt a dog, and start day one. Founding passes from $1, once.</p>
-        <a class="pill" href="#founding">Become a founding user</a>
+        <p class="close-line">Pick a goal, adopt a dog, and start day one.</p>
+        <p class="hero-actions"><a class="pill" href="#founding">Become a Founding Member</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
+        <div class="waitlist" id="waitlist">
+          <h3>Coming to Google Play</h3>
+          <p class="small">Not ready to pay? Leave your email and I'll tell you when it's live. Nothing else.</p>
+          <!--if:waitlistReady-->
+          <form class="waitform" data-form="waitlist" action="{{waitlistEndpoint}}" method="post">
+            <input type="hidden" name="form" value="play-waitlist">
+            <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
+            <label class="sr-only" for="wait-email">Email</label>
+            <input id="wait-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
+            <button class="pill pill-small" type="submit">Notify me</button>
+            <p class="form-error" role="alert" hidden>That didn't send. Please try again.</p>
+          </form>
+          <div class="form-done" role="status" tabindex="-1" hidden><p><b>Thank you.</b> I'll email you once, when Pawse is on Google Play.</p></div>
+          <!--else-->
+          <p class="small muted">The waitlist isn't connected yet. Set VITE_WAITLIST_ENDPOINT or VITE_FORM_ENDPOINT.</p>
+          <!--/if:waitlistReady-->
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="foot">
     <a class="brand" href="#top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="24" height="20"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
-    <p class="foot-links"><a href="#features">Features</a> <a href="#try">Try it</a> <a href="#founding">Passes</a> <a href="#questions">FAQ</a> <a href="#privacy">Privacy</a> <a href="https://github.com/jithujsam/pawse-releases">Releases</a></p>
-    <p class="small">© 2026 PAWSE · 3D dog by <a href="https://quaternius.com/packs/ultimateanimatedanimals.html">Quaternius</a>, CC0</p>
+    <p class="foot-links"><a href="#how">How it works</a> <a href="#try">Try it</a> <a href="#plans">Free vs Plus</a> <a href="#founding">Founding Member</a> <a href="#questions">FAQ</a> <a href="#privacy">Privacy</a> <a href="https://github.com/jithujsam/pawse-releases">Releases</a></p>
+    <p class="small">© 2026 Pawse · 3D dog by <a href="https://quaternius.com/packs/ultimateanimatedanimals.html">Quaternius</a>, CC0</p>
   </footer>
 
   <script type="module" src="/src/main.ts"></script>

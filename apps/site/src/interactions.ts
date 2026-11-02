@@ -27,7 +27,50 @@ function entrances() {
   groups.forEach((g) => io.observe(g));
 }
 
+/** Copies the UPI ID. The ID is plain text on the page, so this only saves typing. */
+function copyButtons() {
+  $$<HTMLButtonElement>("[data-copy]").forEach((btn) => {
+    const label = btn.textContent ?? "";
+    btn.addEventListener("click", async () => {
+      const text = $(btn.dataset.copy ?? "")?.textContent?.trim();
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; } catch { btn.textContent = "Select and copy"; }
+      setTimeout(() => { btn.textContent = label; }, 1800);
+    });
+  });
+}
+
+/**
+ * The payment-confirmation and waitlist forms post to the address filled in at build time (VITE_FORM_ENDPOINT, see
+ * site.config.ts). Without script they submit normally; with it, the form is replaced by a thank-you in place.
+ * No card data is ever handled here: the form only carries a name, an email and a payment reference.
+ */
+function forms() {
+  $$<HTMLFormElement>("form[data-form]").forEach((form) => {
+    const error = $<HTMLElement>(".form-error", form);
+    const done = form.nextElementSibling as HTMLElement | null;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!form.reportValidity()) return;
+      const button = $<HTMLButtonElement>("button[type=submit]", form);
+      if (button) button.disabled = true;
+      if (error) error.hidden = true;
+      try {
+        const res = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } });
+        if (!res.ok) throw new Error(String(res.status));
+        form.hidden = true;
+        if (done) { done.hidden = false; done.focus(); }
+      } catch {
+        if (error) error.hidden = false;
+        if (button) button.disabled = false;
+      }
+    });
+  });
+}
+
 export function wire() {
   menu();
   entrances();
+  copyButtons();
+  forms();
 }

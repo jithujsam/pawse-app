@@ -48,7 +48,10 @@ Before launch, set an absolute URL for `og:image` and add `<link rel="canonical"
   the 3D dog loads, and stay when WebGL is unavailable.
 - `public/og.png`: the first screen at 1200×630.
 
-## Not wired yet
+## Founding Member offer: what you edit
 
-- **Checkout.** The pass buttons point at `#checkout-status`, a visible line saying checkout isn't open. When
-  payments exist, set each `a[data-checkout]` `href` to its checkout URL and remove that sentence.
+All hand-edited values are in **`site.config.ts`**: price, spots total and taken, refund window, UPI ID and payee name, QR image path, the international payment link, and form endpoints. They are filled into `index.html` at build time (`{{tokens}}` and `<!--if:key-->` blocks, see `siteHtml` in `vite.config.ts`), so the page still reads without JavaScript. Change `spotsTaken` by hand after each confirmed payment.
+
+Forms post to **`VITE_FORM_ENDPOINT`** (payment confirmation) and **`VITE_WAITLIST_ENDPOINT`** (Google Play waitlist; falls back to the first). Set them in the host's environment (Vercel project settings) or in `apps/site/.env.local` for local runs. Any service that accepts a multipart POST and answers JSON works: Formspree or Web3Forms (create a form, paste its URL). Screenshot uploads need a plan that accepts files; the payment reference field works without one. With no endpoint set, the page says plainly that the form isn't connected; nothing is faked.
+
+The page handles no card data: payment is by UPI (QR and ID) or an external link, and the form only carries a name, an email and a payment reference.
