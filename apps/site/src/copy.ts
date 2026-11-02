@@ -6,20 +6,26 @@
  */
 export const copy = {
   meta: {
-    title: "Pawse: a pet that heals when you do",
+    title: "Pawse: change a habit, heal a dog",
     description: "Pawse is an Android app that shows you how close you are to your goal, one small daily check-in at a time. Adopt a 3D dog; 21 goal-met days in a row heal it.",
     share: "See how close you are to your goal, one small daily check-in at a time. A slip is information, not a verdict.",
   },
   nav: { cta: "Become a Founding Member" },
   hero: {
-    line1a: "A", dogAlt: "pet", line1b: "that heals", line2: "when you do",
+    line1: ["Change", "a", "habit."], line2: ["Heal", "a", "dog."],
     sub: "Pawse shows you how close you are to your goal, one small daily check-in at a time.",
     primary: "Become a Founding Member",
     secondary: "Join the Google Play waitlist",
     note: "Rs {{priceInr}}, once. For the first {{spotsTotal}} people.",
     apk: "Or download the beta APK",
     dogAlt2: "Miso, a 3D Shiba Inu, happy and looking at you",
+    bubble: "Every good day helps me heal. Tap me!",
+    bubbles: ["Day one. That counts.", "I feel a little better.", "A slip is information, not a verdict.", "Thanks for checking in."],
     phoneAlt: "Miso's page in Pawse: waiting for today's check-in, health 60 of 100",
+  },
+  marquee: {
+    label: "Habits people choose to change",
+    items: ["Late-night food orders", "Impulse buys", "Doomscrolling", "Smoking", "Vaping", "Drinking", "A habit you name yourself"],
   },
   problem: {
     title: "Willpower alone is a lot to carry.",
@@ -33,9 +39,9 @@ export const copy = {
   how: {
     title: "How it works",
     steps: [
-      { img: "/screens/light-pets.webp", title: "Adopt a pet for a habit you want to change.", body: "Rescue a dog that needs healing, or raise one that needs teaching. Choose the habit, then the goal: stop, cut down, or understand it first.", alt: "Pawse home: three pets, one for each habit" },
-      { img: "/screens/light-checkin.webp", title: "Check in with one tap.", body: "Goal met, a slip, or an urge you got through. Your pet responds, and a slip is logged without a lecture.", alt: "The check-in menu: Goal met, I slipped, Had an urge, Your goal and plan" },
-      { img: "/screens/light-missions-rescue.webp", title: "Watch your pet heal. See how close you are.", body: "21 goal-met days in a row heal your dog. Along the way Pawse shows where you stand against your goal.", alt: "Missions: 9 goal-met days to go to recover Miso" },
+      { i: 0, img: "/screens/light-pets.webp", title: "Adopt a pet for a habit you want to change.", body: "Rescue a dog that needs healing, or raise one that needs teaching. Choose the habit, then the goal: stop, cut down, or understand it first.", alt: "Pawse home: three pets, one for each habit" },
+      { i: 1, img: "/screens/light-checkin.webp", title: "Check in with one tap.", body: "Goal met, a slip, or an urge you got through. Your pet responds, and a slip is logged without a lecture.", alt: "The check-in menu: Goal met, I slipped, Had an urge, Your goal and plan" },
+      { i: 2, img: "/screens/light-missions-rescue.webp", title: "Watch your pet heal. See how close you are.", body: "21 goal-met days in a row heal your dog. Along the way Pawse shows where you stand against your goal.", alt: "Missions: 9 goal-met days to go to recover Miso" },
     ],
   },
   goal: {

@@ -14,7 +14,7 @@
   <meta property="og:image" content="/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Pawse: a pet that heals when you do. A 3D Shiba on a yellow field.">
+  <meta property="og:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{c.meta.title}}">
   <meta name="twitter:description" content="{{c.meta.share}}">
@@ -36,6 +36,7 @@
   </script>
 </head>
 <body>
+  <div class="progress" aria-hidden="true"></div>
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="nav">
@@ -47,8 +48,8 @@
     <!-- 1. Attention: the sentence is the layout; the pet sits inside it. -->
     <section class="hero" id="top" aria-labelledby="hero-title">
       <h1 id="hero-title" class="display">
-        <span class="ln">{{c.hero.line1a}} <span class="inline-dog"><img src="/renders/hero-face.webp" alt="{{c.hero.dogAlt}}" width="550" height="325" fetchpriority="high"></span> {{c.hero.line1b}}</span>
-        <span class="ln">{{c.hero.line2}}</span>
+        <span class="ln"><!--each:c.hero.line1--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line1--></span>
+        <span class="ln"><!--each:c.hero.line2--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line2--></span>
       </h1>
       <div class="hero-body">
         <div class="hero-copy">
@@ -62,9 +63,20 @@
         </div>
         <div class="stage" data-parallax>
           <div class="stage-field" aria-hidden="true"></div>
-          <img class="stage-dog" src="/renders/hero-hd.webp" alt="{{c.hero.dogAlt2}}" width="922" height="1242" fetchpriority="high">
+          <button class="dog-btn stage-dog" type="button" aria-label="Pet Miso: tap to hear from the dog" data-dog>
+            <img src="/renders/hero-hd.webp" alt="{{c.hero.dogAlt2}}" width="922" height="1242" fetchpriority="high" data-idle="/renders/hero-idle.webp">
+          </button>
+          <p class="bubble" role="status" aria-live="polite" data-bubble>{{c.hero.bubble}}</p>
+          <ul hidden data-bubble-lines><!--each:c.hero.bubbles--><li>{{.}}</li><!--/each:c.hero.bubbles--></ul>
           <figure class="device stage-phone"><img src="/screens/light-home-rescue.webp" alt="{{c.hero.phoneAlt}}" width="780" height="1688"></figure>
         </div>
+      </div>
+    </section>
+
+    <section class="marquee" aria-label="{{c.marquee.label}}">
+      <div class="marquee-track">
+        <ul class="marquee-list"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
+        <ul class="marquee-list" aria-hidden="true"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
       </div>
     </section>
 
@@ -79,13 +91,20 @@
     <!-- 3. Interest: how it works, one large screen per step, alternating sides. -->
     <section class="how" id="how" aria-labelledby="how-title">
       <h2 id="how-title" class="h2" data-reveal>{{c.how.title}}</h2>
-      <div class="steps">
-        <!--each:c.how.steps-->
-        <article class="step">
-          <div class="step-text" data-reveal><h3 class="h3">{{.title}}</h3><p>{{.body}}</p></div>
-          <figure class="device step-device" data-reveal><img src="{{.img}}" alt="{{.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-        <!--/each:c.how.steps-->
+      <div class="how-grid">
+        <div class="steps">
+          <!--each:c.how.steps-->
+          <article class="step" data-step="{{.i}}">
+            <div class="step-text"><h3 class="h3">{{.title}}</h3><p>{{.body}}</p></div>
+            <figure class="device step-device"><img src="{{.img}}" alt="{{.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
+          </article>
+          <!--/each:c.how.steps-->
+        </div>
+        <div class="how-sticky" aria-hidden="true">
+          <figure class="device how-device">
+            <!--each:c.how.steps--><img src="{{.img}}" alt="" width="780" height="1688" loading="lazy" decoding="async" data-for="{{.i}}"><!--/each:c.how.steps-->
+          </figure>
+        </div>
       </div>
     </section>
 
@@ -175,11 +194,13 @@
           <p class="price"><span>{{c.offer.price}}</span> <small>{{c.offer.priceNote}}</small></p>
           <p class="spots"><!--if:spotsOpen--><b>{{spotsLeft}}</b> {{c.offer.spotsOpen}}<!--else-->{{c.offer.spotsClosed}}<!--/if:spotsOpen--></p>
           <p class="small">{{c.offer.spotsNote}}</p>
+        </div>
+        <div class="offer-side" data-reveal>
           <ul class="list list-ink"><!--each:c.offer.gets--><li>{{.}}</li><!--/each:c.offer.gets--></ul>
           <!--if:spotsOpen--><p class="actions"><a class="btn btn-ink" href="#pay" data-event="founding_click">{{c.offer.button}}</a></p><!--/if:spotsOpen-->
           <p class="refund">{{c.offer.refund}}</p>
+          <img class="offer-dog" src="/renders/raise-hd.webp" alt="{{c.offer.dogAlt}}" width="922" height="1251" loading="lazy" decoding="async">
         </div>
-        <img class="offer-dog" src="/renders/raise-hd.webp" alt="{{c.offer.dogAlt}}" width="922" height="1251" loading="lazy" decoding="async">
       </div>
 
       <div class="pay" id="pay">
@@ -240,7 +261,7 @@
 
     <!-- 9. Objections. -->
     <section class="faq" id="questions" aria-labelledby="faq-title">
-      <h2 id="faq-title" class="h2" data-reveal>{{c.faq.title}}</h2>
+      <div class="faq-head"><h2 id="faq-title" class="h2" data-reveal>{{c.faq.title}}</h2></div>
       <div class="faq-list">
         <!--each:c.faq.items--><details><summary>{{.q}}</summary><p>{{.a}}</p></details><!--/each:c.faq.items-->
       </div>

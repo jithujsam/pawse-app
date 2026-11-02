@@ -5,7 +5,7 @@ its own design language and does not borrow the app's cream, clay and rounded ca
 
 ## Design brief
 
-- **Palette:** ground `#f7f7f7`; ink (bottle green) `#0d2a1c`; one yellow `#f6e016` used as whole fields (hero stage, the offer), the pet's frame and tags; mist `#dfe9e2` and surface `#ebebeb` as tone steps; white `#ffffff` for pay panels. Light only.
+- **Palette (the app's own):** cream ground `#faf7f2`; warm ink `#24211e`; clay `#a8632a` for actions; the app's golden sky `#f3bd5e` as whole fields (hero stage, the offer) and tags; light gold `#f8e6c0` and sand `#f0e6d8` as tone steps; surface `#f5f0e8`; white pay panels; phone frame `#1c1a18`. Light only.
 - **Type:** Instrument Serif (display, 400, tracking -0.02em, leading 0.92 to 1.05) for headlines; Geist (400/500/600, leading 1.55) for text. Five steps: display, h2, h3, lead, body, plus small (15px). Nothing below 13px.
 - **Spacing:** 8px base; one pair of side margins `clamp(20px, 4vw, 56px)`; max width 1360px; sections 96 to 176px apart; square corners everywhere except the phone frame.
 - **Motion:** content rises 28px and fades once on entry (80ms stagger); the hero pet drifts at 8% of scroll speed; the journey runs the first eight days once when it scrolls into view, then the visitor drives it. Transform and opacity only; all off under `prefers-reduced-motion`.

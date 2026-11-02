@@ -125,10 +125,132 @@ function forms() {
   });
 }
 
+/** Words rise out of a mask: the hero headline on load, every h2 as it enters. Plain text stays readable without script. */
+function words() {
+  const hero = $("h1.display");
+  const split = (el: HTMLElement) => {
+    if ($(".wm", el)) return;
+    const frag = document.createDocumentFragment();
+    (el.textContent ?? "").split(/\s+/).filter(Boolean).forEach((word) => {
+      const wm = document.createElement("span"), w = document.createElement("span");
+      wm.className = "wm"; w.className = "w"; w.textContent = word; wm.append(w);
+      frag.append(wm, " ");
+    });
+    el.textContent = ""; el.append(frag);
+  };
+  const index = (el: HTMLElement) => $$(".w", el).forEach((w, i) => w.style.setProperty("--i", String(i)));
+  if (hero) { index(hero); requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add("words-in"))); }
+  const heads = $$<HTMLElement>("h2.h2");
+  heads.forEach((h) => { split(h); index(h); h.removeAttribute("data-reveal"); });
+  if (reduced() || !("IntersectionObserver" in window)) { heads.forEach((h) => h.classList.add("words-in")); return; }
+  const io = new IntersectionObserver((es) => {
+    for (const e of es) if (e.isIntersecting) { e.target.classList.add("words-in"); io.unobserve(e.target); }
+  }, { rootMargin: "0px 0px -8% 0px" });
+  heads.forEach((h) => io.observe(h));
+}
+
+/** The hero pet: the app's real idle loop swaps in after first paint; tap it and it hops and says something. */
+function pet() {
+  const btn = $<HTMLButtonElement>("[data-dog]");
+  const img = btn && $<HTMLImageElement>("img", btn);
+  if (!btn || !img) return;
+  const saveData = (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData;
+  const idle = img.dataset.idle;
+  if (idle && !reduced() && !saveData) {
+    const swap = () => {
+      const next = new Image();
+      next.className = "fade-in"; next.alt = ""; next.decoding = "async";
+      next.onload = () => { btn.append(next); requestAnimationFrame(() => next.classList.add("on")); };
+      next.src = idle;
+    };
+    if (document.readyState === "complete") setTimeout(swap, 400); else addEventListener("load", () => setTimeout(swap, 400), { once: true });
+  }
+  const bubble = $<HTMLElement>("[data-bubble]"), lines = $$("[data-bubble-lines] li").map((li) => li.textContent ?? "");
+  let n = 0;
+  btn.addEventListener("click", () => {
+    btn.classList.remove("hop"); void btn.offsetWidth; if (!reduced()) btn.classList.add("hop");
+    if (bubble && lines.length) {
+      bubble.classList.add("swap"); void bubble.offsetWidth; bubble.classList.remove("swap");
+      bubble.textContent = lines[n++ % lines.length];
+    }
+  });
+}
+
+/** Pointer parallax in the hero: the field, the pet and the phone drift at different depths. Fine pointers only. */
+function pointer() {
+  const stage = $("[data-parallax]");
+  if (!stage || reduced() || !matchMedia("(pointer: fine)").matches) return;
+  let tx = 0, ty = 0, x = 0, y = 0, raf = 0;
+  const tick = () => {
+    x += (tx - x) * 0.09; y += (ty - y) * 0.09;
+    stage.style.setProperty("--mx", x.toFixed(3)); stage.style.setProperty("--my", y.toFixed(3));
+    raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.002 ? requestAnimationFrame(tick) : 0;
+  };
+  const hero = $(".hero")!;
+  hero.addEventListener("pointermove", (e) => {
+    const r = hero.getBoundingClientRect();
+    tx = ((e.clientX - r.left) / r.width - 0.5) * 2; ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+    if (!raf) raf = requestAnimationFrame(tick);
+  });
+  hero.addEventListener("pointerleave", () => { tx = 0; ty = 0; if (!raf) raf = requestAnimationFrame(tick); });
+}
+
+/** How it works: the phone stays in view and its screen follows the step that is in the middle of the page. */
+function steps() {
+  const items = $$("[data-step]"), shots = $$<HTMLElement>("[data-for]");
+  if (!items.length || !("IntersectionObserver" in window)) { shots[0]?.classList.add("on"); return; }
+  const show = (i: string) => { items.forEach((s) => s.classList.toggle("on", s.dataset.step === i)); shots.forEach((s) => s.classList.toggle("on", s.dataset.for === i)); };
+  show("0");
+  const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) show((e.target as HTMLElement).dataset.step!); }, { rootMargin: "-45% 0px -45% 0px" });
+  items.forEach((s) => io.observe(s));
+}
+
+/** A thin progress bar across the top, and buttons that lean toward the pointer. */
+function chrome() {
+  const bar = $(".progress");
+  if (bar && !reduced()) {
+    let ticking = false;
+    const upd = () => { ticking = false; const max = document.documentElement.scrollHeight - innerHeight; bar.style.setProperty("--p", String(max > 0 ? Math.min(1, scrollY / max) : 0)); };
+    addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+    upd();
+  }
+  if (reduced() || !matchMedia("(pointer: fine)").matches) return;
+  $$<HTMLElement>(".btn").forEach((b) => {
+    b.addEventListener("pointermove", (e) => {
+      const r = b.getBoundingClientRect();
+      b.style.setProperty("--tx", `${(((e.clientX - r.left) / r.width - 0.5) * 8).toFixed(1)}px`);
+      b.style.setProperty("--ty", `${(((e.clientY - r.top) / r.height - 0.5) * 6).toFixed(1)}px`);
+    });
+    b.addEventListener("pointerleave", () => { b.style.removeProperty("--tx"); b.style.removeProperty("--ty"); });
+  });
+}
+
+/** The spots-left number counts up once. It still reads the true value without script. */
+function counter() {
+  const el = $(".spots b");
+  if (!el || reduced() || !("IntersectionObserver" in window)) return;
+  const end = Number(el.textContent);
+  if (!Number.isFinite(end) || end <= 0) return;
+  const io = new IntersectionObserver((es) => {
+    if (!es[0].isIntersecting) return;
+    io.disconnect();
+    const t0 = performance.now();
+    const run = (t: number) => { const k = Math.min(1, (t - t0) / 900); el.textContent = String(Math.round(end * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(run); };
+    requestAnimationFrame(run);
+  }, { threshold: 0.6 });
+  io.observe(el);
+}
+
 export function wire() {
   events();
+  words();
   reveals();
   parallax();
+  pointer();
+  pet();
+  steps();
+  chrome();
+  counter();
   journey();
   copyButtons();
   forms();
