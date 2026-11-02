@@ -160,7 +160,14 @@ function pet() {
     const swap = () => {
       const next = new Image();
       next.className = "fade-in"; next.alt = ""; next.decoding = "async";
-      next.onload = () => { btn.append(next); requestAnimationFrame(() => next.classList.add("on")); };
+      next.onload = () => {
+        btn.append(next);
+        requestAnimationFrame(() => {
+          next.classList.add("on");
+          // The still stays underneath only until the loop is fully in; two poses at once would read as two dogs.
+          img.style.transition = "opacity .4s linear"; img.style.opacity = "0";
+        });
+      };
       next.src = idle;
     };
     if (document.readyState === "complete") setTimeout(swap, 400); else addEventListener("load", () => setTimeout(swap, 400), { once: true });
