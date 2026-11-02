@@ -9,7 +9,7 @@ Android app in `apps/web`; it never touches that build or the release pipeline.
 - **No live 3D.** The dog is a still render (`public/renders/*-hd.webp`, from the app's model; Quaternius, CC0). To re-render, run
   the old poster mode from git history (`git show 7410f71:apps/site/src/islands.tsx`).
 - **Fonts:** Instrument Serif (`@fontsource/instrument-serif`) and Geist (`@fontsource-variable/geist`), self-hosted.
-- **Design notes:** `DESIGN.md`. **Review screenshots:** `design/screens/` (every section, desktop 1440 and mobile 375).
+- 
 
 ## Skills used
 

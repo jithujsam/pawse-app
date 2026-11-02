@@ -1,63 +1,49 @@
 /**
- * Everything you edit by hand for the Founding Member offer lives in this one file.
- * Values are filled into index.html at build time (see `siteHtml` in vite.config.ts), so the page reads in full
- * without JavaScript. After editing, run `pnpm --filter site build` (or restart `pnpm --filter site dev`).
+ * Every value you edit by hand lives in this one file (and every word lives in src/copy.ts).
+ * After editing, run `pnpm --filter site build` (or restart `pnpm --filter site dev`).
+ *
+ * The pay button only shows when ALL THREE of these are filled in: upiId, qrImage and a payment form address.
+ * If any is empty, the page shows the Google Play waitlist instead and says nothing about setup.
  */
 export const config = {
   /** Price in rupees, one time. */
   priceInr: 249,
-  /** Shown as "about $3" for visitors outside India. */
-  priceUsdApprox: 3,
 
-  /** The first N Founding Members. Spots left = spotsTotal - spotsTaken. Change spotsTaken by hand after each confirmed payment. */
+  /** Total Founding Member spots. */
   spotsTotal: 50,
-  spotsTaken: 0,
+  /**
+   * Spots left. While this is the same as spotsTotal (or higher) the page says "First 50 spots".
+   * Set it below spotsTotal and the page says "N of 50 spots left". At 0 the pay button is hidden and the waitlist shows.
+   * Change it by hand after each confirmed payment.
+   */
+  spotsLeft: 50,
 
-  /** The refund line next to the button. */
-  refundWindow: "until the Google Play launch",
+  /** Shown in the Founding Member box: "Full refund until ...". */
+  refundWindow: "the Google Play launch",
 
-  // ---- India: UPI -------------------------------------------------------------------------------------------
-  /** TODO: replace with your real UPI ID. While it starts with "TODO" the "Pay in your UPI app" button is hidden. */
-  upiId: "TODO-your-upi-id@bank",
+  // ---- UPI ---------------------------------------------------------------------------------------------------
+  /** Your UPI ID, for example "name@bank". Empty hides the pay button. */
+  upiId: "",
   /** The name people see when they pay. */
   upiPayeeName: "Pawse",
-  /** TODO: put your QR image in apps/site/public/pay/ and set its path here, e.g. "/pay/upi-qr.png". Empty shows a placeholder. */
+  /** Your UPI QR image. Put the file in apps/site/public/pay/ and set its path, for example "/pay/upi-qr.png". Empty hides the pay button. */
   qrImage: "",
 
-  // ---- Outside India ----------------------------------------------------------------------------------------
-  /** TODO: an external payment link (PayPal.me, Ko-fi, Stripe Payment Link, ...). Empty hides the button. */
-  internationalPaymentLink: "",
-
-  /**
-   * TODO: the public address of the page, with no trailing slash, e.g. "https://pawse.app". While empty, the canonical and
-   * og:url tags are left out and the share image is a relative path (some apps will not show it; set this before sharing).
-   */
-  siteUrl: "",
-
-  // ---- Links ---------------------------------------------------------------------------------------------------
-  /** The beta APK (kept visible, lower priority than the offer and the waitlist). */
-  apkUrl: "https://github.com/jithujsam/pawse-releases/releases/latest",
-  /** TODO: a contact email for the footer. While it starts with "TODO" or is empty, the contact link is hidden. */
-  contactEmail: "TODO-contact@example.com",
-
-  // ---- Analytics hooks -----------------------------------------------------------------------------------------
-  /**
-   * Off by default. When true, clicking Become a Founding Member, submitting the payment form and submitting the
-   * waitlist each fire a "pawse:event" CustomEvent on window (detail: { name }) and push { event: name } to
-   * window.dataLayer if one exists. Nothing is sent anywhere until you add a listener or an analytics script.
-   * Note: turning on analytics changes the privacy section's "no trackers" sentence; update it in src/copy.ts.
-   */
-  analyticsHooks: false,
-
-  // ---- Forms ------------------------------------------------------------------------------------------------
+  // ---- Forms -------------------------------------------------------------------------------------------------
   /**
    * Where the payment form and the waitlist form post to. Prefer the environment variables so the address is not in git:
    *   VITE_FORM_ENDPOINT      the payment confirmation form (for example a Formspree or Web3Forms form URL)
    *   VITE_WAITLIST_ENDPOINT  the Google Play waitlist (optional; falls back to VITE_FORM_ENDPOINT)
-   * The values below are only used when the variables are not set. Empty means "not connected yet".
+   * The values below are only used when the variables are not set. Empty means "not connected".
    */
   formEndpoint: "",
   waitlistEndpoint: "",
+
+  // ---- Page ----------------------------------------------------------------------------------------------------
+  /** The public address of the page, with no trailing slash, for example "https://pawse.app". Empty leaves out the canonical and og:url tags. */
+  siteUrl: "",
+  /** Where the footer "Privacy" link goes. Empty links to the privacy answer on this page. */
+  privacyUrl: "",
 };
 
 export type SiteConfig = typeof config;

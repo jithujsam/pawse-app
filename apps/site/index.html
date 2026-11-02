@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{{c.meta.title}}</title>
   <meta name="description" content="{{c.meta.description}}">
-  <meta name="theme-color" content="#f7f7f7">
+  <meta name="theme-color" content="#ffffff">
   <meta name="color-scheme" content="light">
-  <meta name="pawse-analytics" content="{{analyticsHooks}}">
   <meta name="robots" content="index, follow">
   <!--if:siteUrl--><link rel="canonical" href="{{siteUrl}}/">
   <meta property="og:url" content="{{siteUrl}}/"><!--/if:siteUrl-->
@@ -19,302 +18,170 @@
   <meta property="og:image" content="{{siteUrl}}/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
+  <meta property="og:image:alt" content="Pawse: change a habit, heal a dog.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{c.meta.title}}">
   <meta name="twitter:description" content="{{c.meta.share}}">
   <meta name="twitter:image" content="{{siteUrl}}/og.png">
-  <meta name="twitter:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <link rel="icon" href="/logo-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <link rel="preload" as="image" href="/renders/hero-hd.webp" type="image/webp">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "MobileApplication",
     "name": "Pawse",
     "operatingSystem": "Android",
-    "applicationCategory": "HealthApplication",
-    "description": "{{c.meta.description}}",
-    "softwareVersion": "5.0.19",
-    "offers": { "@type": "Offer", "name": "Pawse Founding Member", "price": "{{priceInr}}", "priceCurrency": "INR" }
+    "applicationCategory": "LifestyleApplication",
+    "description": "{{c.meta.description}}"
   }
   </script>
   <script type="application/ld+json">{{faqJsonLd}}</script>
 </head>
 <body>
-  <div class="progress" aria-hidden="true"></div>
   <a class="skip" href="#main">Skip to content</a>
 
-  <header class="nav">
-    <a class="wordmark" href="#top" aria-label="Pawse, back to top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="26" height="22"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
-    <a class="btn btn-small" href="#founding" data-event="founding_click">{{c.nav.cta}}</a>
+  <!-- 1. Top bar -->
+  <header class="top">
+    <div class="wrap bar">
+      <a class="brand" href="#top" aria-label="Pawse, back to top">{{c.brand}}</a>
+      <!--if:payReady--><button class="btn btn-sm" type="button" data-open="pay">{{c.nav.cta}}</button><!--else--><!--if:waitReady--><button class="btn btn-sm" type="button" data-open="waitlist">{{c.nav.waitlist}}</button><!--/if:waitReady--><!--/if:payReady-->
+    </div>
   </header>
 
   <main id="main">
-    <!-- 1. Attention: the sentence is the layout; the pet sits inside it. -->
-    <section class="hero" id="top" aria-labelledby="hero-title">
-      <h1 id="hero-title" class="display">
-        <span class="ln"><!--each:c.hero.line1--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line1--></span>
-        <span class="ln"><!--each:c.hero.line2--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line2--></span>
-      </h1>
-      <div class="hero-body">
-        <div class="hero-copy">
-          <p class="lead">{{c.hero.sub}}</p>
-          <p class="actions">
-            <a class="btn" href="#founding" data-event="founding_click">{{c.hero.primary}}</a>
-            <a class="btn btn-ghost" href="#join">{{c.hero.secondary}}</a>
-          </p>
-          <p class="note">{{c.hero.note}}</p>
-          <p class="quiet"><a href="{{apkUrl}}">{{c.hero.apk}}</a></p>
+    <!-- 2. Hero -->
+    <section class="section hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap">
+        <h1 id="hero-title">{{c.hero.title}}</h1>
+        <p class="lead">{{c.hero.sub}}</p>
+        <div class="actions">
+          <!--if:payReady--><button class="btn" type="button" data-open="pay">{{c.hero.primary}}</button>
+          <button class="link" type="button" data-open="waitlist">{{c.hero.waitlist}}</button><!--else--><!--if:waitReady--><button class="btn" type="button" data-open="waitlist">{{c.hero.waitlist}}</button><!--/if:waitReady--><!--/if:payReady-->
         </div>
-        <div class="stage" data-parallax>
-          <div class="stage-field" aria-hidden="true"></div>
-          <button class="dog-btn stage-dog" type="button" aria-label="Pet Miso: tap to hear from the dog" data-dog>
-            <img src="/renders/hero-hd.webp" alt="{{c.hero.dogAlt2}}" width="922" height="1242" fetchpriority="high" data-idle="/renders/hero-idle.webp">
-          </button>
-          <p class="bubble" role="status" aria-live="polite" data-bubble>{{c.hero.bubble}}</p>
-          <ul hidden data-bubble-lines><!--each:c.hero.bubbles--><li>{{.}}</li><!--/each:c.hero.bubbles--></ul>
-          <figure class="device stage-phone"><img src="/screens/light-home-rescue.webp" alt="{{c.hero.phoneAlt}}" width="780" height="1688"></figure>
+        <div class="pair">
+          <div class="shot shot-dog"><img class="dog" src="/renders/hero-hd.webp" alt="{{c.hero.dogAlt}}" width="922" height="1242" decoding="async"></div>
+          <div class="shot"><img src="/screens/light-home-rescue.webp" alt="{{c.hero.alt}}" width="390" height="844" fetchpriority="high" decoding="async"></div>
         </div>
       </div>
     </section>
 
-    <section class="marquee" aria-label="{{c.marquee.label}}">
-      <div class="marquee-track">
-        <ul class="marquee-list"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
-        <ul class="marquee-list" aria-hidden="true"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
-      </div>
-    </section>
-
-    <!-- 2. Interest: the problem and the promise. -->
-    <section class="problem" id="problem" aria-labelledby="problem-title">
-      <div class="problem-head"><h2 id="problem-title" class="h2" data-reveal>{{c.problem.title}}</h2></div>
-      <div class="problem-lines">
-        <!--each:c.problem.lines--><p>{{.}}</p><!--/each:c.problem.lines-->
-      </div>
-    </section>
-
-    <!-- 3. Interest: how it works, one large screen per step, alternating sides. -->
-    <section class="how" id="how" aria-labelledby="how-title">
-      <h2 id="how-title" class="h2" data-reveal>{{c.how.title}}</h2>
-      <div class="how-grid">
-        <div class="steps">
-          <!--each:c.how.steps-->
-          <article class="step" data-step="{{.i}}">
-            <div class="step-text"><h3 class="h3">{{.title}}</h3><p>{{.body}}</p></div>
-            <figure class="device step-device"><img src="{{.img}}" alt="{{.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
-          </article>
-          <!--/each:c.how.steps-->
-        </div>
-        <div class="how-sticky" aria-hidden="true">
-          <figure class="device how-device">
-            <!--each:c.how.steps--><img src="{{.img}}" alt="" width="780" height="1688" loading="lazy" decoding="async" data-for="{{.i}}"><!--/each:c.how.steps-->
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <!-- 4. Desire: the goal feature, the Plus hook. -->
-    <section class="goal" id="goal" aria-labelledby="goal-title">
-      <div class="goal-inner">
-        <div class="goal-text" data-reveal>
-          <h2 id="goal-title" class="h2">{{c.goal.title}}</h2>
-          <p class="lead">{{c.goal.lead}}</p>
-          <h3 class="h4">{{c.goal.statesTitle}}</h3>
-          <ul class="states"><!--each:c.goal.states--><li><b>{{.name}}</b><span>{{.text}}</span></li><!--/each:c.goal.states--></ul>
-          <h3 class="h4">{{c.goal.todayTitle}}</h3>
-          <ul class="list"><!--each:c.goal.today--><li>{{.}}</li><!--/each:c.goal.today--></ul>
-          <p class="aside">{{c.goal.honest}}</p>
-          <h3 class="h4">{{c.goal.plusTitle}}</h3>
-          <ul class="list"><!--each:c.goal.plus--><li>{{.}}</li><!--/each:c.goal.plus--></ul>
-        </div>
-        <div class="goal-visuals">
-          <figure class="device goal-device" data-reveal><img src="/screens/light-insights-1400.webp" alt="{{c.goal.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
-          <figure class="concept" data-reveal>
-            <figcaption><b>{{c.goal.conceptTitle}}</b><span class="tag tag-ink">Planned</span></figcaption>
-            <svg viewBox="0 0 560 250" role="img" aria-label="Concept: bars of slips per week falling over eight weeks, then lighter projected bars reaching zero at a projected finish. Example numbers.">
-              <g class="bars">
-                <rect x="10" y="30" width="38" height="190"/><rect x="66" y="64" width="38" height="156"/><rect x="122" y="64" width="38" height="156"/><rect x="178" y="98" width="38" height="122"/>
-                <rect x="234" y="132" width="38" height="88"/><rect x="290" y="132" width="38" height="88"/><rect x="346" y="166" width="38" height="54"/><rect x="402" y="166" width="38" height="54"/>
-              </g>
-              <g class="proj"><rect x="458" y="190" width="38" height="30"/><rect x="514" y="212" width="38" height="8"/></g>
-            </svg>
-            <p class="axis"><span>{{c.goal.conceptNow}}</span><span>{{c.goal.conceptFinish}}</span></p>
-            <p class="small">{{c.goal.conceptLabel}}</p>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. Desire: the 21-day journey, one scrubbable picture. -->
-    <section class="journey" id="journey" aria-labelledby="journey-title" data-journey>
-      <div class="journey-head" data-reveal>
-        <h2 id="journey-title" class="h2">{{c.journey.title}}</h2>
-        <p class="lead">{{c.journey.lead}}</p>
-      </div>
-      <div class="journey-stage">
-        <div class="journey-dog">
-          <img class="jd-sad" src="/renders/rescue-hd.webp" alt="{{c.journey.rescueAlt}}" width="922" height="1257" loading="lazy" decoding="async">
-          <img class="jd-happy" src="/renders/hero-hd.webp" alt="{{c.journey.happyAlt}}" width="922" height="1242" loading="lazy" decoding="async" data-happy>
-        </div>
-        <div class="journey-read">
-          <p class="bigday"><span>{{c.journey.day}}</span> <b data-day>0</b></p>
-          <p class="wl">{{c.journey.wellness}} <b data-wellness>10</b> {{c.journey.of}}</p>
-          <div class="wbar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <label class="scrub" for="day">{{c.journey.slider}}<input id="day" type="range" min="0" max="21" step="1" value="0" data-scrub></label>
-          <h3 class="h4">{{c.journey.healed}}</h3>
-          <p class="aside" data-none>{{c.journey.none}}</p>
-          <ul class="healed"><!--each:c.journey.conditions--><li data-at="{{.day}}">{{.text}}</li><!--/each:c.journey.conditions--></ul>
-          <p class="small">{{c.journey.note}}</p>
-        </div>
-      </div>
-      <ol class="phases">
-        <!--each:c.journey.phases--><li data-reveal><h3 class="h3">{{.title}}</h3><p class="phase-days">{{.days}}</p><p>{{.body}}</p></li><!--/each:c.journey.phases-->
-      </ol>
-    </section>
-
-    <!-- 6. Clarity: free versus Plus. -->
-    <section class="plans" id="plans" aria-labelledby="plans-title">
-      <div class="plans-head" data-reveal>
-        <h2 id="plans-title" class="h2">{{c.plans.title}}</h2>
-        <p class="lead">{{c.plans.lead}}</p>
-      </div>
-      <p class="free-forever" data-reveal>{{c.plans.freeForever}}</p>
-      <div class="compare">
-        <article class="col col-free" data-reveal>
-          <h3 class="h3">{{c.plans.freeTitle}}</h3>
-          <ul class="list"><!--each:c.plans.free--><li>{{.}}</li><!--/each:c.plans.free--></ul>
-        </article>
-        <article class="col col-plus" data-reveal>
-          <h3 class="h3">{{c.plans.plusTitle}}</h3>
-          <ul class="list"><!--each:c.plans.plus--><li>{{.}}</li><!--/each:c.plans.plus--></ul>
-        </article>
-      </div>
-      <p class="small plans-note">{{c.plans.note}}</p>
-    </section>
-
-    <!-- 7. Action: the one offer. -->
-    <section class="offer" id="founding" aria-labelledby="founding-title">
-      <div class="offer-inner">
-        <div class="offer-main" data-reveal>
-          <h2 id="founding-title" class="h2">{{c.offer.title}}</h2>
-          <p class="lead">{{c.offer.lead}}</p>
-          <p class="price"><span>{{c.offer.price}}</span> <small>{{c.offer.priceNote}}</small></p>
-          <p class="spots"><!--if:spotsOpen--><b>{{spotsLeft}}</b> {{c.offer.spotsOpen}}<!--else-->{{c.offer.spotsClosed}}<!--/if:spotsOpen--></p>
-          <p class="small">{{c.offer.spotsNote}}</p>
-        </div>
-        <div class="offer-side" data-reveal>
-          <ul class="list list-ink"><!--each:c.offer.gets--><li>{{.}}</li><!--/each:c.offer.gets--></ul>
-          <!--if:spotsOpen--><p class="actions"><a class="btn btn-ink" href="#pay" data-event="founding_click">{{c.offer.button}}</a></p><!--/if:spotsOpen-->
-          <p class="refund">{{c.offer.refund}}</p>
-          <img class="offer-dog" src="/renders/raise-hd.webp" alt="{{c.offer.dogAlt}}" width="922" height="1251" loading="lazy" decoding="async">
-        </div>
-      </div>
-
-      <div class="pay" id="pay">
-        <!--if:spotsOpen-->
-        <div class="pay-panel">
-          <h3 class="h3">{{c.offer.payTitle}}</h3>
-          <p class="stepline">1. {{c.offer.step1}}</p>
-          <div class="upi">
-            <!--if:qrImage--><img class="upi-qr" src="{{qrImage}}" alt="{{c.offer.qrAlt}}" width="176" height="176" loading="lazy"><!--else--><div class="upi-qr upi-qr-todo" role="img" aria-label="{{c.offer.qrTodo}}">{{c.offer.qrTodo}}<br><small>{{c.offer.qrTodoHint}}</small></div><!--/if:qrImage-->
-            <div class="upi-info">
-              <p class="small">{{c.offer.upiLabel}}</p>
-              <p class="upi-id"><code id="upi-id">{{upiId}}</code></p>
-              <button class="btn btn-small btn-ghost" type="button" data-copy="#upi-id" aria-live="polite">{{c.offer.copy}}</button>
-              <!--if:upiReady--><a class="btn btn-small btn-ink" href="{{upiLink}}">{{c.offer.upiApp}}</a><!--/if:upiReady-->
+    <!-- 3. What Pawse does -->
+    <section class="section tint" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <h2 id="features-title">{{c.features.title}}</h2>
+        <div class="features">
+          <!--each:c.features.items--><article class="feature">
+            <div class="shot">{{.media}}</div>
+            <div class="feature-text">
+              <h3>{{.title}} {{.tagHtml}}</h3>
+              <p>{{.does}}</p>
+              <p><b>{{c.features.helps}}</b> {{.helps}}</p>
             </div>
+          </article><!--/each:c.features.items-->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Pricing -->
+    <section class="section" id="pricing" aria-labelledby="pricing-title">
+      <div class="wrap">
+        <h2 id="pricing-title">{{c.pricing.title}}</h2>
+        <div class="plans">
+          <div class="card">
+            <h3>{{c.pricing.freeTitle}}</h3>
+            <ul class="list"><!--each:c.pricing.free--><li>{{.}}</li><!--/each:c.pricing.free--></ul>
           </div>
-          <!--if:intlLink--><p class="stepline">{{c.offer.intl}}</p><a class="btn btn-ghost" href="{{internationalPaymentLink}}" rel="noopener">{{c.offer.intlButton}}</a><!--/if:intlLink-->
-        </div>
-        <div class="pay-panel">
-          <p class="stepline">2. {{c.offer.step2}}</p>
-          <!--if:formReady-->
-          <form class="form" aria-label="Payment confirmation" data-form="payment" data-event-submit="payment_submit" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="form" value="founding-member">
-            <input type="hidden" name="amount_inr" value="{{priceInr}}">
-            <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
-            <label class="field">{{c.offer.name_}} <input name="name" required autocomplete="name"></label>
-            <label class="field">{{c.offer.email}} <input name="email" type="email" required autocomplete="email" inputmode="email"></label>
-            <label class="field">{{c.offer.ref}} <small>({{c.offer.refHint}})</small> <input name="payment_reference" required autocomplete="off"></label>
-            <label class="field">{{c.offer.shot}} <small>({{c.offer.optional}})</small> <input name="screenshot" type="file" accept="image/*"></label>
-            <label class="check"><input type="checkbox" name="credits_ok" value="yes"> {{c.offer.credits}}</label>
-            <button class="btn btn-ink" type="submit" aria-describedby="pay-err">{{c.offer.submit}}</button>
-            <p class="form-error" id="pay-err" role="alert" hidden>{{c.offer.error}}</p>
-            <p class="small">{{c.offer.privacy}}</p>
-          </form>
-          <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.offer.done}}</p></div>
-          <!--else-->
-          <p class="notice">{{c.offer.notConnected}}</p>
-          <!--/if:formReady-->
-        </div>
-        <!--else-->
-        <div class="pay-panel"><h3 class="h3">{{c.offer.soldOutTitle}}</h3><p>{{c.offer.soldOut}}</p></div>
-        <!--/if:spotsOpen-->
-      </div>
-    </section>
-
-    <!-- 8. Trust: privacy and honesty. -->
-    <section class="trust" id="trust" aria-labelledby="trust-title">
-      <div class="trust-head" data-reveal>
-        <h2 id="trust-title" class="h2">{{c.trust.title}}</h2>
-        <p class="lead">{{c.trust.lead}}</p>
-      </div>
-      <div class="trust-body">
-        <h3 class="statement" data-reveal>{{c.trust.statement}}</h3>
-        <div class="tiles">
-          <div data-reveal><h3 class="h3">{{c.trust.recordsTitle}}</h3><ul class="list"><!--each:c.trust.records--><li>{{.}}</li><!--/each:c.trust.records--></ul></div>
-          <div data-reveal><h3 class="h3">{{c.trust.aiTitle}}</h3><p>{{c.trust.ai1}}</p><p>{{c.trust.ai2}}</p><p>{{c.trust.ai3}}</p></div>
-          <div data-reveal><h3 class="h3">{{c.trust.notTitle}}</h3><p>{{c.trust.not1}}</p><p>{{c.trust.not2}}</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 9. Objections. -->
-    <section class="faq" id="questions" aria-labelledby="faq-title">
-      <div class="faq-head"><h2 id="faq-title" class="h2" data-reveal>{{c.faq.title}}</h2></div>
-      <div class="faq-list">
-        <!--each:c.faq.items--><details><summary>{{.q}}</summary><p>{{.a}}</p></details><!--/each:c.faq.items-->
-      </div>
-    </section>
-
-    <!-- 10. Action again: the offer or the waitlist. -->
-    <section class="join" id="join" aria-labelledby="join-title">
-      <div class="join-inner">
-        <div data-reveal>
-          <h2 id="join-title" class="h2">{{c.cta.title}}</h2>
-          <p class="lead">{{c.cta.lead}}</p>
-          <p class="actions"><a class="btn btn-ink" href="#founding" data-event="founding_click">{{c.cta.primary}}</a></p>
-          <div class="wait">
-            <h3 class="h4">{{c.cta.waitTitle}}</h3>
-            <!--if:waitlistReady-->
-            <form class="waitform" aria-label="Google Play waitlist" data-form="waitlist" data-event-submit="waitlist_submit" action="{{waitlistEndpoint}}" method="post">
-              <input type="hidden" name="form" value="play-waitlist">
-              <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
-              <label class="sr-only" for="wait-email">{{c.cta.waitEmail}}</label>
-              <input id="wait-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
-              <button class="btn btn-ink" type="submit" aria-describedby="wait-err">{{c.cta.waitSubmit}}</button>
-              <p class="form-error" id="wait-err" role="alert" hidden>{{c.cta.waitError}}</p>
-            </form>
-            <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.cta.waitDone}}</p></div>
-            <p class="small">{{c.cta.waitConsent}}</p>
-            <!--else-->
-            <p class="notice">{{c.cta.waitNotConnected}}</p>
-            <!--/if:waitlistReady-->
+          <div class="card">
+            <h3>{{c.pricing.plusTitle}}</h3>
+            <p class="note">{{c.pricing.plusNote}}</p>
+            <ul class="list"><!--each:c.pricing.plus--><li>{{.}}</li><!--/each:c.pricing.plus--></ul>
           </div>
-          <p class="quiet"><a href="{{apkUrl}}">{{c.cta.apk}}</a></p>
         </div>
-        <img class="join-dog" src="/renders/hero-hd.webp" alt="{{c.cta.dogAlt}}" width="922" height="1242" loading="lazy" decoding="async">
+
+        <div class="founder">
+          <div class="founder-text">
+          <h3>{{c.pricing.founderTitle}}</h3>
+          <p class="price"><span>{{c.pricing.price}}</span> {{c.pricing.priceNote}}</p>
+          <ul class="list"><!--each:c.pricing.facts--><li>{{.}}</li><!--/each:c.pricing.facts--></ul>
+          <p class="spots"><!--if:spotsCounted-->{{c.pricing.spotsLeft}}<!--else--><!--if:spotsOpen-->{{c.pricing.spotsFirst}}<!--else-->{{c.pricing.spotsClosed}}<!--/if:spotsOpen--><!--/if:spotsCounted--></p>
+          <p class="honest">{{c.pricing.honest}}</p>
+          <!--if:payReady--><button class="btn" type="button" data-open="pay">{{c.pricing.button}}</button><!--else--><!--if:waitReady--><p>{{c.pricing.waitlistLead}}</p>
+          <button class="btn" type="button" data-open="waitlist">{{c.pricing.waitlistButton}}</button><!--/if:waitReady--><!--/if:payReady-->
+          </div>
+          <div class="shot shot-dog"><img class="dog" src="/renders/raise-hd.webp" alt="{{c.pricing.dogAlt}}" width="922" height="1251" loading="lazy" decoding="async"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Questions -->
+    <section class="section tint" id="questions" aria-labelledby="faq-title">
+      <div class="wrap">
+        <h2 id="faq-title">{{c.faq.title}}</h2>
+        <div class="faq">
+          <!--each:c.faq.items--><div class="qa" id="{{.id}}"><h3>{{.q}}</h3><p>{{.a}}</p></div><!--/each:c.faq.items-->
+        </div>
       </div>
     </section>
   </main>
 
+  <!-- 7. Footer -->
   <footer class="foot">
-    <a class="wordmark" href="#top" aria-label="Pawse, back to top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="26" height="22"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
-    <p class="small">{{c.footer.credit}}</p>
-    <p class="small foot-links"><a href="#trust">{{c.footer.privacy}}</a> <a href="{{apkUrl}}">{{c.footer.releases}}</a><!--if:contactReady--> <a href="mailto:{{contactEmail}}">{{c.footer.contact}}</a><!--/if:contactReady--></p>
+    <div class="wrap foot-row">
+      <a class="brand" href="#top" aria-label="Pawse, back to top">{{c.brand}}</a>
+      <a href="{{privacyUrl}}">{{c.footer.privacy}}</a>
+      <p>{{c.footer.credit}}</p>
+    </div>
   </footer>
+
+  <!-- 5. Payment panel (only when UPI ID, QR image and the form address are all set) -->
+  <!--if:payReady-->
+  <dialog class="panel" id="pay" aria-labelledby="pay-title">
+    <div class="panel-body">
+      <h2 id="pay-title">{{c.pay.title}}</h2>
+      <p>{{c.pay.step1}}</p>
+      <div class="upi">
+        <a href="{{upiLink}}" aria-label="{{c.pay.title}}"><img class="qr" src="{{qrImage}}" alt="{{c.pay.qrAlt}}" width="200" height="200"></a>
+        <div>
+          <p class="note">{{c.pay.upiLabel}}</p>
+          <p class="upi-id"><code id="upi-id">{{upiId}}</code></p>
+          <button class="btn btn-ghost btn-sm" type="button" data-copy="#upi-id" data-copied="{{c.pay.copied}}" data-copy-fail="{{c.pay.copyFail}}" aria-live="polite">{{c.pay.copy}}</button>
+        </div>
+      </div>
+      <p>{{c.pay.step2}}</p>
+      <form class="form" data-form action="{{formEndpoint}}" method="post">
+        <input type="hidden" name="form" value="founding-member">
+        <input type="hidden" name="amount_inr" value="{{priceInr}}">
+        <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
+        <label class="field"><span>{{c.pay.name}}</span><input name="name" required autocomplete="name"></label>
+        <label class="field"><span>{{c.pay.email}}</span><input name="email" type="email" required autocomplete="email" inputmode="email"></label>
+        <label class="field"><span>{{c.pay.ref}} <small>{{c.pay.refHint}}</small></span><input name="payment_reference" required autocomplete="off"></label>
+        <button class="btn" type="submit">{{c.pay.submit}}</button>
+        <p class="form-error" role="alert" hidden>{{c.pay.error}}</p>
+        <p class="note">{{c.pay.privacy}}</p>
+      </form>
+      <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.pay.done}}</p></div>
+      <button class="btn btn-ghost" type="button" data-close>{{c.pay.close}}</button>
+    </div>
+  </dialog>
+  <!--/if:payReady-->
+
+  <!--if:waitReady-->
+  <dialog class="panel" id="waitlist" aria-labelledby="wait-title">
+    <div class="panel-body">
+      <h2 id="wait-title">{{c.waitlist.title}}</h2>
+      <p>{{c.waitlist.lead}}</p>
+      <form class="form" data-form action="{{waitlistEndpoint}}" method="post">
+        <input type="hidden" name="form" value="play-waitlist">
+        <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
+        <label class="field"><span>{{c.waitlist.email}}</span><input name="email" type="email" required autocomplete="email" inputmode="email"></label>
+        <button class="btn" type="submit">{{c.waitlist.submit}}</button>
+        <p class="form-error" role="alert" hidden>{{c.waitlist.error}}</p>
+      </form>
+      <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.waitlist.done}}</p></div>
+      <button class="btn btn-ghost" type="button" data-close>{{c.waitlist.close}}</button>
+    </div>
+  </dialog>
+  <!--/if:waitReady-->
 
   <script type="module" src="/src/main.ts"></script>
 </body>
