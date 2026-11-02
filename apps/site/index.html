@@ -3,19 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Pawse: a pet that heals when you do</title>
-  <meta name="description" content="Pawse is a companion app for Android that shows you how close you are to your goal, one small daily check-in at a time. Rescue or raise a 3D dog; 21 goal-met days in a row heal it.">
-  <meta name="theme-color" content="#a8632a">
+  <title>{{c.meta.title}}</title>
+  <meta name="description" content="{{c.meta.description}}">
+  <meta name="theme-color" content="#f7f7f7">
   <meta name="color-scheme" content="light">
+  <meta name="pawse-analytics" content="{{analyticsHooks}}">
+  <meta name="robots" content="index, follow">
+  <!--if:siteUrl--><link rel="canonical" href="{{siteUrl}}/">
+  <meta property="og:url" content="{{siteUrl}}/"><!--/if:siteUrl-->
+  <meta property="og:site_name" content="Pawse">
+  <meta property="og:locale" content="en_IN">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Pawse: a pet that heals when you do">
-  <meta property="og:description" content="See how close you are to your goal, one small daily check-in at a time. A slip is information, not a verdict.">
-  <meta property="og:image" content="/og.png">
+  <meta property="og:title" content="{{c.meta.title}}">
+  <meta property="og:description" content="{{c.meta.share}}">
+  <meta property="og:image" content="{{siteUrl}}/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{c.meta.title}}">
+  <meta name="twitter:description" content="{{c.meta.share}}">
+  <meta name="twitter:image" content="{{siteUrl}}/og.png">
+  <meta name="twitter:image:alt" content="Pawse: change a habit, heal a dog. A 3D Shiba on a golden field.">
   <link rel="icon" href="/logo-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preload" as="image" href="/renders/hero-hd.webp" type="image/webp">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -23,405 +35,285 @@
     "name": "Pawse",
     "operatingSystem": "Android",
     "applicationCategory": "HealthApplication",
-    "description": "A companion app that shows you how close you are to your goal, one small daily check-in at a time, with a 3D dog that heals as you meet it.",
+    "description": "{{c.meta.description}}",
     "softwareVersion": "5.0.19",
     "offers": { "@type": "Offer", "name": "Pawse Founding Member", "price": "{{priceInr}}", "priceCurrency": "INR" }
   }
   </script>
+  <script type="application/ld+json">{{faqJsonLd}}</script>
 </head>
 <body>
+  <div class="progress" aria-hidden="true"></div>
   <a class="skip" href="#main">Skip to content</a>
 
-  <!-- The app's own top bar: the paw, the name, one pill action. -->
-  <header class="appbar">
-    <a class="brand" href="#top" aria-label="Pawse, back to top">
-      <svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="30" height="25"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg>
-      <span>pawse</span>
-    </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">Menu</button>
-    <nav id="nav-links" aria-label="Sections">
-      <a href="#how">How it works</a>
-      <a href="#goal">Your goal</a>
-      <a href="#try">Try it</a>
-      <a href="#plans">Free vs Plus</a>
-      <a href="#questions">FAQ</a>
-    </nav>
-    <a class="pill pill-small nav-action" href="#founding">Become a Founding Member</a>
+  <header class="nav">
+    <a class="wordmark" href="#top" aria-label="Pawse, back to top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="26" height="22"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
+    <a class="btn btn-small" href="#founding" data-event="founding_click">{{c.nav.cta}}</a>
   </header>
 
   <main id="main">
-    <!-- Hero: Miso's room, as on the app's pet page. The sky is the app's "golden" weather: a pet that is thriving. -->
-    <section class="pscene hero" id="top" data-mood="golden" data-ink="dark" aria-labelledby="hero-title">
-      <i class="ps-sun" aria-hidden="true"></i>
-      <div class="ps-fx" aria-hidden="true"><i class="ps-mote" style="left:12%;top:58%;animation-delay:0s"></i><i class="ps-mote" style="left:22%;top:30%;animation-delay:2.1s"></i><i class="ps-mote" style="left:31%;top:70%;animation-delay:4.4s"></i><i class="ps-mote" style="left:68%;top:36%;animation-delay:1.2s"></i><i class="ps-mote" style="left:78%;top:62%;animation-delay:3.3s"></i><i class="ps-mote" style="left:86%;top:28%;animation-delay:5.6s"></i><i class="ps-mote" style="left:45%;top:22%;animation-delay:6.8s"></i><i class="ps-mote" style="left:58%;top:74%;animation-delay:2.8s"></i></div>
-      <div class="ps-content">
-        <p class="hs-greet">Good morning. Meet Miso.</p>
-        <h1 id="hero-title" class="hs-name">A pet that heals <span class="nowrap">when you do</span></h1>
-        <p class="hs-sub">A companion app that shows you how close you are to your goal, one small daily check-in at a time. For Android, in beta.</p>
-        <p class="hero-actions"><a class="pill" href="#founding">Become a Founding Member</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
-        <div class="hs-pet dog-box" data-dog="hero"><img src="/renders/hero.webp" alt="Miso, a 3D Shiba Inu, happy and looking at you" width="640" height="640" fetchpriority="high"></div>
-        <p class="speech">Every good day helps me heal. Tap me!</p>
-        <nav class="vitals" aria-label="Explore">
-          <a class="vital" href="#rescue-or-raise"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span>Adopt</span></a>
-          <a class="vital" href="#try"><span class="vital-ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="10" r="1.8"/><circle cx="11" cy="6.5" r="1.8"/><circle cx="15.5" cy="7" r="1.8"/><circle cx="18" cy="11" r="1.8"/><path d="M8.5 17.5c0-2.5 1.8-4.5 3.8-4.5s3.7 2 3.7 4.5c0 1.6-1.4 2-3.7 2s-3.8-.4-3.8-2z"/></svg></span><span>Missions</span></a>
-          <a class="vital" href="#how"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity=".5"/></svg></span><span>How</span></a>
-          <a class="vital" href="#founding"><span class="vital-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><span>Founding</span></a>
-        </nav>
-        <div class="health" role="img" aria-label="Health 100 of 100">
-          <p class="row"><span>Health</span><span>100/100</span></p>
-          <span class="hbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <!-- 1. Attention: the sentence is the layout; the pet sits inside it. -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <h1 id="hero-title" class="display">
+        <span class="ln"><!--each:c.hero.line1--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line1--></span>
+        <span class="ln"><!--each:c.hero.line2--><span class="wm"><span class="w">{{.}}</span></span> <!--/each:c.hero.line2--></span>
+      </h1>
+      <div class="hero-body">
+        <div class="hero-copy">
+          <p class="lead">{{c.hero.sub}}</p>
+          <p class="actions">
+            <a class="btn" href="#founding" data-event="founding_click">{{c.hero.primary}}</a>
+            <a class="btn btn-ghost" href="#join">{{c.hero.secondary}}</a>
+          </p>
+          <p class="note">{{c.hero.note}}</p>
+          <p class="quiet"><a href="{{apkUrl}}">{{c.hero.apk}}</a></p>
+        </div>
+        <div class="stage" data-parallax>
+          <div class="stage-field" aria-hidden="true"></div>
+          <button class="dog-btn stage-dog" type="button" aria-label="Pet Miso: tap to hear from the dog" data-dog>
+            <img src="/renders/hero-hd.webp" alt="{{c.hero.dogAlt2}}" width="922" height="1242" fetchpriority="high" data-idle="/renders/hero-idle.webp">
+          </button>
+          <p class="bubble" role="status" aria-live="polite" data-bubble>{{c.hero.bubble}}</p>
+          <ul hidden data-bubble-lines><!--each:c.hero.bubbles--><li>{{.}}</li><!--/each:c.hero.bubbles--></ul>
+          <figure class="device stage-phone"><img src="/screens/light-home-rescue.webp" alt="{{c.hero.phoneAlt}}" width="780" height="1688"></figure>
         </div>
       </div>
     </section>
 
-    <section class="intro" id="how" aria-labelledby="intro-title">
-      <div class="card intro-card" data-rise>
-        <h2 id="intro-title">Your habit, with a face</h2>
-        <p class="lead">Pawse is a companion app for Android that shows you how close you are to your goal, one small daily check-in at a time. Pick something you want to do less, adopt a 3D dog, and check in each day. Good days help it heal. A slip is information, not a verdict.</p>
-        <p class="muted">Late-night food orders, impulse buys, doomscrolling, smoking or vaping, drinking, or a habit you name yourself. You set the goal: stop, cut down, or understand it first.</p>
-      </div>
-      <div class="intro-phones" aria-label="Three screens from the app">
-        <figure class="phone phone-back phone-left"><img src="/screens/light-pets.webp" alt="Home: three pets, one for each habit" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        <figure class="phone phone-front"><img src="/screens/light-home-rescue.webp" alt="Miso the Shiba's page: waiting for today's check-in, health 60 of 100" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        <figure class="phone phone-back phone-right"><img src="/screens/light-missions-rescue.webp" alt="Missions: 9 goal-met days to go to recover Miso" width="780" height="1688" loading="lazy" decoding="async"></figure>
-      </div>
-      <ul class="facts" aria-label="At a glance">
-        <li class="card"><b>21</b><span>goal-met days in a row to heal your dog</span></li>
-        <li class="card"><b>3</b><span>voices to choose: Gentle, Honest or Direct</span></li>
-        <li class="card"><b>0</b><span>ads, and your data is never sold</span></li>
-      </ul>
-    </section>
-
-    <!-- Features as the app's cards. -->
-    <section class="features" id="features" aria-labelledby="features-title">
-      <div class="section-head" data-rise>
-        <h2 id="features-title">How Pawse works</h2>
-        <p>Choose a goal, check in once a day, and your companion responds. These are the parts.</p>
-      </div>
-
-      <div class="bento">
-        <article class="card card-wide card-adopt" id="rescue-or-raise">
-          <div class="card-text">
-            <h3>Rescue it or raise it</h3>
-            <p>When you adopt, you choose where your dog starts. Both take 21 goal-met days in a row; the difference is what those days do.</p>
-          </div>
-          <div class="adopt">
-            <div class="adopt-col">
-              <img src="/renders/rescue.webp" alt="A rescued dog on day 0: dull coat, head turned away" width="640" height="640" loading="lazy" decoding="async">
-              <p class="adopt-name">Rescue <span class="tag">Harder</span></p>
-              <p class="small">Starts neglected, at 10 wellness. Heals six conditions.</p>
-              <ul class="chips" aria-label="Rescue conditions, in healing order">
-                <li><b>1</b> Itchy, patchy coat</li><li><b>3</b> Low energy</li><li><b>6</b> Startles at noises</li><li><b>10</b> Doesn't know how to play</li><li><b>15</b> Afraid of being left alone</li><li><b>21</b> Afraid of people</li>
-              </ul>
-            </div>
-            <div class="adopt-col">
-              <img src="/renders/raise.webp" alt="A healthy young dog, ears up and curious" width="640" height="640" loading="lazy" decoding="async">
-              <p class="adopt-name">Raise <span class="tag">Easier</span></p>
-              <p class="small">Starts healthy, at 70 wellness. Learns six skills.</p>
-              <ul class="chips" aria-label="Raise skills, in learning order">
-                <li><b>1</b> Learns its name</li><li><b>3</b> Settles into a routine</li><li><b>6</b> Plays fetch</li><li><b>10</b> Explores with confidence</li><li><b>15</b> Stays calm alone</li><li><b>21</b> Grows strong</li>
-              </ul>
-            </div>
-          </div>
-          <p class="small muted">The numbers are goal-met days in a row. These describe your dog, not you.</p>
-        </article>
-
-        <article class="card card-shot">
-          <div class="card-text">
-            <h3>Check in in seconds</h3>
-            <p>Goal met, a slip, or an urge you got through. One tap, and your pet responds.</p>
-          </div>
-          <figure class="phone phone-peek"><img src="/screens/light-checkin.webp" alt="The check-in menu: Goal met, I slipped, Had an urge, Your goal and plan" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-
-        <article class="card card-shot">
-          <div class="card-text">
-            <h3>Get through an urge</h3>
-            <p>Pause, name it, and pick a way through: breathe, move, add friction, reach out.</p>
-          </div>
-          <figure class="phone phone-peek"><img src="/screens/light-urge.webp" alt="Having an urge: one slow breath, how strong it is, and Help me through it" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-
-        <article class="card card-shot card-tint">
-          <div class="card-text">
-            <h3>Watch the days add up</h3>
-            <p>A calendar of your days, your runs and milestones. Forgot yesterday? Fill it in.</p>
-          </div>
-          <figure class="phone phone-peek"><img src="/screens/light-journey-month.webp" alt="Journey: October calendar with 18 of 31 days met" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-
-        <article class="card card-shot">
-          <div class="card-text">
-            <h3>See your patterns</h3>
-            <p>See how close you are to your goal: this week against last, and slips per week over two months.</p>
-          </div>
-          <figure class="phone phone-peek"><img src="/screens/light-insights-1400.webp" alt="Insights: slips per week over the last 8 weeks" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-
-        <article class="card card-shot">
-          <div class="card-text">
-            <h3>One pet per habit</h3>
-            <p>Each habit gets its own companion and records. Nothing on one changes another.</p>
-          </div>
-          <figure class="phone phone-peek"><img src="/screens/light-pets.webp" alt="Home with three pets: food orders, doomscrolling and vaping" width="780" height="1688" loading="lazy" decoding="async"></figure>
-        </article>
-
+    <section class="marquee" aria-label="{{c.marquee.label}}">
+      <div class="marquee-track">
+        <ul class="marquee-list"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
+        <ul class="marquee-list" aria-hidden="true"><!--each:c.marquee.items--><li>{{.}}</li><!--/each:c.marquee.items--></ul>
       </div>
     </section>
 
-    <!-- Goal and progress: the paid hook, with only what the app does today shown as available. -->
+    <!-- 2. Interest: the problem and the promise. -->
+    <section class="problem" id="problem" aria-labelledby="problem-title">
+      <div class="problem-head"><h2 id="problem-title" class="h2" data-reveal>{{c.problem.title}}</h2></div>
+      <div class="problem-lines">
+        <!--each:c.problem.lines--><p>{{.}}</p><!--/each:c.problem.lines-->
+      </div>
+    </section>
+
+    <!-- 3. Interest: how it works, one large screen per step, alternating sides. -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <h2 id="how-title" class="h2" data-reveal>{{c.how.title}}</h2>
+      <div class="how-grid">
+        <div class="steps">
+          <!--each:c.how.steps-->
+          <article class="step" data-step="{{.i}}">
+            <div class="step-text"><h3 class="h3">{{.title}}</h3><p>{{.body}}</p></div>
+            <figure class="device step-device"><img src="{{.img}}" alt="{{.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
+          </article>
+          <!--/each:c.how.steps-->
+        </div>
+        <div class="how-sticky" aria-hidden="true">
+          <figure class="device how-device">
+            <!--each:c.how.steps--><img src="{{.img}}" alt="" width="780" height="1688" loading="lazy" decoding="async" data-for="{{.i}}"><!--/each:c.how.steps-->
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Desire: the goal feature, the Plus hook. -->
     <section class="goal" id="goal" aria-labelledby="goal-title">
-      <div class="goal-text" data-rise>
-        <h2 id="goal-title">See how close you are to your goal</h2>
-        <p class="lead">Set a goal: stop, cut down to a number a week, or understand it first. Pawse holds it up against your daily check-ins, so you see where you stand, not only how many days you've counted.</p>
-        <h3>In the app today</h3>
-        <ul class="ticks">
-          <li>Where you are against your goal: on target, closing in, or still building</li>
-          <li>This week against last week</li>
-          <li>Your starting point against now, as a change in percent</li>
-          <li>Slips per week for the last 8 weeks</li>
-          <li>When there aren't enough check-ins yet, it says so. A day you didn't check in is unknown, never a failure.</li>
-        </ul>
-        <h3>Planned for Pawse Plus</h3>
-        <ul class="ticks">
-          <li>A projected finish date for your goal <em>Planned</em></li>
-          <li>Longer trends and a side-by-side weekly comparison <em>Planned</em></li>
-          <li>Deeper analysis of your riskier hours <em>Planned</em></li>
-        </ul>
-      </div>
-      <figure class="phone goal-phone" data-rise><img src="/screens/light-insights-1400.webp" alt="Insights in the app: a chart of slips per week over the last 8 weeks, and a note that says it won't guess until there is enough to see" width="780" height="1688" loading="lazy" decoding="async"></figure>
-    </section>
-
-    <!-- The live thing: the app's mission rules, as the Missions sheet. -->
-    <section class="try" id="try" aria-labelledby="try-title">
-      <div class="section-head" data-rise>
-        <h2 id="try-title">Try the 21 days</h2>
-        <p>This runs the app's own mission rules. Look after Miso for a few weeks and watch what each day does. Nothing is saved.</p>
-      </div>
-      <div class="sheet" data-ui>
-        <span class="sheet-handle" aria-hidden="true"><i></i></span>
-        <div class="demo-mount" data-demo>
-          <div class="demo-fallback">
-            <img src="/renders/rescue.webp" alt="Miso on day 0 of a rescue" width="640" height="640" loading="lazy" decoding="async">
-            <div>
-              <p><b>Rescue:</b> wellness starts at 10 and reaches 100 on the 21st goal-met day in a row. On day 8 it is at 45, with the coat, the energy and the noise fear healed.</p>
-              <p><b>Raise:</b> wellness starts at 70 and reaches 100 on day 21.</p>
-              <p>A slip before day 21 starts the count at 0 again; the best run is kept. Turn on JavaScript to try it.</p>
-            </div>
-          </div>
+      <div class="goal-inner">
+        <div class="goal-text" data-reveal>
+          <h2 id="goal-title" class="h2">{{c.goal.title}}</h2>
+          <p class="lead">{{c.goal.lead}}</p>
+          <h3 class="h4">{{c.goal.statesTitle}}</h3>
+          <ul class="states"><!--each:c.goal.states--><li><b>{{.name}}</b><span>{{.text}}</span></li><!--/each:c.goal.states--></ul>
+          <h3 class="h4">{{c.goal.todayTitle}}</h3>
+          <ul class="list"><!--each:c.goal.today--><li>{{.}}</li><!--/each:c.goal.today--></ul>
+          <p class="aside">{{c.goal.honest}}</p>
+          <h3 class="h4">{{c.goal.plusTitle}}</h3>
+          <ul class="list"><!--each:c.goal.plus--><li>{{.}}</li><!--/each:c.goal.plus--></ul>
+        </div>
+        <div class="goal-visuals">
+          <figure class="device goal-device" data-reveal><img src="/screens/light-insights-1400.webp" alt="{{c.goal.alt}}" width="780" height="1688" loading="lazy" decoding="async"></figure>
+          <figure class="concept" data-reveal>
+            <figcaption><b>{{c.goal.conceptTitle}}</b><span class="tag tag-ink">Planned</span></figcaption>
+            <svg viewBox="0 0 560 250" role="img" aria-label="Concept: bars of slips per week falling over eight weeks, then lighter projected bars reaching zero at a projected finish. Example numbers.">
+              <g class="bars">
+                <rect x="10" y="30" width="38" height="190"/><rect x="66" y="64" width="38" height="156"/><rect x="122" y="64" width="38" height="156"/><rect x="178" y="98" width="38" height="122"/>
+                <rect x="234" y="132" width="38" height="88"/><rect x="290" y="132" width="38" height="88"/><rect x="346" y="166" width="38" height="54"/><rect x="402" y="166" width="38" height="54"/>
+              </g>
+              <g class="proj"><rect x="458" y="190" width="38" height="30"/><rect x="514" y="212" width="38" height="8"/></g>
+            </svg>
+            <p class="axis"><span>{{c.goal.conceptNow}}</span><span>{{c.goal.conceptFinish}}</span></p>
+            <p class="small">{{c.goal.conceptLabel}}</p>
+          </figure>
         </div>
       </div>
     </section>
 
-    <!-- The journey after day 21, as three app cards. -->
-    <section class="stages" aria-labelledby="stages-title">
-      <div class="section-head" data-rise>
-        <h2 id="stages-title">21 days, then 21 more</h2>
-        <p>The journey doesn't end at recovery, and one bad day never wipes it out.</p>
+    <!-- 5. Desire: the 21-day journey, one scrubbable picture. -->
+    <section class="journey" id="journey" aria-labelledby="journey-title" data-journey>
+      <div class="journey-head" data-reveal>
+        <h2 id="journey-title" class="h2">{{c.journey.title}}</h2>
+        <p class="lead">{{c.journey.lead}}</p>
       </div>
-      <ol class="steps">
-        <li class="card step">
-          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>
-          <h3>Recovery</h3>
-          <p class="step-days">Days 1 to 21</p>
-          <p>Goal-met days in a row. A slip before day 21 starts the count over, but your best run is kept and every day stays in your record.</p>
-        </li>
-        <li class="card step">
-          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-2.7 1.6-4.7 3.2-6.4.3 1.7 1.2 2.9 2.4 3.4C11 8.6 12.3 5.6 14.9 3.5c.2 2.8 1.3 4.6 2.5 6.2 1.1 1.4 2.1 3 2.1 5.1 0 3.6-2.6 6.2-6.5 6.2z"/></svg></span>
-          <h3>Consistency</h3>
-          <p class="step-days">Days 22 to 42</p>
-          <p>21 more goal-met days make it last, with rewards at one, two and three weeks. From here a slip gives your dog an issue to clear, never a restart.</p>
-        </li>
-        <li class="card step">
-          <span class="step-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
-          <h3>Thriving</h3>
-          <p class="step-days">After day 42</p>
-          <p>A reward every 30 well days. An issue from a slip clears with 3, 7 or 14 goal-met days in a row, depending on how often slips came.</p>
-        </li>
+      <div class="journey-stage">
+        <div class="journey-dog">
+          <img class="jd-sad" src="/renders/rescue-hd.webp" alt="{{c.journey.rescueAlt}}" width="922" height="1257" loading="lazy" decoding="async">
+          <img class="jd-happy" src="/renders/hero-hd.webp" alt="{{c.journey.happyAlt}}" width="922" height="1242" loading="lazy" decoding="async" data-happy>
+        </div>
+        <div class="journey-read">
+          <p class="bigday"><span>{{c.journey.day}}</span> <b data-day>0</b></p>
+          <p class="wl">{{c.journey.wellness}} <b data-wellness>10</b> {{c.journey.of}}</p>
+          <div class="wbar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <label class="scrub" for="day">{{c.journey.slider}}<input id="day" type="range" min="0" max="21" step="1" value="0" data-scrub></label>
+          <h3 class="h4">{{c.journey.healed}}</h3>
+          <p class="aside" data-none>{{c.journey.none}}</p>
+          <ul class="healed"><!--each:c.journey.conditions--><li data-at="{{.day}}">{{.text}}</li><!--/each:c.journey.conditions--></ul>
+          <p class="small">{{c.journey.note}}</p>
+        </div>
+      </div>
+      <ol class="phases">
+        <!--each:c.journey.phases--><li data-reveal><h3 class="h3">{{.title}}</h3><p class="phase-days">{{.days}}</p><p>{{.body}}</p></li><!--/each:c.journey.phases-->
       </ol>
     </section>
 
-    <!-- Free versus Plus. Nothing in the Plus column is claimed as existing. -->
-    <section class="plans-section" id="plans" aria-labelledby="plans-title">
-      <div class="section-head" data-rise>
-        <h2 id="plans-title">Free and Pawse Plus</h2>
-        <p>Pawse starts free. Plus is planned for the Google Play launch, and nothing in the Plus column exists yet.</p>
+    <!-- 6. Clarity: free versus Plus. -->
+    <section class="plans" id="plans" aria-labelledby="plans-title">
+      <div class="plans-head" data-reveal>
+        <h2 id="plans-title" class="h2">{{c.plans.title}}</h2>
+        <p class="lead">{{c.plans.lead}}</p>
       </div>
+      <p class="free-forever" data-reveal>{{c.plans.freeForever}}</p>
       <div class="compare">
-        <article class="card compare-col">
-          <h3>Free</h3>
-          <ul class="ticks">
-            <li>One habit and one pet</li>
-            <li>Daily check-ins and slip logging</li>
-            <li>The calendar</li>
-            <li>Urge support and the calm after-slip screen. These stay free, always.</li>
-            <li>A simple goal and streak</li>
-            <li>A limited number of AI-written notes</li>
-          </ul>
+        <article class="col col-free" data-reveal>
+          <h3 class="h3">{{c.plans.freeTitle}}</h3>
+          <ul class="list"><!--each:c.plans.free--><li>{{.}}</li><!--/each:c.plans.free--></ul>
         </article>
-        <article class="card compare-col compare-plus">
-          <h3>Pawse Plus <span class="tag">Planned</span></h3>
-          <ul class="ticks">
-            <li>Goal progress analytics: how close you are, projected finish date, trends, riskier hours and a weekly comparison <em>Planned</em></li>
-            <li>Several habits and pets <em>Planned</em></li>
-            <li>Extra breeds and coats <em>Planned</em></li>
-            <li>Unlimited AI-written notes <em>Planned</em></li>
-            <li>Deeper reports <em>Planned</em></li>
-          </ul>
+        <article class="col col-plus" data-reveal>
+          <h3 class="h3">{{c.plans.plusTitle}}</h3>
+          <ul class="list"><!--each:c.plans.plus--><li>{{.}}</li><!--/each:c.plans.plus--></ul>
         </article>
       </div>
-      <p class="small muted plans-note">Today's beta has no paywall, and you can already run several habits and pets. The Free limits and Plus start with the Google Play launch.</p>
+      <p class="small plans-note">{{c.plans.note}}</p>
     </section>
 
-    <!-- The one offer. -->
-    <section class="founding" id="founding" aria-labelledby="founding-title">
-      <div class="section-head" data-rise>
-        <h2 id="founding-title">Become a Founding Member</h2>
-        <p>One offer, once, for the first {{spotsTotal}} people. It buys access to future Pawse Plus features, not features that exist today.</p>
+    <!-- 7. Action: the one offer. -->
+    <section class="offer" id="founding" aria-labelledby="founding-title">
+      <div class="offer-inner">
+        <div class="offer-main" data-reveal>
+          <h2 id="founding-title" class="h2">{{c.offer.title}}</h2>
+          <p class="lead">{{c.offer.lead}}</p>
+          <p class="price"><span>{{c.offer.price}}</span> <small>{{c.offer.priceNote}}</small></p>
+          <p class="spots"><!--if:spotsOpen--><b>{{spotsLeft}}</b> {{c.offer.spotsOpen}}<!--else-->{{c.offer.spotsClosed}}<!--/if:spotsOpen--></p>
+          <p class="small">{{c.offer.spotsNote}}</p>
+        </div>
+        <div class="offer-side" data-reveal>
+          <ul class="list list-ink"><!--each:c.offer.gets--><li>{{.}}</li><!--/each:c.offer.gets--></ul>
+          <!--if:spotsOpen--><p class="actions"><a class="btn btn-ink" href="#pay" data-event="founding_click">{{c.offer.button}}</a></p><!--/if:spotsOpen-->
+          <p class="refund">{{c.offer.refund}}</p>
+          <img class="offer-dog" src="/renders/raise-hd.webp" alt="{{c.offer.dogAlt}}" width="922" height="1251" loading="lazy" decoding="async">
+        </div>
       </div>
-      <div class="offer">
-        <article class="card offer-card">
-          <h3>Pawse Founding Member</h3>
-          <p class="price">Rs {{priceInr}} <small>one time · about ${{priceUsd}}</small></p>
-          <p class="spots"><!--if:spotsOpen--><b>{{spotsLeft}}</b> of {{spotsTotal}} spots left<!--else-->All {{spotsTotal}} spots are taken<!--/if:spotsOpen--></p>
-          <p class="small muted">Counted by hand, and updated after each confirmed payment.</p>
-          <ul class="ticks">
-            <li>Lifetime access to every future Pawse Plus feature (see what's planned above)</li>
-            <li>The current Android beta</li>
-            <li>Your name in the app credits, if you want it</li>
-            <li>A say in what gets built next</li>
-          </ul>
-          <!--if:spotsOpen--><a class="pill" href="#pay">Pay Rs {{priceInr}} and join</a><!--/if:spotsOpen-->
-          <p class="refund">Full refund on request {{refundWindow}}.</p>
-        </article>
 
+      <div class="pay" id="pay">
         <!--if:spotsOpen-->
-        <article class="card pay-card" id="pay">
-          <h3>How to pay</h3>
-          <p class="step-line"><b>1.</b> In India, pay Rs {{priceInr}} by UPI.</p>
+        <div class="pay-panel">
+          <h3 class="h3">{{c.offer.payTitle}}</h3>
+          <p class="stepline">1. {{c.offer.step1}}</p>
           <div class="upi">
-            <!--if:qrImage--><img class="upi-qr" src="{{qrImage}}" alt="UPI QR code for Pawse" width="176" height="176" loading="lazy"><!--else--><div class="upi-qr upi-qr-todo" role="img" aria-label="The UPI QR code will appear here">QR code goes here<br><small>TODO: set qrImage in site.config.ts</small></div><!--/if:qrImage-->
+            <!--if:qrImage--><img class="upi-qr" src="{{qrImage}}" alt="{{c.offer.qrAlt}}" width="176" height="176" loading="lazy"><!--else--><div class="upi-qr upi-qr-todo" role="img" aria-label="{{c.offer.qrTodo}}">{{c.offer.qrTodo}}<br><small>{{c.offer.qrTodoHint}}</small></div><!--/if:qrImage-->
             <div class="upi-info">
-              <p class="small muted">UPI ID</p>
+              <p class="small">{{c.offer.upiLabel}}</p>
               <p class="upi-id"><code id="upi-id">{{upiId}}</code></p>
-              <button class="pill pill-soft pill-small" type="button" data-copy="#upi-id">Copy UPI ID</button>
-              <!--if:upiReady--><a class="pill pill-small" href="{{upiLink}}">Pay in your UPI app</a><!--/if:upiReady-->
+              <button class="btn btn-small btn-ghost" type="button" data-copy="#upi-id" aria-live="polite">{{c.offer.copy}}</button>
+              <!--if:upiReady--><a class="btn btn-small btn-ink" href="{{upiLink}}">{{c.offer.upiApp}}</a><!--/if:upiReady-->
             </div>
           </div>
-          <!--if:intlLink--><p class="step-line"><b>Outside India?</b> About ${{priceUsd}}, through an external payment page.</p><a class="pill pill-soft" href="{{internationalPaymentLink}}" rel="noopener">Pay from outside India</a><!--/if:intlLink-->
-          <p class="step-line"><b>2.</b> Then tell me you've paid, so I can match it.</p>
+          <!--if:intlLink--><p class="stepline">{{c.offer.intl}}</p><a class="btn btn-ghost" href="{{internationalPaymentLink}}" rel="noopener">{{c.offer.intlButton}}</a><!--/if:intlLink-->
+        </div>
+        <div class="pay-panel">
+          <p class="stepline">2. {{c.offer.step2}}</p>
           <!--if:formReady-->
-          <form class="payform" data-form="payment" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
+          <form class="form" aria-label="Payment confirmation" data-form="payment" data-event-submit="payment_submit" action="{{formEndpoint}}" method="post" enctype="multipart/form-data">
             <input type="hidden" name="form" value="founding-member">
             <input type="hidden" name="amount_inr" value="{{priceInr}}">
             <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
-            <label class="field">Your name <input name="name" required autocomplete="name"></label>
-            <label class="field">The email you use in Pawse <input name="email" type="email" required autocomplete="email" inputmode="email"></label>
-            <label class="field">Payment reference <small>(the UPI transaction ID)</small> <input name="payment_reference" required autocomplete="off"></label>
-            <label class="field">Or a screenshot of the payment <small>(optional)</small> <input name="screenshot" type="file" accept="image/*"></label>
-            <label class="check"><input type="checkbox" name="credits_ok" value="yes"> Put my name in the app credits</label>
-            <button class="pill" type="submit">I've paid, confirm my membership</button>
-            <p class="form-error" role="alert" hidden>That didn't send. Please try again, or check your connection.</p>
-            <p class="small muted">I use your email only to confirm your payment, activate Plus on your account and write to you about your membership. It is never sold or shared, and I'll delete it on request.</p>
+            <label class="field">{{c.offer.name_}} <input name="name" required autocomplete="name"></label>
+            <label class="field">{{c.offer.email}} <input name="email" type="email" required autocomplete="email" inputmode="email"></label>
+            <label class="field">{{c.offer.ref}} <small>({{c.offer.refHint}})</small> <input name="payment_reference" required autocomplete="off"></label>
+            <label class="field">{{c.offer.shot}} <small>({{c.offer.optional}})</small> <input name="screenshot" type="file" accept="image/*"></label>
+            <label class="check"><input type="checkbox" name="credits_ok" value="yes"> {{c.offer.credits}}</label>
+            <button class="btn btn-ink" type="submit" aria-describedby="pay-err">{{c.offer.submit}}</button>
+            <p class="form-error" id="pay-err" role="alert" hidden>{{c.offer.error}}</p>
+            <p class="small">{{c.offer.privacy}}</p>
           </form>
-          <div class="form-done" role="status" tabindex="-1" hidden><p><b>Thank you.</b> I will confirm your payment and activate Plus on your account within 24 hours.</p></div>
+          <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.offer.done}}</p></div>
           <!--else-->
-          <p class="toastline"><span class="dot" aria-hidden="true"></span>The payment form isn't connected yet. Set VITE_FORM_ENDPOINT (see apps/site/README.md).</p>
+          <p class="notice">{{c.offer.notConnected}}</p>
           <!--/if:formReady-->
-        </article>
+        </div>
         <!--else-->
-        <article class="card pay-card"><h3>All spots are taken</h3><p>Thank you. Leave your email below and I'll tell you when Pawse is on Google Play.</p></article>
+        <div class="pay-panel"><h3 class="h3">{{c.offer.soldOutTitle}}</h3><p>{{c.offer.soldOut}}</p></div>
         <!--/if:spotsOpen-->
       </div>
     </section>
 
-    <!-- Privacy and honesty, written to match what the app and the server really do. -->
-    <section class="privacy" id="privacy" aria-labelledby="privacy-title">
-      <div class="section-head" data-rise>
-        <h2 id="privacy-title">Privacy and honesty</h2>
-        <p>What happens to your records, said plainly.</p>
+    <!-- 8. Trust: privacy and honesty. -->
+    <section class="trust" id="trust" aria-labelledby="trust-title">
+      <div class="trust-head" data-reveal>
+        <h2 id="trust-title" class="h2">{{c.trust.title}}</h2>
+        <p class="lead">{{c.trust.lead}}</p>
       </div>
-      <div class="privacy-grid">
-        <article class="card">
-          <h3>Your records</h3>
-          <ul class="ticks">
-            <li>No ads, and we never sell your data</li>
-            <li>When you're signed in, your pets, slips, goal-met days, urges and notes are saved to your own account and are private to it</li>
-            <li>Photos never leave your phone</li>
-            <li>An optional PIN encrypts what's stored on the phone</li>
-            <li>Export or delete everything, any time</li>
-            <li>No calorie, weight or food-restriction tracking</li>
-          </ul>
-        </article>
-        <article class="card">
-          <h3>Where AI comes in</h3>
-          <p>When you log a slip while signed in, Pawse sends the pet's name, the kind of habit, the amount, the answers you picked and any short note you typed to an AI model, through our server, so it can write a short note back. For the weekly summary it sends last week's totals.</p>
-          <p>The AI service is asked not to keep that text, but we can't check what it does on its side. We save only the reply, so the same slip isn't sent twice. We do not sell data.</p>
-          <p>To learn whether Pawse helps people keep going, I may look at simple counts from the records, such as how many days people check in. No advertising or analytics trackers run in the app or on this page.</p>
-        </article>
-        <article class="card honest">
-          <h3>What Pawse is, and isn't</h3>
-          <div>
-            <p>A self-awareness and habit tool. Not medical treatment, therapy or a cure, and your dog's conditions are illustrative. 21 days is Pawse's mission length, not a medical recovery time.</p>
-            <p>If a habit is harming you, please talk to a doctor or someone you trust. If you are in danger or in crisis, contact your local emergency number or a crisis line in your country.</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- Questions, as the app's list rows. -->
-    <section class="faq-section" id="questions" aria-labelledby="faq-title">
-      <div class="section-head" data-rise>
-        <h2 id="faq-title">Questions</h2>
-      </div>
-      <div class="card faq-list">
-        <details open><summary>What is Pawse?</summary><p>An Android app for changing a habit you choose, with a 3D companion at its centre. You check in each day and Pawse shows how close you are to your goal. Goal-met days help your companion heal or learn, and slips have a cost it shows. It also has urge support, a calendar, insights and a weekly review.</p></details>
-        <details><summary>How does Rescue differ from Raise?</summary><p>Both are the same 21-day mission. A rescued dog starts neglected, at 10 wellness, and heals six conditions. A raised dog starts healthy, at 70, and learns six skills. You choose once, when you adopt.</p></details>
-        <details><summary>What happens if I slip?</summary><p>You log it in a tap, and the app tells you what still stands and what puts it right. A slip is information, not a verdict. In the first 21 days it starts the count over, keeping your best run. After that it gives your dog an issue that clears with 3, 7 or 14 goal-met days in a row.</p></details>
-        <details><summary>Does it work for different habits?</summary><p>Yes: food orders, shopping, scrolling, smoking, vaping, drinking, or anything you name. Each habit gets its own companion and its own records.</p></details>
-        <details><summary>Is Pawse medical treatment?</summary><p>No. It's a self-awareness and habit tool, not treatment, therapy or medical advice. If a habit is harming you, please talk to a doctor or a professional.</p></details>
-        <details><summary>Is my data public?</summary><p>No. Your records are saved privately to your account, and there are no public profiles or ads. We never sell your data. Slip details are sent to an AI model to write a short note; see "Privacy and honesty" above for exactly what.</p></details>
-        <details><summary>What does a Founding Member get?</summary><p>Lifetime access to every future Pawse Plus feature, the current Android beta, your name in the app credits if you want it, and a say in what gets built next. It costs Rs {{priceInr}} once, and it's limited to the first {{spotsTotal}} people. It buys future Plus access, not features that exist today.</p></details>
-        <details><summary>Can I get a refund?</summary><p>Yes. Ask for a full refund {{refundWindow}} and you'll get one.</p></details>
-        <details><summary>Will urge support stay free?</summary><p>Yes. Urge support and the calm after-slip screen stay free, always.</p></details>
-        <details><summary>When is Pawse on Google Play?</summary><p>A Play Store listing is planned, with no date yet. For now Pawse is an Android APK, listed on the <a href="https://github.com/jithujsam/pawse-releases">releases page</a>. You can leave your email below to hear when it's live.</p></details>
-        <details><summary>Is there a web app?</summary><p>No. Pawse is Android only for now.</p></details>
-      </div>
-    </section>
-
-    <!-- Close: the same room at golden hour (light only). -->
-    <section class="pscene close" data-mood="clear" data-ink="dark" aria-labelledby="close-title">
-      <div class="ps-content">
-        <p class="hs-greet">Miso is still here.</p>
-        <h2 id="close-title" class="hs-name">Someone to come back to</h2>
-        <img class="close-dog" src="/renders/hero.webp" alt="Miso, waiting for you" width="640" height="640" loading="lazy" decoding="async">
-        <p class="close-line">Pick a goal, adopt a dog, and start day one.</p>
-        <p class="hero-actions"><a class="pill" href="#founding">Become a Founding Member</a> <a class="pill pill-soft" href="#try">Try the 21 days</a></p>
-        <div class="waitlist" id="waitlist">
-          <h3>Coming to Google Play</h3>
-          <p class="small">Not ready to pay? Leave your email and I'll tell you when it's live. Nothing else.</p>
-          <!--if:waitlistReady-->
-          <form class="waitform" data-form="waitlist" action="{{waitlistEndpoint}}" method="post">
-            <input type="hidden" name="form" value="play-waitlist">
-            <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
-            <label class="sr-only" for="wait-email">Email</label>
-            <input id="wait-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
-            <button class="pill pill-small" type="submit">Notify me</button>
-            <p class="form-error" role="alert" hidden>That didn't send. Please try again.</p>
-          </form>
-          <div class="form-done" role="status" tabindex="-1" hidden><p><b>Thank you.</b> I'll email you once, when Pawse is on Google Play.</p></div>
-          <!--else-->
-          <p class="small muted">The waitlist isn't connected yet. Set VITE_WAITLIST_ENDPOINT or VITE_FORM_ENDPOINT.</p>
-          <!--/if:waitlistReady-->
+      <div class="trust-body">
+        <h3 class="statement" data-reveal>{{c.trust.statement}}</h3>
+        <div class="tiles">
+          <div data-reveal><h3 class="h3">{{c.trust.recordsTitle}}</h3><ul class="list"><!--each:c.trust.records--><li>{{.}}</li><!--/each:c.trust.records--></ul></div>
+          <div data-reveal><h3 class="h3">{{c.trust.aiTitle}}</h3><p>{{c.trust.ai1}}</p><p>{{c.trust.ai2}}</p><p>{{c.trust.ai3}}</p></div>
+          <div data-reveal><h3 class="h3">{{c.trust.notTitle}}</h3><p>{{c.trust.not1}}</p><p>{{c.trust.not2}}</p></div>
         </div>
+      </div>
+    </section>
+
+    <!-- 9. Objections. -->
+    <section class="faq" id="questions" aria-labelledby="faq-title">
+      <div class="faq-head"><h2 id="faq-title" class="h2" data-reveal>{{c.faq.title}}</h2></div>
+      <div class="faq-list">
+        <!--each:c.faq.items--><details><summary>{{.q}}</summary><p>{{.a}}</p></details><!--/each:c.faq.items-->
+      </div>
+    </section>
+
+    <!-- 10. Action again: the offer or the waitlist. -->
+    <section class="join" id="join" aria-labelledby="join-title">
+      <div class="join-inner">
+        <div data-reveal>
+          <h2 id="join-title" class="h2">{{c.cta.title}}</h2>
+          <p class="lead">{{c.cta.lead}}</p>
+          <p class="actions"><a class="btn btn-ink" href="#founding" data-event="founding_click">{{c.cta.primary}}</a></p>
+          <div class="wait">
+            <h3 class="h4">{{c.cta.waitTitle}}</h3>
+            <!--if:waitlistReady-->
+            <form class="waitform" aria-label="Google Play waitlist" data-form="waitlist" data-event-submit="waitlist_submit" action="{{waitlistEndpoint}}" method="post">
+              <input type="hidden" name="form" value="play-waitlist">
+              <p class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
+              <label class="sr-only" for="wait-email">{{c.cta.waitEmail}}</label>
+              <input id="wait-email" name="email" type="email" required placeholder="you@example.com" autocomplete="email" inputmode="email">
+              <button class="btn btn-ink" type="submit" aria-describedby="wait-err">{{c.cta.waitSubmit}}</button>
+              <p class="form-error" id="wait-err" role="alert" hidden>{{c.cta.waitError}}</p>
+            </form>
+            <div class="form-done" role="status" tabindex="-1" hidden><p>{{c.cta.waitDone}}</p></div>
+            <p class="small">{{c.cta.waitConsent}}</p>
+            <!--else-->
+            <p class="notice">{{c.cta.waitNotConnected}}</p>
+            <!--/if:waitlistReady-->
+          </div>
+          <p class="quiet"><a href="{{apkUrl}}">{{c.cta.apk}}</a></p>
+        </div>
+        <img class="join-dog" src="/renders/hero-hd.webp" alt="{{c.cta.dogAlt}}" width="922" height="1242" loading="lazy" decoding="async">
       </div>
     </section>
   </main>
 
   <footer class="foot">
-    <a class="brand" href="#top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="24" height="20"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
-    <p class="foot-links"><a href="#how">How it works</a> <a href="#try">Try it</a> <a href="#plans">Free vs Plus</a> <a href="#founding">Founding Member</a> <a href="#questions">FAQ</a> <a href="#privacy">Privacy</a> <a href="https://github.com/jithujsam/pawse-releases">Releases</a></p>
-    <p class="small">© 2026 Pawse · 3D dog by <a href="https://quaternius.com/packs/ultimateanimatedanimals.html">Quaternius</a>, CC0</p>
+    <a class="wordmark" href="#top" aria-label="Pawse, back to top"><svg class="brand-paw" viewBox="200 265 850 710" aria-hidden="true" width="26" height="22"><g fill="currentColor"><ellipse cx="314" cy="586" rx="107" ry="118" transform="rotate(-22 314 586)"/><ellipse cx="493" cy="407" rx="108" ry="135" transform="rotate(-8 493 407)"/><ellipse cx="754" cy="407" rx="109" ry="135" transform="rotate(8 754 407)"/><ellipse cx="933" cy="586" rx="108" ry="120" transform="rotate(22 933 586)"/><path d="M625 552 C700 552 760 620 790 670 C830 730 880 745 905 800 C930 860 915 960 820 966 C740 970 690 918 625 918 C560 918 510 970 430 966 C335 960 320 860 345 800 C370 745 420 730 460 670 C490 620 550 552 625 552 Z"/></g></svg><span>pawse</span></a>
+    <p class="small">{{c.footer.credit}}</p>
+    <p class="small foot-links"><a href="#trust">{{c.footer.privacy}}</a> <a href="{{apkUrl}}">{{c.footer.releases}}</a><!--if:contactReady--> <a href="mailto:{{contactEmail}}">{{c.footer.contact}}</a><!--/if:contactReady--></p>
   </footer>
 
   <script type="module" src="/src/main.ts"></script>

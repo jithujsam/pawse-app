@@ -1,15 +1,8 @@
-import { wire } from "./interactions";
+import "@fontsource/instrument-serif/latin-400.css";
 import "@fontsource-variable/geist";
-import "@fontsource-variable/newsreader/opsz.css";
 import "./styles.css";
+import { wire } from "./interactions";
 
-/**
- * The page reads in full from its HTML. This entry only wires the small behaviours; the 3D dogs and the live demo
- * (React, three.js and the app's mission engine) load right after, so the first paint never waits for them.
- */
+/** The page reads in full from its HTML. This only adds the small behaviours: reveals, parallax, the journey scrubber and the forms. */
 document.documentElement.classList.add("js");
-const poster = import.meta.env.DEV ? new URLSearchParams(location.search).get("poster") : null;
-if (!poster) wire();
-const load = () => void import("./islands").then((m) => m.mountIslands(poster));
-if (poster || !("requestIdleCallback" in window)) load();
-else requestIdleCallback(load, { timeout: 1200 });
+wire();
