@@ -28,6 +28,21 @@ export const config = {
   /** TODO: an external payment link (PayPal.me, Ko-fi, Stripe Payment Link, ...). Empty hides the button. */
   internationalPaymentLink: "",
 
+  // ---- Links ---------------------------------------------------------------------------------------------------
+  /** The beta APK (kept visible, lower priority than the offer and the waitlist). */
+  apkUrl: "https://github.com/jithujsam/pawse-releases/releases/latest",
+  /** TODO: a contact email for the footer. While it starts with "TODO" or is empty, the contact link is hidden. */
+  contactEmail: "TODO-contact@example.com",
+
+  // ---- Analytics hooks -----------------------------------------------------------------------------------------
+  /**
+   * Off by default. When true, clicking Become a Founding Member, submitting the payment form and submitting the
+   * waitlist each fire a "pawse:event" CustomEvent on window (detail: { name }) and push { event: name } to
+   * window.dataLayer if one exists. Nothing is sent anywhere until you add a listener or an analytics script.
+   * Note: turning on analytics changes the privacy section's "no trackers" sentence; update it in src/copy.ts.
+   */
+  analyticsHooks: false,
+
   // ---- Forms ------------------------------------------------------------------------------------------------
   /**
    * Where the payment form and the waitlist form post to. Prefer the environment variables so the address is not in git:
