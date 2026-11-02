@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { actions } from "../store";
-import { AUTH_REDIRECT, configured, supabase, useSession } from "../supabase";
+import { AUTH_REDIRECT, configured, endRecovery, supabase, useSession } from "../supabase";
 import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
 import { NET_MS, withTimeout } from "../net";
 import { Button, Select } from "../ui/Controls";
@@ -38,7 +38,9 @@ function SyncLine() {
 async function endSession(uid: string) {
   stopSync();
   await forgetSync(uid);
-  await withTimeout(supabase!.auth.signOut(), NET_MS).catch(() => undefined);
+  // If the network sign-out fails (offline, or the account is already gone), still drop this phone's saved sign-in,
+  // so the next launch can't be signed in to an account whose copy was just wiped.
+  await withTimeout(supabase!.auth.signOut(), NET_MS).catch(() => supabase!.auth.signOut({ scope: "local" }).catch(() => undefined));
   await actions.resetAll();
 }
 
@@ -141,8 +143,11 @@ export function Account({ compact = false }: { compact?: boolean }) {
     else { setSent(email.trim()); setMsg(null); }
   }
   async function reset() {
-    if (!email.trim()) { setMsg(t("account.form.email_first")); return; }
-    const { error } = await supabase!.auth.resetPasswordForEmail(email.trim(), { redirectTo: AUTH_REDIRECT });
+    if (busy) return;
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setMsg(t("account.form.email_first")); return; }
+    setBusy(true);
+    const { error } = await supabase!.auth.resetPasswordForEmail(email.trim(), { redirectTo: AUTH_REDIRECT }).catch((e: unknown) => ({ error: e instanceof Error ? e : new Error("") }));
+    setBusy(false);
     setMsg(error ? friendlyAuthError(error.message) : t("account.form.reset_sent"));
   }
 
@@ -196,8 +201,11 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
             setBusy(false);
             if (error) { setMsg(friendlyAuthError(error.message)); return; }
             toast(t("account.new_password.updated"), { kind: "good" });
+            endRecovery();
             onDone();
           }}>{busy ? t("account.new_password.saving") : t("account.new_password.save")}</Button>
+          {/* Leaving without choosing a password signs out, so a reset link can't leave a signed-in phone behind. */}
+          <Button variant="text" disabled={busy} onClick={() => { endRecovery(); void supabase!.auth.signOut().catch(() => supabase!.auth.signOut({ scope: "local" })).catch(() => undefined); }}>{t("account.form.cancel_reset")}</Button>
         </div>
       </div>
     </main>

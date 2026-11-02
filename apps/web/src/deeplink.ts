@@ -1,6 +1,8 @@
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { supabase } from "./supabase";
+import { friendlyAuthError } from "./authErrors";
+import { recoveryActive, supabase } from "./supabase";
+import { t } from "./text";
 import { toast } from "./ui/Toast";
 import { OPEN_QUICK } from "./widget";
 
@@ -11,11 +13,13 @@ async function handle(link: string) {
   const u = new URL(link.replace("app.detoxcompanion://", "https://app/"));
   const params = new URLSearchParams(u.search || u.hash.slice(1));
   const err = params.get("error_description") ?? params.get("error");
-  if (err) { toast(/expired|invalid/i.test(err) ? "That link has expired. Sign in, or ask for a new one." : err, { kind: "bad", ms: 5000 }); return; }
+  // Never show the server's own words: known cases get advice, everything else the one safe fallback.
+  if (err) { toast(friendlyAuthError(err), { kind: "bad", ms: 5000 }); return; }
   const code = params.get("code");
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    toast(error ? "Couldn't finish signing in from that link. Try signing in with your password." : "Email confirmed. You're signed in.", { kind: error ? "bad" : "good", ms: 4000 });
+    // A reset link signs the person in and opens the new-password screen, so it doesn't say "email confirmed".
+    toast(error ? t("account.form.link_failed") : recoveryActive() ? t("account.form.link_reset") : t("account.form.link_confirmed"), { kind: error ? "bad" : "good", ms: 4000 });
     return;
   }
   // Older implicit-style links carry the tokens directly.

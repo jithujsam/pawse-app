@@ -8,6 +8,7 @@ export const AUTH_FALLBACK = t("account.errors.fallback");
 
 export function friendlyAuthError(raw: unknown): string {
   const msg = typeof raw === "string" ? raw : raw instanceof Error ? raw.message : "";
+  if (/sign in again/i.test(msg)) return t("account.errors.reauth");
   if (/invalid login|invalid credentials/i.test(msg)) return t("account.errors.invalid_login");
   if (/already registered|already been registered/i.test(msg)) return t("account.errors.already");
   if (/email rate limit/i.test(msg)) return t("account.errors.email_rate");
@@ -16,7 +17,7 @@ export function friendlyAuthError(raw: unknown): string {
   if (/network|fetch|failed to|timeout|timed out/i.test(msg)) return t("account.errors.network");
   if (/weak|pwned|leaked|compromised/i.test(msg)) return t("account.errors.leaked");
   if (/same password|different from the old/i.test(msg)) return t("account.errors.same_password");
-  if (/expired|invalid.*(token|link)|otp/i.test(msg)) return t("account.errors.expired");
+  if (/expired|invalid.*(token|link)|\botp\b/i.test(msg)) return t("account.errors.expired");
   if (/password.*(short|least|characters)/i.test(msg)) return t("account.errors.short");
   return AUTH_FALLBACK;
 }
