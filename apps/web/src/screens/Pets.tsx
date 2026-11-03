@@ -15,6 +15,7 @@ import { BREEDS, NAMES, PERSONALITIES, PICKABLE, SPECIES, breedFor, coatsFor } f
 import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT } from "../questions";
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
+import { allows, useGate } from "../access";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Personality, Species } from "../types";
 import { Button, Icon, plainOpts, Select, SelectOther, SwipePicker } from "../ui/Controls";
@@ -32,6 +33,9 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   const data = useData();
   const [adding, setAdding] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
+  // Opening another track is the plan's to allow (one track in the trial). Tracks that exist always show.
+  const gate = useGate();
+  const canAdd = data.habits.length < 50 && allows(gate, "new_track", data.habits.length);
   // Grid or list, remembered on this phone only (a display choice, never synced).
   const [layout, setLayout] = useState<"grid" | "list">(() => { try { return localStorage.getItem(LAYOUT_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; } });
   const pickLayout = (v: "grid" | "list") => { haptic.select(); setLayout(v); try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private mode */ } };
@@ -94,11 +98,12 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
               </div>
             );
           })}
-          {data.habits.length < 50 && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
+          {canAdd && <motion.button className="pet-card pet-card-add" onClick={() => { haptic.tap(); setAdding(true); }} whileTap={{ scale: 0.97 }} transition={spring.snappy}>
             <span className="pet-card-plus" aria-hidden>{Icon.plus}</span>
             <b className="pet-card-name">{t("pets.grid.add")}</b>
             <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
           </motion.button>}
+          {!canAdd && data.habits.length < 50 && gate.kind === "open" && <p className="pet-card-note muted small" role="note">{gate.access.state === "trial" ? t("membership.limits.track_trial") : t("membership.limits.track_none")}</p>}
         </section>
       )}
 
@@ -245,7 +250,7 @@ function AddTrack({ open, onClose, onAdded }: { open: boolean; onClose: () => vo
   const save = () => {
     const petName = pet.name.trim() || NAMES[pet.species][0];
     const id = actions.addTrack({ what, cls: inferClass(what), measure: measureForLabel(amountLabel), amountLabel, species: pet.species, name: petName, coat: pet.coat || undefined, breed: pet.breed || undefined, personality: pet.personality, adoption: pet.adoption });
-    if (!id) { haptic.warn(); return; } // the 50-track limit; the add card is hidden before that
+    if (!id) { haptic.warn(); return; } // the plan's track limit (one in the trial, 50 at most); the add card is hidden before that
     haptic.success();
     toast(t("pets.add.added", { name: petName, what: what.trim() }), { kind: "good" });
     reset();

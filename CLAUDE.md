@@ -7,7 +7,8 @@ Docs are on demand: RELEASING.md only for releases, COPY_GLOSSARY.md only for co
 - The damage engine lives only in packages/engine and stays pure TypeScript with no I/O.
 - Every change to engine math needs a test that pins the pacing table in PRD section 5.3.
 - AI output must be validated with Zod schemas and must fall back to the baseline on any failure.
-- Never expose the Anthropic API key to the client.
+- Never expose the AI provider key (OpenRouter, an Edge Function secret) to the client.
+- Membership (PRD §24, docs/MONETISATION.md) is decided by the server: trial and plan rows are written only by the service role, and AI is enforced in the AI function. Never gate recovery data or its sync by membership (no RLS policy, check or trigger on recovery tables), and never block export, sign-out or account deletion.
 - Never add calorie, weight or restriction tracking.
 - All user-facing copy must exist in all three tones (gentle, honest, brutal), except documented tone-neutral text (labels, errors, safety and privacy statements). UI text lives in `apps/web/src/text` with stable ids; see docs/COPY_GLOSSARY.md, and run `pnpm --filter web copy:manifest` after changing it.
 - Typed text goes through the one safety check in `apps/web/src/guard.ts`, on the screen and again in the store.

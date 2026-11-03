@@ -12,6 +12,7 @@ import { petsAdd, petsGrid, petsMenu, petsPicker } from "./sections/pets";
 import { privacyFlows, privacySummary } from "./sections/privacy";
 import { safetyCrisis, safetyDisclaimer, safetyHelplines, safetyProfessional, safetyRestriction, safetySupport } from "./sections/safety";
 import { lockScreen, securityLock, securityPin } from "./sections/security";
+import { membershipLimits, membershipPaywall, membershipStatus, membershipUnverifiable } from "./sections/membership";
 import { sheetsHealth, sheetsLog, sheetsMemorial, sheetsPlan, sheetsQuick, sheetsReflection, sheetsUrge } from "./sections/sheets";
 import { packsLines } from "./sections/packs";
 import { missionsContent, missionsMoment, missionsSheet } from "./sections/missions";
@@ -37,6 +38,7 @@ export const SECTIONS = [
   sheetsLog, sheetsReflection, sheetsUrge, sheetsQuick, sheetsHealth, sheetsPlan, sheetsMemorial,
   accountForm, accountBlockers, accountErrors, accountSignedIn, accountSync, accountCheckEmail, accountNewPassword,
   securityLock, securityPin, lockScreen,
+  membershipPaywall, membershipUnverifiable, membershipStatus, membershipLimits,
   updateDialog, updateToasts,
   notificationsPermission, notificationsDaily, notificationsQuiet, notificationsCatchup,
   safetyHelplines, safetyCrisis, safetyRestriction, safetyProfessional, safetyDisclaimer, safetySupport,

@@ -23,6 +23,8 @@ import { actions, canAllowPassingAway, useActiveView, useData, vault } from "../
 import { daysTogether, trackSummary } from "../progress";
 import { companionsOf, listTracks, trackState } from "../tracks";
 import { kv } from "../db";
+import { downloadBackup } from "../exportData";
+import { MembershipCard } from "./Paywall";
 import { shrink } from "./LogSheet";
 import { goalSummary, PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
@@ -131,7 +133,7 @@ export function Me() {
       <SubPage open={page === "reminders"} title={t("me.profile.row_reminders")} onClose={close}><RemindersPage /></SubPage>
       <SubPage open={page === "questions"} title={t("me.profile.row_questions")} onClose={close}><QuestionsPage /></SubPage>
       <SubPage open={page === "security"} title={t("me.profile.row_lock")} onClose={close}><SecurityCard /></SubPage>
-      {configured && <SubPage open={page === "account"} title={t("me.profile.row_account")} onClose={close}><section className="card stack"><Account /></section></SubPage>}
+      {configured && <SubPage open={page === "account"} title={t("me.profile.row_account")} onClose={close}><section className="card stack"><Account /></section><MembershipCard /></SubPage>}
       <SubPage open={page === "data"} title={t("me.profile.row_data")} onClose={close}><DataPage /></SubPage>
       <SubPage open={page === "appearance"} title={t("me.profile.row_appearance")} onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title={t("me.profile.row_feel")} onClose={close}><FeelPage /></SubPage>
@@ -420,12 +422,7 @@ function DataPage() {
   const { session } = useSession();
   const [confirm, setConfirm] = useState(false);
   function exportData() {
-    const text = actions.exportJson();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    a.download = `pawse-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    downloadBackup();
     toast(t("me.data.exported"), { kind: "good" });
   }
   return (<>
@@ -435,6 +432,7 @@ function DataPage() {
       <p className="small">{t("privacy.flows.account")}</p>
       <p className="small">{t("privacy.flows.ai")}</p>
       <p className="small muted">{t("privacy.flows.ai_how")}</p>
+      <p className="small muted">{t("privacy.flows.membership")}</p>
       <p className="small muted">{t("privacy.flows.updates")} {t("privacy.flows.control")}</p>
     </section>
     <section className="card stack">

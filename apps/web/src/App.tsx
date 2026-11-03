@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { startSync, syncNow, useSyncStatus } from "./sync";
+import { startAccess, stopAccess, useGate } from "./access";
+import { AccessUnverifiable, Paywall } from "./screens/Paywall";
 import { kv } from "./db";
 import { RestoreFailed, Restoring, Welcome } from "./screens/Welcome";
 import { NewPassword } from "./screens/Account";
@@ -144,6 +146,8 @@ function Shell() {
   const updateDot = useUpdatePending() !== null;
   const [pwDone, setPwDone] = useState(false);
   const sync = useSyncStatus();
+  // Membership (src/access.ts): the server's answer, or this phone's last one within the offline grace period.
+  const gate = useGate();
   // The restore check waits for the first sync to settle, once. A retry after that (offline, say) must not swap
   // onboarding out for it, or the person loses their place mid-step.
   const restoreSettled = useRef(false);
@@ -155,7 +159,7 @@ function Shell() {
   const [waited, setWaited] = useState(false);
   useEffect(() => { const timer = setTimeout(() => setWaited(true), BOOT_WAIT_MS); return () => clearTimeout(timer); }, []);
   const syncSettled = sync.last !== null || sync.state === "error" || sync.state === "offline";
-  const lifted = useRunLift(ready && (!session || data.settings.onboarded || syncSettled || waited));
+  const lifted = useRunLift(ready && (!session || gate.kind !== "loading") && (!session || data.settings.onboarded || syncSettled || waited));
   const species = view?.companion.species;
   useEffect(() => { if (species) document.documentElement.dataset.pet = species; }, [species]);
   const { theme, accent } = data.settings;
@@ -168,9 +172,12 @@ function Shell() {
       const owner = await kv.get<string>("owner").catch(() => undefined);
       if (owner && owner !== uid) await actions.resetAll();
       await kv.set("owner", uid).catch(() => undefined);
+      // After the wipe above, so another account's membership answer can never be read for this one.
+      void startAccess(uid);
       await startSync(uid);
     })();
   }, [uid]);
+  useEffect(() => { if (!uid) stopAccess(); }, [uid]);
 
   useEffect(() => onReminderTap(() => { dir.current = -1; openTrack(); }), []);
   // The home screen widget opens straight into the quick check-in.
@@ -242,6 +249,10 @@ function Shell() {
   if (!ready || !lifted) return <div className="app"><BootSplash /></div>;
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
+  // Access has ended or can't be confirmed: the paywall, with export and the account. Sync keeps running behind it.
+  if (gate.kind === "locked") return <div className="app"><Paywall gate={gate} /></div>;
+  if (gate.kind === "unverifiable") return <div className="app"><AccessUnverifiable /></div>;
+  if (gate.kind === "loading") return <div className="app"><Loading /></div>;
   if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
   // An empty phone whose account didn't answer: never fall into onboarding as if new, which would start a second pet history.
   if (!data.settings.onboarded && sync.state === "error" && !startFresh) return <div className="app"><RestoreFailed onRetry={() => void syncNow()} onFresh={() => setStartFresh(true)} /></div>;

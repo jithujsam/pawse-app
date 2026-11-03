@@ -53,3 +53,4 @@ export const WeeklyRequest = z.object({
 export type SlipRequest = z.infer<typeof SlipRequest>;
 export type WeeklyRequest = z.infer<typeof WeeklyRequest>;
 export * from "./data";
+export * from "./membership";

@@ -1,6 +1,7 @@
 import { AiSlipResult, type SlipRequest } from "@detox/schema";
 import { supabase } from "./supabase";
 import { AI_CACHE_KEY } from "./store";
+import { can } from "./access";
 
 /** AI-written text is kept for seven days at most, on the phone and on the server. */
 export const AI_RETENTION_MS = 7 * 24 * 3600_000;
@@ -49,6 +50,9 @@ export interface SlipAi { effects: string[]; explanation: string }
  */
 export async function aiForSlip(req: SlipRequest): Promise<SlipAi | null> {
   if (!supabase) return null;
+  // Not part of this membership (Basic, or access has ended): don't ask. The AI function refuses it anyway, on the
+  // server, whatever the app does. Explanations already saved on past slips stay as they are.
+  if (!can("ai")) return null;
   const { data: s } = await supabase.auth.getSession();
   if (!s.session) return null;
   const key = aiCacheKey(req);

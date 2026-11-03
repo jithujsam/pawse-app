@@ -5,6 +5,7 @@ import { spring } from "../motion";
 import { actions } from "../store";
 import { AUTH_REDIRECT, configured, endRecovery, supabase, useSession } from "../supabase";
 import { forgetSync, getSyncStatus, stopSync, syncNow, useSyncStatus } from "../sync";
+import { stopAccess } from "../access";
 import { NET_MS, withTimeout } from "../net";
 import { Button, Select } from "../ui/Controls";
 import { accountBlocker, friendlyAuthError, newPasswordBlocker, passwordScore } from "../authErrors";
@@ -37,6 +38,7 @@ function SyncLine() {
  */
 async function endSession(uid: string) {
   stopSync();
+  stopAccess();
   await forgetSync(uid);
   // If the network sign-out fails (offline, or the account is already gone), still drop this phone's saved sign-in,
   // so the next launch can't be signed in to an account whose copy was just wiped.

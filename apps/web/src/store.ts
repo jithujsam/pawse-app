@@ -40,7 +40,20 @@ function bornBy(d: AppData, companionId: string, day: string): AppData {
     : d;
 }
 
+/**
+ * Whether changes made on this phone may be saved right now. Membership (src/access.ts) sets it; until then, and in
+ * tests, everything is allowed. It never stops rows arriving from the account ("remote") or an erase ("reset"), and
+ * nothing already saved is ever changed because of it.
+ */
+let writeGate: () => boolean = () => true;
+export const setWriteGate = (fn: () => boolean) => { writeGate = fn; };
+/** How many recovery tracks the account's plan allows; 50 (the app's own limit) unless membership says otherwise. */
+let trackLimit: () => number = () => 50;
+export const setTrackLimit = (fn: () => number) => { trackLimit = fn; };
+
 function commit(next: AppData, source: CommitSource = "local") {
+  // A closed paywall: new records and edits wait. Remote rows and erases always go through.
+  if (source === "local" && !writeGate()) return;
   const prev = data;
   data = { ...next, updatedAt: Date.now() };
   listeners.forEach((l) => l());
@@ -146,7 +159,7 @@ export const vault = {
   async check(pin: string) { const s = await kv.get<Sealed>("data.enc"); return s ? (await vaultOpen(pin, s)) !== null : false; },
 };
 
-export const useData = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => data);
+export const useData = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => data, () => data);
 export const getData = () => data;
 
 // ---------- derived ----------
@@ -552,7 +565,7 @@ export const actions = {
 
   /** Null when the track can't take a record: it is archived (read-only) or gone. A pause never refuses one. */
   logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
-    if (!canRecord(data, habitId)) return null;
+    if (!writeGate() || !canRecord(data, habitId)) return null;
     if (valuesConcern(values)) return null; // the slip sheet shows the note before it ever gets here
     const habit = data.habits.find((h) => h.id === habitId)!;
     const base = bornBy(data, habit.companionId, day);
@@ -596,7 +609,7 @@ export const actions = {
   },
 
   markClean(habitId: string, day = today()) {
-    if (!canRecord(data, habitId)) return false;
+    if (!writeGate() || !canRecord(data, habitId)) return false;
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
     const owner = data.habits.find((h) => h.id === habitId)!.companionId;
@@ -609,7 +622,7 @@ export const actions = {
    * can't be a rest day: what was recorded wins. Rest days never count as progress or as a lapse.
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
-    if (!canRecord(data, habitId)) return false;
+    if (!writeGate() || !canRecord(data, habitId)) return false;
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day)
       || data.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out"))) return false;
     const base = on ? bornBy(data, data.habits.find((h) => h.id === habitId)!.companionId, day) : data;
@@ -683,7 +696,7 @@ export const actions = {
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
   recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null; instead?: string | null; photo?: string | null } = {}): Urge | null {
-    if (!canRecord(data, habitId)) return null;
+    if (!writeGate() || !canRecord(data, habitId)) return null;
     const now = new Date();
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -735,7 +748,7 @@ export const actions = {
 
   /**
    * A new recovery track from the Pets grid: its own habit and its own companion, born today, opened on this
-   * phone. Returns its habit id, or null at the 50-track limit.
+   * phone. Returns its habit id, or null at the plan's track limit (one during the trial, 50 at most).
    */
   addTrack(o: { what: string; cls: HabitClass; measure: Measure; amountLabel?: string; species: Species; name: string; coat?: string; breed?: string; personality?: Personality; adoption?: AdoptionMode }): string | null {
     return actions.createTrack({ adoption: o.adoption, name: o.what.trim() || "My habit", cls: o.cls, unit: o.measure, amountLabel: o.amountLabel, species: o.species, companionName: o.name, coat: o.coat, breed: o.breed, personality: o.personality, focus: true });
@@ -755,14 +768,16 @@ export const actions = {
 
   /**
    * Starts a new track with its own companion. Returns its id, or null when the name is empty or the
-   * 50-track limit is reached. Nothing about any other track changes.
+   * plan's track limit is reached (one during the trial, 50 at most). Nothing about any other track changes.
    */
   createTrack(o: {
     name: string; description?: string; cls: HabitClass; unit: Measure; amountLabel?: string; triggers?: string[]; fields?: Habit["fields"];
     species: Species; companionName: string; coat?: string; breed?: string; personality?: Personality; baseline?: Baseline | null; plan?: RecoveryPlan | null; focus?: boolean; adoption?: AdoptionMode;
   }): string | null {
     const name = o.name.trim().slice(0, 60);
-    if (!name || data.habits.length >= 50) return null;
+    // The plan's allowance (one track during the trial), never above the app's own 50. Only opening a new track is
+    // limited: tracks that exist, from any phone or a backup, stay whatever the plan.
+    if (!name || !writeGate() || data.habits.length >= Math.min(50, trackLimit())) return null;
     if (concernInAny([o.name, o.description, o.amountLabel, o.companionName, ...(o.triggers ?? []), ...fieldTexts(o.fields ?? []), ...planTexts(o.plan)])) return null;
     const habitId = uid(), companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId, ...adoptionFields(o.species, o.adoption) };

@@ -535,7 +535,7 @@ Disclaimer text (draft): "Detox Companion is a self-awareness tool. It is not me
 3. Should the death scene be opt-out for users who find it too heavy?
 4. How should "extra beyond planned" be defined for people without a meal plan?
 5. Is a buddy or accountability feature worth adding before the widget?
-6. Pricing: free core plus paid species, history length and AI reports, or fully free until validated?
+6. ~~Pricing: free core plus paid species, history length and AI reports, or fully free until validated?~~ Decided 2026-11-03: a seven-day trial, then Basic ($1/year) or AI ($3/year), no free tier (§24).
 7. Region: start India-only (Rs, local food apps as examples) or neutral currency from day one?
 
 ## 18. Claude Code kickoff
@@ -653,3 +653,18 @@ This builds on §19.6 and §20 and adds to §5.1. It changes no damage-engine ma
 8. **The look.** Each condition or issue drives its own part of the pet (coat, energy, posture, ears, tail, looking away), never one overall number. A setback after a slip makes the pet quieter for a day, never sick.
 9. **Never stored.** Everything is folded from the track's goal-met days and slips each time, on the phone (`apps/web/src/missions.ts`) and on the server (`mission_journey()`, migration 0010). Only the pop-ups already shown are stored, merged across phones and backups.
 10. **Safety.** Missions say the conditions describe the pet, not the person. Alcohol tracks show a note that stopping suddenly can be dangerous and to talk to a doctor first.
+
+## 24. Membership amendment (2026-11-03)
+
+Owner decision (2026-11-03). This supersedes §17.6 and adds to §8 and §20.4. It changes no damage-engine math and no recovery rule. Implementation, enforcement and open points: `docs/MONETISATION.md`.
+
+1. **No free tier.** Every new account gets a **seven-day trial** that starts when the account registers: every pet, breed and look, AI features, and **one recovery track**. It belongs to the account: reinstalling, signing out and in, or changing phones never restarts it.
+2. **Plans, paid yearly (not lifetime).** **Basic, $1 a year**: the whole app (tracking, missions, history, insights, journal, personalisation, up to 50 tracks), no new AI requests. **AI, $3 a year**: everything in Basic plus every AI feature, now and later.
+3. **When access ends** (a trial or year passes without a purchase, a refund, a withdrawal): a hard paywall. No new check-ins, slips, urges, edits or AI. **Nothing is deleted, archived, hidden for good or changed**, past AI text included. Export, sign-out, account deletion and the privacy statements stay reachable. Buying or renewing opens everything exactly as it was. Data is never held hostage.
+4. **The server decides.** Trial dates, plans and payments live in server-owned tables that people can read but not write; the AI function refuses new AI without the trial or the AI plan, whatever the app says. The app mirrors the answer for the paywall and keeps it for up to **7 days offline**, never past the trial's or plan's end.
+5. **Never gated.** Recovery data and its sync, export, sign-out, account deletion, privacy statements, crisis and safety text.
+6. **Track allowance.** One track in the trial and 50 with a plan, limiting only the opening of a new track. Tracks that exist, from a backup, another phone or a past plan, always stay. This adds to §20.4's 50-track default.
+7. **Abuse.** One trial per account. Trial AI needs a confirmed email. Sign-ups and trial AI are rate-limited per network using short-lived salted hashes, never stored addresses. This can't stop one person registering several accounts with several email addresses; that is accepted.
+8. **Paywall wording.** Plain and kind: the heading "{app} — Your commitment to change.", what the trial gave, what each plan includes and costs. No guilt, no fear, and never anything about the pet suffering or waiting. The introduction has three Voices; prices and plan contents are tone-neutral.
+9. **Payments.** No provider is chosen yet. Until one is, nothing can be bought and the paywall says so; it never shows a buy button or claims a payment. Access changes only from a provider's verified webhook, never from anything the app reports.
+

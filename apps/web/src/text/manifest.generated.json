@@ -6366,6 +6366,267 @@
       ]
     },
     {
+      "id": "membership.paywall",
+      "screen": "Membership",
+      "title": "Paywall: access has ended",
+      "source": "src/screens/Paywall.tsx",
+      "file": "src/text/sections/membership.ts",
+      "start": 7,
+      "end": 44,
+      "entries": [
+        {
+          "id": "membership.paywall.aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.intro_trial",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.intro_plan",
+          "kind": "voice",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.refunded",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.revoked",
+          "kind": "text",
+          "placeholders": [
+            "email"
+          ]
+        },
+        {
+          "id": "membership.paywall.unconfirmed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.need",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.plans_aria",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.basic_name",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.basic_price",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.basic_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.ai_name",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.ai_price",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.ai_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.annual",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.choose",
+          "kind": "text",
+          "placeholders": [
+            "plan"
+          ]
+        },
+        {
+          "id": "membership.paywall.no_checkout",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.check",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.checking",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.still_closed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.reopened",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.data_title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.data_body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.export",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.account_title",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "membership.unverifiable",
+      "screen": "Membership",
+      "title": "Membership can't be checked",
+      "source": "src/screens/Paywall.tsx",
+      "file": "src/text/sections/membership.ts",
+      "start": 46,
+      "end": 52,
+      "entries": [
+        {
+          "id": "membership.unverifiable.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.unverifiable.body",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.unverifiable.retry",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "membership.status",
+      "screen": "Me",
+      "title": "Membership status",
+      "source": "src/screens/Paywall.tsx",
+      "file": "src/text/sections/membership.ts",
+      "start": 54,
+      "end": 67,
+      "entries": [
+        {
+          "id": "membership.status.title",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.trial_today",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.trial_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.trial_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "membership.status.trial_note",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.verify",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.basic",
+          "kind": "text",
+          "placeholders": [
+            "date"
+          ]
+        },
+        {
+          "id": "membership.status.ai",
+          "kind": "text",
+          "placeholders": [
+            "date"
+          ]
+        },
+        {
+          "id": "membership.status.basic_note",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.offline",
+          "kind": "text",
+          "placeholders": [
+            "date"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "membership.limits",
+      "screen": "Home",
+      "title": "Track allowance",
+      "source": "src/screens/Pets.tsx",
+      "file": "src/text/sections/membership.ts",
+      "start": 69,
+      "end": 74,
+      "entries": [
+        {
+          "id": "membership.limits.track_trial",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.limits.track_none",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "update.dialog",
       "screen": "Update",
       "title": "Update pop-up",
@@ -6740,7 +7001,7 @@
       "source": "src/screens/Me.tsx",
       "file": "src/text/sections/privacy.ts",
       "start": 3,
-      "end": 13,
+      "end": 14,
       "entries": [
         {
           "id": "privacy.flows.title",
@@ -6768,6 +7029,11 @@
           "placeholders": []
         },
         {
+          "id": "privacy.flows.membership",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "privacy.flows.updates",
           "kind": "text",
           "placeholders": []
@@ -6785,8 +7051,8 @@
       "title": "Privacy line",
       "source": "src/screens/Security.tsx",
       "file": "src/text/sections/privacy.ts",
-      "start": 15,
-      "end": 19,
+      "start": 16,
+      "end": 20,
       "entries": [
         {
           "id": "privacy.summary.line",
