@@ -113,23 +113,81 @@ select pg_temp.check('an expiry event for the current period ends it', apply_pay
 -- ---------- abuse counters and the sign-up hook ----------
 -- The hook runs as Supabase's auth role (supabase_auth_admin), which this stub doesn't have: run it as the owner.
 reset role;
-select pg_temp.check('ten sign-ups an hour from one address are allowed',
-  (select bool_and(hook_before_user_created('{"metadata":{"ip_address":"203.0.113.5"}}'::jsonb) = '{}'::jsonb) from generate_series(1, 10)));
-select pg_temp.check('the eleventh waits', hook_before_user_created('{"metadata":{"ip_address":"203.0.113.5"}}'::jsonb) -> 'error' ->> 'http_code' = '429');
-select pg_temp.check('another address is unaffected', hook_before_user_created('{"metadata":{"ip_address":"198.51.100.7"}}'::jsonb) = '{}'::jsonb);
-select pg_temp.check('no address is never refused', hook_before_user_created('{"metadata":{}}'::jsonb) = '{}'::jsonb and abuse_hit('trial_ai', null, 60, 0));
-select pg_temp.check('no raw address is stored anywhere', not exists (select 1 from abuse_counters where ip_hash like '%203.0.113%' or ip_hash like '%198.51%'));
-select pg_temp.check('counters are hashes', (select bool_and(ip_hash ~ '^[0-9a-f]{64}$') from abuse_counters));
+-- A sign-up as Supabase Auth would make it: the hook first, then (if allowed) the account is created.
+create or replace function pg_temp.sign_up(ip text, create_account boolean default true) returns jsonb language plpgsql as $$
+declare uid uuid := gen_random_uuid(); r jsonb;
+begin
+  r := public.hook_before_user_created(jsonb_build_object('metadata', jsonb_build_object('ip_address', ip), 'user', jsonb_build_object('id', uid)));
+  if r = '{}'::jsonb and create_account then insert into auth.users (id, email) values (uid, uid::text || '@x'); end if;
+  return r;
+end $$;
+select pg_temp.check('failed attempts (weak password, email taken) use nothing up: 50 in a row still allowed',
+  (select bool_and(pg_temp.sign_up('203.0.113.5', false) = '{}'::jsonb) from generate_series(1, 50)));
+select pg_temp.check('30 new accounts an hour from one network are allowed',
+  (select bool_and(pg_temp.sign_up('203.0.113.5') = '{}'::jsonb) from generate_series(1, 30)));
+select pg_temp.check('the 31st waits: 429 with the marker the app recognises',
+  pg_temp.sign_up('203.0.113.5') -> 'error' @> '{"http_code":429}' and pg_temp.sign_up('203.0.113.5') -> 'error' ->> 'message' like 'signup_rate_limited:%');
+select pg_temp.check('a retry of an allowed sign-up isn''t counted against itself',
+  public.hook_before_user_created(jsonb_build_object('metadata', jsonb_build_object('ip_address', '198.51.100.20'), 'user', jsonb_build_object('id', 'aaaaaaaa-0000-4000-8000-00000000000a'))) = '{}'::jsonb);
+select pg_temp.check('another network is unaffected', pg_temp.sign_up('198.51.100.7') = '{}'::jsonb);
+select pg_temp.check('only the 30 real accounts were recorded as counting this hour',
+  (select count(*) from signup_attempts a join auth.users u on u.id = a.user_id where a.ip_hash = any (network_hashes('203.0.113.5')) and a.attempted_at > now() - interval '1 hour') = 30);
+-- An hour passes.
+update signup_attempts set attempted_at = now() - interval '61 minutes';
+select pg_temp.check('... sign-up from it works again', pg_temp.sign_up('203.0.113.5') = '{}'::jsonb);
+select pg_temp.check('the daily limit still counts everything in 24 hours',
+  (select count(*) from signup_attempts a join auth.users u on u.id = a.user_id where a.attempted_at > now() - interval '1 day') >= 31);
+update signup_limits set max_accounts = 32 where window_minutes = 1440;
+select pg_temp.check('limits are tunable without a migration: a lower daily limit takes effect at once',
+  pg_temp.sign_up('203.0.113.5') = '{}'::jsonb and pg_temp.sign_up('203.0.113.5') -> 'error' @> '{"http_code":429}');
+update signup_limits set max_accounts = 100 where window_minutes = 1440;
+-- IPv6: one device can rotate through its whole /64, so the /64 is the network.
+update signup_limits set max_accounts = 2 where window_minutes = 60;
+select pg_temp.check('IPv6 addresses in one /64 count together',
+  pg_temp.sign_up('2001:db8:1:1::a') = '{}'::jsonb and pg_temp.sign_up('2001:db8:1:1::b') = '{}'::jsonb
+  and pg_temp.sign_up('2001:db8:1:1:ffff::c') -> 'error' @> '{"http_code":429}');
+select pg_temp.check('a different /64 is a different network', pg_temp.sign_up('2001:db8:1:2::a') = '{}'::jsonb);
+update signup_limits set max_accounts = 30 where window_minutes = 60;
+-- Rolling windows across midnight: an attempt hashed with yesterday's salt still counts today.
+insert into abuse_salts (day, salt) values ((now() at time zone 'utc')::date - 1, 'yesterday') on conflict (day) do update set salt = 'yesterday';
+select pg_temp.check('a network has today''s and yesterday''s hash', cardinality(network_hashes('192.0.2.77')) = 2);
+update signup_limits set max_accounts = 1 where window_minutes = 1440;
+insert into auth.users (id, email) values ('eeeeeeee-0000-4000-8000-0000000000e1', 'y@x');
+insert into signup_attempts (ip_hash, user_id, attempted_at) values ((network_hashes('192.0.2.77'))[2], 'eeeeeeee-0000-4000-8000-0000000000e1', now() - interval '3 hours');
+select pg_temp.check('an account made before midnight (yesterday''s salt) counts in the 24-hour window', pg_temp.sign_up('192.0.2.77') -> 'error' @> '{"http_code":429}');
+update signup_limits set max_accounts = 100 where window_minutes = 1440;
+select pg_temp.check('no address, or one that isn''t an address, is never refused',
+  hook_before_user_created('{"metadata":{}}'::jsonb) = '{}'::jsonb and pg_temp.sign_up('not-an-ip') = '{}'::jsonb and pg_temp.sign_up('') = '{}'::jsonb
+  and abuse_hit('trial_ai', null, 60, 0) and abuse_hit('trial_ai', 'garbage', 60, 0));
+select pg_temp.check('a malformed user id is let through, not an error', hook_before_user_created('{"metadata":{"ip_address":"192.0.2.9"},"user":{"id":"nope"}}'::jsonb) = '{}'::jsonb);
+-- Fails open: the hook's own tables gone (or any other error) never blocks sign-up.
+alter table signup_attempts rename to signup_attempts_away;
+select pg_temp.check('a broken rate limiter lets sign-up through', pg_temp.sign_up('203.0.113.5') = '{}'::jsonb);
+alter table signup_attempts_away rename to signup_attempts;
+alter table signup_limits rename to signup_limits_away;
+select pg_temp.check('... whichever part is broken', pg_temp.sign_up('203.0.113.6') = '{}'::jsonb);
+alter table signup_limits_away rename to signup_limits;
+select pg_temp.check('no raw address is stored anywhere',
+  not exists (select 1 from abuse_counters where ip_hash ~ '[.:]') and not exists (select 1 from signup_attempts where ip_hash ~ '[.:]')
+  and not exists (select 1 from abuse_salts where salt like '%203.0.113%'));
+select pg_temp.check('stored values are hashes', (select bool_and(ip_hash ~ '^[0-9a-f]{64}$') from signup_attempts) and coalesce((select bool_and(ip_hash ~ '^[0-9a-f]{64}$') from abuse_counters), true));
 set role service_role;
 select pg_temp.check('service role can''t call the sign-up hook', pg_temp.denied($q$select hook_before_user_created('{}'::jsonb)$q$));
 reset role;
+set role authenticated; select pg_temp.as_user('aaaaaaaa-0000-4000-8000-00000000000a');
+select pg_temp.check('signed-in people can''t read or change sign-up attempts or limits',
+  pg_temp.denied('select * from signup_attempts') and pg_temp.denied('update signup_limits set max_accounts = 1000000') and pg_temp.denied($q$select network_hashes('1.2.3.4')$q$));
+reset role;
 insert into abuse_counters (kind, ip_hash, window_start, hits) values ('signup', repeat('a', 64), now() - interval '3 days', 99);
+insert into signup_attempts (ip_hash, user_id, attempted_at) values (repeat('b', 64), gen_random_uuid(), now() - interval '3 days');
 insert into abuse_salts (day, salt) values (current_date - 5, 'old');
 set role service_role;
 select abuse_hit('trial_ai', '192.0.2.1', 1440, 100);
-select pg_temp.check('counters and salts older than two days are deleted',
-  not exists (select 1 from abuse_counters where window_start < now() - interval '2 days') and not exists (select 1 from abuse_salts where day < current_date - 1));
 reset role;
+select pg_temp.sign_up('192.0.2.200');
+select pg_temp.check('counters, attempts and salts older than two days are deleted',
+  not exists (select 1 from abuse_counters where window_start < now() - interval '2 days') and not exists (select 1 from abuse_salts where day < current_date - 1)
+  and not exists (select 1 from signup_attempts where attempted_at < now() - interval '2 days'));
 
 -- ---------- recovery data is never gated ----------
 -- B's access is revoked, yet B's rows still sync: no recovery policy, check or trigger looks at membership.

@@ -51,6 +51,7 @@ export const accountErrors = defineSection("account.errors", { screen: "Account"
   already: "There's already an account with that email. Try signing in.",
   email_rate: "Too many emails have been sent in the last hour. Try again later, or sign in if you already have an account.",
   rate: "Too many tries. Wait a minute and try again.",
+  signup_network: "A lot of new accounts have been made on this network recently, so new sign-ups from it are paused for a while. Try again in an hour, or switch connection (from mobile data to Wi-Fi, or the other way). If you already have an account, sign in instead.",
   unconfirmed: "Confirm your email first: open the link we sent you on this phone.",
   network: "Couldn't reach the server. Check your connection.",
   leaked: "That password has shown up in data leaks. Pick another.",

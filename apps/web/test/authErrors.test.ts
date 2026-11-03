@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { accountBlocker, AUTH_FALLBACK, friendlyAuthError, newPasswordBlocker, passwordScore } from "../src/authErrors";
 
 describe("account error messages", () => {
@@ -9,6 +11,19 @@ describe("account error messages", () => {
     expect(friendlyAuthError("Email not confirmed")).toMatch(/Confirm your email/);
     expect(friendlyAuthError(new Error("TypeError: Failed to fetch"))).toMatch(/Couldn't reach/);
     expect(friendlyAuthError("Password is known to be weak and easy to guess (pwned)")).toMatch(/data leaks/);
+  });
+  it("the sign-up hook's network limit gets its own advice, not 'wait a minute'", () => {
+    // The exact text the hook sends (supabase/migrations/0013_membership.sql), so the app and the server can't drift apart.
+    const sql = readFileSync(join(__dirname, "..", "..", "..", "supabase", "migrations", "0013_membership.sql"), "utf8");
+    const sent = /'message', '(signup_rate_limited:[^']+)'/.exec(sql)?.[1];
+    expect(sent).toBeTruthy();
+    const shown = friendlyAuthError(new Error(sent));
+    expect(shown).toMatch(/new accounts have been made on this network/);
+    expect(shown).toMatch(/Try again in an hour/);
+    expect(shown).toMatch(/sign in instead/);
+    expect(shown).not.toMatch(/Wait a minute/);
+    // Supabase's own rate limits keep their short advice.
+    expect(friendlyAuthError("Request rate limit reached")).toMatch(/Wait a minute/);
   });
   it("handles the delete-needs-a-recent-sign-in refusal and email-link errors", () => {
     expect(friendlyAuthError("sign in again to delete your account")).toMatch(/sign in again/i);

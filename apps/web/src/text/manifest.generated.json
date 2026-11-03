@@ -5892,7 +5892,7 @@
       "source": "src/authErrors.ts",
       "file": "src/text/sections/account.ts",
       "start": 47,
-      "end": 62,
+      "end": 63,
       "entries": [
         {
           "id": "account.errors.invalid_login",
@@ -5916,6 +5916,11 @@
         },
         {
           "id": "account.errors.rate",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "account.errors.signup_network",
           "kind": "text",
           "placeholders": []
         },
@@ -5962,8 +5967,8 @@
       "title": "Signed in",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 64,
-      "end": 77,
+      "start": 65,
+      "end": 78,
       "entries": [
         {
           "id": "account.signed_in.as",
@@ -6027,8 +6032,8 @@
       "title": "Backup status",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 79,
-      "end": 90,
+      "start": 80,
+      "end": 91,
       "entries": [
         {
           "id": "account.sync.syncing",
@@ -6082,8 +6087,8 @@
       "title": "Check your email",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 92,
-      "end": 100,
+      "start": 93,
+      "end": 101,
       "entries": [
         {
           "id": "account.check_email.title",
@@ -6120,8 +6125,8 @@
       "title": "Choose a new password",
       "source": "src/screens/Account.tsx",
       "file": "src/text/sections/account.ts",
-      "start": 102,
-      "end": 111,
+      "start": 103,
+      "end": 112,
       "entries": [
         {
           "id": "account.new_password.title",

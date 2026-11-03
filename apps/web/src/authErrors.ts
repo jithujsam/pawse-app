@@ -12,6 +12,8 @@ export function friendlyAuthError(raw: unknown): string {
   if (/invalid login|invalid credentials/i.test(msg)) return t("account.errors.invalid_login");
   if (/already registered|already been registered/i.test(msg)) return t("account.errors.already");
   if (/email rate limit/i.test(msg)) return t("account.errors.email_rate");
+  // The sign-up hook's refusal (migration 0013): a per-network limit on new accounts, not a short rate limit.
+  if (/signup_rate_limited|new accounts from this network/i.test(msg)) return t("account.errors.signup_network");
   if (/rate limit|too many/i.test(msg)) return t("account.errors.rate");
   if (/email not confirmed/i.test(msg)) return t("account.errors.unconfirmed");
   if (/network|fetch|failed to|timeout|timed out/i.test(msg)) return t("account.errors.network");

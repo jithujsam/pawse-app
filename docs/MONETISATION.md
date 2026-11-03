@@ -37,8 +37,10 @@ How pawse charges, what is enforced where, and what is still missing before real
 | `access_for(uuid) → jsonb` | `{state, app, ai, email_verified, tracks, valid_until, trial_ends_at, plan, plan_status, period_end, server_time}`. `state`: `trial`, `basic`, `ai`, `expired`, `refunded`, `revoked`, `none`. Order: active paid plan, then running trial, then why access ended |
 | `my_access() → jsonb` | `access_for(auth.uid())` for the signed-in person |
 | `apply_payment_event(...) → text` | The only write path for plans. See §7 |
-| `abuse_hit(kind, ip, window_minutes, limit) → bool` | Hashes and counts; a missing address is never refused |
-| `hook_before_user_created(event) → jsonb` | Supabase Auth "Before User Created" hook: at most 10 sign-ups an hour per hashed address; past that, `429` until the next hour. **Not active until switched on in the dashboard** |
+| `network_key(ip)`, `network_hashes(ip)` | A network is an IPv4 address or an IPv6 /64; it is stored only as sha256(daily salt ‖ network), with today's and yesterday's salt so windows roll over midnight |
+| `abuse_hit(kind, ip, window_minutes, limit) → bool` | Hashes and counts (trial AI per network); a missing or unreadable address is never refused |
+| `signup_attempts(ip_hash, user_id, attempted_at)`, `signup_limits(window_minutes, max_accounts)` | Sign-ups per network, counted only once they became accounts, and the per-window limits (30 an hour, 100 a day). Service role only; attempts kept two days |
+| `hook_before_user_created(event) → jsonb` | Supabase Auth "Before User Created" hook: refuses (`429`, `signup_rate_limited:`) only when the network has already created as many accounts as a `signup_limits` window allows; fails open on any error. **Not active until switched on in the dashboard** |
 
 All functions are `security definer` with `set search_path = ''` and explicit grants. "Unknown or temporarily unavailable" is not a database state: it is what the app and the AI function do when `my_access`/`access_for` can't be reached (§6, §2).
 
@@ -53,7 +55,7 @@ All functions are `security definer` with `set search_path = ''` and explicit gr
 
 - **Account-based**: one trial per account, server-owned dates, can't be restarted by reinstalling, signing out and in, clearing data, or changing the phone's clock.
 - **Email**: the app's sign-up flow expects a confirmation email ("Check your email", `screens/Account.tsx`). Whether the project *requires* confirmation before sign-in is a dashboard setting (Authentication → Sign In / Providers → Confirm email) that couldn't be checked from the repository. Either way, trial **AI** requires `email_confirmed_at`, so an address that never confirms can't spend AI.
-- **Network rate limits** (hashed, short-lived): 10 sign-ups an hour per network (once the hook is on) and 200 trial AI calls a day per network. These are limits, not bans: they reset on their own and never block paid accounts.
+- **Network rate limits** (hashed, short-lived): 30 new accounts an hour and 100 a day per network (once the hook is on; failed attempts don't count; IPv6 by /64), and 200 trial AI calls a day per network. These are limits, not bans: they lift on their own, never block paid accounts, and the hook lets sign-ups through if it fails.
 - **Not prevented**: a person creating several accounts with several real email addresses gets several trials. Account-based enforcement can't stop that, and an IP address is not a person (mobile carriers and offices share them). Deleting an account and registering again with the same email also gets a new trial, because deletion removes everything about the account; keeping a hash of deleted emails would stop it but contradicts "delete removes everything" and is left as a product decision. No device fingerprinting is used.
 - Supabase Auth's own sign-up rate limits and CAPTCHA (Authentication → Rate Limits / Attack Protection) are further options. They are dashboard settings and were not changed.
 
@@ -135,25 +137,28 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 8. Release an app version with the paywall, by docs/RELEASING.md. Older app versions keep working without a paywall (they don't call `my_access`); their AI requests are enforced by the function all the same.
 9. Before taking money: choose a provider, build its adapter and webhook function, and test it in the provider's test mode end to end.
 
-### Deployment risks (reviewed 2026-11-03, nothing deployed)
+### Deployment risks (reviewed and fixed 2026-11-03, nothing deployed)
 
-Verified locally with Deno 2.5.6 (installed in a scratch folder only, not added to the project):
-- `deno check` passes for `ai/index.ts` and `_shared/payments.ts` with the pinned `npm:` imports, **when the functions folder is checked on its own**.
-- The handler ran under Deno: no token → 401, Basic → 403 before the provider, a trial → an answer. That exercised zod via `npm:`, `crypto.subtle`, `AbortSignal.timeout` and `Response`, and the webhook contract rejected an unsigned call.
-- The real `index.ts` booted with `deno run`: no token and forged token → 401 (the auth lookup fails closed when unreachable), `OPTIONS` → 200.
+**Deno.** `supabase/functions/ai/deno.json` pins the function's own Deno setup (`nodeModulesDir: "none"`, so the repo's pnpm `package.json` can't switch Deno into `node_modules` mode), and `deno.lock` (frozen) pins every npm package, transitive ones included, with integrity hashes. The lock is **format version 4**, written with Deno 2.1.4, because Deno 2.1 can't read the version 5 that newer Deno writes, and the Edge Runtime's Deno version isn't documented. Checked locally (Deno installed in a scratch folder, not in the project):
+- `deno check` passes in place, from the function's folder and from the repo root with `--config supabase/functions/ai/deno.json`, with Deno 2.1.4 and 2.5.6, from a clean cache. Neither version rewrites the lock.
+- A lock with a tampered integrity hash is refused.
+- The real `index.ts` boots under both versions; no token and a forged token → 401 (the auth lookup fails closed when unreachable).
+- The handler ran under Deno: Basic → 403 before the provider, a trial → an answer (zod via `npm:`, `crypto.subtle`, `AbortSignal.timeout`), and the webhook contract rejected an unsigned call.
 
-**Needs fixing or checking before deploy:**
-1. **The pnpm workspace confuses Deno.** Run inside this repo, Deno finds the root `package.json`, switches to `node_modules` mode and fails to resolve `npm:@supabase/supabase-js@2.45.4`. A `supabase/functions/ai/deno.json` (even `{}`), with Deno run from that folder, fixed it in a copy of the repo layout. Whether the Supabase CLI's bundler is affected wasn't tested (no CLI here). The function already used these imports before membership, so if the current deploy works, this isn't new. Still, add `ai/deno.json` and run `supabase functions serve ai` once before deploying.
-2. **No lock file**: transitive npm versions resolve at deploy time. Add `deno.lock` with the `deno.json`.
-3. **The Edge Runtime's Deno version** isn't documented; the check used 2.5.6. The code uses only standard Web APIs, so the risk is low; `supabase functions serve` confirms it.
-4. **Client address header**: `clientIp` reads `x-forwarded-for`, then `cf-connecting-ip`, then `x-real-ip`. If production sends none, the trial network limit silently does nothing (it never blocks; the per-account limit still applies). After deploy, check one trial call's headers in the function logs.
+**Changing the function's npm imports** means regenerating the lock, with Deno 2.1 so it stays readable by older runtimes: in `supabase/functions/ai`, set `"frozen": false`, run `deno check index.ts`, set it back to `true`, and commit both files.
 
-**The sign-up hook (`hook_before_user_created`):**
-1. **It fails closed on any error.** If `abuse_hit` raises (an unexpected payload, a lock timeout), Supabase Auth refuses *every* sign-up. Wrap the call in `exception when others then return '{}'`, so a broken rate limiter never blocks registration.
-2. **Plan availability is unverified.** Supabase lists Auth hooks as beta and doesn't say which plans include this one. Check in Authentication → Hooks before relying on it. The trial and AI enforcement don't depend on it.
-3. **Attempts count, not accounts.** It counts before the account exists, so failed attempts (a weak password, an existing email) also use up the hour's 10. Combined with shared mobile-carrier addresses, a busy hour could refuse real people. Consider 20–30 an hour, or count in the `grant_trial` trigger instead (accounts actually created; the address isn't available there).
-4. **Its error message is fixed English**, shown by the app's generic auth-error path. Map HTTP 429 from sign-up to a friendly copy entry (`authErrors.ts`).
-5. **It runs with the definer's rights** (needed to write the counters). That matches Supabase's own `handle_new_user` pattern; only `supabase_auth_admin` may execute it.
+**Still to check on Supabase itself** (not possible here: no Supabase CLI or project):
+1. `supabase functions serve ai` (or a deploy to a staging project) uses the per-function `deno.json` and lock as Supabase documents; confirm once.
+2. The client address header: `clientIp` reads `x-forwarded-for`, then `cf-connecting-ip`, then `x-real-ip`. If production sends none, the trial network limit does nothing (it never blocks; the per-account limit still applies). Check one trial call in the function logs.
+3. The sign-up hook's plan availability: Supabase lists Auth hooks as beta and doesn't say which plans include this one. Check Authentication → Hooks. Nothing else depends on it.
+
+**The sign-up hook (`hook_before_user_created`), as fixed:**
+- **Fails open.** Everything it does runs inside an exception handler with a 500 ms lock timeout. Any error (an unexpected payload, a lock, a missing table) lets the sign-up through and logs a warning with the error code only, never the address. Tested by breaking each of its tables.
+- **Counts accounts, not attempts.** Each attempt is recorded with the id the new account would get (`signup_attempts`), and only attempts that became accounts count. A weak password, a taken email or a network error uses nothing up. A retry of the same sign-up isn't counted against itself.
+- **Fair to shared networks.** Limits are per network over rolling windows: **30 new accounts an hour and 100 a day** by default, in `signup_limits` (tune with an `update`, no migration). Mobile carriers put many people behind one IPv4 address, and pawse's whole sign-up rate is far below these numbers, so only scripted account farming reaches them. IPv4 counts by address; IPv6 counts by /64 (one home connection or one phone), since one device can rotate through its whole /64. Yesterday's salt is still checked, so the daily window doesn't reset at midnight.
+- **Clear message.** A refusal is HTTP 429 with a message starting `signup_rate_limited:`. The app shows `account.errors.signup_network` instead ("…paused for a while. Try again in an hour, or switch connection… If you already have an account, sign in instead."), not the generic "Wait a minute". A test reads the exact text from the migration, so the two can't drift apart.
+- **Privacy.** Only salted hashes are stored. Attempts, counters and salts older than two days are deleted, after which no hash can be matched to an address. A row links a network hash to an account id for at most two days.
+- **Runs with the definer's rights** (needed to write its tables), like Supabase's own `handle_new_user` pattern. Only `supabase_auth_admin` may execute it.
 
 **The sign-up trigger (`on_auth_user_created_grant_trial`):** a trigger on `auth.users` that fails blocks sign-up. `grant_trial` only inserts, with `on conflict do nothing`, and `trial_start` falls back to `now()`, so it has no known failure path; it is tested locally, not on Supabase. Try one sign-up on a staging project first.
 
@@ -163,7 +168,7 @@ Verified locally with Deno 2.5.6 (installed in a scratch folder only, not added 
 
 | What | Where |
 |---|---|
-| Trial grant, uniqueness, 7-day check, registration-dated, lazy rebuild; RLS and privileges; every access state; payment transitions, duplicates, stale and out-of-order events, refunds, revocation, renewal after expiry, unknown accounts, account deletion; abuse counters and the hook; recovery rows never gated | `supabase/tests/membership.sql` (67 checks) |
+| Trial grant, uniqueness, 7-day check, registration-dated, lazy rebuild; RLS and privileges; every access state; payment transitions, duplicates, stale and out-of-order events, refunds, revocation, renewal after expiry, unknown accounts, account deletion; abuse counters and the hook; recovery rows never gated | `supabase/tests/membership.sql` (81 checks, including the sign-up hook: accounts not attempts, IPv6 /64, rolling windows, tunable limits, failing open) |
 | Launch date: pre-launch accounts start at launch, later ones at registration, pre-launch registrations, moving the date before launch only, re-running 0013, lost rows | `supabase/tests/membership-launch.sql` (18 checks) |
 | AI function called directly: no token, forged token, each state, unconfirmed email, lookup failure, cache not bypassing membership, trial and plan limits, network limit, global switch | `apps/web/test/ai-function.test.ts` |
 | The app's gate: states, offline grace, clock offset, end dates offline, account switching, late answers, malformed answers, missing function, renewal; the store refusing new records but keeping everything; export after expiry; AI text kept; remote rows still applied; trial's one track; restore keeping every track; sync uploading behind the paywall | `apps/web/test/membership.test.ts` |

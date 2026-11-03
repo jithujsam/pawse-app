@@ -6,7 +6,9 @@
 --   trial_grants      one row per account, written only by the sign-up trigger (or lazily from auth.users.created_at)
 --   entitlements      the current paid plan, written only by apply_payment_event() (service role)
 --   payment_events    append-only audit of every payment event; (provider, event_id) unique, so replays do nothing
---   abuse_counters    short-lived counters keyed by a salted hash of an IP address, never the address itself
+--   abuse_counters    short-lived counters keyed by a salted hash of a network, never the address itself
+--   signup_attempts   sign-ups per network (salted hash), for the sign-up rate limit; kept two days
+--   signup_limits     how many accounts one network may create per window (tunable)
 --   abuse_salts       one random salt per day; deleted after two days, so old hashes can't be linked to anything
 -- access_for(uuid) works out what an account may do right now; my_access() is the signed-in person's own copy.
 
@@ -351,9 +353,53 @@ grant execute on function public.apply_payment_event(text, text, uuid, text, tex
 -- ---------- abuse signals ----------
 
 /**
- * Counts one hit for a kind of request from an IP address, in fixed windows, and says whether it is within the limit.
- * The address is never stored: only sha256(daily random salt || address). Salts and counters older than two days are
- * deleted, after which no stored hash can be matched to any address. No address (or an empty one) is never refused:
+ * The part of an address that identifies a network: an IPv4 address as is, an IPv6 address by its /64 (one home
+ * connection or one phone's prefix, which a single device can otherwise rotate through freely). Null when the text
+ * isn't an address.
+ */
+create or replace function public.network_key(p_ip text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare ip inet;
+begin
+  if p_ip is null or btrim(p_ip) = '' then return null; end if;
+  ip := btrim(p_ip)::inet;
+  return case when family(ip) = 6 then host(network(set_masklen(ip, 64))) || '/64' else host(ip) end;
+exception when others then
+  return null;
+end;
+$$;
+revoke all on function public.network_key(text) from public, anon, authenticated;
+
+/**
+ * The salted hashes a network can be stored under right now: today's salt first, then yesterday's if it still exists,
+ * so a rolling 24-hour window works across midnight. Empty for no address. A salt is random and is deleted after two
+ * days, after which no stored hash can be matched to any address.
+ */
+create or replace function public.network_hashes(p_ip text)
+returns text[]
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  today date := (now() at time zone 'utc')::date;
+  k text := public.network_key(p_ip);
+begin
+  if k is null then return '{}'; end if;
+  insert into public.abuse_salts (day, salt) values (today, gen_random_uuid()::text || gen_random_uuid()::text) on conflict (day) do nothing;
+  delete from public.abuse_salts where day < today - 1;
+  return array(select encode(sha256(convert_to(s.salt || '|' || k, 'UTF8')), 'hex') from public.abuse_salts s where s.day >= today - 1 order by s.day desc);
+end;
+$$;
+revoke all on function public.network_hashes(text) from public, anon, authenticated;
+
+/**
+ * Counts one hit for a kind of request from a network, in fixed windows, and says whether it is within the limit.
+ * Only a salted hash of the network is stored (network_hashes). No address (or an unreadable one) is never refused:
  * an IP is a weak signal, many people share one, and this only rate-limits, it never bans.
  */
 create or replace function public.abuse_hit(p_kind text, p_ip text, p_window_minutes int, p_limit int)
@@ -363,45 +409,97 @@ security definer
 set search_path = ''
 as $$
 declare
-  today date := (now() at time zone 'utc')::date;
-  s text;
-  h text;
+  hs text[] := public.network_hashes(p_ip);
   w timestamptz := date_bin(make_interval(mins => greatest(1, p_window_minutes)), now(), timestamptz '2000-01-01 00:00:00+00');
   n int;
 begin
-  if p_ip is null or btrim(p_ip) = '' then return true; end if;
-  insert into public.abuse_salts (day, salt) values (today, gen_random_uuid()::text || gen_random_uuid()::text) on conflict (day) do nothing;
-  select salt into s from public.abuse_salts where day = today;
-  h := encode(sha256(convert_to(s || '|' || btrim(p_ip), 'UTF8')), 'hex');
-  insert into public.abuse_counters (kind, ip_hash, window_start, hits) values (p_kind, h, w, 1)
+  if cardinality(hs) = 0 then return true; end if;
+  insert into public.abuse_counters (kind, ip_hash, window_start, hits) values (p_kind, hs[1], w, 1)
   on conflict (kind, ip_hash, window_start) do update set hits = public.abuse_counters.hits + 1
   returning hits into n;
   delete from public.abuse_counters where window_start < now() - interval '2 days';
-  delete from public.abuse_salts where day < today - 1;
   return n <= p_limit;
 end;
 $$;
 revoke all on function public.abuse_hit(text, text, int, int) from public, anon, authenticated;
 grant execute on function public.abuse_hit(text, text, int, int) to service_role;
 
+-- ---------- sign-up rate limit (Supabase Auth "Before User Created" hook) ----------
+
+-- Accounts created per network, so the limit counts real sign-ups, not attempts: a mistyped password or an email
+-- that's already taken uses nothing up. Each row links a salted network hash to the id the new account would get,
+-- for at most two days; nothing links it to an address once the salt is gone.
+create table if not exists public.signup_attempts (
+  ip_hash text not null check (char_length(ip_hash) = 64),
+  user_id uuid not null,
+  attempted_at timestamptz not null default now(),
+  primary key (ip_hash, user_id)
+);
+create index if not exists signup_attempts_recent on public.signup_attempts (ip_hash, attempted_at);
+create index if not exists signup_attempts_age on public.signup_attempts (attempted_at);
+alter table public.signup_attempts enable row level security; -- no policies: service role only
+
+-- How many new accounts one network may create per rolling window. Generous on purpose: mobile carriers put
+-- thousands of people behind one IPv4 address, and pawse's whole sign-up rate is far below these numbers, so only
+-- scripted account farming reaches them. Tune with an update; no migration needed.
+create table if not exists public.signup_limits (
+  window_minutes int primary key check (window_minutes between 1 and 10080),
+  max_accounts int not null check (max_accounts >= 1)
+);
+alter table public.signup_limits enable row level security; -- no policies: service role only
+insert into public.signup_limits (window_minutes, max_accounts) values (60, 30), (1440, 100) on conflict (window_minutes) do nothing;
+revoke all on public.signup_attempts, public.signup_limits from anon, authenticated;
+grant all on public.signup_attempts, public.signup_limits to service_role;
+
 /**
- * Supabase Auth "Before User Created" hook (Postgres function). At most 10 sign-ups an hour from one address; past
- * that, sign-up from it waits for the next hour. Only takes effect once it is switched on in the dashboard
- * (Authentication → Hooks); docs/MONETISATION.md. Shared addresses (mobile carriers, offices) are why the limit is
- * generous and short.
+ * Supabase Auth "Before User Created" hook (Postgres function). Refuses a sign-up only when the network has already
+ * created as many accounts as a window in signup_limits allows (30 an hour and 100 a day by default); otherwise it
+ * records the attempt and lets it through. Only takes effect once it is switched on in the dashboard
+ * (Authentication → Hooks); docs/MONETISATION.md.
+ *
+ * It fails open: any error inside it (an unexpected payload, a lock it can't get quickly, a missing table) lets the
+ * sign-up through and leaves a warning in the database log, without the address. A broken rate limiter must never
+ * keep real people out.
+ *
+ * A refusal is HTTP 429 with a message that starts "signup_rate_limited:", which the app recognises and replaces with
+ * its own wording (account.errors.signup_network, src/authErrors.ts).
  */
 create or replace function public.hook_before_user_created(event jsonb)
 returns jsonb
 language plpgsql
 security definer
 set search_path = ''
+set lock_timeout = '500ms'
 as $$
+declare
+  hs text[];
+  uid uuid;
+  lim record;
+  made int;
 begin
-  if not public.abuse_hit('signup', event -> 'metadata' ->> 'ip_address', 60, 10) then
-    return jsonb_build_object('error', jsonb_build_object('http_code', 429,
-      'message', 'Too many new accounts from this network in the last hour. Please try again later.'));
-  end if;
-  return '{}'::jsonb;
+  begin
+    hs := public.network_hashes(event -> 'metadata' ->> 'ip_address');
+    if cardinality(hs) = 0 then return '{}'::jsonb; end if;
+    uid := nullif(event -> 'user' ->> 'id', '')::uuid;
+    for lim in select window_minutes, max_accounts from public.signup_limits order by window_minutes loop
+      -- Only attempts that became accounts count, and never this one (a retry of the same request).
+      select count(*) into made from public.signup_attempts a join auth.users u on u.id = a.user_id
+      where a.ip_hash = any (hs) and a.attempted_at > now() - make_interval(mins => lim.window_minutes)
+        and (uid is null or a.user_id <> uid);
+      if made >= lim.max_accounts then
+        return jsonb_build_object('error', jsonb_build_object('http_code', 429,
+          'message', 'signup_rate_limited: Too many new accounts from this network recently. Please try again later.'));
+      end if;
+    end loop;
+    if uid is not null then
+      insert into public.signup_attempts (ip_hash, user_id) values (hs[1], uid) on conflict do nothing;
+    end if;
+    delete from public.signup_attempts where attempted_at < now() - interval '2 days';
+    return '{}'::jsonb;
+  exception when others then
+    raise warning 'sign-up rate limit skipped (%): sign-up allowed', sqlstate;
+    return '{}'::jsonb;
+  end;
 end;
 $$;
 revoke all on function public.hook_before_user_created(jsonb) from public, anon, authenticated;
