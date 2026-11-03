@@ -14,8 +14,8 @@ How pawse charges, what is enforced where, and what is still missing before real
 
 | Rule | Enforced by | Where |
 |---|---|---|
-| One trial per account, seven days from registration | Database | `trial_grants` (primary key = account; `check (ends_at = started_at + 7 days)`), trigger `on_auth_user_created_grant_trial`, lazy rebuild from `auth.users.created_at` in `access_for` (migration 0014) |
-| Trial can't be restarted by reinstalling or signing in again | Database | The trial is a row keyed by the account and dated from `auth.users.created_at`. Nothing on the phone is involved |
+| One trial per account: new accounts from creation, existing accounts from first access | Database | `trial_grants` (primary key = account; `check (ends_at = started_at + 7 days)`), trigger `on_auth_user_created_grant_trial` for new accounts, `access_for` granting an existing account's trial the first time it is asked (migration 0014) |
+| Trial can't be restarted by reinstalling, signing in again or changing phones | Database | The trial is one server-side row keyed by the account; once it exists, nothing restarts it. Nothing on the phone is involved |
 | Nobody can grant themselves a plan | Database | `trial_grants` and `entitlements`: select-own RLS policy only; insert/update/delete revoked from `anon` and `authenticated`. `apply_payment_event`, `access_for`, `abuse_hit`: execute for `service_role` only |
 | What an account may do now | Database | `access_for(uuid)` (service role) and `my_access()` (the signed-in person's own). Expiry is read against `now()`, so no scheduled job is needed |
 | No new AI without the trial or the AI plan | **AI Edge Function** | `supabase/functions/ai/handler.ts`: `access_for` → `aiGate` (`access.ts`) before the cache, the quota or the provider. Basic → 403 `plan`; expired, refunded, revoked → 403 `plan`; unconfirmed trial email → 403 `verify`; lookup failure → 503 `access` (fails closed) |
@@ -29,11 +29,11 @@ How pawse charges, what is enforced where, and what is still missing before real
 
 | Object | What it is |
 |---|---|
-| `trial_grants(user_id pk, started_at, ends_at, source)` | One per account. `source` is `signup` (seven days from registration), `launch` (registered before the official launch: seven days from launch) or `lazy` (rebuilt if the trigger was missing, by the same rule). Cascades with the account |
+| `trial_grants(user_id pk, started_at, ends_at, source)` | One per account. `source`: `signup` (a new account, from its creation), `first_access` (an account that existed before membership, from the first time it reached it), `launch` (a row an earlier version of 0014 wrote in advance; it starts at first access, once), `lazy` (earlier version). Cascades with the account |
 | `entitlements(user_id pk, plan, status, period_start, period_end, provider, provider_ref)` | The current annual plan. `plan`: `basic` or `ai`. `status`: `active`, `expired`, `refunded`, `revoked`. Cascades with the account |
 | `payment_events(id, provider, event_id, user_id, kind, plan, period_*, provider_ref, outcome, received_at)` | Append-only audit. `unique (provider, event_id)` makes webhook retries no-ops. `user_id` becomes null when the account is deleted (kept for refunds and accounting, linked to no one) |
 | `abuse_salts(day, salt)`, `abuse_counters(kind, ip_hash, window_start, hits)` | Rate-limit counters keyed by `sha256(daily random salt ‖ address)`. Salts and counters older than two days are deleted, after which no stored hash can be matched to an address. No raw address is ever stored |
-| `membership_launch`, `trial_start(timestamptz)`, `set_membership_launch(timestamptz)` | The official launch date, the trial-start rule (later of registration and launch), and the pre-launch-only way to move the date. Service role only |
+| (removed) `membership_launch`, `trial_start`, `set_membership_launch` | The earlier version's global launch date. 0014 drops them; trials no longer depend on any date but the account's own |
 | `access_for(uuid) → jsonb` | `{state, app, ai, email_verified, tracks, valid_until, trial_ends_at, plan, plan_status, period_end, server_time}`. `state`: `trial`, `basic`, `ai`, `expired`, `refunded`, `revoked`, `none`. Order: active paid plan, then running trial, then why access ended |
 | `my_access() → jsonb` | `access_for(auth.uid())` for the signed-in person |
 | `apply_payment_event(...) → text` | The only write path for plans. See §7 |
@@ -44,12 +44,13 @@ How pawse charges, what is enforced where, and what is still missing before real
 
 All functions are `security definer` with `set search_path = ''` and explicit grants. "Unknown or temporarily unavailable" is not a database state: it is what the app and the AI function do when `my_access`/`access_for` can't be reached (§6, §2).
 
-**The official launch date** (owner decision, 2026-11-03). Every trial starts at the later of the account's registration and the launch date, kept in `membership_launch` (one row, service role only) and applied by `trial_start()`:
-- Accounts registered before launch, including any made between applying 0014 and launch day, get a fresh seven days **from launch** (`source = 'launch'`). Until then they have full access.
-- Accounts registered after launch get seven days **from registration** (`source = 'signup'`).
-- Set the date while applying 0014, in the same SQL session: `set app.membership_launch = '2026-12-01 00:00:00+00';`. Without it, launch is the moment 0014 runs.
-- Before launch, `select set_membership_launch('<new date>');` (service role) moves the date and every pre-launch trial with it. Once the date has passed it refuses, so trials in use can never be restarted or shortened.
-- Re-running 0014 changes neither the launch date nor any trial.
+**Trials have no launch date** (owner decision, 2026-11-03).
+- **New accounts:** seven days from the moment the account is created (the sign-up trigger, `source = 'signup'`).
+- **Accounts that existed before membership:** seven days from the first time the account reaches the updated membership system: an updated app asking `my_access()`, or the AI function asking `access_for()` (`source = 'first_access'`). Never from the registration date, so nobody is expired for having signed up months ago.
+- **Rows written in advance by the earlier version** (production has 10, `source = 'launch'`, never seen by their owners): they start the same way, from first access, once.
+- **Once only, server-side:** after the row exists, nothing restarts it: not reinstalling, signing out and in, or another phone. The account can't write the row (RLS).
+- An account that never opens an updated app or uses AI simply has no trial running yet. That is intended.
+- Re-running 0014 changes no trial.
 
 ## 4. Trial abuse: what is and isn't prevented
 
@@ -79,9 +80,21 @@ All functions are `security definer` with `set search_path = ''` and explicit gr
 - Switching accounts: the kept answer is per account and is wiped with the phone's copy on sign-out (`resetAll` clears IndexedDB) and on a different account signing in (`App.tsx` owner check). An answer that arrives after sign-out is dropped.
 - **Limitation**: offline, a person who sets the phone's clock back can stretch the grace period on that phone. It only affects local, non-AI use, which a patched APK could unlock anyway (§2).
 
-## 7. Payments: the provider-independent contract
+## 7. Payments: Dodo Payments (prepared, not switched on)
 
-**Blocked until a provider is chosen.** Nothing can be bought, and the paywall says so: it shows no buy button and claims no purchase.
+**Provider: Dodo Payments. Prepared, not active.** Nothing can be bought until checkout is switched on, and the paywall says so: no buy button, no claimed purchase.
+
+| Piece | File | State |
+|---|---|---|
+| Signature check (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature`; HMAC-SHA256 of `id.timestamp.body` with the `whsec_` secret; 5-minute window) and event mapping | `supabase/functions/_shared/dodo.ts` | Built, tested (and checked against the real `standardwebhooks` library) |
+| Webhook (Dodo calls it) | `supabase/functions/dodo-webhook` | Built, not deployed; refuses everything until its secrets are set |
+| Checkout (the app calls it, signed in) | `supabase/functions/dodo-checkout` | Built, not deployed; off until `DODO_CHECKOUT_ENABLED=true` |
+| App adapter | `apps/web/src/billing.ts` (`dodoCheckout`) | Built; only used in a build made with `VITE_CHECKOUT=dodo` |
+
+Dodo event → Pawse: `subscription.active` / `subscription.plan_changed` → purchase; `subscription.renewed` → renewal; `subscription.on_hold` / `past_due` / `failed` → payment failed (access runs to the paid end); `subscription.expired` → expiry; `refund.succeeded` → refund; `dispute.lost` → revocation; everything else (including `subscription.cancelled`: the year simply runs out) → acknowledged and ignored. The account comes from the checkout's metadata key `pawse_account_id`; the plan from the product id.
+
+**To confirm in Dodo's test mode before real money:** that refunds and lost disputes carry the `pawse_account_id` metadata (if not, they are recorded for manual review instead of ending access automatically), and the exact checkout fields (taken from Dodo's SDK 2.61.1; their docs site couldn't be read from here).
+
 
 - **Client boundary**: `apps/web/src/billing.ts` (`CheckoutProvider`). Today `checkout = noCheckout` (`available: false`). A provider adapter opens the provider's hosted checkout with the account's Supabase user id as its reference, then calls `refreshAccess()`. The app never grants anything from a callback or return URL.
 - **Server boundary**: `supabase/functions/_shared/payments.ts`.
@@ -99,7 +112,7 @@ All functions are `security definer` with `set search_path = ''` and explicit gr
 | Any event seen before | `duplicate`, nothing changes |
 | Unknown or deleted account | `no_account`, kept anonymously |
 
-**What a provider integration must still decide and build**: provider choice (Play Billing doesn't apply to a sideloaded APK; a web checkout from the app needs to be checked against the provider's and Google's rules and against tax obligations), the adapter and its signature check, the webhook function and its secret, mapping provider products to `basic`/`ai`, and how refunds reference purchases. A manual `grant` (support, testing) can be applied today with `select apply_payment_event('manual', '<unique id>', '<user id>', 'grant', 'ai', now(), now() + interval '1 year', null);` as the service role.
+**Still needed from the owner:** the Dodo account details listed in `docs/DEPLOY_MEMBERSHIP.md` ("What to provide"), and a check of the terms of selling a web checkout to a sideloaded Android app (Google Play billing doesn't apply to it). A manual `grant` (support, testing) can be applied with `select apply_payment_event('manual', '<unique id>', '<user id>', 'grant', 'ai', now(), now() + interval '1 year', null);` as the service role.
 
 ## 8. Supabase Free plan
 
@@ -127,7 +140,7 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 
 ## 9. Deploying (none of this has been done)
 
-The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has today, the order (database and launch date, then the AI function, then app 5.1.0) and why, the scripts in `supabase/deploy/membership/`, verification and rollback. It was rehearsed against a copy of production's audited state.
+The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has today, the order and why, the scripts in `supabase/deploy/membership/`, verification and rollback. It was rehearsed against a copy of production's audited state.
 
 ### Deployment risks (reviewed and fixed 2026-11-03, nothing deployed)
 
@@ -161,7 +174,8 @@ The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has t
 | What | Where |
 |---|---|
 | Trial grant, uniqueness, 7-day check, registration-dated, lazy rebuild; RLS and privileges; every access state; payment transitions, duplicates, stale and out-of-order events, refunds, revocation, renewal after expiry, unknown accounts, account deletion; abuse counters and the hook; recovery rows never gated | `supabase/tests/membership.sql` (81 checks, including the sign-up hook: accounts not attempts, IPv6 /64, rolling windows, tunable limits, failing open) |
-| Launch date: pre-launch accounts start at launch, later ones at registration, pre-launch registrations, moving the date before launch only, re-running 0014, lost rows | `supabase/tests/membership-launch.sql` (18 checks) |
+| Trials without a launch date: existing accounts start at first access (from the app or the AI function), not registration; never restarted; rows written in advance start once; new accounts from creation; re-running 0014 | `supabase/tests/membership-trials.sql` (17 checks) |
+| Dodo: signatures (made independently), every event mapping, the webhook (configured or not, forged, duplicate, ignored, database down), the checkout (off, wrong host, not signed in, already subscribed, upgrade) | `apps/web/test/dodo.test.ts` |
 | AI function called directly: no token, forged token, each state, unconfirmed email, lookup failure, cache not bypassing membership, trial and plan limits, network limit, global switch | `apps/web/test/ai-function.test.ts` |
 | The app's gate: states, offline grace, clock offset, end dates offline, account switching, late answers, malformed answers, missing function, renewal; the store refusing new records but keeping everything; export after expiry; AI text kept; remote rows still applied; trial's one track; restore keeping every track; sync uploading behind the paywall | `apps/web/test/membership.test.ts` |
 | Paywall wording in every Voice, no buy button without a provider, export and account controls present | `apps/web/test/paywall.test.tsx` |
@@ -177,4 +191,4 @@ The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has t
 5. A refund during the trial ends the plan but not the remaining trial days (the trial belongs to the account).
 6. "One pet" in the trial is read as one recovery track and its pet; adopting again after a pet's death (classic rules) stays allowed.
 7. The paywall heading uses the product name as the brand writes it ("pawse — Your commitment to change."), not "PAWSE".
-8. Payment provider, prices in other currencies, taxes, and terms of sale.
+8. Prices in other currencies, taxes, and terms of sale (Dodo Payments is the provider).

@@ -14,9 +14,8 @@ begin execute sql; return false; exception when others then return true; end $$;
 create or replace function pg_temp.as_user(uid text) returns void language sql as $$ select set_config('request.jwt.claim.sub', uid, false) $$;
 grant execute on all functions in schema pg_temp to authenticated, anon, service_role;
 
--- Membership launched 30 days ago (launch-date rules: membership-launch.sql), so every account below registered
--- after launch and its trial counts from registration.
-update membership_launch set launch_at = now() - interval '30 days';
+-- Every account below is created after membership exists, so each is a new account: its trial starts when it is
+-- created (accounts that existed before membership: membership-trials.sql).
 -- A signs up now; B signed up 10 days ago; C signed up now but hasn't confirmed the email.
 insert into auth.users (id, email, created_at) values ('aaaaaaaa-0000-4000-8000-00000000000a', 'a@x', now());
 insert into auth.users (id, email, created_at) values ('bbbbbbbb-0000-4000-8000-00000000000b', 'b@x', now() - interval '10 days');
@@ -24,9 +23,9 @@ insert into auth.users (id, email, created_at, email_confirmed_at) values ('cccc
 
 -- ---------- trial grants ----------
 select pg_temp.check('sign-up grants exactly one trial', (select count(*) from trial_grants where user_id = 'aaaaaaaa-0000-4000-8000-00000000000a') = 1);
-select pg_temp.check('the trial lasts seven days from registration',
+select pg_temp.check('a new account''s trial lasts seven days from when it was created',
   (select ends_at = started_at + interval '7 days' and started_at = (select created_at from auth.users where id = user_id) from trial_grants where user_id = 'aaaaaaaa-0000-4000-8000-00000000000a'));
-select pg_temp.check('a trial counts from registration, not from now: B registered 10 days ago',
+select pg_temp.check('a new account''s trial counts from its creation: B was created 10 days ago, so it has ended',
   (select ends_at < now() from trial_grants where user_id = 'bbbbbbbb-0000-4000-8000-00000000000b'));
 select pg_temp.check('the database refuses a trial that is not exactly seven days',
   pg_temp.raises($q$update trial_grants set ends_at = ends_at + interval '30 days' where user_id = 'aaaaaaaa-0000-4000-8000-00000000000a'$q$));
@@ -61,11 +60,6 @@ select pg_temp.check('anon can''t read trials', pg_temp.denied('select * from tr
 select pg_temp.check('anon can''t read plans', pg_temp.denied('select * from entitlements'));
 select pg_temp.check('anon can''t call my_access', pg_temp.denied('select my_access()'));
 reset role;
-
--- ---------- a lost trial row comes back from the account's own creation time, never later ----------
-delete from trial_grants where user_id = 'bbbbbbbb-0000-4000-8000-00000000000b';
-select pg_temp.check('a missing trial row is rebuilt from registration and stays expired', access_for('bbbbbbbb-0000-4000-8000-00000000000b') @> '{"state":"expired"}');
-select pg_temp.check('... recorded as a lazy grant that ended long ago', (select source = 'lazy' and ends_at < now() from trial_grants where user_id = 'bbbbbbbb-0000-4000-8000-00000000000b'));
 
 -- ---------- payments (service role) ----------
 set role service_role;

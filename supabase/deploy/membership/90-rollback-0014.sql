@@ -1,7 +1,8 @@
 -- ROLLBACK for 0014 (docs/DEPLOY_MEMBERSHIP.md): the older membership migration as production ran it before 0014
--- (commit c2d3643). Re-running it restores the previous abuse_hit and sign-up hook bodies; every other function is
--- identical in both versions. Tables 0014 added (signup_attempts, signup_limits) and network_key/network_hashes stay;
--- nothing references them after this. Writes no recovery data and no trial dates (its inserts are on conflict do nothing).
+-- (commit c2d3643). Re-running it restores the previous function bodies, including its launch date (set to the moment
+-- of the rollback) and its rule that trials start at the later of registration and that date. Trials already started
+-- under 0014 keep their dates (its inserts are on conflict do nothing). Tables 0014 added stay; nothing references
+-- them after this. Writes no recovery data.
 --   psql "$PROD_DB_URL" -X -1 -v ON_ERROR_STOP=1 -f supabase/deploy/membership/90-rollback-0014.sql
 
 -- Membership: a seven-day trial per account, then an annual Basic or AI plan (docs/MONETISATION.md, PRD §24).

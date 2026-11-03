@@ -18,7 +18,9 @@ create table if not exists public.trial_grants (
   user_id uuid primary key references auth.users (id) on delete cascade,
   started_at timestamptz not null,
   ends_at timestamptz not null,
-  source text not null default 'signup' check (source in ('signup', 'launch', 'lazy')),
+  -- signup: a new account, from its creation. first_access: an account that existed before membership, from the first
+  -- time it reached it. launch/lazy: written by an earlier version of this migration (launch = not started yet).
+  source text not null default 'signup' check (source in ('signup', 'first_access', 'launch', 'lazy')),
   created_at timestamptz not null default now(),
   constraint trial_grants_seven_days check (ends_at = started_at + interval '7 days')
 );
@@ -90,51 +92,34 @@ revoke all on public.trial_grants, public.entitlements, public.payment_events, p
 grant select on public.trial_grants, public.entitlements to authenticated;
 grant all on public.trial_grants, public.entitlements, public.payment_events, public.abuse_salts, public.abuse_counters to service_role;
 
--- ---------- the official launch date ----------
+-- ---------- trials: one per account, never restarted ----------
 
--- One row: when membership officially launches. Every trial starts at the later of the account's registration and
--- this date, so accounts that exist before launch get seven days from launch and later accounts seven days from
--- registration. Set it while applying this migration, in the same session:
---   set app.membership_launch = '2026-12-01 00:00:00+00';
--- Without it, launch is the moment the migration runs. Before launch it can be moved with set_membership_launch().
-create table if not exists public.membership_launch (
-  id boolean primary key default true check (id),
-  launch_at timestamptz not null
-);
-alter table public.membership_launch enable row level security; -- no policies: service role only
-revoke all on public.membership_launch from anon, authenticated;
-grant all on public.membership_launch to service_role;
-insert into public.membership_launch (id, launch_at)
-values (true, coalesce(nullif(current_setting('app.membership_launch', true), '')::timestamptz, now()))
-on conflict (id) do nothing;
+-- An earlier version of this migration allowed only 'signup', 'launch' and 'lazy'. Widen the check in place, so a
+-- database that has that version accepts 'first_access' too. Nothing else about the table changes.
+do $$
+declare c text;
+begin
+  for c in
+    select con.conname from pg_constraint con
+    where con.conrelid = 'public.trial_grants'::regclass and con.contype = 'c' and pg_get_constraintdef(con.oid) ilike '%source%'
+  loop
+    execute format('alter table public.trial_grants drop constraint %I', c);
+  end loop;
+end $$;
+alter table public.trial_grants add constraint trial_grants_source_check check (source in ('signup', 'first_access', 'launch', 'lazy'));
 
-/** When a trial starts for an account registered at `registered`: registration, or launch if that is later. */
-create or replace function public.trial_start(registered timestamptz)
-returns timestamptz
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select greatest(coalesce(registered, now()), coalesce((select launch_at from public.membership_launch where id), now()))
-$$;
-revoke all on function public.trial_start(timestamptz) from public, anon, authenticated;
-
--- ---------- trial: granted when the account is created ----------
-
--- Runs inside the sign-up transaction. It only inserts, never fails on a second run (one grant per account), and
--- counts from the account's own creation time (or launch, if that is later), so reinstalling the app or signing in
--- again can't restart it.
+-- A new account: its seven days start when it is created, inside the sign-up transaction. It only inserts and never
+-- fails on a second run (one grant per account), so reinstalling the app or signing in again can't restart it.
 create or replace function public.grant_trial()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
-declare t timestamptz := public.trial_start(new.created_at);
+declare t timestamptz := coalesce(new.created_at, now());
 begin
   insert into public.trial_grants (user_id, started_at, ends_at, source)
-  values (new.id, t, t + interval '7 days', case when t > coalesce(new.created_at, now()) then 'launch' else 'signup' end)
+  values (new.id, t, t + interval '7 days', 'signup')
   on conflict (user_id) do nothing;
   return new;
 end;
@@ -144,37 +129,8 @@ revoke all on function public.grant_trial() from public, anon, authenticated;
 drop trigger if exists on_auth_user_created_grant_trial on auth.users;
 create trigger on_auth_user_created_grant_trial after insert on auth.users for each row execute function public.grant_trial();
 
--- Accounts that exist before membership launches get a fresh seven days from the official launch date, not from the
--- day they signed up, so nobody is locked out the moment the paywall ships (owner decision, docs/MONETISATION.md).
-insert into public.trial_grants (user_id, started_at, ends_at, source)
-select u.id, public.trial_start(u.created_at), public.trial_start(u.created_at) + interval '7 days',
-  case when public.trial_start(u.created_at) > u.created_at then 'launch' else 'signup' end
-from auth.users u
-on conflict (user_id) do nothing;
-
-/**
- * Moves the official launch date, and every trial with it, while launch is still ahead. Service role only. Once the
- * launch date has passed, trial dates are fixed: moving it then would restart or shorten trials people are using.
- */
-create or replace function public.set_membership_launch(p_at timestamptz)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare cur timestamptz;
-begin
-  if p_at is null or p_at < now() then raise exception 'the launch date must be now or later' using errcode = '22023'; end if;
-  select launch_at into cur from public.membership_launch where id for update;
-  if cur <= now() then raise exception 'membership has launched; trial dates are fixed' using errcode = '55000'; end if;
-  update public.membership_launch set launch_at = p_at where id;
-  update public.trial_grants g set started_at = public.trial_start(u.created_at), ends_at = public.trial_start(u.created_at) + interval '7 days',
-    source = case when public.trial_start(u.created_at) > u.created_at then 'launch' else 'signup' end
-  from auth.users u where u.id = g.user_id and g.source in ('launch', 'signup');
-end;
-$$;
-revoke all on function public.set_membership_launch(timestamptz) from public, anon, authenticated;
-grant execute on function public.set_membership_launch(timestamptz) to service_role;
+-- Accounts that already exist get no trial here. Theirs starts the first time they reach membership: when the app asks
+-- my_access(), or the AI function asks access_for() (both below). No date is ever taken from when they registered.
 
 -- ---------- effective access ----------
 
@@ -184,8 +140,11 @@ grant execute on function public.set_membership_launch(timestamptz) to service_r
  *   app    normal use of the app (check-ins, slips, urges, edits)
  *   ai     new AI requests
  * A paid plan in its period wins; then a trial in its seven days; then why access ended. Expiry needs no job: it is
- * read against now() every time. An account without a trial row gets one from its own creation time or launch (never later),
- * which only happens if the sign-up trigger was missing when it registered.
+ * read against now() every time.
+ *
+ * The first call for an account that has no trial (one that existed before membership) grants its seven days from
+ * now, once. A row an earlier version wrote in advance for such an account (source 'launch') was never seen by its
+ * owner, so it starts from now the same way, once. After that, nothing here restarts a trial.
  */
 create or replace function public.access_for(p_user uuid)
 returns jsonb
@@ -210,8 +169,12 @@ begin
   select * into t from public.trial_grants where user_id = p_user;
   if not found then
     insert into public.trial_grants (user_id, started_at, ends_at, source)
-    values (p_user, public.trial_start(created), public.trial_start(created) + interval '7 days', 'lazy')
+    values (p_user, n, n + interval '7 days', 'first_access')
     on conflict (user_id) do nothing;
+    select * into t from public.trial_grants where user_id = p_user;
+  elsif t.source = 'launch' then
+    update public.trial_grants set started_at = n, ends_at = n + interval '7 days', source = 'first_access'
+    where user_id = p_user and source = 'launch';
     select * into t from public.trial_grants where user_id = p_user;
   end if;
   select * into e from public.entitlements where user_id = p_user;
@@ -508,3 +471,11 @@ do $$ begin
     execute 'grant execute on function public.hook_before_user_created(jsonb) to supabase_auth_admin';
   end if;
 end $$;
+
+-- ---------- no global launch date ----------
+
+-- An earlier version of this migration kept one launch date for everyone. Trials no longer depend on it, and nothing
+-- above uses it any more, so it goes (on a database that never had it, these do nothing).
+drop function if exists public.set_membership_launch(timestamptz);
+drop function if exists public.trial_start(timestamptz);
+drop table if exists public.membership_launch;

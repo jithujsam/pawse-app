@@ -41,14 +41,17 @@ export interface VerifiedPaymentEvent {
 
 export interface PaymentVerifier {
   readonly provider: string;
-  /** The event if the request is genuinely from the provider, else null. Must read the raw body for the signature. */
-  verify(req: Request): Promise<VerifiedPaymentEvent | null>;
+  /**
+   * The event if the request is genuinely from the provider, else null. `{ ignored }` for a genuine event that changes
+   * nothing here (answered 200 so the provider stops retrying). Must read the raw body for the signature.
+   */
+  verify(req: Request): Promise<VerifiedPaymentEvent | { ignored: string } | null>;
 }
 
 /** The one database call this needs: supabase-js's `rpc` on a service-role client. */
 export type Rpc = (fn: "apply_payment_event", args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
 
-export type Outcome = "applied" | "duplicate" | "recorded" | "stale" | "needs_review" | "no_account";
+export type Outcome = "applied" | "duplicate" | "recorded" | "stale" | "needs_review" | "no_account" | "ignored";
 
 const KINDS: readonly PaymentEventKind[] = ["purchase", "renewal", "payment_failed", "expiry", "refund", "revocation"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -76,9 +79,12 @@ const reply = (status: number, body: unknown) => new Response(JSON.stringify(bod
 
 export async function processPaymentWebhook(req: Request, verifier: PaymentVerifier, rpc: Rpc): Promise<Response> {
   if (req.method !== "POST") return reply(405, { ok: false });
-  let event: VerifiedPaymentEvent | null;
-  try { event = await verifier.verify(req); } catch { event = null; }
-  if (!event || event.provider !== verifier.provider) return reply(401, { ok: false, error: "signature" });
+  let verified: VerifiedPaymentEvent | { ignored: string } | null;
+  try { verified = await verifier.verify(req); } catch { verified = null; }
+  if (!verified) return reply(401, { ok: false, error: "signature" });
+  if ("ignored" in verified) return reply(200, { ok: true, outcome: "ignored" as Outcome });
+  const event = verified;
+  if (event.provider !== verifier.provider) return reply(401, { ok: false, error: "signature" });
   const problem = problemWith(event);
   if (problem) return reply(400, { ok: false, error: problem });
   const { data, error } = await rpc("apply_payment_event", {

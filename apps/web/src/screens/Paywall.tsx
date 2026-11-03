@@ -71,7 +71,11 @@ function PlanCard({ plan, name, price, body, accountId }: { plan: PlanId; name: 
       <p className="small">{body}</p>
       {/* Only a connected provider gets a button. Without one, nothing pretends it can be bought. */}
       {checkout.available && accountId && (
-        <Button onClick={() => { void checkout.startCheckout(plan, accountId).finally(() => void refreshAccess()); }}>{t("membership.paywall.choose", { plan: name })}</Button>
+        <Button onClick={() => {
+          checkout.startCheckout(plan, accountId)
+            .catch(() => toast(t("membership.paywall.checkout_failed"), { kind: "bad" }))
+            .finally(() => void refreshAccess());
+        }}>{t("membership.paywall.choose", { plan: name })}</Button>
       )}
     </div>
   );

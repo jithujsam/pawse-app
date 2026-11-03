@@ -1,6 +1,6 @@
 # Pawse 5.1.0 (code 81): release notes
 
-**Status: prepared, not published.** Publish only after production steps 3–6 in `docs/DEPLOY_MEMBERSHIP.md` are done and verified (the app reads membership from the server and needs the new AI function for its pet lines).
+**Status: prepared, not published.** Publish only as step 10 of `docs/DEPLOY_MEMBERSHIP.md`, once the database update, the payment receiver, checkout (live) and the new AI service are in place. The build that ships must be made from `main` with checkout switched on (`VITE_CHECKOUT=dodo`); the candidate below was made before that and is not the one to publish.
 
 ## For the update popup (`release_notes`, one line)
 
@@ -12,7 +12,8 @@ New: a Brutal personality, pets that talk in their own voice, and your free tria
 
 - **Brutal**, a fifth personality: a sarcastic diva that roasts the habit and itself, never you.
 - **Your pet talks in character.** Once a day, your pet's lines on Home and in reminders are written in its personality (when AI is included). Coming back after a few quiet days, it's theatrical about the wait, never hurt, and today still counts.
-- **Membership.** Every account has a seven-day free trial with everything included. After it, an annual membership keeps the app open: **Basic, $1 a year** (everything except AI) or **AI, $3 a year** (everything, including AI). Me → Membership shows your trial, when it ends, and both plans. Membership can't be bought in this version yet.
+- **Membership.** Every account has a seven-day free trial with everything included. For accounts made before this update, the seven days start when you first open it. After it, an annual membership keeps the app open: **Basic, $1 a year** (everything except AI) or **AI, $3 a year** (everything, including AI), paid securely through Dodo Payments. Me → Membership shows your trial, when it ends, and both plans.
+- **Adding another pet asks for a goal**, the same way as when you started (you can skip it).
 - **Your data stays yours.** If access ends, nothing is deleted or changed. Export and account deletion always stay available, and buying later opens everything exactly as it was.
 
 ## What changed underneath (for the release record)
@@ -22,7 +23,7 @@ New: a Brutal personality, pets that talk in their own voice, and your free tria
 - Database: `0014_membership.sql`, `0015_ai_cache_pet.sql` (production deployment is separate; see the runbook).
 - Built from branch `claude/eloquent-ritchie-rmjm3q`.
 
-## Release candidate (built and verified, not published)
+## Earlier release candidate (built and verified, not published; superseded)
 
 | | |
 |---|---|
@@ -35,13 +36,13 @@ New: a Brutal personality, pets that talk in their own voice, and your free tria
 | APK SHA-256 | `464f905442eedf95e83c28741ee00f30e48a270c16f97d9fcb87823be6713da0` (7,721,848 bytes) |
 | Tests in CI | schema 28, engine 59, web 567 passed; Android unit tests passed |
 
-When publishing, rebuild from `main` after the merge (the publish job runs only on `main`) and confirm the new build's `BUILD-INFO.txt` the same way. Its SHA-256 will differ from this candidate's.
+This candidate is still valid as a signed, verified build of that commit, but it is **not** the one to publish: it lacks the merged goal step for new pets, it has no checkout (built before Dodo was prepared), and the publish job only runs on `main`. At step 10, build from `main` with `VITE_CHECKOUT=dodo`; check the new `BUILD-INFO.txt` the same way. Its SHA-256 will differ.
 
 ## Compatibility
 
 | Phone | Server | Result |
 |---|---|---|
-| 5.0.20 | new AI function | Works. AI wording continues during the trial (confirmed email); after it, the built-in wording, silently. |
-| 5.1.0 | old AI function (v14) | Works, but without AI wording or pet lines (v14 refuses the new request fields). Don't release before step 6. |
-| 5.1.0 | database before step 4 | Enforces whatever trial dates are stored. Don't release before step 4. |
-| 5.1.0 | everything deployed | Full experience. |
+| 5.0.20 | new AI service | Works. The account's seven days start with its first AI request; AI wording continues during them (confirmed email), then the built-in wording, silently. |
+| 5.1.x | old AI service (v14) | Works, but without AI wording or pet lines (v14 refuses the new request fields). Don't release before step 8. |
+| 5.1.x | checkout not live | After seven days people meet a paywall with no way to buy (their data stays). Don't release before step 9. |
+| 5.1.x | everything deployed | Full experience. |

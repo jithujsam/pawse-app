@@ -11,8 +11,9 @@ select (select count(*) from auth.users) as users,
        (select count(*) from public.trial_grants g where not exists (select 1 from auth.users u where u.id = g.user_id)) as trials_without_user,
        (select count(*) from auth.users where email_confirmed_at is null) as unconfirmed_emails;
 
-\echo '== launch date'
-select launch_at, now() as server_now, launch_at <= now() as launch_has_passed from public.membership_launch;
+\echo '== trial rows by source (before 0014: an earlier version wrote launch rows in advance)'
+select source, count(*), min(started_at), max(ends_at) from public.trial_grants group by 1 order by 1;
+select to_regclass('public.membership_launch') is not null as old_launch_date_table_present;
 
 \echo '== every trial (no emails)'
 select g.source, u.created_at as registered, g.started_at, g.ends_at, g.created_at as granted_at,
