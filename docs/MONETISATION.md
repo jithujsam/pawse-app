@@ -29,10 +29,11 @@ How pawse charges, what is enforced where, and what is still missing before real
 
 | Object | What it is |
 |---|---|
-| `trial_grants(user_id pk, started_at, ends_at, source)` | One per account. `source` is `signup` (trigger), `launch` (accounts that existed when 0013 ran) or `lazy` (rebuilt from `created_at` if the trigger was missing). Cascades with the account |
+| `trial_grants(user_id pk, started_at, ends_at, source)` | One per account. `source` is `signup` (seven days from registration), `launch` (registered before the official launch: seven days from launch) or `lazy` (rebuilt if the trigger was missing, by the same rule). Cascades with the account |
 | `entitlements(user_id pk, plan, status, period_start, period_end, provider, provider_ref)` | The current annual plan. `plan`: `basic` or `ai`. `status`: `active`, `expired`, `refunded`, `revoked`. Cascades with the account |
 | `payment_events(id, provider, event_id, user_id, kind, plan, period_*, provider_ref, outcome, received_at)` | Append-only audit. `unique (provider, event_id)` makes webhook retries no-ops. `user_id` becomes null when the account is deleted (kept for refunds and accounting, linked to no one) |
 | `abuse_salts(day, salt)`, `abuse_counters(kind, ip_hash, window_start, hits)` | Rate-limit counters keyed by `sha256(daily random salt ‖ address)`. Salts and counters older than two days are deleted, after which no stored hash can be matched to an address. No raw address is ever stored |
+| `membership_launch`, `trial_start(timestamptz)`, `set_membership_launch(timestamptz)` | The official launch date, the trial-start rule (later of registration and launch), and the pre-launch-only way to move the date. Service role only |
 | `access_for(uuid) → jsonb` | `{state, app, ai, email_verified, tracks, valid_until, trial_ends_at, plan, plan_status, period_end, server_time}`. `state`: `trial`, `basic`, `ai`, `expired`, `refunded`, `revoked`, `none`. Order: active paid plan, then running trial, then why access ended |
 | `my_access() → jsonb` | `access_for(auth.uid())` for the signed-in person |
 | `apply_payment_event(...) → text` | The only write path for plans. See §7 |
@@ -41,7 +42,12 @@ How pawse charges, what is enforced where, and what is still missing before real
 
 All functions are `security definer` with `set search_path = ''` and explicit grants. "Unknown or temporarily unavailable" is not a database state: it is what the app and the AI function do when `my_access`/`access_for` can't be reached (§6, §2).
 
-**Accounts that exist before launch** get a trial starting when 0013 runs (`source = 'launch'`), not from their registration date, so nobody is locked out the moment the paywall ships. This departs from "the trial begins at registration" for existing accounts only, and it is a product decision to confirm (§11).
+**The official launch date** (owner decision, 2026-11-03). Every trial starts at the later of the account's registration and the launch date, kept in `membership_launch` (one row, service role only) and applied by `trial_start()`:
+- Accounts registered before launch, including any made between applying 0013 and launch day, get a fresh seven days **from launch** (`source = 'launch'`). Until then they have full access.
+- Accounts registered after launch get seven days **from registration** (`source = 'signup'`).
+- Set the date while applying 0013, in the same SQL session: `set app.membership_launch = '2026-12-01 00:00:00+00';`. Without it, launch is the moment 0013 runs.
+- Before launch, `select set_membership_launch('<new date>');` (service role) moves the date and every pre-launch trial with it. Once the date has passed it refuses, so trials in use can never be restarted or shortened.
+- Re-running 0013 changes neither the launch date nor any trial.
 
 ## 4. Trial abuse: what is and isn't prevented
 
@@ -122,12 +128,34 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 1. Confirm the open decisions in §11.
 2. Take a backup (§8).
 3. Check which migrations production already has (Dashboard → Database → Migrations, or `supabase migration list`), and apply any missing ones up to 0012.
-4. Apply `0013_membership.sql`. First run it on a disposable database with `supabase/tests/membership.sql`.
+4. Apply `0013_membership.sql` **with the official launch date set first, in the same session** (`set app.membership_launch = '<launch date>';`, §3). First run it on a disposable database with `supabase/tests/membership.sql` and `membership-launch.sql`. Then check `select launch_at from membership_launch`.
 5. Check: `select count(*) from trial_grants` equals `select count(*) from auth.users`.
-6. Deploy the `ai` function **after** 0013 (it calls `access_for`; before 0013 it refuses every AI call with `access`). Optional secrets: `AI_TRIAL_DAILY_LIMIT`, `AI_TRIAL_NETWORK_DAILY_LIMIT`.
+6. Fix the deployment risks below, then deploy the `ai` function **after** 0013 (it calls `access_for`; before 0013 it refuses every AI call with `access`). Optional secrets: `AI_TRIAL_DAILY_LIMIT`, `AI_TRIAL_NETWORK_DAILY_LIMIT`.
 7. Optionally switch on the sign-up hook: Authentication → Hooks → Before User Created → Postgres → `public.hook_before_user_created`.
 8. Release an app version with the paywall, by docs/RELEASING.md. Older app versions keep working without a paywall (they don't call `my_access`); their AI requests are enforced by the function all the same.
 9. Before taking money: choose a provider, build its adapter and webhook function, and test it in the provider's test mode end to end.
+
+### Deployment risks (reviewed 2026-11-03, nothing deployed)
+
+Verified locally with Deno 2.5.6 (installed in a scratch folder only, not added to the project):
+- `deno check` passes for `ai/index.ts` and `_shared/payments.ts` with the pinned `npm:` imports, **when the functions folder is checked on its own**.
+- The handler ran under Deno: no token → 401, Basic → 403 before the provider, a trial → an answer. That exercised zod via `npm:`, `crypto.subtle`, `AbortSignal.timeout` and `Response`, and the webhook contract rejected an unsigned call.
+- The real `index.ts` booted with `deno run`: no token and forged token → 401 (the auth lookup fails closed when unreachable), `OPTIONS` → 200.
+
+**Needs fixing or checking before deploy:**
+1. **The pnpm workspace confuses Deno.** Run inside this repo, Deno finds the root `package.json`, switches to `node_modules` mode and fails to resolve `npm:@supabase/supabase-js@2.45.4`. A `supabase/functions/ai/deno.json` (even `{}`), with Deno run from that folder, fixed it in a copy of the repo layout. Whether the Supabase CLI's bundler is affected wasn't tested (no CLI here). The function already used these imports before membership, so if the current deploy works, this isn't new. Still, add `ai/deno.json` and run `supabase functions serve ai` once before deploying.
+2. **No lock file**: transitive npm versions resolve at deploy time. Add `deno.lock` with the `deno.json`.
+3. **The Edge Runtime's Deno version** isn't documented; the check used 2.5.6. The code uses only standard Web APIs, so the risk is low; `supabase functions serve` confirms it.
+4. **Client address header**: `clientIp` reads `x-forwarded-for`, then `cf-connecting-ip`, then `x-real-ip`. If production sends none, the trial network limit silently does nothing (it never blocks; the per-account limit still applies). After deploy, check one trial call's headers in the function logs.
+
+**The sign-up hook (`hook_before_user_created`):**
+1. **It fails closed on any error.** If `abuse_hit` raises (an unexpected payload, a lock timeout), Supabase Auth refuses *every* sign-up. Wrap the call in `exception when others then return '{}'`, so a broken rate limiter never blocks registration.
+2. **Plan availability is unverified.** Supabase lists Auth hooks as beta and doesn't say which plans include this one. Check in Authentication → Hooks before relying on it. The trial and AI enforcement don't depend on it.
+3. **Attempts count, not accounts.** It counts before the account exists, so failed attempts (a weak password, an existing email) also use up the hour's 10. Combined with shared mobile-carrier addresses, a busy hour could refuse real people. Consider 20–30 an hour, or count in the `grant_trial` trigger instead (accounts actually created; the address isn't available there).
+4. **Its error message is fixed English**, shown by the app's generic auth-error path. Map HTTP 429 from sign-up to a friendly copy entry (`authErrors.ts`).
+5. **It runs with the definer's rights** (needed to write the counters). That matches Supabase's own `handle_new_user` pattern; only `supabase_auth_admin` may execute it.
+
+**The sign-up trigger (`on_auth_user_created_grant_trial`):** a trigger on `auth.users` that fails blocks sign-up. `grant_trial` only inserts, with `on conflict do nothing`, and `trial_start` falls back to `now()`, so it has no known failure path; it is tested locally, not on Supabase. Try one sign-up on a staging project first.
 
 **Rollback**: redeploy the previous `ai` function to stop enforcing AI by plan. The 0013 tables can stay; an app version without `my_access` ignores them. To stop the paywall in the app, ship an app build where `startAccess` isn't called, or drop `my_access()` (the app treats a missing function as membership off).
 
@@ -136,6 +164,7 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 | What | Where |
 |---|---|
 | Trial grant, uniqueness, 7-day check, registration-dated, lazy rebuild; RLS and privileges; every access state; payment transitions, duplicates, stale and out-of-order events, refunds, revocation, renewal after expiry, unknown accounts, account deletion; abuse counters and the hook; recovery rows never gated | `supabase/tests/membership.sql` (67 checks) |
+| Launch date: pre-launch accounts start at launch, later ones at registration, pre-launch registrations, moving the date before launch only, re-running 0013, lost rows | `supabase/tests/membership-launch.sql` (18 checks) |
 | AI function called directly: no token, forged token, each state, unconfirmed email, lookup failure, cache not bypassing membership, trial and plan limits, network limit, global switch | `apps/web/test/ai-function.test.ts` |
 | The app's gate: states, offline grace, clock offset, end dates offline, account switching, late answers, malformed answers, missing function, renewal; the store refusing new records but keeping everything; export after expiry; AI text kept; remote rows still applied; trial's one track; restore keeping every track; sync uploading behind the paywall | `apps/web/test/membership.test.ts` |
 | Paywall wording in every Voice, no buy button without a provider, export and account controls present | `apps/web/test/paywall.test.tsx` |
@@ -144,12 +173,11 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 
 ## 11. Decisions that need the product owner
 
-1. Existing accounts get 7 days from launch rather than from registration (§3).
-2. Re-registering after deleting an account gets a new trial (§4).
-3. The offline grace period: 7 days (§6).
-4. Trial AI limits: 20 calls a day per account, 200 a day per network (§2).
-5. Basic bought while AI is active is held for review rather than queued (§7).
-6. A refund during the trial ends the plan but not the remaining trial days (the trial belongs to the account).
-7. "One pet" in the trial is read as one recovery track and its pet; adopting again after a pet's death (classic rules) stays allowed.
-8. The paywall heading uses the product name as the brand writes it ("pawse — Your commitment to change."), not "PAWSE".
-9. Payment provider, prices in other currencies, taxes, and terms of sale.
+1. Re-registering after deleting an account gets a new trial (§4).
+2. The offline grace period: 7 days (§6).
+3. Trial AI limits: 20 calls a day per account, 200 a day per network (§2).
+4. Basic bought while AI is active is held for review rather than queued (§7).
+5. A refund during the trial ends the plan but not the remaining trial days (the trial belongs to the account).
+6. "One pet" in the trial is read as one recovery track and its pet; adopting again after a pet's death (classic rules) stays allowed.
+7. The paywall heading uses the product name as the brand writes it ("pawse — Your commitment to change."), not "PAWSE".
+8. Payment provider, prices in other currencies, taxes, and terms of sale.

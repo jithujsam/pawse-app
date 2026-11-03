@@ -14,6 +14,9 @@ begin execute sql; return false; exception when others then return true; end $$;
 create or replace function pg_temp.as_user(uid text) returns void language sql as $$ select set_config('request.jwt.claim.sub', uid, false) $$;
 grant execute on all functions in schema pg_temp to authenticated, anon, service_role;
 
+-- Membership launched 30 days ago (launch-date rules: membership-launch.sql), so every account below registered
+-- after launch and its trial counts from registration.
+update membership_launch set launch_at = now() - interval '30 days';
 -- A signs up now; B signed up 10 days ago; C signed up now but hasn't confirmed the email.
 insert into auth.users (id, email, created_at) values ('aaaaaaaa-0000-4000-8000-00000000000a', 'a@x', now());
 insert into auth.users (id, email, created_at) values ('bbbbbbbb-0000-4000-8000-00000000000b', 'b@x', now() - interval '10 days');
