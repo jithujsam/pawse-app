@@ -16,6 +16,7 @@ import { AMOUNT_CHOICES, HABIT_CHOICES, inferClass, measureForLabel, NO_AMOUNT }
 import { dayStatus, STATUS_LABEL } from "../recovery";
 import { actions, useData, viewCompanion } from "../store";
 import { allows, useGate } from "../access";
+import { trialEndingSoon } from "./Paywall";
 import { focusedTrackId, listTracks, trackState } from "../tracks";
 import type { Personality, Species } from "../types";
 import { Button, Icon, plainOpts, Select, SelectOther, SwipePicker } from "../ui/Controls";
@@ -36,6 +37,8 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
   // Opening another track is the plan's to allow (one track in the trial). Tracks that exist always show.
   const gate = useGate();
   const canAdd = data.habits.length < 50 && allows(gate, "new_track", data.habits.length);
+  // The last two days of a trial: one plain line, so the end never comes as a surprise.
+  const endsSoon = trialEndingSoon(gate);
   // Grid or list, remembered on this phone only (a display choice, never synced).
   const [layout, setLayout] = useState<"grid" | "list">(() => { try { return localStorage.getItem(LAYOUT_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; } });
   const pickLayout = (v: "grid" | "list") => { haptic.select(); setLayout(v); try { localStorage.setItem(LAYOUT_KEY, v); } catch { /* private mode */ } };
@@ -66,6 +69,7 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
           </div>
         )}
       </header>
+      {endsSoon && <p className="card small" role="status">{t("membership.status.ending_soon", { date: endsSoon })}</p>}
 
       {tracks.length === 0 ? (
         <section className="card stack center-text">
@@ -103,9 +107,9 @@ export function Pets({ onOpen }: { onOpen: (habitId: string) => void }) {
             <b className="pet-card-name">{t("pets.grid.add")}</b>
             <span className="pet-card-track small muted">{t("pets.grid.add_hint")}</span>
           </motion.button>}
-          {!canAdd && data.habits.length < 50 && gate.kind === "open" && <p className="pet-card-note muted small" role="note">{gate.access.state === "trial" ? t("membership.limits.track_trial") : t("membership.limits.track_none")}</p>}
         </section>
       )}
+      {tracks.length > 0 && !canAdd && data.habits.length < 50 && gate.kind === "open" && <p className="muted small" role="note">{gate.access.state === "trial" ? t("membership.limits.track_trial") : t("membership.limits.track_none")}</p>}
 
       <TrackMenu habitId={menu} onClose={() => setMenu(null)} onOpen={(id) => { setMenu(null); open(id); }} />
       <AddTrack open={adding} onClose={() => setAdding(false)} onAdded={(id) => { setAdding(false); onOpen(id); }} />

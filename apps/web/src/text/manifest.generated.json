@@ -6548,7 +6548,7 @@
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
       "start": 54,
-      "end": 67,
+      "end": 74,
       "entries": [
         {
           "id": "membership.status.title",
@@ -6570,6 +6570,13 @@
           "kind": "text",
           "placeholders": [
             "n"
+          ]
+        },
+        {
+          "id": "membership.status.trial_ends",
+          "kind": "text",
+          "placeholders": [
+            "date"
           ]
         },
         {
@@ -6607,6 +6614,40 @@
           "placeholders": [
             "date"
           ]
+        },
+        {
+          "id": "membership.status.row_trial_today",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.row_trial_one",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.row_trial_other",
+          "kind": "text",
+          "placeholders": [
+            "n"
+          ]
+        },
+        {
+          "id": "membership.status.row_basic",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.row_ai",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.status.ending_soon",
+          "kind": "text",
+          "placeholders": [
+            "date"
+          ]
         }
       ]
     },
@@ -6616,8 +6657,8 @@
       "title": "Track allowance",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 69,
-      "end": 74,
+      "start": 76,
+      "end": 81,
       "entries": [
         {
           "id": "membership.limits.track_trial",

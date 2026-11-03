@@ -44,13 +44,10 @@ export function Paywall({ gate }: { gate: Extract<Gate, { kind: "locked" }> }) {
         <p className="muted">{t("membership.paywall.need")}</p>
       </div>
 
-      <section className="stack" aria-label={t("membership.paywall.plans_aria")}>
-        <PlanCard plan="basic" name={t("membership.paywall.basic_name")} price={t("membership.paywall.basic_price")} body={t("membership.paywall.basic_body")} accountId={session?.user.id} />
-        <PlanCard plan="ai" name={t("membership.paywall.ai_name")} price={t("membership.paywall.ai_price")} body={t("membership.paywall.ai_body")} accountId={session?.user.id} />
-        <p className="muted small">{t("membership.paywall.annual")}</p>
-        {!checkout.available && <p className="small" role="note">{t("membership.paywall.no_checkout")}</p>}
+      <div className="stack">
+        <Plans accountId={session?.user.id} />
         <Button variant="secondary" disabled={busy} onClick={() => void check()}>{busy ? t("membership.paywall.checking") : t("membership.paywall.check")}</Button>
-      </section>
+      </div>
 
       <section className="card stack">
         <h2>{t("membership.paywall.data_title")}</h2>
@@ -109,7 +106,7 @@ export function daysLeft(until: number, now = Date.now()): number {
   return Math.max(0, Math.ceil((until - now) / 86_400_000) - 1);
 }
 
-/** Membership on Me → Account: what the account has and until when. Nothing when membership isn't on. */
+/** Membership on Me → Membership (the page title names it): what the account has and until when. Nothing when membership isn't on. */
 export function MembershipCard() {
   const gate = useGate();
   if (gate.kind !== "open") return null;
@@ -117,15 +114,46 @@ export function MembershipCard() {
   const until = gate.until;
   const date = until ? fmtDay(iso(new Date(until))) : "";
   const left = until ? daysLeft(until) : 0;
-  return (
+  return (<>
     <section className="card stack tight" aria-label={t("membership.status.title")}>
-      <h2>{t("membership.status.title")}</h2>
       {a.state === "trial" && <p>{left === 0 ? t("membership.status.trial_today") : left === 1 ? t("membership.status.trial_one") : t("membership.status.trial_other", { n: left })}</p>}
+      {a.state === "trial" && date && <p className="muted small">{t("membership.status.trial_ends", { date })}</p>}
       {a.state === "trial" && <p className="muted small">{t("membership.status.trial_note")}</p>}
       {a.state === "trial" && !a.email_verified && <p className="small">{t("membership.status.verify")}</p>}
       {a.state === "basic" && <><p>{t("membership.status.basic", { date })}</p><p className="muted small">{t("membership.status.basic_note")}</p></>}
       {a.state === "ai" && <p>{t("membership.status.ai", { date })}</p>}
       {gate.stale && <p className="muted small">{t("membership.status.offline", { date: fmtDay(iso(new Date(Date.parse(a.server_time)))) })}</p>}
     </section>
+    {/* During the trial, and on Basic (which can add AI), what each plan includes, so the end of the trial is never a surprise. */}
+    {a.state !== "ai" && <Plans accountId={undefined} />}
+  </>);
+}
+
+/** The two annual plans, side by side in words. A buy button appears only when a payment provider is connected. */
+function Plans({ accountId }: { accountId: string | undefined }) {
+  return (
+    <section className="stack" aria-label={t("membership.paywall.plans_aria")}>
+      <PlanCard plan="basic" name={t("membership.paywall.basic_name")} price={t("membership.paywall.basic_price")} body={t("membership.paywall.basic_body")} accountId={accountId} />
+      <PlanCard plan="ai" name={t("membership.paywall.ai_name")} price={t("membership.paywall.ai_price")} body={t("membership.paywall.ai_body")} accountId={accountId} />
+      <p className="muted small">{t("membership.paywall.annual")}</p>
+      {!checkout.available && <p className="small" role="note">{t("membership.paywall.no_checkout")}</p>}
+    </section>
   );
+}
+
+/** The short status on Me's Membership row: "Trial · 5 days left", "Basic", "AI". Null when membership isn't on. */
+export function membershipRowValue(gate: Gate, now = Date.now()): string | null {
+  if (gate.kind !== "open") return null;
+  const a = gate.access;
+  if (a.state === "basic") return t("membership.status.row_basic");
+  if (a.state === "ai") return t("membership.status.row_ai");
+  if (a.state !== "trial" || gate.until === null) return null;
+  const left = daysLeft(gate.until, now);
+  return left === 0 ? t("membership.status.row_trial_today") : left === 1 ? t("membership.status.row_trial_one") : t("membership.status.row_trial_other", { n: left });
+}
+
+/** A trial with two days or less to go: when it ends, for the one-line notice on Home. Null otherwise. */
+export function trialEndingSoon(gate: Gate, now = Date.now()): string | null {
+  if (gate.kind !== "open" || gate.access.state !== "trial" || gate.until === null) return null;
+  return daysLeft(gate.until, now) <= 2 ? fmtDay(iso(new Date(gate.until))) : null;
 }

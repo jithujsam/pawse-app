@@ -28,7 +28,7 @@ export const membershipPaywall = defineSection("membership.paywall", { screen: "
   basic_body: "The full app without AI: recovery tracking, missions, history, insights, journal and personalisation. No new AI requests.",
   ai_name: "AI",
   ai_price: "$3 a year",
-  ai_body: "Everything in Basic, plus every AI feature: written explanations of slips now, and AI features added later.",
+  ai_body: "Everything in Basic, plus every AI feature: written explanations of slips, your pet's own lines in its personality, and AI features added later.",
   annual: "Both are paid once a year. Neither is a lifetime purchase.",
   choose: "Choose {plan}",
   no_checkout: "Membership can't be bought in this version of the app yet. Nothing has been charged.",
@@ -57,12 +57,19 @@ export const membershipStatus = defineSection("membership.status", { screen: "Me
   trial_today: "Free trial: ends today",
   trial_one: "Free trial: 1 day left",
   trial_other: "Free trial: {n} days left",
+  trial_ends: "Ends {date}",
   trial_note: "The trial includes every pet, every breed and look, AI features and one recovery track.",
   verify: "Confirm your email address to use AI features during the trial.",
   basic: "Basic membership until {date}",
   ai: "AI membership until {date}",
   basic_note: "AI features aren't part of Basic. Everything else works as usual.",
   offline: "Last confirmed {date}. It checks again when you're online.",
+  row_trial_today: "Trial · ends today",
+  row_trial_one: "Trial · 1 day left",
+  row_trial_other: "Trial · {n} days left",
+  row_basic: "Basic",
+  row_ai: "AI",
+  ending_soon: "Your free trial ends {date}. Me → Membership shows the plans.",
 });
 // @copy-section-end membership.status
 

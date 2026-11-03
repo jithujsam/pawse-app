@@ -24,7 +24,8 @@ import { daysTogether, trackSummary } from "../progress";
 import { companionsOf, listTracks, trackState } from "../tracks";
 import { kv } from "../db";
 import { downloadBackup } from "../exportData";
-import { MembershipCard } from "./Paywall";
+import { MembershipCard, membershipRowValue } from "./Paywall";
+import { useGate } from "../access";
 import { shrink } from "./LogSheet";
 import { goalSummary, PlanPage } from "./Plan";
 import { configured, useSession } from "../supabase";
@@ -44,7 +45,7 @@ const TYPES: { value: FieldType; label: string }[] = [
 ];
 const SPECIES_LABEL: Record<string, string> = { dog: "Dog", cat: "Cat", fox: "Fox" };
 
-type Page = "you" | "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "data" | "feel" | "about" | "updates" | null;
+type Page = "you" | "plan" | "appearance" | "pet" | "voice" | "reminders" | "questions" | "security" | "account" | "membership" | "data" | "feel" | "about" | "updates" | null;
 
 export function Me() {
   const data = useData();
@@ -58,6 +59,7 @@ export function Me() {
   const [sim, setSim] = useState(false);
   const { session } = useSession();
   const sync = useSyncStatus();
+  const memberRow = membershipRowValue(useGate());
   const together = daysTogether(companion.bornOn, today());
   const close = () => setPage(null);
   const [showProf] = useState(() => {
@@ -107,6 +109,7 @@ export function Me() {
       </motion.div>
       <motion.div variants={rise}>
         <Group title={t("me.profile.g_privacy")}>
+          {memberRow && <Row icon={Icon.shield} label={t("membership.status.title")} value={memberRow} onClick={() => setPage("membership")} />}
           {configured && <Row icon={Icon.cloud} label={t("me.profile.row_account")} value={session ? (sync.state === "error" ? t("me.profile.needs_attention") : t("me.profile.on")) : t("me.profile.off")} onClick={() => setPage("account")} />}
           <Row icon={Icon.lock} label={t("me.profile.row_lock")} value={vault.hasPin() ? t("me.profile.on") : t("me.profile.off")} onClick={() => setPage("security")} />
           <Row icon={Icon.data} label={t("me.profile.row_data")} onClick={() => setPage("data")} />
@@ -133,7 +136,8 @@ export function Me() {
       <SubPage open={page === "reminders"} title={t("me.profile.row_reminders")} onClose={close}><RemindersPage /></SubPage>
       <SubPage open={page === "questions"} title={t("me.profile.row_questions")} onClose={close}><QuestionsPage /></SubPage>
       <SubPage open={page === "security"} title={t("me.profile.row_lock")} onClose={close}><SecurityCard /></SubPage>
-      {configured && <SubPage open={page === "account"} title={t("me.profile.row_account")} onClose={close}><section className="card stack"><Account /></section><MembershipCard /></SubPage>}
+      {configured && <SubPage open={page === "account"} title={t("me.profile.row_account")} onClose={close}><section className="card stack"><Account /></section></SubPage>}
+      <SubPage open={page === "membership"} title={t("membership.status.title")} onClose={close}><MembershipCard /></SubPage>
       <SubPage open={page === "data"} title={t("me.profile.row_data")} onClose={close}><DataPage /></SubPage>
       <SubPage open={page === "appearance"} title={t("me.profile.row_appearance")} onClose={close}><AppearancePage /></SubPage>
       <SubPage open={page === "feel"} title={t("me.profile.row_feel")} onClose={close}><FeelPage /></SubPage>

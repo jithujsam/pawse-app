@@ -10,7 +10,7 @@ vi.mock("../src/supabase", () => ({
   AUTH_REDIRECT: "app://x",
 }));
 
-const { Paywall, daysLeft } = await import("../src/screens/Paywall");
+const { Paywall, daysLeft, membershipRowValue, trialEndingSoon } = await import("../src/screens/Paywall");
 const { actions } = await import("../src/store");
 const { blank } = await import("../src/persist");
 const { CONTACT_EMAIL } = await import("../src/brand");
@@ -77,5 +77,25 @@ describe("the paywall", () => {
     expect(daysLeft(now + 1.5 * 86_400_000, now)).toBe(1);
     expect(daysLeft(now + 3_600_000, now)).toBe(0);
     expect(daysLeft(now - 1, now)).toBe(0);
+  });
+
+  it("Me's Membership row says the plan, or how long the trial has left", () => {
+    const now = Date.UTC(2026, 10, 3, 12);
+    const open = (state: ServerAccess["state"], until: number) => ({ kind: "open" as const, access: { ...access(state, state === "basic" || state === "ai" ? state : null), app: true, ai: state !== "basic" }, stale: false, until });
+    expect(membershipRowValue(open("trial", now + 5.5 * 86_400_000), now)).toBe("Trial · 5 days left");
+    expect(membershipRowValue(open("trial", now + 1.5 * 86_400_000), now)).toBe("Trial · 1 day left");
+    expect(membershipRowValue(open("trial", now + 3_600_000), now)).toBe("Trial · ends today");
+    expect(membershipRowValue(open("basic", now + 300 * 86_400_000), now)).toBe("Basic");
+    expect(membershipRowValue(open("ai", now + 300 * 86_400_000), now)).toBe("AI");
+    expect(membershipRowValue({ kind: "off" }, now)).toBeNull();
+  });
+
+  it("Home mentions the trial's end only in its last two days", () => {
+    const now = Date.UTC(2026, 10, 3, 12);
+    const trial = (until: number) => ({ kind: "open" as const, access: { ...access("trial"), app: true, ai: true }, stale: false, until });
+    expect(trialEndingSoon(trial(now + 5.5 * 86_400_000), now)).toBeNull();
+    expect(trialEndingSoon(trial(now + 2.5 * 86_400_000), now)).toBeTruthy();
+    expect(trialEndingSoon(trial(now + 3_600_000), now)).toBeTruthy();
+    expect(trialEndingSoon({ kind: "open", access: { ...access("ai", "ai"), app: true, ai: true }, stale: false, until: now + 86_400_000 }, now)).toBeNull();
   });
 });
