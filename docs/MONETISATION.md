@@ -127,15 +127,7 @@ Nothing here needs a paid Supabase plan. One existing Edge Function was extended
 
 ## 9. Deploying (none of this has been done)
 
-1. Confirm the open decisions in §11.
-2. Take a backup (§8).
-3. Check which migrations production already has (Dashboard → Database → Migrations, or `supabase migration list`), and apply any missing ones up to 0012.
-4. Apply `0014_membership.sql` **with the official launch date set first, in the same session** (`set app.membership_launch = '<launch date>';`, §3). First run it on a disposable database with `supabase/tests/membership.sql` and `membership-launch.sql`. Then check `select launch_at from membership_launch`.
-5. Check: `select count(*) from trial_grants` equals `select count(*) from auth.users`.
-6. Fix the deployment risks below, then deploy the `ai` function **after** 0014 (it calls `access_for`; before 0014 it refuses every AI call with `access`). Optional secrets: `AI_TRIAL_DAILY_LIMIT`, `AI_TRIAL_NETWORK_DAILY_LIMIT`.
-7. Optionally switch on the sign-up hook: Authentication → Hooks → Before User Created → Postgres → `public.hook_before_user_created`.
-8. Release an app version with the paywall, by docs/RELEASING.md. Older app versions keep working without a paywall (they don't call `my_access`); their AI requests are enforced by the function all the same.
-9. Before taking money: choose a provider, build its adapter and webhook function, and test it in the provider's test mode end to end.
+The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has today, the order (database and launch date, then the AI function, then app 5.1.0) and why, the scripts in `supabase/deploy/membership/`, verification and rollback. It was rehearsed against a copy of production's audited state.
 
 ### Deployment risks (reviewed and fixed 2026-11-03, nothing deployed)
 
