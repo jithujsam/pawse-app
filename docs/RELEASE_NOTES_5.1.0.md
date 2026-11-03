@@ -20,7 +20,22 @@ New: a Brutal personality, pets that talk in their own voice, and your free tria
 - App: membership gate (`src/access.ts`), paywall and membership page (`src/screens/Paywall.tsx`), one recovery track during the trial, AI requests only when AI is included (text already written always stays).
 - AI function: membership checked on the server before the cache for every request kind (slip, pet, weekly); the pet lines and personality from 5.0.x main merged in.
 - Database: `0014_membership.sql`, `0015_ai_cache_pet.sql` (production deployment is separate; see the runbook).
-- Built from branch `claude/eloquent-ritchie-rmjm3q`; the exact commit and the CI run's `BUILD-INFO.txt` (SHA-256, certificate) go into the published record.
+- Built from branch `claude/eloquent-ritchie-rmjm3q`.
+
+## Release candidate (built and verified, not published)
+
+| | |
+|---|---|
+| CI run | https://github.com/jithujsam/pawse-app/actions/runs/41664461105 (`build_type=release`, `publish=false`; the publish job was skipped) |
+| Artifact | `Pawse-5.1.0-81-release-5489065` (APK + `BUILD-INFO.txt`), kept 30 days |
+| Commit | `548906581ed9da5048e6c46f922236e789da11fc` |
+| Package | `app.detoxcompanion`, versionCode 81, versionName 5.1.0; web bundle inside reports 5.1.0 / 81 |
+| Signature | v1 + v2 verified; certificate SHA-256 `10ab3feb74724e2e38161c8027e679438a89d3521525980fbbd796ad62faa9f8` (the release key) |
+| Debuggable | no |
+| APK SHA-256 | `464f905442eedf95e83c28741ee00f30e48a270c16f97d9fcb87823be6713da0` (7,721,848 bytes) |
+| Tests in CI | schema 28, engine 59, web 567 passed; Android unit tests passed |
+
+When publishing, rebuild from `main` after the merge (the publish job runs only on `main`) and confirm the new build's `BUILD-INFO.txt` the same way. Its SHA-256 will differ from this candidate's.
 
 ## Compatibility
 
