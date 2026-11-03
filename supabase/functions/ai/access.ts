@@ -1,5 +1,5 @@
 /**
- * Who may make a new AI request, from the server's own reading of the account (public.access_for, migration 0013).
+ * Who may make a new AI request, from the server's own reading of the account (public.access_for, migration 0014).
  * No imports: runs in Deno (the function) and Node (the tests).
  *
  *   trial  with a confirmed email   allowed, at the trial's daily limit

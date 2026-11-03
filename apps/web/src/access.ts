@@ -8,7 +8,7 @@ import { setTrackLimit, setWriteGate } from "./store";
 /**
  * Membership on this phone: the one place the app asks "may this person use the app, or AI, right now?".
  *
- * The server decides (public.my_access, migration 0013) and enforces everything that costs money (the AI function).
+ * The server decides (public.my_access, migration 0014) and enforces everything that costs money (the AI function).
  * This module only mirrors that answer so the app can show the paywall and stop new records once access has ended.
  * It never deletes, hides or changes recovery data, and it never touches sync: rows logged earlier keep backing up
  * whatever the membership says.
@@ -35,11 +35,11 @@ export interface CachedAccess {
   skew: number;
 }
 
-/** Why the last check failed: the server lacks membership (pre-0013), the network or session failed, or the answer was malformed. */
+/** Why the last check failed: the server lacks membership (pre-0014), the network or session failed, or the answer was malformed. */
 export type CheckError = "missing" | "network" | "invalid";
 
 export type Gate =
-  /** Signed out, or membership isn't switched on on this server (migration 0013 not applied). Nothing is gated. */
+  /** Signed out, or membership isn't switched on on this server (migration 0014 not applied). Nothing is gated. */
   | { kind: "off" }
   /** Signed in and waiting for the first answer, with nothing cached. */
   | { kind: "loading" }

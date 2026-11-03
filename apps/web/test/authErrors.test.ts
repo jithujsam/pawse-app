@@ -13,8 +13,8 @@ describe("account error messages", () => {
     expect(friendlyAuthError("Password is known to be weak and easy to guess (pwned)")).toMatch(/data leaks/);
   });
   it("the sign-up hook's network limit gets its own advice, not 'wait a minute'", () => {
-    // The exact text the hook sends (supabase/migrations/0013_membership.sql), so the app and the server can't drift apart.
-    const sql = readFileSync(join(__dirname, "..", "..", "..", "supabase", "migrations", "0013_membership.sql"), "utf8");
+    // The exact text the hook sends (supabase/migrations/0014_membership.sql), so the app and the server can't drift apart.
+    const sql = readFileSync(join(__dirname, "..", "..", "..", "supabase", "migrations", "0014_membership.sql"), "utf8");
     const sent = /'message', '(signup_rate_limited:[^']+)'/.exec(sql)?.[1];
     expect(sent).toBeTruthy();
     const shown = friendlyAuthError(new Error(sent));

@@ -1,4 +1,4 @@
--- Membership: a seven-day trial per account, then an annual Basic or AI plan (docs/MONETISATION.md, PRD §24).
+-- Membership: a seven-day trial per account, then an annual Basic or AI plan (docs/MONETISATION.md, PRD §25).
 -- Additive only and safe to run more than once. Nothing about recovery data changes: no recovery table gains a
 -- column, a policy, a check or a trigger here, so sync never refuses a recovery row because of what someone paid.
 --

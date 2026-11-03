@@ -4,7 +4,7 @@ import {
   type AdoptionMode, type DayInput, type DayState, type HabitClass, type JourneyEvent, type Stage,
 } from "@detox/engine";
 import { addDays, iso, today, weekStart } from "./dates";
-import { dayStatus, EDIT_DAYS, outcomeDays, petDayInputs, quietDays, shiftDays, streaks, trackIndex, withPause, withResume } from "./progress";
+import { dayStatus, EDIT_DAYS, outcomeDays, petDayInputs, quietDays, shiftDays, streaks, trackIndex, trackSummary, withPause, withResume } from "./progress";
 import { effectsFor, EFFECT_LABEL, slipLine } from "./copy";
 import { weightFor } from "./templates";
 import { countTriggers, OTHER_PREFIX, pickedLabels, starterFields, type Intake } from "./questions";
@@ -246,6 +246,8 @@ export function riskyHour(d: AppData, habitId: string): number | null {
 /** What the notification plan needs (PlanInput without the clock and the last care event). */
 export interface ReminderInputs {
   enabled: boolean; reminder: string; tone: Tone; name: string; userName?: string; personality?: Personality;
+  /** The pet the plan speaks for, so its own lines (PRD §24) can be used when there are some. */
+  companionId?: string;
   checkedToday: boolean; lastCheckIn: string | null; riskHour: number | null; careNotes: boolean;
   /** Pets with days in the editable window that nothing is recorded for, in any active track. */
   catchup: { name: string; days: string[] }[];
@@ -279,7 +281,7 @@ export function reminderInputs(d: AppData, t0 = today()): ReminderInputs {
   const lastCheckIn = [...idx.checkedIn].filter((x) => x <= t0).sort().pop() ?? idx.start;
   const status = trackState(d, habit.id).status;
   return {
-    enabled: remindersOn && status === "active" && !companion.diedOn, reminder, tone, name: companion.name, userName, personality: companion.personality,
+    enabled: remindersOn && status === "active" && !companion.diedOn, reminder, tone, name: companion.name, userName, personality: companion.personality, companionId: companion.id,
     checkedToday: idx.checkedIn.has(t0) || idx.rest.has(t0), lastCheckIn, riskHour: riskNudge ? riskyHour(d, habit.id) : null, careNotes, catchup,
   };
 }
@@ -920,7 +922,7 @@ export const actions = {
   },
 };
 
-import type { SlipRequest } from "@detox/schema";
+import type { PetRequest, SlipRequest } from "@detox/schema";
 
 /** What the AI is allowed to see about one slip: no photos, short notes only. */
 export function slipRequest(entryId: string): SlipRequest | null {
@@ -932,7 +934,7 @@ export function slipRequest(entryId: string): SlipRequest | null {
   const med = median(data.entries.filter((x) => x.habitId === habit.id && x.amount !== null && x.day >= since && x.day < e.day).map((x) => x.amount as number));
   const last7 = data.entries.filter((x) => x.habitId === habit.id && x.day > addDays(e.day, -7) && x.day <= e.day).length;
   return {
-    kind: "slip", tone: data.settings.tone, habitClass: habit.cls, companionName: companion.name,
+    kind: "slip", tone: data.settings.tone, personality: companion.personality ?? "playful", habitClass: habit.cls, companionName: companion.name,
     amount: e.amount, unit: habit.unit, median: med ?? null,
     triggers: [
       ...habit.fields.filter((f) => f.type === "yesno" && f.trigger && e.values[f.id] === true).map((f) => f.label),
@@ -946,5 +948,22 @@ export function slipRequest(entryId: string): SlipRequest | null {
     ].map((t) => t.slice(0, 80)).slice(0, 4),
     nthToday: data.entries.filter((x) => x.habitId === habit.id && x.day === e.day && x.createdAt <= e.createdAt).length || 1,
     baselineMonths: e.months, last7Slips: last7,
+  };
+}
+
+/**
+ * The facts for a day of pet lines (PRD §24): the pet, the kind of habit and a few counts. Nothing the person typed,
+ * no amounts and no notes. `stage` is the pet's life stage from the engine's view.
+ */
+export function petRequest(habitId: string, stage: string, t0 = today()): PetRequest | null {
+  const habit = data.habits.find((h) => h.id === habitId);
+  const companion = habit && data.companions.find((c) => c.id === habit.companionId);
+  if (!habit || !companion || companion.diedOn) return null;
+  const s = trackSummary(data, habit.id, t0);
+  return {
+    kind: "pet", tone: data.settings.tone, personality: companion.personality ?? "playful", species: companion.species.slice(0, 12),
+    companionName: companion.name.slice(0, 20), habitClass: habit.cls.slice(0, 40), day: t0,
+    streak: Math.min(10000, s.current), quietDays: Math.min(10000, s.quiet),
+    last7Slips: Math.min(500, data.entries.filter((x) => x.habitId === habit.id && x.day > addDays(t0, -7) && x.day <= t0).length), stage: stage.slice(0, 10),
   };
 }

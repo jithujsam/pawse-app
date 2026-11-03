@@ -17,9 +17,7 @@ export const notificationsDaily = defineSection("notifications.daily", { screen:
 // @copy-section notifications.quiet
 export const notificationsQuiet = defineSection("notifications.quiet", { screen: "Notifications", title: "After days without a check-in", source: "src/notify.ts" }, {
   two_title: "💭 A quick check-in{who}?",
-  two_body: tones("Whenever you're ready. How have the last couple of days gone? 💛", "How have the last couple of days gone? It takes ten seconds. ⏱️", "Two days unrecorded. How did they go? 📝"),
   week_title: "🐾 {name} is here when you're ready{who}",
-  week_body: tones("Days you don't record don't count against you. Pick up whenever it suits you. 💛", "Days you don't record don't count against you. Pick up whenever it suits you. 🤝", "Unrecorded days don't count against you. Pick it up today. 🤝"),
 });
 // @copy-section-end notifications.quiet
 

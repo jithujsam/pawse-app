@@ -22,7 +22,7 @@ vi.mock("../src/db", () => ({
 const server = vi.hoisted(() => ({
   account: "u1",
   answers: {} as Record<string, unknown>,
-  /** "network": the call fails; "missing": the function doesn't exist (a server before migration 0013). */
+  /** "network": the call fails; "missing": the function doesn't exist (a server before migration 0014). */
   fail: null as null | "network" | "missing",
   gate: null as null | Promise<void>,
 }));
@@ -222,7 +222,7 @@ describe("loading, caching and switching accounts", () => {
     expect(getGate().kind).toBe("unverifiable");
   });
 
-  it("a server without membership (before migration 0013) gates nothing", async () => {
+  it("a server without membership (before migration 0014) gates nothing", async () => {
     server.fail = "missing";
     await startAccess("u1");
     expect(getGate()).toEqual({ kind: "off" });

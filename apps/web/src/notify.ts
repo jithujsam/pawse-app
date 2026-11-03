@@ -2,8 +2,9 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { catchupLine, reminderLine, whoSuffix } from "./copy";
 import { actions } from "./store";
-import { careNote } from "./voice";
-import { t, tt } from "./text";
+import { awayEvent, careNote, say } from "./voice";
+import type { PetLines } from "./ai";
+import { t } from "./text";
 import type { Personality, Tone } from "./types";
 
 const native = Capacitor.isNativePlatform();
@@ -43,6 +44,10 @@ export interface PlanInput {
   /** The person's own name, when they gave one: notifications use it where it reads naturally. */
   userName?: string;
   personality?: Personality;
+  /** The pet the plan speaks for. */
+  companionId?: string;
+  /** The pet's own lines for today, when the AI wrote some (PRD §24). Missing means the hand-written lines. */
+  voice?: PetLines | null;
   /** Today already has a slip or a clean mark: no reminder today. */
   checkedToday: boolean;
   /** Last day with a check-in (YYYY-MM-DD), for the quiet-day notes. */
@@ -61,12 +66,16 @@ export interface Planned { id: number; kind: NoteKind; at: Date; title: string; 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const atTime = (base: Date, dayOffset: number, hour: number, minute: number) => { const d = new Date(base); d.setDate(d.getDate() + dayOffset); d.setHours(hour, minute, 0, 0); return d; };
 
-/** If check-ins stop: two neutral notes, never implying the pet suffers from silence. A quiet day is missing data. */
-function lapseNotes(tone: Tone, n: string, user?: string): [number, string, string][] {
-  const who = whoSuffix(user);
+/**
+ * If check-ins stop: two notes in the pet's own voice (PRD §24). The pet is theatrical about the wait, never hurt
+ * or lonely, and every line says today still counts: a quiet day is missing data, not a failing.
+ */
+function lapseNotes(p: PlanInput): [number, string, string][] {
+  const who = whoSuffix(p.userName);
+  const line = (days: number) => `${days === 2 && p.voice?.away ? p.voice.away : say(awayEvent(days) ?? "away", p.personality, p.tone, days, `${p.lastCheckIn}:${days}`)} 🐾`;
   return [
-    [2, t("notifications.quiet.two_title", { who }), tt("notifications.quiet.two_body", tone)],
-    [7, t("notifications.quiet.week_title", { name: n, who }), tt("notifications.quiet.week_body", tone)],
+    [2, t("notifications.quiet.two_title", { who }), line(2)],
+    [7, t("notifications.quiet.week_title", { name: p.name, who }), line(7)],
   ];
 }
 
@@ -80,7 +89,7 @@ export function planNotifications(p: PlanInput): Planned[] {
   const lapseDays = new Set<string>();
   if (p.lastCheckIn) {
     const [y, m, d] = p.lastCheckIn.split("-").map(Number);
-    for (const [days, title, body] of lapseNotes(p.tone, p.name, p.userName)) {
+    for (const [days, title, body] of lapseNotes(p)) {
       const at = new Date(y, m - 1, d + days, 19, 30);
       if (at.getTime() > now) { lapseDays.add(dayKey(at)); add("lapse", at, { title, body }); }
     }
@@ -103,15 +112,15 @@ export function planNotifications(p: PlanInput): Planned[] {
     }
     if (p.riskHour !== null) {
       const minutes = (p.riskHour * 60 + 24 * 60 - 30) % (24 * 60);
-      add("risk", atTime(p.now, i, Math.floor(minutes / 60), minutes % 60), careNote("risk", p.personality, p.tone, p.name, p.userName));
+      add("risk", atTime(p.now, i, Math.floor(minutes / 60), minutes % 60), careNote("risk", p.personality, p.tone, p.name, p.userName, p.voice?.risk));
     }
   }
   if (p.careNotes && p.care) {
     const ev = new Date(p.care.at);
     if (p.care.kind === "clean") {
       const tonight = atTime(ev, 0, 21, 15);
-      add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name, p.userName));
-      add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name, p.userName));
+      add("thanks", tonight.getTime() > ev.getTime() ? tonight : new Date(ev.getTime() + 15 * 60_000), careNote("thanks", p.personality, p.tone, p.name, p.userName, p.voice?.thanks));
+      add("morning", atTime(ev, 1, 8, 20), careNote("morning", p.personality, p.tone, p.name, p.userName, p.voice?.morning));
     }
     // After a slip nothing is scheduled: a note from the pet hours later would be a guilt nudge, not help.
     // Recording the slip still clears any thank-you planned for that day.
@@ -135,7 +144,9 @@ async function apply(): Promise<void> {
   if (!inputs.enabled) return;
   const perm = await LocalNotifications.checkPermissions().catch(() => ({ display: "denied" }));
   if (perm.display !== "granted") return;
-  const plan = planNotifications({ ...inputs, care: readCare(), now: new Date() });
+  // Loaded here, not at the top: the AI module brings in the account client, which the pure planner doesn't need.
+  const voice = inputs.companionId ? await import("./ai").then((m) => m.latestPetLines(inputs.companionId!, inputs.personality, inputs.tone)).catch(() => null) : null;
+  const plan = planNotifications({ ...inputs, voice, care: readCare(), now: new Date() });
   if (plan.length) {
     await LocalNotifications.schedule({
       notifications: plan.map((n) => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, extra: n.extra, ...ICONS })),

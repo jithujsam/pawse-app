@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * The server's answer to "what may this account do right now" (public.my_access, migration 0013). The app checks the
+ * The server's answer to "what may this account do right now" (public.my_access, migration 0014). The app checks the
  * shape before it trusts any of it; anything malformed counts as no answer. The server stays the authority: this is
  * what the app shows and how it gates its own screens, while the server enforces everything that costs money.
  */

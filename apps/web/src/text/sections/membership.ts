@@ -1,6 +1,6 @@
 import { defineSection, tones } from "../core";
 
-// Membership copy (PRD §24, docs/MONETISATION.md). Prices, plan contents and data statements are factual and stay
+// Membership copy (PRD §25, docs/MONETISATION.md). Prices, plan contents and data statements are factual and stay
 // tone-neutral on purpose; only what the app says to the person about their trial or membership ending has three
 // Voices. None of it ties the pet's welfare to paying: the pet is never said to suffer, wait, or miss the person.
 

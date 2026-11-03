@@ -654,12 +654,22 @@ This builds on §19.6 and §20 and adds to §5.1. It changes no damage-engine ma
 9. **Never stored.** Everything is folded from the track's goal-met days and slips each time, on the phone (`apps/web/src/missions.ts`) and on the server (`mission_journey()`, migration 0010). Only the pop-ups already shown are stored, merged across phones and backups.
 10. **Safety.** Missions say the conditions describe the pet, not the person. Alcohol tracks show a note that stopping suddenly can be dangerous and to talk to a doctor first.
 
-## 24. Membership amendment (2026-11-03)
+## 24. Pet voice amendment (2026-11-03)
+
+This builds on §10, §15 and §22. It changes how the pet talks, not any recovery rule or engine number.
+
+1. **A fifth personality: Brutal.** Stored as `savage` (so it can't be confused with the Voice id `brutal`, shown as Direct). A witty, sarcastic diva: it roasts the habit, the situation and itself, never the person. Every line exists in all three Voices. Migration 0013 widens the check on `companions.personality`.
+2. **Coming back after quiet days.** From two quiet days in a row, Home and the quiet-day notifications speak in the pet's own voice, more theatrically the longer the gap (2 to 3 days, 4 to 6, a week or more) and naming the number of days. Quiet days stay missing data (RECOVERY_RULES rule 1): the pet is bored or waiting by the door, never hurt, sick or lonely, and its look doesn't change. Every line says today still counts.
+3. **AI-written pet lines.** While signed in, the app asks the AI function once per pet per day (`kind: "pet"`) for seven short lines in the pet's personality and the person's Voice: Home's speech bubble while waiting, after a goal met, after a slip and on coming back, and the good-morning, thank-you, risky-hour and first quiet-day notifications. The request carries only the pet (name, species, personality, life stage), the kind of habit, today's date and counts (streak, quiet days, slips in the last 7 days); nothing the person typed. Each line is at most 120 characters and is validated with `AiPetResult` (packages/schema) on the server and again on the phone. On any failure, sign-out or a change of personality or Voice, the hand-written lines stand. A rescued pet keeps its talking-pet pack.
+4. **Slip sentences in character.** The per-slip request (§10.1) also carries the pet's personality, so the explanation sounds like the pet. The AI's percentage still changes nothing (§10.3).
+5. **Guard words.** The AI word filter also refuses disappointment, shame, loneliness, abandonment, punishment and any care made conditional ("earned", "deserve", "won't eat", "refuse"), on top of the medical, insult, food and weight words.
+
+## 25. Membership amendment (2026-11-03)
 
 Owner decision (2026-11-03). This supersedes §17.6 and adds to §8 and §20.4. It changes no damage-engine math and no recovery rule. Implementation, enforcement and open points: `docs/MONETISATION.md`.
 
 1. **No free tier.** Every account gets a **seven-day trial**: accounts that exist before the official launch date get seven days from launch, and accounts registered after it get seven days from registration (owner decision, 2026-11-03). The trial includes every pet, breed and look, AI features, and **one recovery track**. It belongs to the account: reinstalling, signing out and in, or changing phones never restarts it.
-2. **Plans, paid yearly (not lifetime).** **Basic, $1 a year**: the whole app (tracking, missions, history, insights, journal, personalisation, up to 50 tracks), no new AI requests. **AI, $3 a year**: everything in Basic plus every AI feature, now and later.
+2. **Plans, paid yearly (not lifetime).** **Basic, $1 a year**: the whole app (tracking, missions, history, insights, journal, personalisation, up to 50 tracks), no new AI requests. **AI, $3 a year**: everything in Basic plus every AI feature, now and later: slip explanations, the pet's own lines (§24.3) and the weekly summary. Without AI, the hand-written lines and baseline explanations stand, as on any AI failure.
 3. **When access ends** (a trial or year passes without a purchase, a refund, a withdrawal): a hard paywall. No new check-ins, slips, urges, edits or AI. **Nothing is deleted, archived, hidden for good or changed**, past AI text included. Export, sign-out, account deletion and the privacy statements stay reachable. Buying or renewing opens everything exactly as it was. Data is never held hostage.
 4. **The server decides.** Trial dates, plans and payments live in server-owned tables that people can read but not write; the AI function refuses new AI without the trial or the AI plan, whatever the app says. The app mirrors the answer for the paywall and keeps it for up to **7 days offline**, never past the trial's or plan's end.
 5. **Never gated.** Recovery data and its sync, export, sign-out, account deletion, privacy statements, crisis and safety text.

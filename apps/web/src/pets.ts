@@ -56,6 +56,8 @@ export const PERSONALITIES: { id: Personality; label: string; blurb: string }[] 
   { id: "calm", label: "Calm", blurb: "Soft-spoken, naps a lot" },
   { id: "sassy", label: "Sassy", blurb: "Side-eye, dry jokes" },
   { id: "wise", label: "Wise", blurb: "Few words, all of them true" },
+  // Stored as "savage" so it never gets mixed up with the Voice id "brutal" (shown as Direct).
+  { id: "savage", label: "Brutal", blurb: "No filter. Roasts the habit, never you" },
 ];
 
 export const NAMES: Record<Species, string[]> = {

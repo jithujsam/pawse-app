@@ -35,7 +35,7 @@ Every entry has a stable id, `screen.section.key` (for example `onboarding.pet.t
 | **Voice** (Gentle, Honest, **Direct**) | Tone, Brutal | `brutal` is the stored id for Direct and never shows on screen. |
 | **Home**, **Journey**, **Insights**, **Me** | Pets, Calendar, You | The four tabs, as the PRD names them (section 7); each screen heading matches its tab. "Me → Your plan" style references use these names. The month grid on Journey is still a calendar. |
 | **Skip for now** | Skip the plan for now | For optional steps. **Not now** declines an offer or permission. **Skip** is for short tours. |
-| **membership**, **trial**, **Basic**, **AI** (the plan) | subscription, premium, pro, free tier, unlock | "Annual membership". Prices as "$1 a year". The paywall says what each plan includes and never ties the pet's welfare to paying (PRD §24). |
+| **membership**, **trial**, **Basic**, **AI** (the plan) | subscription, premium, pro, free tier, unlock | "Annual membership". Prices as "$1 a year". The paywall says what each plan includes and never ties the pet's welfare to paying (PRD §25). |
 
 ## Style
 
@@ -68,6 +68,6 @@ Each claim has to match what the code does. Verified 2026-10-26:
 | Everything else is saved to your account, private to it | Supabase tables with row-level security on every table (`supabase/migrations`), `allowBackup="false"` on Android. |
 | No ads or analytics | No analytics or ad package in `apps/web/package.json` or the source. |
 | What goes to the AI | `store.ts slipRequest` (pet name, kind of habit, amount, picked answers, short notes). Sent through `supabase/functions/ai`, which asks OpenRouter not to collect data and caches only the reply, keyed by a hash. The function also accepts a weekly-summary request (counts, hardest weekday, age, currency), but the app doesn't send one yet (verified 2026-11-03: no caller); the privacy page describes it in advance. |
-| Membership and network addresses | `supabase/migrations/0013_membership.sql`: trial and plan dates per account; `network_hashes` gives `sha256(daily salt ‖ network)` and is all that `abuse_hit` and the sign-up hook store; salts, counters and sign-up attempts are deleted after two days. Tested in `supabase/tests/membership.sql`. |
+| Membership and network addresses | `supabase/migrations/0014_membership.sql`: trial and plan dates per account; `network_hashes` gives `sha256(daily salt ‖ network)` and is all that `abuse_hit` and the sign-up hook store; salts, counters and sign-up attempts are deleted after two days. Tested in `supabase/tests/membership.sql`. |
 | **Not verifiable from this repo** | What the AI provider does with the text on its side. The copy says so. |
 | There is no switch to turn AI wording off | True today; signing out stops it. |

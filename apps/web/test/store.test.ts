@@ -256,6 +256,6 @@ describe("what a slip sends to the AI", () => {
     expect(sent).not.toContain("PHOTODATA");
     expect(sent).not.toContain("PRIVATE REFLECTION");
     expect(sent).not.toMatch(/@/); // no email address
-    expect(Object.keys(req).sort()).toEqual(["amount", "baselineMonths", "companionName", "habitClass", "kind", "last7Slips", "median", "nthToday", "texts", "tone", "triggers", "unit"].sort());
+    expect(Object.keys(req).sort()).toEqual(["amount", "baselineMonths", "companionName", "habitClass", "kind", "last7Slips", "median", "nthToday", "personality", "texts", "tone", "triggers", "unit"].sort());
   });
 });

@@ -6785,7 +6785,7 @@
       "source": "src/notify.ts",
       "file": "src/text/sections/notifications.ts",
       "start": 17,
-      "end": 24,
+      "end": 22,
       "entries": [
         {
           "id": "notifications.quiet.two_title",
@@ -6795,22 +6795,12 @@
           ]
         },
         {
-          "id": "notifications.quiet.two_body",
-          "kind": "voice",
-          "placeholders": []
-        },
-        {
           "id": "notifications.quiet.week_title",
           "kind": "text",
           "placeholders": [
             "name",
             "who"
           ]
-        },
-        {
-          "id": "notifications.quiet.week_body",
-          "kind": "voice",
-          "placeholders": []
         }
       ]
     },
@@ -6820,8 +6810,8 @@
       "title": "Days still open to fill in",
       "source": "src/copy.ts, src/notify.ts",
       "file": "src/text/sections/notifications.ts",
-      "start": 26,
-      "end": 32,
+      "start": 24,
+      "end": 30,
       "entries": [
         {
           "id": "notifications.catchup.title_one",
@@ -7099,12 +7089,6 @@
       "voices": true
     },
     {
-      "id": "pet.welcome_back",
-      "group": "generated",
-      "source": "src/copy.ts welcomeBackLine",
-      "voices": true
-    },
-    {
       "id": "pet.death_line",
       "group": "generated",
       "source": "src/copy.ts deathLine",
@@ -7291,6 +7275,12 @@
       "voices": true
     },
     {
+      "id": "voice.urgeStart.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
       "id": "voice.rodeOut.playful",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
@@ -7310,6 +7300,12 @@
     },
     {
       "id": "voice.rodeOut.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.rodeOut.savage",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
       "voices": true
@@ -7339,6 +7335,12 @@
       "voices": true
     },
     {
+      "id": "voice.petted.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
       "id": "voice.giggle.playful",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
@@ -7358,6 +7360,12 @@
     },
     {
       "id": "voice.giggle.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.giggle.savage",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
       "voices": true
@@ -7387,6 +7395,12 @@
       "voices": true
     },
     {
+      "id": "voice.dizzy.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
       "id": "voice.stroke.playful",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
@@ -7406,6 +7420,12 @@
     },
     {
       "id": "voice.stroke.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.stroke.savage",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
       "voices": true
@@ -7435,6 +7455,12 @@
       "voices": true
     },
     {
+      "id": "voice.cleanThanks.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
       "id": "voice.shrug.playful",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
@@ -7454,6 +7480,12 @@
     },
     {
       "id": "voice.shrug.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.shrug.savage",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
       "voices": true
@@ -7483,6 +7515,12 @@
       "voices": true
     },
     {
+      "id": "voice.binge.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
       "id": "voice.slip.playful",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
@@ -7502,6 +7540,102 @@
     },
     {
       "id": "voice.slip.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.slip.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.away.playful",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.away.calm",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.away.sassy",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.away.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.away.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayLong.playful",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayLong.calm",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayLong.sassy",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayLong.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayLong.savage",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayWeek.playful",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayWeek.calm",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayWeek.sassy",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayWeek.wise",
+      "group": "pet-speech",
+      "source": "src/voice.ts PET_LINES",
+      "voices": true
+    },
+    {
+      "id": "voice.awayWeek.savage",
       "group": "pet-speech",
       "source": "src/voice.ts PET_LINES",
       "voices": true

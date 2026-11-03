@@ -1,6 +1,6 @@
--- The official launch date (0013): accounts that exist before launch get seven days from launch; accounts registered
--- after it get seven days from registration. Re-runs 0013 over accounts that already exist, as production will.
--- Run from supabase/tests after local-auth-stub.sql and every migration (0001 to 0013):
+-- The official launch date (0014): accounts that exist before launch get seven days from launch; accounts registered
+-- after it get seven days from registration. Re-runs 0014 over accounts that already exist, as production will.
+-- Run from supabase/tests after local-auth-stub.sql and every migration (0001 to 0014):
 --   psql ... -f supabase/tests/membership-launch.sql
 -- Each check prints PASS or FAIL.
 \set ON_ERROR_STOP 1
@@ -12,18 +12,18 @@ create or replace function pg_temp.raises(sql text) returns boolean language plp
 begin execute sql; return false; exception when others then return true; end $$;
 grant execute on all functions in schema pg_temp to authenticated, service_role;
 
--- Production before 0013: accounts exist, there is no membership yet.
+-- Production before 0014: accounts exist, there is no membership yet.
 drop trigger on_auth_user_created_grant_trial on auth.users;
 delete from membership_launch;
 insert into auth.users (id, email, created_at) values
   ('aaaaaaaa-0000-4000-8000-00000000000a', 'old@x', now() - interval '400 days'),
   ('bbbbbbbb-0000-4000-8000-00000000000b', 'recent@x', now() - interval '3 days');
 
--- 0013 applied two weeks before the official launch.
+-- 0014 applied two weeks before the official launch.
 create temp table launch as select date_trunc('second', now() + interval '14 days') as at;
 grant select on launch to service_role, authenticated;
 select set_config('app.membership_launch', (select at::text from launch), false);
-\ir ../migrations/0013_membership.sql
+\ir ../migrations/0014_membership.sql
 
 select pg_temp.check('the launch date is the one given', (select launch_at from membership_launch) = (select at from launch));
 select pg_temp.check('every existing account gets a trial', (select count(*) from trial_grants) = 2);
@@ -69,12 +69,12 @@ select pg_temp.check('an account registered after launch: 7 days from registrati
 select pg_temp.check('... with 5 days left', access_for('dddddddd-0000-4000-8000-00000000000d') @> '{"state":"trial"}'
   and (access_for('dddddddd-0000-4000-8000-00000000000d') ->> 'valid_until')::timestamptz < now() + interval '5 days 1 minute');
 
--- Running 0013 again changes no trial and no launch date.
+-- Running 0014 again changes no trial and no launch date.
 create temp table before as select user_id, started_at, ends_at, source from trial_grants;
 select set_config('app.membership_launch', '2030-01-01 00:00:00+00', false);
-\ir ../migrations/0013_membership.sql
-select pg_temp.check('re-running 0013 keeps the launch date', (select launch_at < now() from membership_launch));
-select pg_temp.check('re-running 0013 changes no trial',
+\ir ../migrations/0014_membership.sql
+select pg_temp.check('re-running 0014 keeps the launch date', (select launch_at < now() from membership_launch));
+select pg_temp.check('re-running 0014 changes no trial',
   not exists (select user_id, started_at, ends_at, source from trial_grants except select * from before)
   and (select count(*) from trial_grants) = (select count(*) from before));
 

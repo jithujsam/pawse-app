@@ -72,14 +72,6 @@ export function dyingBanner(tone: Tone, name: string, age: number): string {
   });
 }
 
-/** Home, after a few days with nothing logged. Quiet days cost nothing; the line never scolds. */
-export function welcomeBackLine(tone: Tone, name: string): string {
-  return byTone(tone, {
-    gentle: `Hello again. ${name} is just happy to see you. No catching up needed.`,
-    honest: `There you are! ${name} is glad you're back. No catching up needed: just today.`,
-    brutal: `You're back. ${name} is ready. Check in for today and carry on.`,
-  });
-}
 
 /** The slip card when the hidden reserve took some of the cost. */
 export function absorbedLine(tone: Tone, name: string, streak: number, absorbed: number, all: boolean): string {

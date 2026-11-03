@@ -4,7 +4,7 @@ import { makeHandler, type Admin } from "../../../supabase/functions/ai/handler.
 
 /**
  * The AI Edge Function, called directly, the way a modified app or a script would call it. Membership is decided on
- * the server (access_for, migration 0013) before the cache, the quota or the AI provider is touched, so nothing the
+ * the server (access_for, migration 0014) before the cache, the quota or the AI provider is touched, so nothing the
  * phone does or claims can get new AI output without an active trial or the AI plan.
  */
 
@@ -49,9 +49,18 @@ const admin: Admin = {
   },
 };
 
-const fakeFetch = (async () => {
+/** What the provider was last asked: its temperature and system prompt, to check each kind is built as before. */
+let lastUpstream: { temperature?: number; system?: string } = {};
+const PET_ANSWER = { waiting: "Biscuit is waiting, dramatically.", goal_met: "Goal met. I am thriving.", after_slip: "Tonight we rally.",
+  away: "Three days by the door. Today still counts.", morning: "Morning. Yesterday went well.", risk: "Your tricky hour is near.", thanks: "A good day. Noted." };
+const fakeFetch = (async (_url: string, init: { body: string }) => {
   upstreamCalls++;
-  return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ ai_adjust_pct: 5, body_effects: ["tired_eyes"], explanation: "Biscuit felt that one." }) } }] }), { status: 200 });
+  const sent = JSON.parse(init.body) as { temperature: number; messages: { content: string }[] };
+  lastUpstream = { temperature: sent.temperature, system: sent.messages[0].content };
+  const answer = sent.messages[0].content.includes("write what the pet says") ? PET_ANSWER
+    : sent.messages[0].content.includes("weekly summary") ? { summary: "Biscuit had 2 slips this week, one fewer than last week." }
+    : { ai_adjust_pct: 5, body_effects: ["tired_eyes"], explanation: "Biscuit felt that one." };
+  return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(answer) } }] }), { status: 200 });
 }) as unknown as typeof fetch;
 
 let env: Record<string, string> = {};
@@ -67,7 +76,7 @@ const call = async (opts: { token?: string | null; body?: unknown; ip?: string }
 
 beforeEach(() => {
   accessOf = { "user-a": TRIAL }; accessFails = false; networkOk = true;
-  rpcLog = []; usage = {}; cache = new Map(); upstreamCalls = 0;
+  rpcLog = []; usage = {}; cache = new Map(); upstreamCalls = 0; lastUpstream = {};
   env = { OPENROUTER_API_KEY: "sk-or-v1-test" };
 });
 
@@ -199,5 +208,70 @@ describe("aiGate and clientIp", () => {
     expect(clientIp(new Headers({ "cf-connecting-ip": "2001:db8::1" }))).toBe("2001:db8::1");
     expect(clientIp(new Headers())).toBeNull();
     expect(clientIp(new Headers({ "x-forwarded-for": "x".repeat(100) }))).toBeNull();
+  });
+});
+
+describe("AI function: every request kind (slip, pet, weekly) goes through membership", () => {
+  const pet = { kind: "pet", tone: "brutal", personality: "savage", species: "dog", companionName: "Biscuit", habitClass: "food_spending",
+    day: "2026-11-03", streak: 4, quietDays: 0, last7Slips: 2, stage: "adult" };
+  const weekly = { kind: "weekly", tone: "honest", habitClass: "food_spending", companionName: "Biscuit", unit: "money",
+    thisWeek: { slips: 2, spend: 800, months: 3 }, lastWeek: { slips: 3, spend: 900, months: 4 }, worstWeekday: "Friday", age: 31, currency: "INR" };
+  const slipWithPersonality = { ...slip, personality: "savage" };
+  const requests: [string, unknown][] = [["slip (as 5.0.20 sends it)", slip], ["slip with personality", slipWithPersonality], ["pet", pet], ["weekly", weekly]];
+
+  for (const [name, body] of requests) {
+    it(`${name}: trial and the AI plan get an answer`, async () => {
+      for (const access of [TRIAL, AI]) {
+        accessOf["user-a"] = access; cache = new Map();
+        const r = await call({ body });
+        expect(r.body.ok, `${name} ${access.state}`).toBe(true);
+      }
+    });
+    it(`${name}: Basic, expired, refunded, revoked and an unconfirmed trial are refused before the provider`, async () => {
+      const refused: [Access, string][] = [
+        [BASIC, "plan"], [{ state: "expired", app: false, ai: false }, "plan"], [{ state: "refunded", app: false, ai: false }, "plan"],
+        [{ state: "revoked", app: false, ai: false }, "plan"], [{ ...TRIAL, ai: false, email_verified: false }, "verify"],
+      ];
+      for (const [access, error] of refused) {
+        accessOf["user-a"] = access;
+        expect((await call({ body })).body, `${name} ${access.state}`).toEqual({ ok: false, error });
+      }
+      expect(upstreamCalls).toBe(0);
+    });
+    it(`${name}: a cached answer needs AI access too`, async () => {
+      accessOf["user-a"] = AI;
+      expect((await call({ body })).body.ok).toBe(true);
+      expect((await call({ body })).body.cached).toBe(true);
+      accessOf["user-a"] = BASIC;
+      expect((await call({ body })).body).toEqual({ ok: false, error: "plan" });
+      expect(upstreamCalls).toBe(1);
+    });
+  }
+
+  it("pet lines are written in the personality and at the livelier temperature; slips keep theirs", async () => {
+    accessOf["user-a"] = AI;
+    const r = await call({ body: pet });
+    expect(r.body).toMatchObject({ ok: true, result: PET_ANSWER });
+    expect(lastUpstream.temperature).toBe(0.8);
+    expect(lastUpstream.system).toMatch(/Personality: Brutal: a witty, sarcastic diva/);
+    await call({ body: slipWithPersonality });
+    expect(lastUpstream.temperature).toBe(0.4);
+    expect(lastUpstream.system).toMatch(/Personality of the pet, which shapes the wording: Brutal/);
+    await call({ body: slip });
+    expect(lastUpstream.system).not.toMatch(/Personality of the pet/);
+  });
+
+  it("an unknown personality or an extra field is a bad request, never a call", async () => {
+    accessOf["user-a"] = AI;
+    expect((await call({ body: { ...pet, personality: "evil" } })).status).toBe(400);
+    expect((await call({ body: { ...slip, plan: "ai" } })).status).toBe(400);
+    expect(upstreamCalls).toBe(0);
+  });
+
+  it("an unsafe pet line from the provider is refused, so the app keeps its hand-written lines", async () => {
+    accessOf["user-a"] = AI;
+    const unsafe = (async () => { upstreamCalls++; return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ ...PET_ANSWER, away: "I was so lonely without you." }) } }] })); }) as unknown as typeof fetch;
+    const r = await makeHandler({ admin, env: (k) => env[k], fetch: unsafe })(new Request("https://fn.local/ai", { method: "POST", headers: { Authorization: "Bearer tok-a" }, body: JSON.stringify(pet) }));
+    expect(await r.json()).toEqual({ ok: false, error: "invalid" });
   });
 });

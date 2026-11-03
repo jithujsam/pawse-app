@@ -85,6 +85,33 @@ describe("notification plan: at most two a day", async () => {
     expect(plan.filter((n) => n.kind === "daily" && n.at.toDateString() === at(0, 0).toDateString())).toHaveLength(0);
   });
 
+  it("quiet-day notes speak in the pet's voice, name the gap and say today still counts", () => {
+    for (const personality of ["playful", "calm", "sassy", "wise", "savage"] as const) for (const tone of ["gentle", "honest", "brutal"] as const) {
+      const plan = planNotifications({ ...base, tone, personality, lastCheckIn: "2026-10-18", riskHour: null });
+      const lapses = plan.filter((n) => n.kind === "lapse");
+      expect(lapses.length, `${personality}/${tone}`).toBeGreaterThan(0);
+      for (const n of lapses) {
+        expect(n.body, `${personality}/${tone}`).toMatch(/\d/);
+        expect(n.body).not.toMatch(/lonely|hungry|sick|abandon/i);
+      }
+    }
+  });
+
+  it("the pet's own lines for today replace the hand-written ones, and nothing else changes", () => {
+    const voice = { waiting: "w", goalMet: "g", afterSlip: "a", away: "Two days. I chewed a cushion. Today counts.", morning: "Slept like royalty.", risk: "Slip o'clock. Change the ending.", thanks: "Goal met. Delicious." };
+    for (const riskHour of [null, 23]) {
+      const plain = planNotifications({ ...base, riskHour, checkedToday: true, care: { kind: "clean", at: at(0, 18).getTime() } });
+      const own = planNotifications({ ...base, riskHour, voice, checkedToday: true, care: { kind: "clean", at: at(0, 18).getTime() } });
+      expect(own.map((n) => [n.kind, n.at.getTime()])).toEqual(plain.map((n) => [n.kind, n.at.getTime()]));
+      expect(own.find((n) => n.kind === "thanks")!.body).toBe("Goal met. Delicious. 💛");
+      // With a risky hour the good-morning loses its place to the heads-up (two a day), so each is checked where it is kept.
+      if (riskHour === null) expect(own.find((n) => n.kind === "morning")!.body).toBe("Slept like royalty. ☀️");
+      else expect(own.find((n) => n.kind === "risk")!.body).toBe("Slip o'clock. Change the ending. 🌙");
+    }
+    const quiet = planNotifications({ ...base, voice, lastCheckIn: "2026-10-18", riskHour: null }).find((n) => n.kind === "lapse")!;
+    expect(quiet.body).toBe("Two days. I chewed a cushion. Today counts. 🐾");
+  });
+
   it("never more than two on any day, whatever the mix", () => {
     for (const checkedToday of [false, true]) for (const riskHour of [null, 0, 9, 21, 23]) for (const care of [null, { kind: "clean" as const, at: at(0, 7).getTime() }, { kind: "slip" as const, at: at(0, 20).getTime() }])
       for (const lastCheckIn of [null, "2026-10-10", "2026-10-18", "2026-10-20"]) for (const reminder of ["08:20", "21:15", "22:00"]) {

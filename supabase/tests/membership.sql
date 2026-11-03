@@ -1,7 +1,7 @@
--- Membership checks for 0013: trial grants, effective access, privileges and row level security, payment events
+-- Membership checks for 0014: trial grants, effective access, privileges and row level security, payment events
 -- (idempotency and plan transitions), abuse counters and the sign-up hook, and that recovery data is never gated.
--- Run on a fresh local Postgres after local-auth-stub.sql and every migration in order (0001 to 0013):
---   psql -f supabase/tests/local-auth-stub.sql -f supabase/migrations/0001_init.sql ... -f supabase/migrations/0013_membership.sql \
+-- Run on a fresh local Postgres after local-auth-stub.sql and every migration in order (0001 to 0014):
+--   psql -f supabase/tests/local-auth-stub.sql -f supabase/migrations/0001_init.sql ... -f supabase/migrations/0014_membership.sql \
 --        -f supabase/tests/membership.sql
 -- Each check prints PASS or FAIL.
 \set ON_ERROR_STOP 1

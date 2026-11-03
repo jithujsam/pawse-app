@@ -27,7 +27,7 @@ export const CompanionSchema = z.object({
   finalAge: z.number().min(0).max(100).nullable(),
   coat: z.string().regex(/^[a-z_]{1,20}$/).optional(),
   breed: z.string().regex(/^[a-z_]{1,20}$/).optional(),
-  personality: z.enum(["playful", "calm", "sassy", "wise"]).optional(),
+  personality: z.enum(["playful", "calm", "sassy", "wise", "savage"]).optional(),
   /** The track this companion belongs to (v2). Filled on load for older data. */
   trackId: id.optional(),
   /** Adoption mode (PRD §23). Missing means raise. */
