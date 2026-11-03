@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { careNote, recoveryLine, say, type Event } from "../src/voice";
-import { absorbedLine, bingeLine, dyingBanner, greeting, quietBanner, welcomeBackLine } from "../src/copy";
+import { awayEvent, careNote, recoveryLine, say, type Event } from "../src/voice";
+import { absorbedLine, bingeLine, dyingBanner, greeting, quietBanner } from "../src/copy";
 import { blank, normalize } from "../src/persist";
 import { toRemote, merge, type Pulled } from "../src/syncmap";
 import { defaultTrackState, trackState } from "../src/tracks";
 import { COATS, coatFor, mix, tuxedoPixels } from "../src/pets";
 import type { AppData, Personality, Tone } from "../src/types";
 
-const EVENTS: Event[] = ["petted", "giggle", "dizzy", "stroke", "cleanThanks", "shrug", "binge", "slip", "rodeOut", "urgeStart"];
-const PERS: Personality[] = ["playful", "calm", "sassy", "wise"];
+const EVENTS: Event[] = ["petted", "giggle", "dizzy", "stroke", "cleanThanks", "shrug", "binge", "slip", "rodeOut", "urgeStart", "away", "awayLong", "awayWeek"];
+const PERS: Personality[] = ["playful", "calm", "sassy", "wise", "savage"];
 const TONES: Tone[] = ["gentle", "honest", "brutal"];
 const SHAME = /\b(loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|addict)\b/i;
 
@@ -21,8 +21,8 @@ describe("companion voice", () => {
       expect(line).not.toContain("{d}");
     }
   });
-  it("slip-card, banner and welcome-back lines exist in all three tones, differ by tone, and never shame", () => {
-    const lines = (t: Tone) => [dyingBanner(t, "Miso", 92), welcomeBackLine(t, "Miso"), absorbedLine(t, "Miso", 40, 4, true), absorbedLine(t, "Miso", 40, 2.5, false), bingeLine(t, "Miso"), quietBanner(t, "Miso")];
+  it("slip-card and banner lines exist in all three tones, differ by tone, and never shame", () => {
+    const lines = (t: Tone) => [dyingBanner(t, "Miso", 92), absorbedLine(t, "Miso", 40, 4, true), absorbedLine(t, "Miso", 40, 2.5, false), bingeLine(t, "Miso"), quietBanner(t, "Miso")];
     const [g, h, b] = TONES.map(lines);
     for (const set of [g, h, b]) for (const l of set) { expect(l).not.toMatch(SHAME); expect(l.length).toBeGreaterThan(10); }
     for (let i = 0; i < h.length; i++) { expect(g[i]).not.toBe(h[i]); expect(b[i]).not.toBe(h[i]); }
@@ -38,6 +38,31 @@ describe("companion voice", () => {
     expect(say("slip", "playful", "mystery" as Tone)).toMatch(/\w/);
     expect(say("slip", "mystery" as Personality, "honest")).toMatch(/\w/);
     expect(careNote("risk", "mystery" as Personality, "mystery" as Tone, "Miso").body).toMatch(/\w/);
+  });
+  it("coming back after quiet days: the line grows with the gap, names it, and never makes the pet hurt by it", () => {
+    expect([0, 1, 2, 3, 4, 6, 7, 30].map(awayEvent)).toEqual([null, null, "away", "away", "awayLong", "awayLong", "awayWeek", "awayWeek"]);
+    const HURT = /\b(lonely|alone|sad|hurt|cried|abandon\w*|neglect\w*|starv\w*|hungry|sick|miss(ed|ing)? you|your fault|where were you)\b/i;
+    for (const e of ["away", "awayLong", "awayWeek"] as const) for (const p of PERS) for (const t of TONES) {
+      const l = say(e, p, t, 5);
+      expect(l, `${e}/${p}/${t}`).toContain("5");
+      expect(l, `${e}/${p}/${t}`).not.toMatch(HURT);
+    }
+    // A week or more always says that the quiet days cost nothing or that today is what counts.
+    for (const p of PERS) for (const t of TONES) expect(say("awayWeek", p, t, 9), `${p}/${t}`).toMatch(/today|nothing|welcome|door/i);
+  });
+  it("a seeded line is the same on every render, and different seeds can differ", () => {
+    for (let i = 0; i < 5; i++) expect(say("urgeStart", "savage", "brutal", 0, "2026-11-03")).toBe(say("urgeStart", "savage", "brutal", 0, "2026-11-03"));
+    const seen = new Set(Array.from({ length: 40 }, (_, i) => say("urgeStart", "savage", "brutal", 0, `seed-${i}`)));
+    expect(seen.size).toBeGreaterThan(1);
+  });
+  it("the Brutal personality roasts the habit, never the person", () => {
+    const AT_PERSON = /\byou('re| are)? (so |such an? )?(lazy|useless|hopeless|a mess|bad|terrible|dumb|weak)\b|\bshame on you\b/i;
+    for (const e of EVENTS) for (const t of TONES) for (let i = 0; i < 6; i++) expect(say(e, "savage", t, 4), `${e}/${t}`).not.toMatch(AT_PERSON);
+  });
+  it("a notification uses the pet's own line when there is one, and the hand-written one otherwise", () => {
+    expect(careNote("risk", "savage", "brutal", "Miso", "Jithu", "Tricky hour. The habit is stretching. Skip its warm-up.").body)
+      .toBe("Tricky hour. The habit is stretching. Skip its warm-up, Jithu. 🌙");
+    expect(careNote("risk", "savage", "brutal", "Miso", undefined, "  ").body).toContain("slip hour");
   });
   it("the shrug-off names the streak that earned it", () => {
     for (const p of PERS) for (const t of TONES) expect(say("shrug", p, t, 63)).toContain("63");

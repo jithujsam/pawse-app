@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { SlipRequest } from "@detox/schema";
+import type { PetRequest, SlipRequest } from "@detox/schema";
 
 // A cached AI sentence can quote the request (pet name, notes, amounts), so it is reused only for the exact same request (audit B2).
 const mem = new Map<string, string>();
@@ -14,16 +14,21 @@ vi.mock("../src/supabase", () => ({
   supabase: {
     auth: { getSession: async () => ({ data: { session: signedIn ? { user: { id: "u1" } } : null } }) },
     functions: {
-      invoke: async (_: string, { body }: { body: SlipRequest }) => {
+      invoke: async (_: string, { body }: { body: SlipRequest | PetRequest }) => {
         calls++;
         if (reply) return reply();
+        if (body.kind === "pet") return { data: { ok: true, result: petAnswer(body.companionName) }, error: null };
         return { data: { ok: true, result: { ai_adjust_pct: 0, body_effects: [], explanation: `${body.companionName} felt that.` } }, error: null };
       },
     },
   },
 }));
 
-const { aiCacheKey, aiForSlip, AI_RETENTION_MS } = await import("../src/ai");
+const petAnswer = (name: string) => ({
+  waiting: `${name} is waiting, dramatically.`, goal_met: "Goal met. Delicious.", after_slip: "That stung. Tonight is ours.",
+  away: "Days of silence. I nearly printed posters.", morning: "Slept like royalty.", risk: "Slip o'clock. Change the ending.", thanks: "Look at us, thriving.",
+});
+const { aiCacheKey, aiForSlip, aiPetLines, latestPetLines, AI_RETENTION_MS } = await import("../src/ai");
 const { AI_CACHE_KEY } = await import("../src/store");
 
 const req: SlipRequest = {
@@ -145,6 +150,53 @@ describe("AI retention and sign-in", () => {
     const before = calls;
     expect(await aiForSlip(r)).toBeNull();
     expect(calls).toBe(before);
+    signedIn = true;
+  });
+});
+
+describe("the pet's own lines (PRD §24)", () => {
+  const pet: PetRequest = {
+    kind: "pet", tone: "brutal", personality: "savage", species: "dog", companionName: "Biscuit", habitClass: "food_spending",
+    day: "2026-11-03", streak: 4, quietDays: 0, last7Slips: 2, stage: "adult",
+  };
+
+  it("asks once per pet and day, then serves the cached lines", async () => {
+    const n = calls;
+    const a = await aiPetLines("c1", pet);
+    expect(a?.waiting).toBe("Biscuit is waiting, dramatically.");
+    expect(a?.goalMet).toBe("Goal met. Delicious.");
+    expect(await aiPetLines("c1", pet)).toEqual(a);
+    expect(calls).toBe(n + 1);
+    await aiPetLines("c1", { ...pet, day: "2026-11-04" });
+    expect(calls).toBe(n + 2); // a new day is a new set
+  });
+
+  it("notifications get the newest lines only in the pet's current personality and Voice, and only while signed in", async () => {
+    await aiPetLines("c2", { ...pet, companionName: "Mochi" });
+    expect((await latestPetLines("c2", "savage", "brutal"))?.waiting).toBe("Mochi is waiting, dramatically.");
+    expect(await latestPetLines("c2", "calm", "brutal")).toBeNull();
+    expect(await latestPetLines("c2", "savage", "gentle")).toBeNull();
+    expect(await latestPetLines("other", "savage", "brutal")).toBeNull();
+    signedIn = false;
+    expect(await latestPetLines("c2", "savage", "brutal")).toBeNull();
+    signedIn = true;
+  });
+
+  it.each([
+    ["an error", () => ({ data: null, error: new Error("offline") })],
+    ["an unsafe line", () => ({ data: { ok: true, result: { ...petAnswer("Biscuit"), away: "I was so lonely without you." } }, error: null })],
+    ["a missing line", () => ({ data: { ok: true, result: { waiting: "Hi." } }, error: null })],
+  ])("%s → no lines, and the hand-written ones stand", async (_n, answer) => {
+    reply = answer;
+    expect(await aiPetLines("c3", { ...pet, streak: calls })).toBeNull();
+    reply = null;
+  });
+
+  it("signed out: nothing is sent", async () => {
+    signedIn = false;
+    const n = calls;
+    expect(await aiPetLines("c4", { ...pet, streak: 999 })).toBeNull();
+    expect(calls).toBe(n);
     signedIn = true;
   });
 });

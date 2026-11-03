@@ -29,15 +29,17 @@ const json = (req: Request, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors(req), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
 const EFFECTS = ["dull_coat", "heavier", "labored_breathing", "cough", "thin", "glassy_eyes", "trembling", "tired_eyes", "slumped", "anxious", "worn_down"] as const;
-const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*)\b/i;
+// Kept in step with packages/schema (isSafeText): the app checks every answer again.
+const BANNED = /\b(diagnos\w*|cancer|disease|cirrhosis|liver failure|heart attack|stroke|will die|going to die|addicted|addict|loser|stupid|idiot|pathetic|worthless|disgusting|weak|failure|hopeless|weight|calori\w*|diet\w*|obes\w*|fat|skinny|starv\w*|disappoint\w*|ashamed|shame\w*|lonely|abandon\w*|punish\w*|deserve\w*|earn(ed)?|won'?t eat|refus\w*)\b/i;
 const safe = (t: string) => !BANNED.test(t);
 const text = (n: number) => z.string().max(n).transform((s) => s.replace(/[\u0000-\u001f\u007f]/g, " ").trim());
 const tone = z.enum(["gentle", "honest", "brutal"]);
 const unit = z.enum(["money", "count", "minutes", "none"]);
+const personality = z.enum(["playful", "calm", "sassy", "wise", "savage"]);
 const week = z.object({ slips: z.number().int().min(0).max(1000), spend: z.number().min(0).max(1e8), months: z.number().min(0).max(1000) });
 
 const SlipReq = z.object({
-  kind: z.literal("slip"), tone, habitClass: text(40), companionName: text(20), amount: z.number().min(0).max(1e8).nullable(), unit,
+  kind: z.literal("slip"), tone, personality: personality.optional(), habitClass: text(40), companionName: text(20), amount: z.number().min(0).max(1e8).nullable(), unit,
   median: z.number().min(0).max(1e8).nullable(), triggers: z.array(text(60)).max(8), texts: z.array(text(80)).max(4),
   nthToday: z.number().int().min(1).max(50), baselineMonths: z.number().min(0).max(24), last7Slips: z.number().int().min(0).max(500),
 }).strict();
@@ -45,13 +47,20 @@ const WeeklyReq = z.object({
   kind: z.literal("weekly"), tone, habitClass: text(40), companionName: text(20), unit, thisWeek: week, lastWeek: week,
   worstWeekday: text(12).nullable(), age: z.number().min(0).max(100), currency: text(4),
 }).strict();
-const Req = z.discriminatedUnion("kind", [SlipReq, WeeklyReq]);
+const int = (max: number) => z.number().int().min(0).max(max);
+const PetReq = z.object({
+  kind: z.literal("pet"), tone, personality, species: text(12), companionName: text(20), habitClass: text(40),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), streak: int(10000), quietDays: int(10000), last7Slips: int(500), stage: text(10),
+}).strict();
+const Req = z.discriminatedUnion("kind", [SlipReq, WeeklyReq, PetReq]);
 
 const SlipOut = z.object({
   ai_adjust_pct: z.number().min(-30).max(30),
   body_effects: z.array(z.enum(EFFECTS)).max(3),
   explanation: z.string().trim().min(1).max(140).refine(safe),
 }).strict();
+const line = z.string().trim().min(3).max(120).refine(safe).refine((t) => !/[{}<>#]/.test(t));
+const PetOut = z.object({ waiting: line, goal_met: line, after_slip: line, away: line, morning: line, risk: line, thanks: line }).strict();
 const WeeklyOut = z.object({
   summary: z.string().trim().min(20).max(700).refine(safe).refine((t) => /\d/.test(t)),
 }).strict();
@@ -60,6 +69,14 @@ const TONES: Record<string, string> = {
   gentle: "Gentle: soft and kind. Short. Never blame. Point at tomorrow.",
   honest: "Honest: plain and factual. Name what happened and what it cost. No cushioning, no drama.",
   brutal: "Brutal: blunt and spare. Describe the behaviour and its cost without softening. Still never insult the person.",
+};
+/** How each personality talks. The pet roasts the habit and itself, never the person (PRD §24). */
+const PERSONAS: Record<z.infer<typeof personality>, string> = {
+  playful: "Playful: bouncy and easily delighted. Exclamation marks, big feelings, short bursts.",
+  calm: "Calm: soft-spoken and slow. Few words, soothing, unhurried.",
+  sassy: "Sassy: dry wit and side-eye. Pretends not to care, is secretly devoted.",
+  wise: "Wise: few words, quietly true. Never preachy, never a lecture.",
+  savage: "Brutal: a witty, sarcastic diva with no filter. Roasts the habit, the situation and itself with sharp jokes, and is theatrical about its own suffering in a funny way. The person is its favourite human and the habit is the villain: it never mocks, insults or blames the person.",
 };
 const RULES = `You write short text for a self-awareness app. A person tracks a habit they want to cut down. Each slip ages a virtual pet companion; clean days heal it.
 Rules, all of them are mandatory:
@@ -74,10 +91,28 @@ Rules, all of them are mandatory:
 
 type SlipR = z.infer<typeof SlipReq>;
 type WeeklyR = z.infer<typeof WeeklyReq>;
+type PetR = z.infer<typeof PetReq>;
 
-function prompt(r: SlipR | WeeklyR) {
+function prompt(r: SlipR | WeeklyR | PetR) {
+  if (r.kind === "pet") return {
+    system: `${RULES}\nTone: ${TONES[r.tone]}\nPersonality: ${PERSONAS[r.personality]}
+Task: write what the pet says, in first person, as itself. Give it a real, consistent character: it reacts like a living pet would. One line per moment, each at most 110 characters, each different. Be funny where the personality is funny.
+- waiting: today has no check-in yet.
+- goal_met: the person just recorded a day with their goal met.
+- after_slip: later on a day that had a slip. The slip cost the pet something; point at tonight or tomorrow, never at the person.
+- away: the person comes back after quiet_days days without checking in (assume a few if it is under 2). Quiet days cost nothing and change nothing. Be theatrical about the wait (bored, waiting by the door), never hurt, sad or alone because of it, and say that today still counts.
+- morning: a notification the morning after a good day.
+- risk: a notification half an hour before the person's usual hardest hour.
+- thanks: a notification on the evening of a goal-met day.
+Never mention food, eating, meals or treats. Reply as {"waiting": string, "goal_met": string, "after_slip": string, "away": string, "morning": string, "risk": string, "thanks": string}.`,
+    user: JSON.stringify({
+      pet_name: r.companionName, species: r.species, habit_class: r.habitClass, goal_met_days_streak: r.streak,
+      quiet_days: r.quietDays, slips_in_last_7_days: r.last7Slips, life_stage: r.stage,
+    }),
+    max: 500,
+  };
   if (r.kind === "slip") return {
-    system: `${RULES}\nTone: ${TONES[r.tone]}\nTask: judge this single slip. Reply as {"ai_adjust_pct": number from -30 to 30, "body_effects": up to 3 tags chosen only from ${JSON.stringify(EFFECTS)}, "explanation": one sentence of at most 140 characters, in the requested tone, that cites at least one real fact from the data}.\nSet ai_adjust_pct above 0 when the slip is bigger or later or more repeated than this person's usual, below 0 when smaller. Pick effects that fit the habit class.`,
+    system: `${RULES}\nTone: ${TONES[r.tone]}${r.personality ? `\nPersonality of the pet, which shapes the wording: ${PERSONAS[r.personality]}` : ""}\nTask: judge this single slip. Reply as {"ai_adjust_pct": number from -30 to 30, "body_effects": up to 3 tags chosen only from ${JSON.stringify(EFFECTS)}, "explanation": one sentence of at most 140 characters, in the requested tone, that cites at least one real fact from the data}.\nSet ai_adjust_pct above 0 when the slip is bigger or later or more repeated than this person's usual, below 0 when smaller. Pick effects that fit the habit class.`,
     user: JSON.stringify({
       habit_class: r.habitClass, pet_name: r.companionName, amount: r.amount, unit: r.unit, persons_usual_amount: r.median,
       triggers_present: r.triggers, notes_written_by_person: r.texts, slip_number_today: r.nthToday,
@@ -144,7 +179,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Title": "Companion" },
       body: JSON.stringify({
-        models: MODELS, temperature: 0.4, max_tokens: p.max,
+        models: MODELS, temperature: body.kind === "pet" ? 0.8 : 0.4, max_tokens: p.max,
         response_format: { type: "json_object" },
         provider: { data_collection: "deny" },
         messages: [{ role: "system", content: p.system }, { role: "user", content: p.user }],
@@ -158,7 +193,7 @@ Deno.serve(async (req) => {
     }
     const out = await res.json();
     const content = String(out?.choices?.[0]?.message?.content ?? "");
-    const check = (body.kind === "slip" ? SlipOut : WeeklyOut).safeParse(extractJson(content));
+    const check = (body.kind === "slip" ? SlipOut : body.kind === "pet" ? PetOut : WeeklyOut).safeParse(extractJson(content));
     if (!check.success) { console.warn("invalid output", body.kind); return json(req, { ok: false, error: "invalid" }); }
     // user_id (migration 0004) lets the cache go with the account. Before 0004 the write fails quietly and nothing is cached.
     // created_at is set on every write, so the seven-day limit counts from the last time the result was made.

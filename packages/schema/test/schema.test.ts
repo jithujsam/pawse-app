@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AiSlipResult, AiWeeklyResult } from "../src";
+import { AiPetResult, AiSlipResult, AiWeeklyResult, PetRequest } from "../src";
 
 describe("AI slip result", () => {
   const ok = { ai_adjust_pct: 12, body_effects: ["dull_coat", "heavier"], explanation: "Third order today and well above your usual spend." };
@@ -59,5 +59,33 @@ describe("tracks (stored data v2)", () => {
     expect(parsed.habits[0].track).toMatchObject({ fromNewerApp: 1 });
     // Known keys are still validated.
     expect(parseAppData({ ...v2, settings: { tone: "shouty" } })).toBeNull();
+  });
+});
+
+describe("AI pet lines (PRD §24)", () => {
+  const ok = {
+    waiting: "Still waiting on today. I've rehearsed my reaction both ways.", goal_met: "Goal met. The habit got nothing. Delicious.",
+    after_slip: "That one stung. Tonight is still ours.", away: "Three days of silence. I nearly printed posters. Today counts.",
+    morning: "Slept like royalty. Yesterday did that.", risk: "Slip o'clock is near. Change the ending.", thanks: "Goal met today. Look at us.",
+  };
+  it("accepts a full set of short, safe lines", () => expect(AiPetResult.safeParse(ok).success).toBe(true));
+  it.each([
+    ["a line missing", (({ risk: _r, ...rest }) => rest)(ok)],
+    ["too long", { ...ok, waiting: "x".repeat(121) }],
+    ["insult", { ...ok, after_slip: "You are pathetic." }],
+    ["the pet hurt by a quiet day", { ...ok, away: "I was so lonely while you were gone." }],
+    ["disappointment", { ...ok, after_slip: "I'm disappointed in you." }],
+    ["care made conditional", { ...ok, goal_met: "You earned a cuddle today." }],
+    ["food refusal", { ...ok, after_slip: "I won't eat tonight." }],
+    ["weight talk", { ...ok, morning: "I feel fat today." }],
+    ["markup or placeholders", { ...ok, waiting: "Hi {name}, check in!" }],
+    ["extra field", { ...ok, months: 3 }],
+  ])("rejects: %s", (_n, v) => expect(AiPetResult.safeParse(v).success).toBe(false));
+  it("the request carries counts and the pet, never anything typed", () => {
+    const req = { kind: "pet", tone: "brutal", personality: "savage", species: "dog", companionName: "Biscuit", habitClass: "food_spending", day: "2026-11-03", streak: 4, quietDays: 0, last7Slips: 2, stage: "adult" };
+    expect(PetRequest.safeParse(req).success).toBe(true);
+    expect(PetRequest.safeParse({ ...req, personality: "evil" }).success).toBe(false);
+    expect(PetRequest.safeParse({ ...req, day: "today" }).success).toBe(false);
+    expect(Object.keys(PetRequest.shape)).not.toContain("texts");
   });
 });

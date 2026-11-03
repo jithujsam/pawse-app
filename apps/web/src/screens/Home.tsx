@@ -2,20 +2,21 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { LiveCompanion, moodFor, type Gesture, type Reaction } from "../Companion";
-import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, greeting, milestoneLine, statusLine, waitingLine, welcomeBackLine } from "../copy";
+import { cleanLine, cleanToast, pauseHint, pausedLine, resumeToast, MILESTONES, greeting, milestoneLine, statusLine, waitingLine } from "../copy";
 import { fmtDay, today } from "../dates";
 import { HEALTH_SEGMENTS } from "@detox/engine";
 import { haptic } from "../haptics";
 import { spring } from "../motion";
 import { scheduleCare } from "../notify";
-import { actions, getData, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
+import { actions, getData, petRequest, SCARS_ON, useActiveView, useData, type Deduction } from "../store";
+import { aiPetLines, type PetLines } from "../ai";
 import { celebratedFor, daysTogether, milestoneProgress, milestoneToCelebrate, trackSummary } from "../progress";
 import { ambientFor, sceneFor } from "../scene";
 import { PetScene } from "../ui/PetScene";
 import { trackState } from "../tracks";
 import { Burst, Button, Icon } from "../ui/Controls";
 import { toast } from "../ui/Toast";
-import { say } from "../voice";
+import { awayEvent, say } from "../voice";
 import { LogSheet } from "./LogSheet";
 import { DayDetail } from "./Calendar";
 import { UrgeSheet } from "./UrgeSheet";
@@ -67,8 +68,9 @@ export function Home({ onBack }: { onBack?: () => void }) {
   const checked = slippedToday || cleanToday;
   // Any record today is a check-in (an urge too); a paused or not-tracked day isn't waiting for one.
   const checkedIn = checked || progress.today === "urge";
-  // After a few quiet days the line is a warm welcome back. The pet keeps its usual mood: quiet days don't change how it looks.
-  const returning = !checkedIn && !resting && progress.quiet >= 3;
+  // After two or more quiet days in a row the pet says so in its own way, more theatrically the longer it was. It keeps
+  // its usual mood: quiet days are missing data and don't change how it looks (RECOVERY_RULES rule 1).
+  const away = !checkedIn && !resting ? awayEvent(progress.quiet) : null;
   const mood = moodFor(view.stage, { checkedToday: checkedIn, slippedToday, justLogged: just, age: view.age, notTracking: resting });
   const streak = progress.current;
   const age = view.age;
@@ -93,12 +95,26 @@ export function Home({ onBack }: { onBack?: () => void }) {
   // The badge: conditions still to heal in recovery, or 1 while an issue needs clearing.
   const activeMissions = !missions ? 0 : missions.journey.phase === "recovery" ? missions.journey.missions.filter((x) => x.status !== "healed").length : missions.journey.issue ? 1 : 0;
   const trackPaused = track.status === "paused";
-  const line = note ?? (just === "clean" ? cleanLine(tone, companion.name, streak)
+  // The pet's own lines for today, written by the AI in its personality (PRD §24). Until they arrive, or whenever
+  // there are none (signed out, offline, invalid), every moment keeps its hand-written line. A rescue pet keeps its pack.
+  const [own, setOwn] = useState<PetLines | null>(null);
+  const ownFor = rescue ? null : own;
+  useEffect(() => {
+    setOwn(null);
+    const req = petRequest(habit.id, view.stage, t0);
+    if (!req) return;
+    let live = true;
+    void aiPetLines(companion.id, req).then((r) => { if (live) setOwn(r); });
+    return () => { live = false; };
+    // One set of lines per pet, day, Voice and personality; the counts inside are read as they are at that moment.
+  }, [companion.id, habit.id, t0, tone, personality]);
+  const line = note ?? (just === "clean" ? ownFor?.goalMet ?? cleanLine(tone, companion.name, streak)
     : trackPaused && !checkedIn ? pausedLine(tone, companion.name)
-    : returning ? welcomeBackLine(tone, companion.name)
-    : slippedToday && !just ? afterSlipLine(tone, companion.name)
+    : away ? ownFor?.away ?? say(away, personality, tone, progress.quiet, `${t0}:${companion.id}`)
+    : slippedToday && !just ? ownFor?.afterSlip ?? afterSlipLine(tone, companion.name)
       : progress.today === "rest" ? restLine(tone)
-      : !checkedIn ? waitingLine(tone, companion.name) : statusLine(tone, companion.name, view.stage));
+      : !checkedIn ? ownFor?.waiting ?? waitingLine(tone, companion.name)
+      : cleanToday && ownFor ? ownFor.goalMet : statusLine(tone, companion.name, view.stage));
   // A goal met gets a jolly hop while the cheer runs; nothing else plays a gesture.
   const gesture: Gesture = just === "clean" ? "hop" : "none";
 
@@ -109,7 +125,7 @@ export function Home({ onBack }: { onBack?: () => void }) {
     if (!actions.markClean(habit.id)) { haptic.warn(); setNote(t("home.today.slip_blocks_goal")); return; }
     haptic.success();
     setJust("clean"); setSparks((s) => s + 1);
-    setNote(rescue ? packLine(habit.cls, "thanks", tone) : say("cleanThanks", personality, tone));
+    setNote(rescue ? packLine(habit.cls, "thanks", tone) : ownFor?.goalMet ?? say("cleanThanks", personality, tone));
     void scheduleCare("clean", careOpts());
     // A condition healed (or full recovery) is shown first; a days-of-care milestone waits until it's closed.
     const ev = actions.recordMissions(companion.id);

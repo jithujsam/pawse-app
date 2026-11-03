@@ -195,6 +195,6 @@ describe("the fields show the note as soon as it is needed", () => {
 
 describe("pet dialogue", () => {
   it("lists the same events in the table and the type, so nothing unlisted can be said", () => {
-    expect(Object.keys(PET_LINES).sort()).toEqual(["binge", "cleanThanks", "dizzy", "giggle", "petted", "rodeOut", "shrug", "slip", "stroke", "urgeStart"]);
+    expect(Object.keys(PET_LINES).sort()).toEqual(["away", "awayLong", "awayWeek", "binge", "cleanThanks", "dizzy", "giggle", "petted", "rodeOut", "shrug", "slip", "stroke", "urgeStart"]);
   });
 });

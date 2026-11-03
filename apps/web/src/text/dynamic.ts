@@ -2,7 +2,7 @@ import type { Stage } from "@detox/engine";
 import { STAGE_LABEL } from "@detox/engine";
 import {
   absorbedLine, bingeLine, cleanLine, cleanToast, deathLine, dyingBanner, greeting, hatchLine, milestoneLine, pauseHint, pauseRefused, pausedLine,
-  pauseToast, quietBanner, reminderLine, restrictionNoteSample, resumeHint, resumeToast, slipLine, statusLine, tonePreview, verdict, waitingLine, welcomeBackLine,
+  pauseToast, quietBanner, reminderLine, restrictionNoteSample, resumeHint, resumeToast, slipLine, statusLine, tonePreview, verdict, waitingLine,
 } from "../copy";
 import { PET_LINES, recoveryLine, type Event } from "../voice";
 import { afterSlipLine, lapseHeadline, progressKept, restLine, urgeActedLine, urgeActedNote, urgeManagedLine, urgePauseLine, STATUS_LABEL, STRATEGIES, GOALS, REASONS, SITUATIONS, FIRST_STEPS, REPLACEMENTS } from "../recovery";
@@ -33,7 +33,6 @@ export const generated = (): GeneratedLine[] => [
   { id: "pet.clean_toast", group: "generated", title: "Goal met, toast", source: "src/copy.ts cleanToast", samples: per((t) => cleanToast(t, N)) },
   { id: "pet.status_line", group: "generated", title: "How the pet is, by stage", source: "src/copy.ts statusLine", samples: per((t) => STAGES.map((s) => `${STAGE_LABEL[s]}: ${statusLine(t, N, s)}`)) },
   { id: "pet.waiting_line", group: "generated", title: "Waiting for a check-in", source: "src/copy.ts waitingLine", samples: per((t) => waitingLine(t, N)) },
-  { id: "pet.welcome_back", group: "generated", title: "After a few quiet days", source: "src/copy.ts welcomeBackLine", samples: per((t) => welcomeBackLine(t, N)) },
   { id: "pet.death_line", group: "generated", title: "When the pet dies (classic rules)", source: "src/copy.ts deathLine", samples: per((t) => deathLine(t, N)) },
   { id: "pet.dying_banner", group: "generated", title: "Very frail banner", source: "src/copy.ts dyingBanner", samples: per((t) => dyingBanner(t, N, 92)) },
   { id: "pet.absorbed_line", group: "generated", title: "A slip the pet's strength absorbed", source: "src/copy.ts absorbedLine", samples: per((t) => [absorbedLine(t, N, 12, 3, true), absorbedLine(t, N, 12, 1, false), absorbedLine(t, N, 12, 2.5, false)]) },
@@ -63,7 +62,7 @@ export const generated = (): GeneratedLine[] => [
   { id: "safety.restriction_sample", group: "generated", title: "Food and weight note (same in every Voice)", source: "src/copy.ts RESTRICTION_NOTE", samples: [restrictionNoteSample()] },
 ];
 
-const PERSONALITY_IDS: Personality[] = ["playful", "calm", "sassy", "wise"];
+const PERSONALITY_IDS: Personality[] = ["playful", "calm", "sassy", "wise", "savage"];
 /** Every line the pet can say, as written in src/voice.ts. */
 export const petSpeech = (): GeneratedLine[] =>
   (Object.keys(PET_LINES) as Event[]).flatMap((event) => PERSONALITY_IDS.map((p) => ({

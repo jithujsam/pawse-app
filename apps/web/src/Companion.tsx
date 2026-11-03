@@ -85,8 +85,9 @@ const IDLE: Record<Personality, [Gesture, number][]> = {
   calm: [["nap", 2], ["yawn", 2], ["look", 1], ["tilt", 1]],
   sassy: [["side", 3], ["look", 1], ["perk", 1], ["yawn", 1]],
   wise: [["tilt", 2], ["look", 2], ["yawn", 1], ["nap", 1]],
+  savage: [["side", 4], ["yawn", 2], ["look", 1]],
 };
-const PACE: Record<Personality, [number, number]> = { playful: [3000, 3500], calm: [7000, 5000], sassy: [5000, 4000], wise: [6000, 4000] };
+const PACE: Record<Personality, [number, number]> = { playful: [3000, 3500], calm: [7000, 5000], sassy: [5000, 4000], wise: [6000, 4000], savage: [4500, 3500] };
 const LENGTH: Partial<Record<Gesture, number>> = { yawn: 1500, nap: 3800, hop: 900, side: 1600, tilt: 1400, look: 1200, perk: 900 };
 const pick = (xs: [Gesture, number][]) => { let r = Math.random() * xs.reduce((a, [, w]) => a + w, 0); for (const [g, w] of xs) { r -= w; if (r <= 0) return g; } return xs[0][0]; };
 
@@ -128,11 +129,11 @@ export function LiveCompanion({ interactive = true, personality = "playful", onR
   useEffect(() => {
     if (!interactive || reduce || low) return;
     let t: ReturnType<typeof setTimeout>;
-    const [base, spread] = PACE[personality];
+    const [base, spread] = PACE[personality] ?? PACE.playful;
     const tick = () => {
       t = setTimeout(() => {
         if (Date.now() - lastMove.current > 2500 && (!art.gesture || art.gesture === "none")) {
-          const g = pick(IDLE[personality].filter(([x]) => art.mood !== "sad" || x !== "hop"));
+          const g = pick((IDLE[personality] ?? IDLE.playful).filter(([x]) => art.mood !== "sad" || x !== "hop"));
           setIdle(g);
           if (g === "look") setLook({ x: Math.random() > 0.5 ? 0.9 : -0.9, y: -0.2 });
           setTimeout(() => { setIdle("none"); if (g === "look") setLook({ x: 0, y: 0 }); }, LENGTH[g] ?? 1100);
