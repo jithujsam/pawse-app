@@ -1457,7 +1457,7 @@
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/pets.ts",
       "start": 66,
-      "end": 77,
+      "end": 79,
       "entries": [
         {
           "id": "pets.add.label",
@@ -1480,12 +1480,22 @@
           "placeholders": []
         },
         {
+          "id": "pets.add.step_goal",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "pets.add.step_of",
           "kind": "text",
           "placeholders": [
             "step",
             "total"
           ]
+        },
+        {
+          "id": "pets.add.skip_goal",
+          "kind": "text",
+          "placeholders": []
         },
         {
           "id": "pets.add.add",
