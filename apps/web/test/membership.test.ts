@@ -19,6 +19,9 @@ vi.mock("../src/db", () => ({
 }));
 
 // The server: my_access answers per account; sync's tables come from the in-memory Supabase stand-in.
+// Sheets portal into document.body; the screens rendered here only need their own content.
+vi.mock("../src/ui/Sheet", async (orig) => ({ ...(await orig<object>()), Sheet: () => null }));
+
 const server = vi.hoisted(() => ({
   account: "u1",
   answers: {} as Record<string, unknown>,
@@ -349,5 +352,63 @@ describe("sync keeps backing up behind the paywall", () => {
     expect([...table("clean_days").values()].map((r) => r.day).sort()).toEqual(["2026-10-03", "2026-10-05"]);
     expect(table("entries").size).toBe(1);
     stopSync();
+  });
+});
+
+describe("past AI text stays viewable; only new AI waits (Basic, expired, refunded, revoked)", () => {
+  const WEEK = "2026-09-28";
+  beforeEach(() => {
+    seed();
+    actions.applyRemote({ ...getData(), summaries: { [H]: { [WEEK]: "A steadier week: two quiet evenings in a row." } } });
+  });
+  const view = async (state: "basic" | "expired" | "refunded" | "revoked") => {
+    server.answers.u1 = answer(state, state === "basic" ? { until: Date.now() + 365 * DAY } : {});
+    await startAccess("u1");
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { DayDetail } = await import("../src/screens/Calendar");
+    const { Report } = await import("../src/screens/Report");
+    const day = renderToStaticMarkup(createElement(DayDetail, { day: "2026-10-02", standalone: true }));
+    const insights = renderToStaticMarkup(createElement(Report));
+    return { day, insights };
+  };
+
+  for (const state of ["basic", "expired", "refunded", "revoked"] as const) {
+    it(`${state}: the slip's AI explanation and earlier weekly summaries are on screen, and no new AI is allowed`, async () => {
+      const { day, insights } = await view(state);
+      expect(day).toContain("Biscuit noticed the late order.");
+      expect(insights).toContain("Earlier summaries");
+      expect(insights).toContain("A steadier week: two quiet evenings in a row.");
+      expect(can("ai")).toBe(false);
+      expect(getGate().kind).toBe(state === "basic" ? "open" : "locked");
+    });
+  }
+
+  it("the AI plan: the same text is on screen, and new AI is allowed", async () => {
+    server.answers.u1 = answer("ai", { until: Date.now() + 365 * DAY });
+    await startAccess("u1");
+    const { createElement } = await import("react");
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { DayDetail } = await import("../src/screens/Calendar");
+    expect(renderToStaticMarkup(createElement(DayDetail, { day: "2026-10-02", standalone: true }))).toContain("Biscuit noticed the late order.");
+    expect(can("ai")).toBe(true);
+  });
+
+  it("trying to record behind a closed paywall says so (the app shows the paywall), and changes nothing", async () => {
+    const { onWriteRefused } = await import("../src/store");
+    server.answers.u1 = answer("expired");
+    await startAccess("u1");
+    let refused = 0;
+    const off = onWriteRefused(() => { refused++; });
+    const before = JSON.stringify({ ...getData(), updatedAt: 0 });
+    expect(actions.logSlip(H, {}, today())).toBeNull();
+    expect(actions.markClean(H, today())).toBe(false);
+    expect(actions.recordUrge(H, 3, "rode_it_out")).toBeNull();
+    expect(refused).toBe(3);
+    expect(JSON.stringify({ ...getData(), updatedAt: 0 })).toBe(before);
+    // Background saves (settings, sync bookkeeping) never raise it.
+    actions.setTone("brutal");
+    expect(refused).toBe(3);
+    off();
   });
 });

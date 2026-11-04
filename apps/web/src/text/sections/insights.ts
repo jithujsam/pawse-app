@@ -82,6 +82,8 @@ export const insightsSummary = defineSection("insights.summary", { screen: "Insi
   aria: "Written summary",
   title: "In words",
   ai_note: "Written by an AI service from your counts. See Me → Your data for exactly what is sent.",
+  earlier: "Earlier summaries",
+  week_of: "Week of {date}",
 });
 // @copy-section-end insights.summary
 

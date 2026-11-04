@@ -1,6 +1,6 @@
 /**
- * The trusted path from a payment provider to an account's membership. Provider-independent: no provider is chosen
- * yet, so nothing here is deployed (folders starting with "_" are never deployed as functions by Supabase).
+ * The trusted path from a payment provider to an account's membership. Provider-independent; the provider in
+ * use is Dodo Payments (dodo.ts). Folders starting with "_" are never deployed as functions by Supabase.
  * docs/MONETISATION.md describes how a provider plugs in.
  *
  * The contract:
@@ -19,7 +19,12 @@
  */
 
 export type PlanId = "basic" | "ai";
-export type PaymentEventKind = "purchase" | "renewal" | "payment_failed" | "expiry" | "refund" | "revocation";
+/**
+ * purchase, renewal: grant or extend a paid period. payment: a successful charge, recorded so a later refund can find
+ * its account. payment_failed, cancellation: recorded; the paid period still runs. expiry, refund, revocation: end
+ * access. partial_refund: held for review, access unchanged.
+ */
+export type PaymentEventKind = "purchase" | "renewal" | "payment" | "payment_failed" | "cancellation" | "expiry" | "refund" | "partial_refund" | "revocation";
 
 /** One provider event, after its signature was checked, in the provider's own terms mapped onto ours. */
 export interface VerifiedPaymentEvent {
@@ -37,6 +42,14 @@ export interface VerifiedPaymentEvent {
   periodEnd: string | null;
   /** The provider's id for the purchase or subscription, so a refund of an older purchase can't end a newer one. */
   providerRef: string | null;
+  /** The provider's id for the charge (refunds and disputes name only this), if the event has one. */
+  paymentRef?: string | null;
+  /** The provider's customer id, if the event has one. */
+  customerRef?: string | null;
+  /** When the provider says the event happened (ISO 8601), so an older event delivered late can't undo a newer one. */
+  eventAt?: string | null;
+  /** For subscription events: whether it renews at the end of the period (false once cancelled). */
+  renews?: boolean | null;
 }
 
 export interface PaymentVerifier {
@@ -53,7 +66,7 @@ export type Rpc = (fn: "apply_payment_event", args: Record<string, unknown>) => 
 
 export type Outcome = "applied" | "duplicate" | "recorded" | "stale" | "needs_review" | "no_account" | "ignored";
 
-const KINDS: readonly PaymentEventKind[] = ["purchase", "renewal", "payment_failed", "expiry", "refund", "revocation"];
+const KINDS: readonly PaymentEventKind[] = ["purchase", "renewal", "payment", "payment_failed", "cancellation", "expiry", "refund", "partial_refund", "revocation"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** A paid period is a year; a little over allows for provider rounding and time zones. Upgrades may be shorter. */
 const MAX_PERIOD_MS = 380 * 86_400_000;
@@ -65,6 +78,10 @@ export function problemWith(e: VerifiedPaymentEvent): string | null {
   if (!KINDS.includes(e.kind)) return "kind";
   if (e.accountId !== null && !UUID.test(e.accountId)) return "account";
   if (e.providerRef !== null && e.providerRef.length > 200) return "provider_ref";
+  if (e.paymentRef != null && (typeof e.paymentRef !== "string" || e.paymentRef.length > 200)) return "payment_ref";
+  if (e.customerRef != null && (typeof e.customerRef !== "string" || e.customerRef.length > 200)) return "customer_ref";
+  if (e.eventAt != null && Number.isNaN(Date.parse(e.eventAt))) return "event_at";
+  if (e.renews != null && typeof e.renews !== "boolean") return "renews";
   const start = e.periodStart === null ? null : Date.parse(e.periodStart);
   const end = e.periodEnd === null ? null : Date.parse(e.periodEnd);
   if (Number.isNaN(start) || Number.isNaN(end)) return "period";
@@ -90,6 +107,7 @@ export async function processPaymentWebhook(req: Request, verifier: PaymentVerif
   const { data, error } = await rpc("apply_payment_event", {
     p_provider: event.provider, p_event_id: event.eventId, p_user: event.accountId, p_kind: event.kind, p_plan: event.plan,
     p_period_start: event.periodStart, p_period_end: event.periodEnd, p_provider_ref: event.providerRef,
+    p_payment_ref: event.paymentRef ?? null, p_customer_ref: event.customerRef ?? null, p_event_at: event.eventAt ?? null, p_renews: event.renews ?? null,
   });
   // The provider retries on anything but 2xx; the database applied nothing, so a retry is safe.
   if (error) return reply(500, { ok: false, error: "apply" });

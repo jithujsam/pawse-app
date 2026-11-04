@@ -39,7 +39,7 @@ describe("payment webhooks", () => {
     const res = await processPaymentWebhook(post(), verifier(purchase), d.rpc);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, outcome: "applied" });
-    expect(d.calls[0]).toEqual({ p_provider: "test", p_event_id: "evt-1", p_user: ACCOUNT, p_kind: "purchase", p_plan: "ai", p_period_start: year.periodStart, p_period_end: year.periodEnd, p_provider_ref: "sub-1" });
+    expect(d.calls[0]).toEqual({ p_provider: "test", p_event_id: "evt-1", p_user: ACCOUNT, p_kind: "purchase", p_plan: "ai", p_period_start: year.periodStart, p_period_end: year.periodEnd, p_provider_ref: "sub-1", p_payment_ref: null, p_customer_ref: null, p_event_at: null, p_renews: null });
   });
 
   it("the same event delivered again is answered OK and changes nothing", async () => {

@@ -67,6 +67,7 @@ All functions are `security definer` with `set search_path = ''` and explicit gr
 - No RLS policy, CHECK constraint or trigger on a recovery table mentions membership. If one did, sync would treat the refusal as permanent (`sync.ts` `isRowLevel`) and strand rows on one phone. `supabase/tests/membership.sql` asserts a revoked account still inserts and reads its rows.
 - The trial's one-track limit applies only to **opening** a track (`createTrack`). A restore (`importJson`), another phone's rows, or a plan ending never remove, archive or hide a track. Unarchive and resume are never gated.
 - AI text already received (slip explanations on entries, weekly summaries in `weekly_reports`) stays forever. Only new requests are refused.
+- It also stays **visible** (owner decision, 2026-11-04). Basic shows everything as usual. When access has ended, the paywall offers "View my history", which opens the whole app read-only: the calendar with each slip's explanation, Insights with every earlier weekly summary, the journal and every pet. Trying to record something, or the + button, brings the paywall back (`store.ts` `onWriteRefused`); background saves never do.
 - Export is on the paywall, alongside sign-out and account deletion.
 
 ## 6. Offline behaviour
@@ -80,39 +81,60 @@ All functions are `security definer` with `set search_path = ''` and explicit gr
 - Switching accounts: the kept answer is per account and is wiped with the phone's copy on sign-out (`resetAll` clears IndexedDB) and on a different account signing in (`App.tsx` owner check). An answer that arrives after sign-out is dropped.
 - **Limitation**: offline, a person who sets the phone's clock back can stretch the grace period on that phone. It only affects local, non-AI use, which a patched APK could unlock anyway (§2).
 
-## 7. Payments: Dodo Payments (prepared, not switched on)
+## 7. Payments: Dodo Payments (integrated for test mode, not live)
 
-**Provider: Dodo Payments. Prepared, not active.** Nothing can be bought until checkout is switched on, and the paywall says so: no buy button, no claimed purchase.
+**Provider: Dodo Payments.** The integration is complete for **test mode**; nothing has been deployed and no real payment is possible. Setup, secrets and the test plan: `docs/DEPLOY_MEMBERSHIP.md`, "Payments".
 
-| Piece | File | State |
+| Piece | File | What it does |
 |---|---|---|
-| Signature check (Standard Webhooks: `webhook-id`, `webhook-timestamp`, `webhook-signature`; HMAC-SHA256 of `id.timestamp.body` with the `whsec_` secret; 5-minute window) and event mapping | `supabase/functions/_shared/dodo.ts` | Built, tested (and checked against the real `standardwebhooks` library) |
-| Webhook (Dodo calls it) | `supabase/functions/dodo-webhook` | Built, not deployed; refuses everything until its secrets are set |
-| Checkout (the app calls it, signed in) | `supabase/functions/dodo-checkout` | Built, not deployed; off until `DODO_CHECKOUT_ENABLED=true` |
-| App adapter | `apps/web/src/billing.ts` (`dodoCheckout`) | Built; only used in a build made with `VITE_CHECKOUT=dodo` |
+| Signature check and event mapping | `supabase/functions/_shared/dodo.ts` | Standard Webhooks on the raw body (`webhook-id`, `webhook-timestamp`, `webhook-signature`; HMAC-SHA256 of `id.timestamp.body` with the `whsec_` secret; 5-minute window; several signatures for key rotation) |
+| Webhook (Dodo calls it) | `supabase/functions/dodo-webhook` | Deployed without Supabase's JWT check; refuses everything (503) until its secrets are set, and every unsigned request (401) |
+| Checkout (the app calls it, signed in) | `supabase/functions/dodo-checkout` | `POST /checkouts` for one plan, tagged with the account; Basic → AI through `POST /subscriptions/{id}/change-plan` after the person confirms |
+| Database | `supabase/migrations/0016_dodo_payments.sql` | Extends `apply_payment_event` (no second write path): customer, payment and subscription ids, event time, renewal flag, review notes |
+| App | `apps/web/src/billing.ts`, `screens/Paywall.tsx`, `deeplink.ts` | Plan buttons on the paywall and Me → Membership; the return link and the browser closing only make the app ask the server again |
 
-Dodo event → Pawse: `subscription.active` / `subscription.plan_changed` → purchase; `subscription.renewed` → renewal; `subscription.on_hold` / `past_due` / `failed` → payment failed (access runs to the paid end); `subscription.expired` → expiry; `refund.succeeded` → refund; `dispute.lost` → revocation; everything else (including `subscription.cancelled`: the year simply runs out) → acknowledged and ignored. The account comes from the checkout's metadata key `pawse_account_id`; the plan from the product id.
+**Products are an allowlist on the server.** `DODO_BASIC_PRODUCT_ID` and `DODO_AI_PRODUCT_ID` are Edge Function secrets. The app sends only `{ plan: "basic" | "ai" }`; a product id, price, amount or account id in the request is ignored. The account is always the signed-in user from the login token.
 
-**To confirm in Dodo's test mode before real money:** that refunds and lost disputes carry the `pawse_account_id` metadata (if not, they are recorded for manual review instead of ending access automatically), and the exact checkout fields (taken from Dodo's SDK 2.61.1; their docs site couldn't be read from here).
+**Environments.** `DODO_PAYMENTS_ENVIRONMENT=test_mode` uses `https://test.dodopayments.com`. `live_mode` is refused unless `DODO_PAYMENTS_LIVE_ENABLED=true` is also set, so a typo can't take real money. No other host ever receives the API key.
 
+**Dodo event → Pawse** (field names checked against Dodo's SDK, `dodopayments@2.61.1`):
 
-- **Client boundary**: `apps/web/src/billing.ts` (`CheckoutProvider`). Today `checkout = noCheckout` (`available: false`). A provider adapter opens the provider's hosted checkout with the account's Supabase user id as its reference, then calls `refreshAccess()`. The app never grants anything from a callback or return URL.
-- **Server boundary**: `supabase/functions/_shared/payments.ts`.
-  - A provider adapter implements `PaymentVerifier.verify(req)`: check the signature with the provider's secret (an Edge Function secret) and map the event to a `VerifiedPaymentEvent`.
-  - `processPaymentWebhook` returns 401 for an unverified request (records nothing), 400 for a malformed event, 500 for a database error (the provider retries), and 200 with the outcome otherwise.
-  - `_shared` is never deployed as a function; a real webhook function is a few lines wrapping it.
-- **Database**: `apply_payment_event` records the event once per `(provider, event_id)` and applies it in the same transaction, with the account row locked.
+| Dodo event | Pawse kind | Effect |
+|---|---|---|
+| `subscription.active`, `subscription.plan_changed`, `subscription.updated` (status active) | purchase | Grants or changes the plan for the paid period (previous → next billing date). The same period again is `stale` |
+| `subscription.renewed` | renewal | Extends the year |
+| `subscription.on_hold`, `.past_due`, `.failed`, `payment.failed` | payment_failed | Recorded; access runs to the end of the paid period |
+| `subscription.cancelled` | cancellation | Recorded; `renews = false`; access runs to the end of the paid year |
+| `subscription.expired` | expiry | Ends access (stale if a later period was already paid) |
+| `payment.succeeded` | payment | Recorded: maps the payment id to its account and subscription, so a later refund finds them |
+| `refund.succeeded` (full) | refund | Ends access at once, for the account and subscription of the refunded payment |
+| `refund.succeeded` (partial) | partial_refund | Held for review; access unchanged |
+| `dispute.lost` | revocation | Ends access, through the disputed payment |
+| everything else (`payment.processing`, `refund.failed`, `dispute.opened`, …) | — | Acknowledged (200), nothing recorded |
+
+**Finding the account.** From the checkout's metadata (`pawse_account_id`, copied by Dodo onto the payment and subscription), or, for events without it (renewals, plan changes, refunds), from what is already recorded for that subscription or payment. Refunds carry only a `payment_id`, so they always go through the recorded payment.
+
+**Never applied, held for review (`outcome = needs_review`, with a `note`):** an event whose metadata names a different account from the one its subscription or payment already belongs to (`account_mismatch`; applied to neither); a purchase, payment or refund that can't be tied to any account (`no_account_link`); a partial refund; a refund whose payment has no subscription while the account has one (`refund_without_subscription`); a second subscription for the plan already held (`second_subscription`); a lower plan bought on another subscription while a higher one runs (`lower_plan_while_active`). The owner reviews them with `select * from payment_events_review;` (service role).
+
+**Ordering and duplicates.** `(provider, event_id)` is unique, so a redelivered webhook is `duplicate`. Each entitlement keeps the time of the last event applied from its subscription; an older event delivered late is `stale` and can't undo a newer one (for example a late `subscription.active` for Basic after an upgrade).
+
+**Coming back from the checkout.** The return address is `app.detoxcompanion://checkout-return` (or an https page that links to it). Cancelling sends people to the same address with `?pawse_checkout=cancelled`. The app reads Dodo's `status` only to choose its words, then asks `my_access()` again: at once, then backing off for about two minutes, until a new or longer paid plan appears. If none appears, it says the payment isn't confirmed yet and that nothing was charged if they didn't finish. A checkout begun on the phone is remembered for two hours, so closing the app mid-checkout (or a slow webhook) is picked up at the next launch. Opening the return link by hand changes nothing.
+
+- **Client boundary**: `apps/web/src/billing.ts` (`CheckoutProvider`). Builds without `VITE_CHECKOUT=dodo` use `noCheckout` (`available: false`): no buy buttons, and the paywall says nothing can be bought.
+- **Server boundary**: `supabase/functions/_shared/payments.ts`. `processPaymentWebhook` returns 401 for an unverified request (records nothing), 400 for a malformed event, 500 for a database error (Dodo retries), and 200 with the outcome otherwise.
+- **Database**: `apply_payment_event` records the event once and applies it in the same transaction, with the account's row locked. Only the service role can call it.
 
 | Event | Effect |
 |---|---|
-| `purchase`, `renewal`, `grant` | Activates or extends the plan. An upgrade (Basic → AI) switches at once; a later period of the same plan extends; an older period arriving late is `stale`; Basic bought while AI is active is `needs_review` (the app never offers it) |
-| `payment_failed` | `recorded`; access continues to the end of the paid period |
+| `purchase`, `renewal`, `grant` | Activates or extends the plan. Upgrades switch at once; a plan change down on the same subscription applies; a later period of the same plan extends; an older period is `stale` |
+| `payment`, `payment_failed`, `cancellation` | `recorded`; the paid period runs on |
 | `expiry` | Ends the current period. An expiry for a period that has since been renewed is `stale` |
-| `refund`, `revocation` | Ends access at once. If `provider_ref` names a purchase that has since been replaced, it's `stale` |
+| `refund`, `revocation` | Ends access at once. About a purchase that has since been replaced: `stale` |
+| `partial_refund` | `needs_review` |
 | Any event seen before | `duplicate`, nothing changes |
-| Unknown or deleted account | `no_account`, kept anonymously |
+| Unknown or deleted account | `no_account` (or `needs_review` when nothing ties it to an account) |
 
-**Still needed from the owner:** the Dodo account details listed in `docs/DEPLOY_MEMBERSHIP.md` ("What to provide"), and a check of the terms of selling a web checkout to a sideloaded Android app (Google Play billing doesn't apply to it). A manual `grant` (support, testing) can be applied with `select apply_payment_event('manual', '<unique id>', '<user id>', 'grant', 'ai', now(), now() + interval '1 year', null);` as the service role.
+**Still needed before real payments:** see `docs/DEPLOY_MEMBERSHIP.md`, "Before accepting real payments". A manual `grant` (support, testing) can still be applied with `select apply_payment_event('manual', '<unique id>', '<user id>', 'grant', 'ai', now(), now() + interval '1 year', null);` as the service role.
 
 ## 8. Supabase Free plan
 
@@ -175,7 +197,12 @@ The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has t
 |---|---|
 | Trial grant, uniqueness, 7-day check, registration-dated, lazy rebuild; RLS and privileges; every access state; payment transitions, duplicates, stale and out-of-order events, refunds, revocation, renewal after expiry, unknown accounts, account deletion; abuse counters and the hook; recovery rows never gated | `supabase/tests/membership.sql` (81 checks, including the sign-up hook: accounts not attempts, IPv6 /64, rolling windows, tunable limits, failing open) |
 | Trials without a launch date: existing accounts start at first access (from the app or the AI function), not registration; never restarted; rows written in advance start once; new accounts from creation; re-running 0014 | `supabase/tests/membership-trials.sql` (17 checks) |
-| Dodo: signatures (made independently), every event mapping, the webhook (configured or not, forged, duplicate, ignored, database down), the checkout (off, wrong host, not signed in, already subscribed, upgrade) | `apps/web/test/dodo.test.ts` |
+| Dodo: signatures (made independently), every event mapping, the webhook (configured or not, forged, wrong secret, replayed, duplicate, ignored, database down), the checkout (not configured, test/live guard, return address, allowlisted products only, not signed in, already subscribed, upgrade with confirmation, Dodo refusing) | `apps/web/test/dodo.test.ts` |
+| Dodo lifecycle in the database: purchase, duplicate, second subscription, upgrade, late older event, downgrade, renewal, failed payment, cancellation, expiry, partial / old / untraceable / current refund, wrong account, recovery rows untouched, past AI text still readable | `supabase/tests/dodo-payments.sql` |
+| Signed webhooks → the real handler → real Postgres with every migration (opt-in, `DODO_IT_PG`) | `apps/web/test/dodo-db.integration.test.ts` |
+| Coming back from checkout: return hints, a late webhook, the success link without paying, cancelled, failed, browser close and link together, restart within two hours; starting a checkout sends only the plan | `apps/web/test/checkout.test.ts` |
+| Plans offered with checkout on: paywall, trial, Basic (upgrade only), AI (nothing) | `apps/web/test/paywall-checkout.test.tsx` |
+| Past AI text on screen for Basic, expired, refunded and revoked (DayDetail, earlier weekly summaries); trying to record behind the paywall brings it back | `apps/web/test/membership.test.ts` |
 | AI function called directly: no token, forged token, each state, unconfirmed email, lookup failure, cache not bypassing membership, trial and plan limits, network limit, global switch | `apps/web/test/ai-function.test.ts` |
 | The app's gate: states, offline grace, clock offset, end dates offline, account switching, late answers, malformed answers, missing function, renewal; the store refusing new records but keeping everything; export after expiry; AI text kept; remote rows still applied; trial's one track; restore keeping every track; sync uploading behind the paywall | `apps/web/test/membership.test.ts` |
 | Paywall wording in every Voice, no buy button without a provider, export and account controls present | `apps/web/test/paywall.test.tsx` |
@@ -192,3 +219,5 @@ The production runbook is **`docs/DEPLOY_MEMBERSHIP.md`**: what production has t
 6. "One pet" in the trial is read as one recovery track and its pet; adopting again after a pet's death (classic rules) stays allowed.
 7. The paywall heading uses the product name as the brand writes it ("pawse — Your commitment to change."), not "PAWSE".
 8. Prices in other currencies, taxes, and terms of sale (Dodo Payments is the provider).
+9. Basic → AI is charged by Dodo as a prorated amount on the card on file (`prorated_immediately`), after an in-app confirmation. Confirm in test mode that this is the wanted behaviour.
+10. AI-written pet lines are daily (one request per pet per day, for that day's counts) and kept 7 days on the phone (§2's retention). On Basic or after access ends, today's lines already written stay; a new day shows the hand-written lines rather than an older AI line with yesterday's numbers.

@@ -63,18 +63,14 @@ describe("the paywall", () => {
     expect(html).not.toMatch(/success|thank you for your purchase|you're subscribed/i);
   });
 
-  it("payment information link: https only, off unless a build sets it, never a buy button", async () => {
-    const { paymentInfoUrl, PAYMENT_INFO_URL } = await import("../src/billing");
-    expect(paymentInfoUrl("https://pay.example.org/info")).toBe("https://pay.example.org/info");
-    expect(paymentInfoUrl("  https://pay.example.org/p?x=1  ")).toBe("https://pay.example.org/p?x=1");
-    for (const bad of [undefined, "", "   ", "http://pay.example.org", "javascript:alert(1)", "ftp://x.org", "https://", "https://user:pw@pay.example.org", "pay.example.org", "//pay.example.org"]) {
-      expect(paymentInfoUrl(bad)).toBeNull();
-    }
-    // This build setting is unset in tests, so the paywall has no button and still says nothing can be bought yet.
-    expect(PAYMENT_INFO_URL).toBeNull();
-    const html = render("expired", access("expired"));
-    expect(html).not.toContain("Payment information");
-    expect(html).not.toMatch(/Choose (Basic|AI)/);
+  it("the payment-information placeholder is gone", () => {
+    expect(render("expired", access("expired"))).not.toContain("Payment information");
+  });
+
+  it("offers \"View my history\" when there is history to view, and only then", () => {
+    const html = renderToStaticMarkup(<Paywall gate={{ kind: "locked", reason: "expired", access: access("expired") }} onViewHistory={() => undefined} />);
+    expect(html).toContain("View my history");
+    expect(render("expired", access("expired"))).not.toContain("View my history");
   });
 
   it("keeps export, sign-out and account deletion, and says the data is kept", () => {

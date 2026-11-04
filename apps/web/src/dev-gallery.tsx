@@ -67,7 +67,7 @@ export function Gallery() {
     const reason = parts[2] === "plan" ? "expired" : (parts[2] as "expired" | "refunded" | "revoked" | "unconfirmed") || "expired";
     const access = { state: reason === "unconfirmed" ? "ai" : reason, app: reason === "unconfirmed", ai: false, email_verified: true, tracks: 0, valid_until: null, trial_ends_at: null,
       plan: parts[2] === "plan" || reason !== "expired" ? "ai" : null, plan_status: null, period_end: null, server_time: new Date().toISOString() } as const;
-    return <div className="app"><Paywall gate={{ kind: "locked", reason, access: { ...access, plan: access.plan } }} /></div>;
+    return <div className="app"><Paywall gate={{ kind: "locked", reason, access: { ...access, plan: access.plan } }} onViewHistory={() => undefined} /></div>;
   }
   // #gallery/missions/<raise|rescue>/<goal-met days>[/slip]: the Missions button and sheet over seeded data, for layout checks.
   if (parts[1] === "missions") return <MissionsDemo mode={parts[2] === "rescue" ? "rescue" : "raise"} days={Number(parts[3] ?? 8)} slip={parts[4] === "slip"} home={parts.includes("home")} moment={parts.includes("moment")} page={parts.find((x) => ["me", "pets", "tutorial"].includes(x))} />;

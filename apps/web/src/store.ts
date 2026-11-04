@@ -47,6 +47,18 @@ function bornBy(d: AppData, companionId: string, day: string): AppData {
  */
 let writeGate: () => boolean = () => true;
 export const setWriteGate = (fn: () => boolean) => { writeGate = fn; };
+const refusedListeners = new Set<() => void>();
+/**
+ * Called when a person tries to record something (a slip, a goal met, a rest day, an urge, a new track) while access
+ * has ended, so the app can show why (the paywall) instead of doing nothing. Background saves never call it.
+ */
+export function onWriteRefused(fn: () => void): () => void { refusedListeners.add(fn); return () => { refusedListeners.delete(fn); }; }
+/** The write gate for something the person asked for: says so when it is closed. */
+function mayRecord(): boolean {
+  if (writeGate()) return true;
+  refusedListeners.forEach((fn) => fn());
+  return false;
+}
 /** How many recovery tracks the account's plan allows; 50 (the app's own limit) unless membership says otherwise. */
 let trackLimit: () => number = () => 50;
 export const setTrackLimit = (fn: () => number) => { trackLimit = fn; };
@@ -567,7 +579,7 @@ export const actions = {
 
   /** Null when the track can't take a record: it is archived (read-only) or gone. A pause never refuses one. */
   logSlip(habitId: string, values: Entry["values"], day = today(), time: string | null = null): Deduction | null {
-    if (!writeGate() || !canRecord(data, habitId)) return null;
+    if (!mayRecord() || !canRecord(data, habitId)) return null;
     if (valuesConcern(values)) return null; // the slip sheet shows the note before it ever gets here
     const habit = data.habits.find((h) => h.id === habitId)!;
     const base = bornBy(data, habit.companionId, day);
@@ -611,7 +623,7 @@ export const actions = {
   },
 
   markClean(habitId: string, day = today()) {
-    if (!writeGate() || !canRecord(data, habitId)) return false;
+    if (!mayRecord() || !canRecord(data, habitId)) return false;
     if (data.entries.some((e) => e.habitId === habitId && e.day === day)) return false;
     if (data.cleanDays.some((c) => c.habitId === habitId && c.day === day)) return true;
     const owner = data.habits.find((h) => h.id === habitId)!.companionId;
@@ -624,7 +636,7 @@ export const actions = {
    * can't be a rest day: what was recorded wins. Rest days never count as progress or as a lapse.
    */
   setRest(habitId: string, day: string, on: boolean): boolean {
-    if (!writeGate() || !canRecord(data, habitId)) return false;
+    if (!mayRecord() || !canRecord(data, habitId)) return false;
     if (on && (data.entries.some((e) => e.habitId === habitId && e.day === day) || data.cleanDays.some((c) => c.habitId === habitId && c.day === day)
       || data.urges.some((u) => u.habitId === habitId && u.day === day && u.outcome === "rode_it_out"))) return false;
     const base = on ? bornBy(data, data.habits.find((h) => h.id === habitId)!.companionId, day) : data;
@@ -698,7 +710,7 @@ export const actions = {
 
   /** Records a craving and how it ended. Tracked only: the engine never sees it. */
   recordUrge(habitId: string, strength: number, outcome: Urge["outcome"], extra: { strategy?: StrategyId | null; trigger?: string | null; instead?: string | null; photo?: string | null } = {}): Urge | null {
-    if (!writeGate() || !canRecord(data, habitId)) return null;
+    if (!mayRecord() || !canRecord(data, habitId)) return null;
     const now = new Date();
     const urge: Urge = {
       id: uid(), habitId, day: today(), time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -779,7 +791,7 @@ export const actions = {
     const name = o.name.trim().slice(0, 60);
     // The plan's allowance (one track during the trial), never above the app's own 50. Only opening a new track is
     // limited: tracks that exist, from any phone or a backup, stay whatever the plan.
-    if (!name || !writeGate() || data.habits.length >= Math.min(50, trackLimit())) return null;
+    if (!name || !mayRecord() || data.habits.length >= Math.min(50, trackLimit())) return null;
     if (concernInAny([o.name, o.description, o.amountLabel, o.companionName, ...(o.triggers ?? []), ...fieldTexts(o.fields ?? []), ...planTexts(o.plan)])) return null;
     const habitId = uid(), companionId = uid();
     const companion: Companion = { id: companionId, species: o.species, coat: o.coat, breed: o.breed, personality: o.personality, name: o.companionName.trim().slice(0, 20) || defaultPetName(o.species), bornOn: today(), diedOn: null, finalAge: null, trackId: habitId, ...adoptionFields(o.species, o.adoption) };

@@ -32,6 +32,11 @@ on:
         description: "publish only: one line of plain-language notes for users (shown in the app and the README)"
         type: string
         default: ""
+      checkout:
+        description: "dodo: build with Dodo checkout switched on (VITE_CHECKOUT=dodo), for a test-mode payment build; none: no buy buttons"
+        type: choice
+        options: [none, dodo]
+        default: none
 
 concurrency:
   group: android-${{ github.ref }}
@@ -92,6 +97,8 @@ jobs:
           [ -s test-summary.txt ] || { echo "::error::Couldn't read the test totals"; exit 1; }
 
       - name: Build the web app
+        env:
+          VITE_CHECKOUT: ${{ inputs.checkout == 'dodo' && 'dodo' || '' }}
         run: pnpm --filter web build
 
       - name: Sync the Android project
@@ -165,6 +172,7 @@ jobs:
             echo "App: $id"
             echo "Version: $name (code $code)"
             echo "Build type: $BUILD_TYPE$([ "$BUILD_TYPE" = debug ] && echo ' (test only, never publish)')$([ "$BUILD_TYPE" = release-unsigned ] && echo ' (must be signed before use)')"
+            echo "Checkout: ${{ inputs.checkout == 'dodo' && 'Dodo checkout on' || 'off' }}"
             echo "Commit: $COMMIT_SHA"
             echo "Built: $(date -u +%Y-%m-%dT%H:%M:%SZ) by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "Signing certificate SHA-256: $cert"

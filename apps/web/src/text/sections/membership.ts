@@ -32,8 +32,16 @@ export const membershipPaywall = defineSection("membership.paywall", { screen: "
   annual: "Both are paid once a year. Neither is a lifetime purchase.",
   choose: "Choose {plan}",
   no_checkout: "Membership can't be bought in this version of the app yet. Nothing has been charged.",
-  payment_info: "Payment information",
   checkout_failed: "Couldn't open the checkout. Nothing has been charged. Please try again in a moment.",
+  opening: "Opening the secure checkout…",
+  already_active: "That plan is already active on your account. Nothing has been charged.",
+  secure_note: "Payments are handled by Dodo Payments on their secure checkout page. Your membership turns on once they confirm the payment.",
+  upgrade: "Upgrade to AI",
+  upgrade_confirm: "Move from Basic to AI now? Dodo Payments charges the card you paid with a prorated amount for the rest of your current year. AI turns on as soon as that payment is confirmed.",
+  upgrade_yes: "Upgrade now",
+  upgrade_no: "Not now",
+  upgrade_requested: "Upgrade requested. AI turns on here as soon as Dodo Payments confirms the payment.",
+  view_history: "View my history",
   check: "Check my membership again",
   checking: "Checking…",
   still_closed: "No active membership found yet.",
@@ -44,6 +52,23 @@ export const membershipPaywall = defineSection("membership.paywall", { screen: "
   account_title: "Account",
 });
 // @copy-section-end membership.paywall
+
+// @copy-section membership.checkout
+export const membershipCheckout = defineSection("membership.checkout", { screen: "Membership", title: "After checkout", source: "src/billing.ts" }, {
+  checking: "Checking your payment…",
+  confirmed: "Payment confirmed. Your {plan} membership is active.",
+  pending: "Your payment hasn't been confirmed yet. Membership turns on by itself as soon as it is, so there's no need to pay again. If you didn't finish paying, nothing was charged.",
+  failed: "The payment didn't go through, so your membership hasn't changed. Nothing extra was charged. You can try again.",
+  cancelled: "Checkout closed. Nothing has been charged.",
+});
+// @copy-section-end membership.checkout
+
+// @copy-section membership.readonly
+export const membershipReadonly = defineSection("membership.readonly", { screen: "Membership", title: "View only after access ends", source: "src/App.tsx" }, {
+  banner: "View only: your membership has ended. Everything you've logged, AI notes included, is still here. New check-ins need a membership.",
+  plans: "See plans",
+});
+// @copy-section-end membership.readonly
 
 // @copy-section membership.unverifiable
 export const membershipUnverifiable = defineSection("membership.unverifiable", { screen: "Membership", title: "Membership can't be checked", source: "src/screens/Paywall.tsx" }, {

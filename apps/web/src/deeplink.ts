@@ -1,14 +1,21 @@
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { friendlyAuthError } from "./authErrors";
+import { afterCheckout, CHECKOUT_RETURN, readReturn } from "./billing";
+import { closeBrowser } from "./native";
 import { recoveryActive, supabase } from "./supabase";
 import { t } from "./text";
 import { toast } from "./ui/Toast";
 import { OPEN_QUICK } from "./widget";
 
-/** Finishes sign-in when an email link opens the app (app.detoxcompanion://auth-callback?code=...). */
+/**
+ * Links that open the app: sign-in from an email (app.detoxcompanion://auth-callback?code=...), the widget's
+ * check-in, and coming back from Dodo's checkout (app.detoxcompanion://checkout-return?...), which only makes the app
+ * ask the server about the membership: the link itself never grants anything.
+ */
 async function handle(link: string) {
   if (link.startsWith("app.detoxcompanion://open/quick")) { window.dispatchEvent(new Event(OPEN_QUICK)); return; }
+  if (link.startsWith(CHECKOUT_RETURN)) { closeBrowser(); void afterCheckout(readReturn(link)); return; }
   if (!supabase || !link.startsWith("app.detoxcompanion://auth-callback")) return;
   const u = new URL(link.replace("app.detoxcompanion://", "https://app/"));
   const params = new URLSearchParams(u.search || u.hash.slice(1));

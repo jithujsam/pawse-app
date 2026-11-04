@@ -10,7 +10,9 @@ import { onReminderTap, updateNotifications } from "./notify";
 import { useSession } from "./supabase";
 import { trackSummary } from "./progress";
 import { listTracks, trackState } from "./tracks";
-import { actions, onPinChange, reminderInputs, useActiveView, useData, vault, viewCompanion, type Boot } from "./store";
+import { actions, onPinChange, onWriteRefused, reminderInputs, useActiveView, useData, vault, viewCompanion, type Boot } from "./store";
+import { afterCheckout, peekPending, resumePendingCheckout } from "./billing";
+import { onBrowserClosed } from "./native";
 import { LockScreen } from "./screens/Lock";
 import type { Sealed } from "./vault";
 import { haptic } from "./haptics";
@@ -148,6 +150,13 @@ function Shell() {
   const sync = useSyncStatus();
   // Membership (src/access.ts): the server's answer, or this phone's last one within the offline grace period.
   const gate = useGate();
+  // Access has ended: the paywall first; "View my history" opens everything read-only behind it (PRD §25.3). Trying
+  // to record something, or the + button, brings the paywall back. Nothing is hidden, deleted or changed.
+  const [viewOnly, setViewOnly] = useState(false);
+  useEffect(() => { if (gate.kind !== "locked") setViewOnly(false); }, [gate.kind]);
+  useEffect(() => onWriteRefused(() => setViewOnly(false)), []);
+  // Coming back from a checkout by closing the browser (no return link): ask the server, never assume.
+  useEffect(() => { onBrowserClosed(() => { if (peekPending()) void afterCheckout("unknown"); }); }, []);
   // The restore check waits for the first sync to settle, once. A retry after that (offline, say) must not swap
   // onboarding out for it, or the person loses their place mid-step.
   const restoreSettled = useRef(false);
@@ -173,7 +182,8 @@ function Shell() {
       if (owner && owner !== uid) await actions.resetAll();
       await kv.set("owner", uid).catch(() => undefined);
       // After the wipe above, so another account's membership answer can never be read for this one.
-      void startAccess(uid);
+      // Then pick up a checkout begun on this phone (closed mid-checkout, or the payment confirmed while away).
+      void startAccess(uid).then(() => resumePendingCheckout());
       await startSync(uid);
     })();
   }, [uid]);
@@ -250,7 +260,9 @@ function Shell() {
   if (!session) return <div className="app"><Welcome /></div>;
   if (recovering && !pwDone) return <div className="app"><NewPassword onDone={() => setPwDone(true)} /></div>;
   // Access has ended or can't be confirmed: the paywall, with export and the account. Sync keeps running behind it.
-  if (gate.kind === "locked") return <div className="app"><Paywall gate={gate} /></div>;
+  if (gate.kind === "locked" && !(viewOnly && data.settings.onboarded)) {
+    return <div className="app"><Paywall gate={gate} onViewHistory={data.settings.onboarded ? () => setViewOnly(true) : undefined} /></div>;
+  }
   if (gate.kind === "unverifiable") return <div className="app"><AccessUnverifiable /></div>;
   if (gate.kind === "loading") return <div className="app"><Loading /></div>;
   if (!data.settings.onboarded && !restoreSettled.current && (sync.state === "off" || sync.state === "syncing")) return <div className="app"><Restoring /></div>;
@@ -276,6 +288,12 @@ function Shell() {
           </motion.div>
         </AnimatePresence>
       </div>
+      {gate.kind === "locked" && (
+        <div className="offline-bar readonly-bar" role="status">
+          <span>{t("membership.readonly.banner")}</span>
+          <button type="button" className="readonly-plans" onClick={() => setViewOnly(false)}>{t("membership.readonly.plans")}</button>
+        </div>
+      )}
       {sync.state === "offline" && (
         <div className="offline-bar" role="status">
           {sync.pending ? (sync.pending === 1 ? t("account.sync.offline_pending_one") : t("account.sync.offline_pending_other", { n: sync.pending })) : t("account.sync.offline")}
@@ -292,7 +310,7 @@ function Shell() {
           );
           return i === 2 ? [
             <div key="fab" className="fab-slot">
-              <motion.button className="fab" aria-label={t("nav.tabs.quick")} aria-haspopup="dialog" disabled={!view} onClick={() => { haptic.tap(); setQuick(true); }}
+              <motion.button className="fab" aria-label={t("nav.tabs.quick")} aria-haspopup="dialog" disabled={!view} onClick={() => { haptic.tap(); if (gate.kind === "locked") setViewOnly(false); else setQuick(true); }}
                 whileTap={{ scale: 0.9 }} animate={{ rotate: quick ? 45 : 0 }} transition={spring.bouncy}>{Icon.plus}</motion.button>
             </div>, button] : [button];
         })}
