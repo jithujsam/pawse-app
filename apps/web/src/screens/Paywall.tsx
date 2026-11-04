@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getGate, refreshAccess, useGate, type Gate } from "../access";
-import { checkout, type PlanId } from "../billing";
+import { checkout, PAYMENT_INFO_URL, type PlanId } from "../billing";
 import { downloadBackup } from "../exportData";
 import { useData } from "../store";
 import { useSession } from "../supabase";
@@ -135,12 +135,16 @@ export function MembershipCard() {
 
 /** The two annual plans, side by side in words. A buy button appears only when a payment provider is connected. */
 function Plans({ accountId }: { accountId: string | undefined }) {
+  const infoUrl = PAYMENT_INFO_URL;
   return (
     <section className="stack" aria-label={t("membership.paywall.plans_aria")}>
       <PlanCard plan="basic" name={t("membership.paywall.basic_name")} price={t("membership.paywall.basic_price")} body={t("membership.paywall.basic_body")} accountId={accountId} />
       <PlanCard plan="ai" name={t("membership.paywall.ai_name")} price={t("membership.paywall.ai_price")} body={t("membership.paywall.ai_body")} accountId={accountId} />
       <p className="muted small">{t("membership.paywall.annual")}</p>
       {!checkout.available && <p className="small" role="note">{t("membership.paywall.no_checkout")}</p>}
+      {!checkout.available && infoUrl && (
+        <Button variant="secondary" onClick={() => { void import("../native").then((m) => m.openExternal(infoUrl)); }}>{t("membership.paywall.payment_info")}</Button>
+      )}
     </section>
   );
 }

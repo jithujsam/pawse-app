@@ -45,6 +45,22 @@ export const dodoCheckout: CheckoutProvider = {
 };
 
 /**
+ * The page the paywall's "Payment information" button opens while nothing can be bought: a plain web page that says
+ * payments are being prepared. It is one build setting, VITE_PAYMENT_URL, so the later payment link replaces it with
+ * a rebuild and no code change. Only an https address is used; anything else (or nothing) means no button.
+ * Opening it never grants anything: access changes only on the server.
+ */
+export function paymentInfoUrl(raw: string | undefined): string | null {
+  const v = (raw ?? "").trim();
+  if (!v.startsWith("https://")) return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" && u.hostname && !u.username && !u.password ? u.toString() : null;
+  } catch { return null; }
+}
+export const PAYMENT_INFO_URL = paymentInfoUrl(import.meta.env.VITE_PAYMENT_URL as string | undefined);
+
+/**
  * The checkout this build offers. Off unless the build is made with VITE_CHECKOUT=dodo, after the dodo-checkout and
  * dodo-webhook functions are live with their secrets. Until then nothing can be bought, and the paywall says so.
  */

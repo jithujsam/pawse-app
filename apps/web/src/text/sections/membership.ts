@@ -32,6 +32,7 @@ export const membershipPaywall = defineSection("membership.paywall", { screen: "
   annual: "Both are paid once a year. Neither is a lifetime purchase.",
   choose: "Choose {plan}",
   no_checkout: "Membership can't be bought in this version of the app yet. Nothing has been charged.",
+  payment_info: "Payment information",
   checkout_failed: "Couldn't open the checkout. Nothing has been charged. Please try again in a moment.",
   check: "Check my membership again",
   checking: "Checking…",

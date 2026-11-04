@@ -6387,7 +6387,7 @@
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
       "start": 7,
-      "end": 45,
+      "end": 46,
       "entries": [
         {
           "id": "membership.paywall.aria",
@@ -6484,6 +6484,11 @@
           "placeholders": []
         },
         {
+          "id": "membership.paywall.payment_info",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
           "id": "membership.paywall.checkout_failed",
           "kind": "text",
           "placeholders": []
@@ -6536,8 +6541,8 @@
       "title": "Membership can't be checked",
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 47,
-      "end": 53,
+      "start": 48,
+      "end": 54,
       "entries": [
         {
           "id": "membership.unverifiable.title",
@@ -6562,8 +6567,8 @@
       "title": "Membership status",
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 55,
-      "end": 75,
+      "start": 56,
+      "end": 76,
       "entries": [
         {
           "id": "membership.status.title",
@@ -6672,8 +6677,8 @@
       "title": "Track allowance",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 77,
-      "end": 82,
+      "start": 78,
+      "end": 83,
       "entries": [
         {
           "id": "membership.limits.track_trial",
