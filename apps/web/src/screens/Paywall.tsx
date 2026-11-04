@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getGate, refreshAccess, useGate, type Gate } from "../access";
-import { checkout, PAYMENT_INFO_URL, type PlanId } from "../billing";
+import { afterCheckout, checkout, type PlanId } from "../billing";
 import { downloadBackup } from "../exportData";
 import { useData } from "../store";
 import { useSession } from "../supabase";
@@ -16,7 +16,7 @@ import { Account, SignOut } from "./Account";
  * Nothing behind it is deleted, hidden for good or changed: sync keeps running, so changes logged earlier still back
  * up, and buying or renewing opens the app exactly as it was. Export, sign-out and account deletion stay here.
  */
-export function Paywall({ gate }: { gate: Extract<Gate, { kind: "locked" }> }) {
+export function Paywall({ gate, onViewHistory }: { gate: Extract<Gate, { kind: "locked" }>; onViewHistory?: () => void }) {
   const tone = useData().settings.tone;
   const { session } = useSession();
   const [busy, setBusy] = useState(false);
@@ -42,10 +42,12 @@ export function Paywall({ gate }: { gate: Extract<Gate, { kind: "locked" }> }) {
         <h1>{t("membership.paywall.title")}</h1>
         <p>{intro}</p>
         <p className="muted">{t("membership.paywall.need")}</p>
+        {/* Everything logged, past AI text included, stays viewable; only new records and new AI wait. */}
+        {onViewHistory && <Button variant="secondary" onClick={onViewHistory}>{t("membership.paywall.view_history")}</Button>}
       </div>
 
       <div className="stack">
-        <Plans accountId={session?.user.id} />
+        <Plans signedIn={!!session} current="none" />
         <Button variant="secondary" disabled={busy} onClick={() => void check()}>{busy ? t("membership.paywall.checking") : t("membership.paywall.check")}</Button>
       </div>
 
@@ -64,18 +66,45 @@ export function Paywall({ gate }: { gate: Extract<Gate, { kind: "locked" }> }) {
   );
 }
 
-function PlanCard({ plan, name, price, body, accountId }: { plan: PlanId; name: string; price: string; body: string; accountId: string | undefined }) {
+/**
+ * One plan, and (when a provider is connected and someone is signed in) the button that buys it. Basic → AI changes
+ * the existing subscription, after an inline confirmation. Nothing here grants anything: the app re-reads the
+ * membership from the server after the checkout (billing.ts afterCheckout).
+ */
+function PlanCard({ plan, name, price, body, signedIn, current }: { plan: PlanId; name: string; price: string; body: string; signedIn: boolean; current: "none" | "trial" | "basic" }) {
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const isUpgrade = current === "basic" && plan === "ai";
+  // Only a connected provider gets a button, and never for the plan already held. Without one, nothing pretends it can be bought.
+  const offer = checkout.available && signedIn && !(current === "basic" && plan === "basic");
+
+  async function start(upgrade: boolean) {
+    setBusy(true);
+    try {
+      const r = await checkout.startCheckout(plan, { upgrade });
+      if (r.kind === "confirm_upgrade") setConfirm(true);
+      else if (r.kind === "already_active") { toast(t("membership.paywall.already_active")); void refreshAccess(); }
+      else if (r.kind === "upgrade_requested") { setConfirm(false); toast(t("membership.paywall.upgrade_requested"), { kind: "good" }); void afterCheckout("pending"); }
+    } catch {
+      toast(t("membership.paywall.checkout_failed"), { kind: "bad" });
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="card stack tight">
       <div className="row"><h2>{name}</h2><b>{price}</b></div>
       <p className="small">{body}</p>
-      {/* Only a connected provider gets a button. Without one, nothing pretends it can be bought. */}
-      {checkout.available && accountId && (
-        <Button onClick={() => {
-          checkout.startCheckout(plan, accountId)
-            .catch(() => toast(t("membership.paywall.checkout_failed"), { kind: "bad" }))
-            .finally(() => void refreshAccess());
-        }}>{t("membership.paywall.choose", { plan: name })}</Button>
+      {offer && !confirm && (
+        <Button disabled={busy} onClick={() => (isUpgrade ? setConfirm(true) : void start(false))}>
+          {busy ? t("membership.paywall.opening") : isUpgrade ? t("membership.paywall.upgrade") : t("membership.paywall.choose", { plan: name })}
+        </Button>
+      )}
+      {offer && confirm && (
+        <div className="stack tight" role="group" aria-label={t("membership.paywall.upgrade")}>
+          <p className="small">{t("membership.paywall.upgrade_confirm")}</p>
+          <Button disabled={busy} onClick={() => void start(true)}>{busy ? t("membership.paywall.opening") : t("membership.paywall.upgrade_yes")}</Button>
+          <Button variant="text" disabled={busy} onClick={() => setConfirm(false)}>{t("membership.paywall.upgrade_no")}</Button>
+        </div>
       )}
     </div>
   );
@@ -113,6 +142,7 @@ export function daysLeft(until: number, now = Date.now()): number {
 /** Membership on Me → Membership (the page title names it): what the account has and until when. Nothing when membership isn't on. */
 export function MembershipCard() {
   const gate = useGate();
+  const { session } = useSession();
   if (gate.kind !== "open") return null;
   const a = gate.access;
   const until = gate.until;
@@ -129,22 +159,20 @@ export function MembershipCard() {
       {gate.stale && <p className="muted small">{t("membership.status.offline", { date: fmtDay(iso(new Date(Date.parse(a.server_time)))) })}</p>}
     </section>
     {/* During the trial, and on Basic (which can add AI), what each plan includes, so the end of the trial is never a surprise. */}
-    {a.state !== "ai" && <Plans accountId={undefined} />}
+    {a.state !== "ai" && <Plans signedIn={!!session} current={a.state === "basic" ? "basic" : "trial"} />}
   </>);
 }
 
 /** The two annual plans, side by side in words. A buy button appears only when a payment provider is connected. */
-function Plans({ accountId }: { accountId: string | undefined }) {
-  const infoUrl = PAYMENT_INFO_URL;
+function Plans({ signedIn, current }: { signedIn: boolean; current: "none" | "trial" | "basic" }) {
   return (
     <section className="stack" aria-label={t("membership.paywall.plans_aria")}>
-      <PlanCard plan="basic" name={t("membership.paywall.basic_name")} price={t("membership.paywall.basic_price")} body={t("membership.paywall.basic_body")} accountId={accountId} />
-      <PlanCard plan="ai" name={t("membership.paywall.ai_name")} price={t("membership.paywall.ai_price")} body={t("membership.paywall.ai_body")} accountId={accountId} />
+      <PlanCard plan="basic" name={t("membership.paywall.basic_name")} price={t("membership.paywall.basic_price")} body={t("membership.paywall.basic_body")} signedIn={signedIn} current={current} />
+      <PlanCard plan="ai" name={t("membership.paywall.ai_name")} price={t("membership.paywall.ai_price")} body={t("membership.paywall.ai_body")} signedIn={signedIn} current={current} />
       <p className="muted small">{t("membership.paywall.annual")}</p>
-      {!checkout.available && <p className="small" role="note">{t("membership.paywall.no_checkout")}</p>}
-      {!checkout.available && infoUrl && (
-        <Button variant="secondary" onClick={() => { void import("../native").then((m) => m.openExternal(infoUrl)); }}>{t("membership.paywall.payment_info")}</Button>
-      )}
+      {checkout.available
+        ? <p className="muted small" role="note">{t("membership.paywall.secure_note")}</p>
+        : <p className="small" role="note">{t("membership.paywall.no_checkout")}</p>}
     </section>
   );
 }

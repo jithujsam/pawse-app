@@ -170,6 +170,8 @@ export function Report() {
 
   // Summaries written earlier stay readable here. New ones are no longer written: the numbers above already say it.
   const summary = data.summaries[habit.id]?.[ws];
+  // Every summary written for earlier weeks, newest first. Kept and shown whatever the membership: only new AI waits.
+  const earlier = Object.entries(data.summaries[habit.id] ?? {}).filter(([w, text]) => w < ws && text).sort(([a], [b]) => (a < b ? 1 : -1));
 
   const W = 320, H = 130, bw = 26, gap = (W - bw * 8) / 7;
 
@@ -229,6 +231,16 @@ export function Report() {
           <p className="bubble">{summary}</p>
           <p className="muted small">{t("insights.summary.ai_note")}</p>
         </section>}
+        {earlier.length > 0 && <details className="card stack" aria-label={t("insights.summary.earlier")}>
+          <summary><b>{t("insights.summary.earlier")}</b></summary>
+          {earlier.map(([w, text]) => (
+            <div key={w} className="stack tight">
+              <span className="muted small">{t("insights.summary.week_of", { date: fmtDay(w) })}</span>
+              <p className="bubble">{text}</p>
+            </div>
+          ))}
+          <p className="muted small">{t("insights.summary.ai_note")}</p>
+        </details>}
       </section>
 
       <section className="stack" aria-label={t("insights.when.title")}>

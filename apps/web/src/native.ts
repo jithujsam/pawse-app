@@ -22,6 +22,16 @@ export function openExternal(url: string) {
   else window.open(url, "_blank", "noopener,noreferrer");
 }
 
+/** Closes the in-app browser (Custom Tab) if one is open, e.g. when a checkout sends people back to the app. */
+export function closeBrowser() {
+  if (native) void Browser.close().catch(() => undefined);
+}
+
+/** Calls `fn` each time the in-app browser is closed (by the person, or by closeBrowser). Native only. */
+export function onBrowserClosed(fn: () => void) {
+  if (native) void Browser.addListener("browserFinished", fn).catch(() => undefined);
+}
+
 /**
  * Keeps the field being typed in above the keyboard. Edge-to-edge Android doesn't resize the web view for the
  * keyboard, so the keyboard would cover the bottom of the screen (the password field on sign-in). This sets --kb to

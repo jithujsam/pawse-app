@@ -33,6 +33,14 @@
                 <data android:scheme="app.detoxcompanion" android:host="auth-callback" />
             </intent-filter>
 
+            <!-- Coming back from Dodo's checkout: app.detoxcompanion://checkout-return. The app only re-checks membership. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="app.detoxcompanion" android:host="checkout-return" />
+            </intent-filter>
+
             <!-- The home screen widget opens the check-in: app.detoxcompanion://open/quick -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

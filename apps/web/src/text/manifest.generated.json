@@ -3203,7 +3203,7 @@
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
       "start": 80,
-      "end": 86,
+      "end": 88,
       "entries": [
         {
           "id": "insights.summary.aria",
@@ -3219,6 +3219,18 @@
           "id": "insights.summary.ai_note",
           "kind": "text",
           "placeholders": []
+        },
+        {
+          "id": "insights.summary.earlier",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "insights.summary.week_of",
+          "kind": "text",
+          "placeholders": [
+            "date"
+          ]
         }
       ]
     },
@@ -3228,8 +3240,8 @@
       "title": "Slips per week",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 88,
-      "end": 94,
+      "start": 90,
+      "end": 96,
       "entries": [
         {
           "id": "insights.chart.title",
@@ -3256,8 +3268,8 @@
       "title": "If nothing changes",
       "source": "src/screens/Report.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 96,
-      "end": 104,
+      "start": 98,
+      "end": 106,
       "entries": [
         {
           "id": "insights.forecast.title",
@@ -3301,8 +3313,8 @@
       "title": "How was today?",
       "source": "src/screens/Reflect.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 106,
-      "end": 126,
+      "start": 108,
+      "end": 128,
       "entries": [
         {
           "id": "insights.reflect.title",
@@ -3397,8 +3409,8 @@
       "title": "Weekly review",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 128,
-      "end": 154,
+      "start": 130,
+      "end": 156,
       "entries": [
         {
           "id": "insights.review.check_in",
@@ -3537,8 +3549,8 @@
       "title": "Weekly review headline",
       "source": "src/recovery.ts",
       "file": "src/text/sections/insights.ts",
-      "start": 156,
-      "end": 166,
+      "start": 158,
+      "end": 168,
       "entries": [
         {
           "id": "insights.goal_line.nothing_open",
@@ -3597,8 +3609,8 @@
       "title": "What your records show",
       "source": "src/screens/WeeklyReview.tsx",
       "file": "src/text/sections/insights.ts",
-      "start": 168,
-      "end": 181,
+      "start": 170,
+      "end": 183,
       "entries": [
         {
           "id": "insights.patterns.aria",
@@ -6387,7 +6399,7 @@
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
       "start": 7,
-      "end": 46,
+      "end": 54,
       "entries": [
         {
           "id": "membership.paywall.aria",
@@ -6484,12 +6496,52 @@
           "placeholders": []
         },
         {
-          "id": "membership.paywall.payment_info",
+          "id": "membership.paywall.checkout_failed",
           "kind": "text",
           "placeholders": []
         },
         {
-          "id": "membership.paywall.checkout_failed",
+          "id": "membership.paywall.opening",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.already_active",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.secure_note",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.upgrade",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.upgrade_confirm",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.upgrade_yes",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.upgrade_no",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.upgrade_requested",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.paywall.view_history",
           "kind": "text",
           "placeholders": []
         },
@@ -6536,13 +6588,72 @@
       ]
     },
     {
+      "id": "membership.checkout",
+      "screen": "Membership",
+      "title": "After checkout",
+      "source": "src/billing.ts",
+      "file": "src/text/sections/membership.ts",
+      "start": 56,
+      "end": 64,
+      "entries": [
+        {
+          "id": "membership.checkout.checking",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.checkout.confirmed",
+          "kind": "text",
+          "placeholders": [
+            "plan"
+          ]
+        },
+        {
+          "id": "membership.checkout.pending",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.checkout.failed",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.checkout.cancelled",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
+      "id": "membership.readonly",
+      "screen": "Membership",
+      "title": "View only after access ends",
+      "source": "src/App.tsx",
+      "file": "src/text/sections/membership.ts",
+      "start": 66,
+      "end": 71,
+      "entries": [
+        {
+          "id": "membership.readonly.banner",
+          "kind": "text",
+          "placeholders": []
+        },
+        {
+          "id": "membership.readonly.plans",
+          "kind": "text",
+          "placeholders": []
+        }
+      ]
+    },
+    {
       "id": "membership.unverifiable",
       "screen": "Membership",
       "title": "Membership can't be checked",
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 48,
-      "end": 54,
+      "start": 73,
+      "end": 79,
       "entries": [
         {
           "id": "membership.unverifiable.title",
@@ -6567,8 +6678,8 @@
       "title": "Membership status",
       "source": "src/screens/Paywall.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 56,
-      "end": 76,
+      "start": 81,
+      "end": 101,
       "entries": [
         {
           "id": "membership.status.title",
@@ -6677,8 +6788,8 @@
       "title": "Track allowance",
       "source": "src/screens/Pets.tsx",
       "file": "src/text/sections/membership.ts",
-      "start": 78,
-      "end": 83,
+      "start": 103,
+      "end": 108,
       "entries": [
         {
           "id": "membership.limits.track_trial",

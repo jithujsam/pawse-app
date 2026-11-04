@@ -1,6 +1,6 @@
 # Deploying membership: what happens, in plain words
 
-This is the plan for switching on the seven-day trial, the paywall and Dodo Payments for the real app. **Nothing here has been done yet.** Each step that changes the live system needs the owner's go-ahead at the time it is done.
+This is the plan for switching on the seven-day trial, the paywall and Dodo Payments for the real app. **Nothing here has been done yet** (the payment code is complete for Dodo's test mode; nothing is deployed). Each step that changes the live system needs the owner's go-ahead at the time it is done.
 
 ## The pieces, in plain words
 
@@ -13,17 +13,31 @@ This is the plan for switching on the seven-day trial, the paywall and Dodo Paym
 | **Checkout starter** (`dodo-checkout`) | What the app calls when someone taps "Choose AI". It asks Dodo for a payment page for that person. |
 | **App release** | A new Pawse APK that shows the trial, the membership page and the paywall. |
 
-## What to provide (for tomorrow)
+## What to provide
 
-From the **Dodo Payments dashboard**, first in **test mode**, then the same again for **live mode** when it works:
-1. **Two products**, both **subscriptions billed every year**: "Pawse Basic" at **$1/year** and "Pawse AI" at **$3/year**. Send their **product ids** (they start with `pdt_`).
-2. **An API key** (Dodo → Developer → API keys). Keep it secret: send it privately, never in chat history that others can see, and never put it in the app.
-3. **A webhook** pointing at `https://syysftnaubbpolrmicvd.supabase.co/functions/v1/dodo-webhook`, with at least these events ticked: `subscription.active`, `subscription.renewed`, `subscription.plan_changed`, `subscription.on_hold`, `subscription.failed`, `subscription.expired`, `refund.succeeded`, `dispute.lost`. Send its **signing secret** (it starts with `whsec_`).
-4. **A return page**: the web address people land on after paying, for example a short page on the Pawse website saying "Payment received, go back to the app". It must exist before checkout goes live.
+Everything below is **test mode** first. Live mode is a separate, later decision.
 
-From **you**:
-5. The **go-ahead** for each step marked ✋ below, at the time it's done.
-6. Confirmation that a backup of the database may be taken and kept privately off Supabase (it holds people's recovery logs).
+**In the Dodo Payments dashboard (test mode switched on, top of the dashboard):**
+1. **Two subscription products** (Products → create a product). Pricing type **Subscription** (not "One time"), **repeat every 1 year**, price in **USD**, no trial days (Pawse has its own seven-day trial), tax category **Digital products / SaaS**:
+   - "Pawse Basic", **$1.00** a year.
+   - "Pawse AI", **$3.00** a year.
+   Copy each product id (`pdt_…`). One-time products don't work: they never create a subscription, so there's nothing to renew or cancel.
+2. **An API key** (the dashboard's API keys page, under Developer). It's shown once; paste it straight into Supabase (below), nowhere else.
+3. **A webhook** (the dashboard's Webhooks page, under Developer: add an endpoint) at `https://syysftnaubbpolrmicvd.supabase.co/functions/v1/dodo-webhook`, subscribed to: `subscription.active`, `subscription.renewed`, `subscription.updated`, `subscription.plan_changed`, `subscription.on_hold`, `subscription.failed`, `subscription.cancelled`, `subscription.expired`, `payment.succeeded`, `payment.failed`, `refund.succeeded`, `dispute.lost`. Copy its **signing secret** (`whsec_…`).
+4. **Return address**: `app.detoxcompanion://checkout-return` (opens Pawse). If Dodo's form refuses a non-https address, use an https page you own that links to it.
+
+**Supabase secrets** (Dashboard → Edge Functions → Secrets → Add new secret; paste values there, never in chat, code or git):
+
+| Name | Value |
+|---|---|
+| `DODO_PAYMENTS_API_KEY` | the test-mode API key |
+| `DODO_PAYMENTS_WEBHOOK_KEY` | the webhook's signing secret, `whsec_…` |
+| `DODO_PAYMENTS_ENVIRONMENT` | `test_mode` |
+| `DODO_BASIC_PRODUCT_ID` | the Basic subscription's `pdt_…` |
+| `DODO_AI_PRODUCT_ID` | the AI subscription's `pdt_…` |
+| `DODO_PAYMENTS_RETURN_URL` | `app.detoxcompanion://checkout-return` |
+
+Leave `DODO_PAYMENTS_LIVE_ENABLED` unset. Without it, `live_mode` is refused even if typed.
 
 ## What will happen, in order
 
@@ -107,27 +121,52 @@ psql "$PROD_DB_URL" -X -1 -v ON_ERROR_STOP=1 -f supabase/migrations/0015_ai_cach
 psql "$PROD_DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/deploy/membership/04-verify.sql
 ```
 
-**5–6. Payment receiver and checkout starter (test mode first)**
-
-Secrets for both:
+**5–6. Payments (test mode).** Apply migration 0016 first (it extends `apply_payment_event`; additive, re-runnable, touches no trial, plan or recovery row):
 ```bash
-supabase secrets set --project-ref syysftnaubbpolrmicvd DODO_WEBHOOK_SECRET='whsec_…' DODO_PRODUCT_BASIC='pdt_…' DODO_PRODUCT_AI='pdt_…'
+psql "$PROD_DB_URL" -X -1 -v ON_ERROR_STOP=1 -f supabase/migrations/0016_dodo_payments.sql
 ```
-Secrets for the checkout only:
-```bash
-supabase secrets set --project-ref syysftnaubbpolrmicvd DODO_API_KEY='…' DODO_API_BASE='https://test.dodopayments.com' DODO_RETURN_URL='https://…' DODO_CHECKOUT_ENABLED='true'
-```
-Deploy the receiver without Supabase's login check (Dodo can't log in; its signature is checked instead):
+Set the six secrets in the dashboard (table above). Then deploy the receiver without Supabase's login check (Dodo can't log in; its signature is checked instead):
 ```bash
 supabase functions deploy dodo-webhook --project-ref syysftnaubbpolrmicvd --no-verify-jwt
 ```
-Deploy the checkout starter with the login check on (the default):
+Deploy the checkout with the login check on (the default):
 ```bash
 supabase functions deploy dodo-checkout --project-ref syysftnaubbpolrmicvd
 ```
-A test app build needs `VITE_CHECKOUT=dodo` (for example in `apps/web/.env.production`) so its paywall offers checkout.
+Check that the receiver refuses an unsigned request (expect 401):
+```bash
+curl -s -X POST https://syysftnaubbpolrmicvd.supabase.co/functions/v1/dodo-webhook -d '{}' -w ' %{http_code}\n'
+```
+A test app with checkout on: Actions → **Android APK** → Run workflow on this branch, build type `debug`, checkout `dodo`. It installs next to the real app and is never published.
 
-**7. Test purchase.** In Dodo test mode, with a test account: buy AI, then check `public.entitlements` and the Membership page. Then trigger a renewal, a refund and a lost dispute from Dodo's dashboard, and check each one changes the plan as described in `docs/MONETISATION.md` §7. Confirm that refunds and disputes carry `pawse_account_id` in their metadata. If they don't, they're recorded for manual review instead of ending access automatically.
+**7. Test purchases (test mode, a dedicated test account only).** Create a new account in the debug app (for example `pawse.test+1@…`); never use one of the existing accounts. Use the successful and declining test cards listed in Dodo's test-mode documentation (test mode never charges real money). After each step, compare with the expected result; `select * from payment_events order by id desc limit 5;` shows what arrived.
+
+| # | Do | Expect |
+|---|---|---|
+| 1 | Me → Membership → Choose Basic | Dodo's page shows "Pawse Basic", $1.00/year |
+| 2 | Pay with the test card | Back in Pawse: "Checking your payment…", then "Payment confirmed. Your Basic membership is active." Me shows Basic; AI wording stops; past AI text still shows |
+| 3 | Dodo → Webhooks → resend the last `subscription.active` | `payment_events` outcome `duplicate`; nothing changes |
+| 4 | Upgrade to AI → confirm | "Upgrade requested…", then AI active; `subscription.plan_changed` applied |
+| 5 | New test account → Choose AI → close the checkout | "Checkout closed. Nothing has been charged." No plan |
+| 6 | Choose AI → pay with a declining card | "The payment didn't go through…" No plan |
+| 7 | Open `app.detoxcompanion://checkout-return?status=active` by hand (adb or a link) without paying | "hasn't been confirmed yet…"; no plan |
+| 8 | Start a checkout, kill the app, pay, reopen within two hours | The app finds the plan on launch |
+| 9 | Pause the webhook endpoint in Dodo, pay, wait, re-enable | App says "not confirmed yet"; the plan appears once Dodo retries (the app shows it on the next check or launch) |
+| 10 | Dodo → Subscriptions → cancel | `cancellation` recorded, `renews = false`; access stays to the end of the year |
+| 11 | Dodo → Payments → refund (full) | Access ends at once; paywall says refunded; "View my history" shows everything, AI text included |
+| 12 | Send a test `refund.succeeded` for an unknown payment id from Dodo's webhook page (its test sender) | `needs_review` in `payment_events_review`; nobody's access changes |
+| 13 | Send a webhook with a wrong signature (curl above) | 401, nothing recorded |
+| 14 | Renewal: Dodo test mode's subscription tools (or `subscription.renewed` from the dashboard's test sender) | Period extends by a year |
+
+Before and after the tests, compare the existing accounts (read-only; must be identical):
+```sql
+begin transaction read only;
+select count(*), md5(string_agg(user_id || '|' || started_at || '|' || ends_at || '|' || source, ';' order by user_id)) from trial_grants
+  where user_id not in (select id from auth.users where email like 'pawse.test+%');
+select count(*), md5(coalesce(string_agg(e::text, ';' order by user_id), '')) from entitlements e
+  where user_id not in (select id from auth.users where email like 'pawse.test+%');
+rollback;
+```
 
 **8. AI service**
 ```bash
@@ -138,7 +177,14 @@ It uses `supabase/functions/ai/deno.json` and the frozen `deno.lock`; JWT verifi
 - a slip logged on a test account gets AI wording;
 - the function logs show the caller's address in `x-forwarded-for`.
 
-**9. Live mode.** Run the secrets from steps 5–6 again with the live values, including `DODO_API_BASE='https://live.dodopayments.com'`. Point Dodo's live webhook at the same receiver address.
+**9. Live mode** (a separate decision; not part of the test-mode work). Create the two products again in live mode, a live API key and a live webhook to the same address. Replace `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY`, `DODO_BASIC_PRODUCT_ID` and `DODO_AI_PRODUCT_ID` with the live values, set `DODO_PAYMENTS_ENVIRONMENT=live_mode` **and** `DODO_PAYMENTS_LIVE_ENABLED=true`.
+
+### Before accepting real payments
+- Every row of the step 7 table passed in test mode on a real Android phone, and the existing accounts' check is identical before and after.
+- Dodo's live business verification is complete, and the terms of sale, refund policy and support address are published (Dodo requires them).
+- Decide what the owner does with `payment_events_review` rows (refunds that couldn't be matched, partial refunds) and check it regularly.
+- An off-site database backup routine is running (`docs/MONETISATION.md` §8): payment history lives in the database.
+- The release build is made with `VITE_CHECKOUT=dodo` (step 10) only after live checkout works.
 
 **10. App release.** Set `VITE_CHECKOUT=dodo` in `apps/web/.env.production` and bump `apps/web/version.json`. Then Actions → **Android APK** → Run workflow → `release` on `main`, with `publish` ticked and the notes from `docs/RELEASE_NOTES_5.1.0.md`. A plain push to `main` never publishes: it only builds a test APK.
 
@@ -152,7 +198,8 @@ It uses `supabase/functions/ai/deno.json` and the frozen `deno.lock`; JWT verifi
 | What | How |
 |---|---|
 | AI service | Deploy `backup/ai-v14` (or this repository at `54b4d81`). Immediate. |
-| Payment receiver or checkout | `supabase functions delete dodo-webhook` (or `dodo-checkout`), or unset `DODO_CHECKOUT_ENABLED`. Immediate. |
+| Payment receiver or checkout | `supabase functions delete dodo-webhook` (or `dodo-checkout`), or delete `DODO_PAYMENTS_API_KEY` (checkout answers 503) or `DODO_PAYMENTS_WEBHOOK_KEY` (receiver answers 503; Dodo retries later). Immediate. |
+| Migration 0016 | Deploy the previous functions first, then `psql "$PROD_DB_URL" -X -1 -v ON_ERROR_STOP=1 -f supabase/deploy/membership/90-rollback-0016.sql`. Keeps the added columns and every payment row. |
 | Database update | `psql "$PROD_DB_URL" -X -1 -v ON_ERROR_STOP=1 -f supabase/deploy/membership/90-rollback-0014.sql` restores the previous functions (including its launch-date rule). Trials already started keep their dates. No recovery data changes. 0015 needs no rollback. |
 | Sign-up limit | Switch the hook off. Immediate. |
 | Anything else | Restore the step 1 backup. Last resort; it causes downtime. |

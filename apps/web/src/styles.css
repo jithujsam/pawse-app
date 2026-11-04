@@ -113,6 +113,9 @@ p { text-wrap: pretty; }
 /* ---------- offline bar ---------- */
 /* Sits above the tab bar while the phone has no network; everything keeps working and syncs on return. */
 .offline-bar { background: var(--raised); color: var(--muted); font-size: 13px; font-weight: 600; text-align: center; padding: 8px var(--pad); border-top: 1px solid var(--line); }
+/* Access has ended: everything stays viewable; the bar says so and leads to the plans. */
+.readonly-bar { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; text-align: left; }
+.readonly-bar .readonly-plans { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-weight: 700; }
 
 /* ---------- tab bar ---------- */
 .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); position: relative; z-index: 5; }
